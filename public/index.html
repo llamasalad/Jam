@@ -256,7 +256,7 @@ svg{display:block}
     </div>
     <div id="volume-row">
       <span id="volume-icon">🔊</span>
-      <input id="volume" type="range" min="0" max="100" value="80" step="1"/>
+      <input id="volume" type="range" min="0" max="100" step="1"/>
     </div>
   </div>
 </div>
@@ -267,7 +267,9 @@ svg{display:block}
 const TOKEN_KEY='music_token';
 let token=localStorage.getItem(TOKEN_KEY)||'';
 let tracks=[],filtered=[],queue=[],qIdx=-1,sortMode='title';
-let shuffle=false,seeking=false,muted=false,lastVol=80;
+let shuffle=false,seeking=false,muted=false;
+const SAVED_VOL=parseInt(localStorage.getItem('music_vol')||'80');
+let lastVol=SAVED_VOL;
 let playlists=[],currentPlaylist=null,ctxTrack=null,pendingPlaylistTrack=null;
 
 const audio=document.getElementById('audio');
@@ -300,7 +302,7 @@ const playlistsContainer=document.getElementById('playlists-container');
 const playlistDetail=document.getElementById('playlist-detail');
 const playlistsListView=document.getElementById('playlists-list-view');
 
-audio.volume=0.8;
+audio.volume=SAVED_VOL/100;
 
 function fmt(s){if(!s||isNaN(s))return'—';s=Math.round(s);return`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`}
 function hdrs(){return token?{'x-auth-token':token,'Content-Type':'application/json'}:{'Content-Type':'application/json'}}
@@ -596,6 +598,7 @@ function play(t){
   loadCover(t.id,pt);
   document.title=`${t.title||'?'} · Music`;
   timeTot.textContent='—';
+  localStorage.setItem('music_last',JSON.stringify({id:t.id,title:t.title,artist:t.artist,album:t.album}));
 }
 
 audio.addEventListener('loadedmetadata',()=>{
@@ -605,6 +608,7 @@ audio.addEventListener('loadedmetadata',()=>{
   }
 });
 audio.addEventListener('timeupdate',()=>{
+  if(audio.currentTime>0&&Math.round(audio.currentTime)%5===0)localStorage.setItem('music_pos',audio.currentTime);
   if(seeking||!audio.duration)return;
   progress.value=(audio.currentTime/audio.duration)*100;timeCur.textContent=fmt(audio.currentTime);
 });
@@ -617,7 +621,7 @@ progress.addEventListener('touchstart',()=>seeking=true,{passive:true});
 progress.addEventListener('input',()=>{if(audio.duration)timeCur.textContent=fmt(audio.duration*progress.value/100)});
 progress.addEventListener('change',()=>{if(audio.duration)audio.currentTime=audio.duration*progress.value/100;seeking=false});
 
-volumeSlider.addEventListener('input',()=>{const v=volumeSlider.value/100;audio.volume=v;muted=v===0;volumeIcon.textContent=v===0?'🔇':v<0.5?'🔉':'🔊'});
+volumeSlider.addEventListener('input',()=>{const v=volumeSlider.value/100;audio.volume=v;muted=v===0;volumeIcon.textContent=v===0?'🔇':v<0.5?'🔉':'🔊';localStorage.setItem('music_vol',volumeSlider.value)});
 volumeIcon.addEventListener('click',()=>{
   if(muted){audio.volume=lastVol/100;volumeSlider.value=lastVol;muted=false;volumeIcon.textContent=lastVol<50?'🔉':'🔊'}
   else{lastVol=parseInt(volumeSlider.value);audio.volume=0;volumeSlider.value=0;muted=true;volumeIcon.textContent='🔇'}
@@ -643,7 +647,38 @@ document.addEventListener('keydown',e=>{
   if(e.key==='ArrowLeft')prevTrack();
 });
 
-async function init(){await Promise.all([loadTracks(),loadPlaylists()])}
+async function init(){
+  // Restore volume
+  volumeSlider.value=SAVED_VOL;
+  const savedVol=SAVED_VOL/100;
+  audio.volume=savedVol;
+  volumeIcon.textContent=savedVol===0?'🔇':savedVol<0.5?'🔉':'🔊';
+
+  await Promise.all([loadTracks(),loadPlaylists()]);
+
+  // Restore last played track
+  try{
+    const last=JSON.parse(localStorage.getItem('music_last')||'null');
+    const pos=parseFloat(localStorage.getItem('music_pos')||'0');
+    if(last&&last.id){
+      const t=tracks.find(x=>x.id===last.id)||last;
+      // Show in player bar without auto-playing
+      player.classList.remove('hidden');
+      document.getElementById('player-title').textContent=t.title||'Unknown';
+      document.getElementById('player-artist').textContent=[t.artist,t.album].filter(Boolean).join(' · ')||'—';
+      const pt=document.getElementById('player-thumb');pt.src=FALLBACK;
+      loadCover(t.id,pt);
+      document.title=`${t.title||'?'} · Music`;
+      // Set up audio ready to play from last position
+      const ts=token?`?token=${encodeURIComponent(token)}`:'';
+      audio.src=`/api/stream/${t.id}${ts}`;
+      audio.addEventListener('loadedmetadata',()=>{
+        if(pos>0&&pos<audio.duration-5)audio.currentTime=pos;
+      },{once:true});
+      queue=[t];qIdx=0;
+    }
+  }catch(_){}
+}
 
 (async()=>{const ok=await checkAuth();if(ok)init()})();
 </script>
