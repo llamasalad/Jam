@@ -605,9 +605,6 @@ function play(t){
   loadCover(t.id,pt);
   document.title = `${t.title || '?'} · JAM`;
   timeTot.textContent='—';
-  setTimeout(() => {
-    document.title = `${t.title || '?'} · JAM`;
-  }, 250)
 
   localStorage.setItem('music_last',JSON.stringify({id:t.id,title:t.title,artist:t.artist,album:t.album}));
 }
@@ -682,7 +679,7 @@ async function init(){
       document.title = `${t.title || '?'} · JAM`;
       setTimeout(() => {
         document.title = `${t.title || '?'} · JAM`;
-      }, 250);
+      }, 600);
       // Set up audio ready to play from last position
       const ts=token?`?token=${encodeURIComponent(token)}`:'';
       audio.src=`/api/stream/${t.id}${ts}`;
