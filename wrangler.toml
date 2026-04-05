@@ -5,3 +5,7 @@ pages_build_output_dir = "./public"
 [[r2_buckets]]
 binding = "MUSIC_BUCKET"
 bucket_name = "music"
+
+[[kv_namespaces]]
+binding = "PLAYLISTS"
+id = "6e1d46e137bf4c15894b61f2323f946b"
