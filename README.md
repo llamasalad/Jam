@@ -1,3 +1,3 @@
 JAM
 
-Light Music Player Integrated with Cloudflare's R2
+Lowkey Music Player Integrated with Cloudflare's R2
