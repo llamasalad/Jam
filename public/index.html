@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<title>Jam!</title>
+<title>Music</title>
 <style>
 @font-face{font-family:'SF Pro Display';src:url('/api/font/SF-Pro-Display-Regular.otf') format('opentype');font-weight:400;font-style:normal}
 @font-face{font-family:'SF Pro Display';src:url('/api/font/SFPRODISPLAYMEDIUM.OTF') format('opentype');font-weight:500;font-style:normal}
@@ -174,14 +174,21 @@ svg{display:block}
 /* lyrics panel */
 #lyrics-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 8px;font-size:11px;font-family:'SF Pro Display',-apple-system,sans-serif;cursor:pointer;transition:color .15s,border-color .15s;white-space:nowrap}
 #lyrics-btn:hover,#lyrics-btn.active{color:var(--accent);border-color:var(--accent)}
-#lyrics-panel{display:none;flex-direction:column;position:fixed;bottom:var(--player-h);left:0;right:0;height:220px;background:var(--surface);border-top:1px solid var(--border2);overflow-y:auto;padding:12px 0;z-index:9}
+#lyrics-panel{display:none;flex-direction:column;position:fixed;bottom:calc(var(--player-h) + 12px);right:16px;width:280px;height:200px;min-width:200px;min-height:120px;max-width:480px;max-height:420px;background:var(--surface);border:1px solid var(--border2);border-radius:12px;overflow:hidden;z-index:9;resize:both;box-shadow:0 8px 32px rgba(0,0,0,.4)}
 #lyrics-panel.open{display:flex}
 #lyrics-panel::-webkit-scrollbar{width:3px}
 #lyrics-panel::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
-.lyric-line{padding:6px 20px;font-size:14px;color:var(--muted);cursor:pointer;transition:color .2s,font-size .2s;line-height:1.6}
-.lyric-line.active{color:var(--text);font-size:15px;font-weight:500}
+#lyrics-panel-header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0;cursor:move;user-select:none}
+#lyrics-panel-title{font-size:10px;font-family:'SF Pro Display',-apple-system,sans-serif;letter-spacing:0.08em;color:var(--muted);text-transform:uppercase}
+#lyrics-close-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 2px;line-height:1;border-radius:3px}
+#lyrics-close-btn:hover{color:var(--text)}
+#lyrics-scroll{flex:1;overflow-y:auto;padding:8px 0}
+#lyrics-scroll::-webkit-scrollbar{width:3px}
+#lyrics-scroll::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
+.lyric-line{padding:5px 14px;font-size:13px;color:var(--muted);cursor:pointer;transition:color .2s;line-height:1.5}
+.lyric-line.active{color:var(--text);font-size:14px;font-weight:500}
 .lyric-line:hover{color:var(--text)}
-#lyrics-empty{padding:40px 20px;text-align:center;color:var(--muted);font-size:13px}
+#lyrics-empty{padding:24px 14px;text-align:center;color:var(--muted);font-size:12px}
 @media(max-width:380px){#search{width:120px}#search:focus{width:150px}}
 </style>
 </head>
@@ -189,7 +196,7 @@ svg{display:block}
 
 <div id="auth-overlay" style="display:none">
   <div id="auth-box">
-    <h2>Jam!</h2>
+    <h2>Music</h2>
     <p>Enter your password to continue.</p>
     <input id="auth-input" type="password" placeholder="Password" autocomplete="current-password"/>
     <p id="auth-error">Incorrect password — try again.</p>
@@ -221,7 +228,7 @@ svg{display:block}
 
 <div id="app">
   <div id="header">
-    <h1>Jam!</h1>
+    <h1>Music</h1>
     <div id="search-wrap">
       <span id="search-icon">⌕</span>
       <input id="search" type="search" placeholder="Search…" autocomplete="off"/>
@@ -265,7 +272,13 @@ svg{display:block}
   <div id="queue-header" style="display:flex;align-items:center;justify-content:space-between">Up next<button id="clear-queue-btn" style="background:none;border:none;color:var(--muted);font-size:11px;font-family:inherit;cursor:pointer;padding:2px 6px;border-radius:4px;transition:color .15s" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--muted)'">clear</button></div>
 </div>
 <div id="lyrics-panel">
-  <div id="lyrics-empty">No lyrics available</div>
+  <div id="lyrics-panel-header">
+    <span id="lyrics-panel-title">Lyrics</span>
+    <button id="lyrics-close-btn">✕</button>
+  </div>
+  <div id="lyrics-scroll">
+    <div id="lyrics-empty">No lyrics available</div>
+  </div>
 </div>
 <div id="player" class="hidden">
     <div id="player-top">
@@ -644,7 +657,7 @@ function play(t){
   document.getElementById('player-artist').textContent=[t.artist,t.album].filter(Boolean).join(' · ')||'—';
   const pt=document.getElementById('player-thumb');pt.src=FALLBACK;
   loadCover(t.id,pt);
-  document.title=`${t.title||'?'} · Jam!`;
+  document.title=`${t.title||'?'} · JAM`;
   timeTot.textContent='—';
   localStorage.setItem('music_last',JSON.stringify({id:t.id,title:t.title,artist:t.artist,album:t.album}));
   loadLyrics(t);
@@ -834,11 +847,38 @@ lyricsBtn.onclick = () => {
   lyricsBtn.classList.toggle('active', lyricsOpen);
 };
 
+document.getElementById('lyrics-close-btn').onclick = () => {
+  lyricsOpen = false;
+  lyricsPanel.classList.remove('open');
+  lyricsBtn.classList.remove('active');
+};
+
+// Drag to reposition
+(()=>{
+  const el=lyricsPanel;
+  const header=document.getElementById('lyrics-panel-header');
+  let dragging=false,ox=0,oy=0;
+  header.addEventListener('mousedown',e=>{
+    dragging=true;
+    const r=el.getBoundingClientRect();
+    ox=e.clientX-r.left;oy=e.clientY-r.top;
+    el.style.right='auto';el.style.bottom='auto';
+    el.style.left=r.left+'px';el.style.top=r.top+'px';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove',e=>{
+    if(!dragging)return;
+    el.style.left=(e.clientX-ox)+'px';
+    el.style.top=(e.clientY-oy)+'px';
+  });
+  document.addEventListener('mouseup',()=>dragging=false);
+})();
+
 async function loadLyrics(t) {
   if (lyricsTrackId === t.id) return;
   lyricsTrackId = t.id;
   syncedLyrics = []; plainLyrics = '';
-  lyricsPanel.innerHTML = '<div id="lyrics-empty" style="padding:40px 20px;text-align:center;color:var(--muted);font-size:13px">Loading lyrics…</div>';
+  lyricsScroll().innerHTML = '<div id="lyrics-empty" style="padding:24px 14px;text-align:center;color:var(--muted);font-size:12px">Loading lyrics…</div>';
 
   try {
     const q = new URLSearchParams({ artist_name: t.artist || '', track_name: t.title || '', album_name: t.album || '' });
@@ -853,10 +893,10 @@ async function loadLyrics(t) {
       plainLyrics = d.plainLyrics;
       renderPlainLyrics();
     } else {
-      lyricsPanel.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--muted);font-size:13px">No lyrics found</div>';
+      lyricsScroll().innerHTML = '<div style="padding:24px 14px;text-align:center;color:var(--muted);font-size:12px">No lyrics found</div>';
     }
   } catch(_) {
-    lyricsPanel.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--muted);font-size:13px">No lyrics found</div>';
+    lyricsScroll().innerHTML = '<div style="padding:24px 14px;text-align:center;color:var(--muted);font-size:12px">No lyrics found</div>';
   }
 }
 
@@ -868,25 +908,29 @@ function parseLRC(lrc) {
   }).filter(Boolean);
 }
 
+function lyricsScroll() { return document.getElementById('lyrics-scroll'); }
+
 function renderSyncedLyrics() {
-  lyricsPanel.innerHTML = '';
+  const scroll = lyricsScroll();
+  scroll.innerHTML = '';
   syncedLyrics.forEach((l, i) => {
     const div = document.createElement('div');
     div.className = 'lyric-line';
     div.textContent = l.text || '·';
     div.dataset.idx = i;
     div.onclick = () => { audio.currentTime = l.time; };
-    lyricsPanel.appendChild(div);
+    scroll.appendChild(div);
   });
 }
 
 function renderPlainLyrics() {
-  lyricsPanel.innerHTML = '';
+  const scroll = lyricsScroll();
+  scroll.innerHTML = '';
   plainLyrics.split('\n').forEach(line => {
     const div = document.createElement('div');
     div.className = 'lyric-line';
     div.textContent = line || ' ';
-    lyricsPanel.appendChild(div);
+    scroll.appendChild(div);
   });
 }
 
@@ -900,11 +944,11 @@ audio.addEventListener('timeupdate', () => {
   });
   if (idx === lastLyricIdx) return;
   lastLyricIdx = idx;
-  lyricsPanel.querySelectorAll('.lyric-line').forEach((el, i) => {
+  lyricsScroll().querySelectorAll('.lyric-line').forEach((el, i) => {
     el.classList.toggle('active', i === idx);
   });
   if (idx >= 0 && lyricsOpen) {
-    const el = lyricsPanel.querySelector(`[data-idx="${idx}"]`);
+    const el = lyricsScroll().querySelector(`[data-idx="${idx}"]`);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 });
