@@ -10,11 +10,9 @@ export async function onRequestGet({ params, request, env }) {
   }
 
   const id = params.id;
-  const key = atob(id.replace(/[-_]/g, c => ({ "-": "+", "_": "/" }[c])));
+  const key = decodeURIComponent(id);
 
   const rangeHeader = request.headers.get("Range");
-
-  const options = rangeHeader ? { range: { suffix: undefined } } : {};
 
   let object;
   if (rangeHeader) {
