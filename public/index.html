@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
-<title>Music</title>
+<title>JAM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
 <style>
@@ -690,16 +690,6 @@ async function init(){
 }
 
 (async()=>{const ok=await checkAuth();if(ok)init()})();
-
-
-window.addEventListener("DOMContentLoaded", () => {
-  setTimeout(() => {
-    const last = JSON.parse(localStorage.getItem("music_last") || "null");
-    if (last && last.title) {
-      document.title = `${last.title} · JAM`;
-    }
-  }, 600);
-});
 
 </script>
 </body>
