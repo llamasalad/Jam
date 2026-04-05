@@ -1,6 +1,6 @@
 export async function onRequestGet({ env }) {
   const AUTH_TOKEN = env.AUTH_TOKEN;
-
+ 
   if (!env.MUSIC_BUCKET) {
     return new Response(JSON.stringify({ error: "MUSIC_BUCKET binding not found. Check R2 binding in Pages settings." }), {
       status: 500, headers: { "Content-Type": "application/json" }
