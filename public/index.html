@@ -677,9 +677,7 @@ async function init(){
       const pt=document.getElementById('player-thumb');pt.src=FALLBACK;
       loadCover(t.id,pt);
       document.title = `${t.title || '?'} · JAM`;
-      setTimeout(() => {
-        document.title = `${t.title || '?'} · JAM`;
-      }, 600);
+      
       // Set up audio ready to play from last position
       const ts=token?`?token=${encodeURIComponent(token)}`:'';
       audio.src=`/api/stream/${t.id}${ts}`;
@@ -692,6 +690,17 @@ async function init(){
 }
 
 (async()=>{const ok=await checkAuth();if(ok)init()})();
+
+
+window.addEventListener("DOMContentLoaded", () => {
+  setTimeout(() => {
+    const last = JSON.parse(localStorage.getItem("music_last") || "null");
+    if (last && last.title) {
+      document.title = `${last.title} · JAM`;
+    }
+  }, 600);
+});
+
 </script>
 </body>
 </html>
