@@ -273,7 +273,7 @@ function makeRow(t){
   if(qIdx>=0&&queue[qIdx]?.id===t.id)div.classList.add('active');
   const thumb=document.createElement('div');thumb.className='thumb';thumb.dataset.artist=t.artist||'';thumb.dataset.album=t.album||'';
   const sp=document.createElement('span');sp.className='thumb-icon';sp.textContent='♪';thumb.appendChild(sp);
-  fetchCover(t.artist,t.album).then(url=>{if(url){thumb.innerHTML='';const img=new Image();img.src=url;img.alt='';thumb.appendChild(img)}});
+  loadCover(t.id,thumb);
   const info=document.createElement('div');info.className='track-info';
   const ti=document.createElement('div');ti.className='track-title';ti.textContent=t.title||'Unknown';
   const ts=document.createElement('div');ts.className='track-sub';ts.textContent=[t.artist,t.album].filter(Boolean).join(' · ')||'—';
@@ -293,21 +293,24 @@ function playTrack(t,list){
 }
 
 const coverCache={};
-async function fetchCover(artist,album){
-  if(!artist&&!album)return null;
-  const key=(artist||'')+':::'+(album||'');
-  if(key in coverCache)return coverCache[key];
-  coverCache[key]=null;
-  try{
-    const q=encodeURIComponent(`artist:"${artist||''}" AND release:"${album||''}"`.trim());
-    const r=await fetch(`https://musicbrainz.org/ws/2/release/?query=${q}&limit=1&fmt=json`,{headers:{'User-Agent':'JamMusicPlayer/1.0'}});
-    const d=await r.json();
-    const mbid=d.releases?.[0]?.id;
-    if(!mbid)return null;
-    const cr=await fetch(`https://coverartarchive.org/release/${mbid}/front-250`,{redirect:'follow'});
-    if(cr.ok){coverCache[key]=cr.url;return cr.url}
-  }catch(_){}
-  return null;
+function loadCover(id,el){
+  if(id in coverCache){
+    if(coverCache[id])setCover(el,coverCache[id]);
+    return;
+  }
+  coverCache[id]=null;
+  const tokenSuffix=token?`?token=${encodeURIComponent(token)}`:'';
+  const url=`/api/cover/${id}${tokenSuffix}`;
+  fetch(url).then(r=>{
+    if(r.ok){
+      coverCache[id]=url;
+      setCover(el,url);
+    }
+  }).catch(_=>{});
+}
+function setCover(el,url){
+  if(el.tagName==='IMG'){el.src=url}
+  else{el.innerHTML='';const img=new Image();img.src=url;img.alt='';el.appendChild(img)}
 }
 
 const FALLBACK_THUMB='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="%2326262e"/><text x="50%25" y="54%25" text-anchor="middle" fill="%237a7a8e" font-size="18">♪</text></svg>';
@@ -321,7 +324,7 @@ function play(t){
   document.getElementById('player-artist').textContent=[t.artist,t.album].filter(Boolean).join(' · ')||'—';
   const pt=document.getElementById('player-thumb');
   pt.src=FALLBACK_THUMB;
-  fetchCover(t.artist,t.album).then(url=>{if(url)pt.src=url});
+  loadCover(t.id,pt);
   document.title=`${t.title||'?'} · Music`;
   timeTot.textContent='—';
 }
