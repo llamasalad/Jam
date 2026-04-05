@@ -19,7 +19,11 @@ export async function onRequestGet({ env }) {
         const parts = key.split("/");
         const filename = parts[parts.length - 1];
         const ext = filename.slice(filename.lastIndexOf("."));
-        const title = filename.slice(0, filename.length - ext.length);
+        let title = filename.slice(0, filename.length - ext.length);
+
+        // Strip leading track numbers: "01 - Title", "01. Title", "01 Title", "1 - Title"
+        title = title.replace(/^\d{1,3}[\s.\-_]+/, '').trim();
+
         const artist = parts.length >= 3 ? parts[parts.length - 3] : "Unknown";
         const album = parts.length >= 2 ? parts[parts.length - 2] : "Unknown";
         const id = encodeURIComponent(key).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16));
