@@ -39,7 +39,7 @@ export async function onRequestGet({ request, env }) {
 
   // ── 2. Fall back to Genius ────────────────────────────────────────────────
   if (!env.GENIUS_TOKEN) {
-    return new Response(JSON.stringify({ source: null, type: null, lyrics: null }), {
+    return new Response(JSON.stringify({"source":null,"type":null,"lyrics":null}), {
       headers: { "Content-Type": "application/json" }
     });
   }
