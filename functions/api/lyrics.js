@@ -20,7 +20,7 @@ export async function onRequestGet({ request, env }) {
 
   // ── 1. Try LRCLIB first ───────────────────────────────────────────────────
   try {
-    const q = new URLSearchParams({ artist_name: artist, track_name: title, album_name: album });
+    const q = new URLSearchParams({ artist_name: artist, track_name: title});
     const r = await fetch(`https://lrclib.net/api/get?${q}`);
     if (r.ok) {
       const d = await r.json();
