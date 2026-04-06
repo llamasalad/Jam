@@ -742,7 +742,7 @@ async function init(){
       document.getElementById('player-artist').textContent=[t.artist,t.album].filter(Boolean).join(' · ')||'—';
       const pt=document.getElementById('player-thumb');pt.src=FALLBACK;
       loadCover(t.id,pt);
-      document.title=`${t.title||'?'} · Music`;
+      document.title=`${t.title||'?'}`;
       // Set up audio ready to play from last position
       const ts=token?`?token=${encodeURIComponent(token)}`:'';
       audio.src=`/api/stream/${t.id}${ts}`;
