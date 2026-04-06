@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<title>Jam!</title>
+<title>Music</title>
 <style>
 @font-face{font-family:'SF Pro Display';src:url('/api/font/SF-Pro-Display-Regular.otf') format('opentype');font-weight:400;font-style:normal}
 @font-face{font-family:'SF Pro Display';src:url('/api/font/SFPRODISPLAYMEDIUM.OTF') format('opentype');font-weight:500;font-style:normal}
@@ -196,7 +196,7 @@ svg{display:block}
 
 <div id="auth-overlay" style="display:none">
   <div id="auth-box">
-    <h2>Jam!</h2>
+    <h2>Music</h2>
     <p>Enter your password to continue.</p>
     <input id="auth-input" type="password" placeholder="Password" autocomplete="current-password"/>
     <p id="auth-error">Incorrect password — try again.</p>
@@ -228,7 +228,7 @@ svg{display:block}
 
 <div id="app">
   <div id="header">
-    <h1>Jam!</h1>
+    <h1>Music</h1>
     <div id="search-wrap">
       <span id="search-icon">⌕</span>
       <input id="search" type="search" placeholder="Search…" autocomplete="off"/>
@@ -661,9 +661,11 @@ function play(t){
   document.getElementById('player-artist').textContent=[t.artist,t.album].filter(Boolean).join(' · ')||'—';
   const pt=document.getElementById('player-thumb');pt.src=FALLBACK;
   loadCover(t.id,pt);
-  document.title=`${t.title||'?'} — ${t.artist||'?'}`;
+  document.title=`${t.title||'?'} · JAM`;
   timeTot.textContent='—';
   localStorage.setItem('music_last',JSON.stringify({id:t.id,title:t.title,artist:t.artist,album:t.album}));
+  localStorage.setItem('music_queue',JSON.stringify(queue.map(x=>x.id)));
+  localStorage.setItem('music_qidx',qIdx);
   loadLyrics(t);
   // Media session cover loads async
   const tsuf=token?`?token=${encodeURIComponent(token)}`:'';
@@ -730,26 +732,35 @@ async function init(){
 
   await Promise.all([loadTracks(),loadPlaylists()]);
 
-  // Restore last played track
+  // Restore last played track + queue
   try{
     const last=JSON.parse(localStorage.getItem('music_last')||'null');
     const pos=parseFloat(localStorage.getItem('music_pos')||'0');
+    const savedQueueIds=JSON.parse(localStorage.getItem('music_queue')||'[]');
+    const savedQIdx=parseInt(localStorage.getItem('music_qidx')||'0');
     if(last&&last.id){
       const t=tracks.find(x=>x.id===last.id)||last;
+      // Rebuild queue from saved track IDs
+      if(savedQueueIds.length){
+        queue=savedQueueIds.map(id=>tracks.find(x=>x.id===id)).filter(Boolean);
+        qIdx=Math.min(savedQIdx,queue.length-1);
+        if(!queue.length){queue=[t];qIdx=0;}
+      } else {
+        queue=[t];qIdx=0;
+      }
       // Show in player bar without auto-playing
       player.classList.remove('hidden');
       document.getElementById('player-title').textContent=t.title||'Unknown';
       document.getElementById('player-artist').textContent=[t.artist,t.album].filter(Boolean).join(' · ')||'—';
       const pt=document.getElementById('player-thumb');pt.src=FALLBACK;
       loadCover(t.id,pt);
-      document.title=`${t.title||'?'}`;
+      document.title=`${t.title||'?'} · Jam!`;
       // Set up audio ready to play from last position
       const ts=token?`?token=${encodeURIComponent(token)}`:'';
       audio.src=`/api/stream/${t.id}${ts}`;
       audio.addEventListener('loadedmetadata',()=>{
         if(pos>0&&pos<audio.duration-5)audio.currentTime=pos;
       },{once:true});
-      queue=[t];qIdx=0;
     }
   }catch(_){}
 }
