@@ -274,7 +274,11 @@ svg{display:block}
 <div id="lyrics-panel">
   <div id="lyrics-panel-header">
     <span id="lyrics-panel-title">Lyrics</span>
-    <button id="lyrics-close-btn">✕</button>
+    <div style="display:flex;align-items:center;gap:4px">
+      <button id="lyrics-font-down" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 4px;border-radius:3px;line-height:1" title="Smaller">A−</button>
+      <button id="lyrics-font-up" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 4px;border-radius:3px;line-height:1" title="Larger">A+</button>
+      <button id="lyrics-close-btn" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 2px;line-height:1;border-radius:3px">✕</button>
+    </div>
   </div>
   <div id="lyrics-scroll">
     <div id="lyrics-empty">No lyrics available</div>
@@ -836,6 +840,25 @@ function updateMediaSession(t, coverUrl) {
   navigator.mediaSession.setActionHandler('seekto', e => { if (e.seekTime) audio.currentTime = e.seekTime; });
 }
 
+// Lyrics font size
+let lyricsFontSize = parseInt(localStorage.getItem('lyrics_font') || '13');
+function applyLyricsFontSize() {
+  document.querySelectorAll('.lyric-line').forEach(el => el.style.fontSize = lyricsFontSize + 'px');
+  document.getElementById('lyrics-scroll').style.setProperty('--lyric-size', lyricsFontSize + 'px');
+}
+document.getElementById('lyrics-font-up').onclick = e => {
+  e.stopPropagation();
+  lyricsFontSize = Math.min(22, lyricsFontSize + 1);
+  localStorage.setItem('lyrics_font', lyricsFontSize);
+  applyLyricsFontSize();
+};
+document.getElementById('lyrics-font-down').onclick = e => {
+  e.stopPropagation();
+  lyricsFontSize = Math.max(10, lyricsFontSize - 1);
+  localStorage.setItem('lyrics_font', lyricsFontSize);
+  applyLyricsFontSize();
+};
+
 // ── Lyrics ─────────────────────────────────────────────────────────────────
 const lyricsPanel = document.getElementById('lyrics-panel');
 const lyricsBtn = document.getElementById('lyrics-btn');
@@ -921,6 +944,7 @@ function renderSyncedLyrics() {
     div.onclick = () => { audio.currentTime = l.time; };
     scroll.appendChild(div);
   });
+  applyLyricsFontSize();
 }
 
 function renderPlainLyrics() {
@@ -932,6 +956,7 @@ function renderPlainLyrics() {
     div.textContent = line || ' ';
     scroll.appendChild(div);
   });
+  applyLyricsFontSize();
 }
 
 let lastLyricIdx = -1;
