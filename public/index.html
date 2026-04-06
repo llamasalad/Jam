@@ -661,7 +661,7 @@ function play(t){
   document.getElementById('player-artist').textContent=[t.artist,t.album].filter(Boolean).join(' · ')||'—';
   const pt=document.getElementById('player-thumb');pt.src=FALLBACK;
   loadCover(t.id,pt);
-  document.title=`${t.title||'?'}`;
+  document.title=`${t.title||'?'} — ${t.artist||'?'}`;
   timeTot.textContent='—';
   localStorage.setItem('music_last',JSON.stringify({id:t.id,title:t.title,artist:t.artist,album:t.album}));
   localStorage.setItem('music_queue',JSON.stringify(queue.map(x=>x.id)));
