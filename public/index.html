@@ -461,7 +461,7 @@ function makeRow(t, showMenu=false){
   const ts=document.createElement('div');ts.className='track-sub';ts.textContent=[t.artist,t.album].filter(Boolean).join(' · ')||'—';
   info.append(ti,ts);
   const right=document.createElement('div');right.className='track-right';
-  const dur=document.createElement('div');dur.className='track-dur';dur.dataset.id=t.id;dur.textContent='—';
+  const dur=document.createElement('div');dur.className='track-dur';dur.dataset.id=t.id;dur.textContent=fmt(t.duration);
   right.appendChild(dur);
   if(showMenu){
     const menuBtn=document.createElement('button');menuBtn.className='track-menu-btn';menuBtn.textContent='⋯';menuBtn.title='Add to playlist';
