@@ -118,7 +118,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 svg{display:block}
 #btn-repeat{color:var(--muted)}
 #btn-repeat.active{color:var(--accent)}
-#btn-repeat[data-mode="one"]{color:var(--accent2)}
+#btn-repeat[data-mode-one]{color:var(--accent2)}
 #progress-row,#volume-row{display:flex;align-items:center;gap:8px}
 #progress-row input,#volume-row input{height:3px;-webkit-appearance:none;appearance:none;border-radius:2px;background:var(--surface3);outline:none;cursor:pointer}
 #progress-row input::-webkit-slider-thumb,#volume-row input::-webkit-slider-thumb{-webkit-appearance:none;border-radius:50%;background:var(--accent);cursor:pointer}
@@ -716,8 +716,8 @@ btnShuffle.onclick=()=>{shuffle=!shuffle;btnShuffle.style.color=shuffle?'var(--a
 // ── Repeat modes ──────────────────────────────────────────────────────────
 const btnRepeat=document.getElementById('btn-repeat');
 let repeatMode=localStorage.getItem('music_repeat')||'off';
-const repeatIcons={off:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>',all:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/><text x="12" y="15" text-anchor="middle" font-size="9" font-weight="bold" fill="currentColor">1</text></svg>',one:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/><text x="12" y="15" text-anchor="middle" font-size="9" font-weight="bold" fill="currentColor">1</text></svg>'};
-function applyRepeat(){btnRepeat.dataset.mode=repeatMode;btnRepeat.innerHTML=repeatIcons[repeatMode];btnRepeat.title=`Repeat: ${repeatMode.charAt(0).toUpperCase()+repeatMode.slice(1)}`;btnRepeat.classList.toggle('active',repeatMode!=='off')}
+const repeatIcons={off:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>',all:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>',one:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/><text x="12" y="15.5" text-anchor="middle" font-size="9" font-weight="bold" fill="currentColor">1</text></svg>'};
+function applyRepeat(){btnRepeat.dataset.mode=repeatMode;btnRepeat.innerHTML=repeatIcons[repeatMode];btnRepeat.title=`Repeat: ${repeatMode.charAt(0).toUpperCase()+repeatMode.slice(1)}`;btnRepeat.classList.toggle('active',repeatMode!=='off');btnRepeat.classList.toggle('data-mode-one',repeatMode==='one')}
 applyRepeat();
 btnRepeat.onclick=()=>{const modes=['off','all','one'];repeatMode=modes[(modes.indexOf(repeatMode)+1)%3];localStorage.setItem('music_repeat',repeatMode);applyRepeat()};
 
