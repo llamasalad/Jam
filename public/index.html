@@ -117,80 +117,73 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 @media(max-width:768px) {
   #player {
     display: flex !important;
-    flex-direction: column !important; /* Stack everything vertically */
+    flex-direction: column !important; 
     height: auto !important;
-    padding: 10px 15px calc(10px + env(safe-area-inset-bottom, 0px)) !important;
-    gap: 8px !important;
+    padding: 12px 16px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+    gap: 12px !important;
   }
 
-  /* 1. LAYER 1: The Progress Bar (Seeker) */
-  #player-main {
-    order: 1 !important;
-    width: 100% !important;
-    display: block !important;
-  }
-
-  /* 2. LAYER 2: Title • Artist (Now centered above buttons) */
+  /* 1. TOP ROW: Title • Artist */
   #player-meta-mobile {
-    order: 2 !important;
+    order: 1 !important; /* Move to top */
     width: 100% !important;
     display: flex !important;
     flex-direction: row !important;
     justify-content: center !important;
     align-items: center !important;
     min-width: 0 !important;
-    margin: 4px 0 !important;
   }
 
   #player-meta-mobile .title {
-    color: var(--accent) !important; /* Gold */
+    color: var(--accent) !important;
     font-size: 14px !important;
     font-weight: 600;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    max-width: 60%; /* Prevents it from touching the edges */
+    max-width: 60%; 
   }
 
   #player-meta-mobile .title::after {
     content: " • ";
     color: var(--muted);
-    margin: 0 4px;
+    margin: 0 6px;
   }
 
   #player-meta-mobile .artist {
-    color: #ffffff !important; /* White */
+    color: #ffffff !important;
     font-size: 13px !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    max-width: 40%;
+    max-width: 35%;
   }
 
-  /* 3. LAYER 3: The Controls Row (Art, Play, Utils) */
-  /* We create a sub-row for the bottom floor */
-  .bottom-row-container {
-      display: flex;
-      width: 100%;
-      align-items: center;
-      justify-content: space-between;
-      order: 3;
+  /* 2. MIDDLE ROW: Art, Controls, and Utils */
+  /* We group these three together visually */
+  #player-left, #player-center, #player-right {
+    order: 2 !important; 
   }
 
-  #player-left { order: 1; flex: 0 0 auto; } /* Art */
-  #player-center { order: 2; flex: 1; display: flex; justify-content: center; } /* Controls */
-  #player-right { order: 3; flex: 0 0 auto; display: flex !important; gap: 8px !important; } /* Utils */
-
-  /* Ensure utils stay horizontal */
-  #player-utils {
-    display: flex !important;
-    flex-direction: row !important;
-    gap: 8px !important;
+  #player-left { flex: 0 0 auto; }
+  #player-center { flex: 1; display: flex; justify-content: center; }
+  #player-right { 
+    flex: 0 0 auto; 
+    display: flex !important; 
+    flex-direction: row !important; 
+    gap: 8px !important; 
   }
 
-  /* 4. CLEANUP */
-  #player-info { display: none !important; } /* Hide desktop text */
-  #volume-row { display: none !important; } /* Hide volume on mobile */
+  /* 3. BOTTOM ROW: The Seeker */
+  #player-main {
+    order: 3 !important; /* Move to bottom */
+    width: 100% !important;
+    margin-top: 4px;
+  }
+
+  /* Cleanup */
+  #player-info { display: none !important; }
+  #volume-row { display: none !important; }
 }
   
 @media(min-width:769px){
