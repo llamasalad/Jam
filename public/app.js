@@ -334,24 +334,6 @@ function openCtxMenu(e, t) {
     }
 }
 
-    if (ctxPlaylists) {
-        ctxPlaylists.innerHTML = '';
-        if (playlists.length) {
-            playlists.forEach(pl => {
-                const item = document.createElement('div'); 
-                item.className = 'ctx-item'; 
-                item.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 12H3"/><path d="M16 6H3"/><path d="M16 18H3"/><path d="M18 9v6"/><path d="M15 12h6"/></svg>${pl.name}`;
-                item.onclick = () => { addToPlaylist(pl.id, t); closeCtxMenu() };
-                ctxPlaylists.appendChild(item);
-            });
-        }
-    }
-    if (ctxMenu) {
-        ctxMenu.style.left = Math.min(e.clientX, window.innerWidth - 220) + 'px';
-        ctxMenu.style.top = Math.min(e.clientY, window.innerHeight - 300) + 'px';
-        ctxMenu.classList.add('open');
-    }
-
 function closeCtxMenu() { if (ctxMenu) ctxMenu.classList.remove('open'); ctxTrack = null }
 document.addEventListener('click', e => { if (ctxMenu && !ctxMenu.contains(e.target)) closeCtxMenu() });
 const ctxNewPlaylist = document.getElementById('ctx-new-playlist');
