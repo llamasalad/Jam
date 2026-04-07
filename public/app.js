@@ -531,16 +531,17 @@ if (expProgress) {
     expProgress.addEventListener('change', () => { if (audio && audio.duration) audio.currentTime = audio.duration * expProgress.value / 100 });
 }
 
-// Updated volume handling for smooth logarithmic curve and correct emoji mapping
+// Updated volume handling for smooth logarithmic curve and crisp SVGs
 if (volumeSlider) {
     volumeSlider.addEventListener('input', () => {
         const v = volumeSlider.value / 100; 
         if (audio) audio.volume = Math.pow(v, 3); // Cubic curve avoids volume spiking too fast
         muted = v === 0;
-        if (volumeIcon) volumeIcon.textContent = v === 0 ? '🔇' : v < 0.5 ? '🔉' : '🔊';
-        localStorage.setItem('music_vol', volumeSlider.value)
+        if (volumeIcon) volumeIcon.innerHTML = v === 0 ? volIcons.muted : v < 0.5 ? volIcons.low : volIcons.high;
+        localStorage.setItem('music_vol', volumeSlider.value);
     });
 }
+
 if (volumeIcon) {
     volumeIcon.addEventListener('click', () => {
         if (muted) { 
@@ -548,13 +549,13 @@ if (volumeIcon) {
             if (audio) audio.volume = Math.pow(sv, 3); 
             if (volumeSlider) volumeSlider.value = lastVol; 
             muted = false; 
-            volumeIcon.textContent = sv < 0.5 ? '🔉' : '🔊';
+            volumeIcon.innerHTML = sv < 0.5 ? volIcons.low : volIcons.high;
         } else { 
             lastVol = parseInt(volumeSlider ? volumeSlider.value : '80'); 
             if (audio) audio.volume = 0; 
             if (volumeSlider) volumeSlider.value = 0; 
             muted = true; 
-            volumeIcon.textContent = '🔇';
+            volumeIcon.innerHTML = volIcons.muted;
         }
     });
 }
@@ -578,6 +579,12 @@ const repeatIcons = {
     off: `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>`,
     all: `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>`,
     one: `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/><text x="12" y="15.5" text-anchor="middle" font-size="9" font-weight="bold" fill="currentColor">1</text></svg>`
+};
+
+const volIcons = {
+    muted: `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>`,
+    low: `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM5 9v6h4l5 5V4L9 9H5z"/></svg>`,
+    high: `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>`
 };
 
 function applyRepeat() {
@@ -1068,7 +1075,7 @@ async function init() {
     if (volumeSlider) volumeSlider.value = SAVED_VOL;
     const sv = SAVED_VOL / 100;
     if (audio) audio.volume = Math.pow(sv, 3);
-    if (volumeIcon) volumeIcon.textContent = sv === 0 ? '🔇' : sv < 0.5 ? '🔉' : '🔊';
+    if (volumeIcon) volumeIcon.innerHTML = sv === 0 ? volIcons.muted : sv < 0.5 ? volIcons.low : volIcons.high;
 
     await Promise.all([loadTracks(), loadPlaylists()]);
 
