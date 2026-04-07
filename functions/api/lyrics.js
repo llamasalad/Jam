@@ -15,7 +15,6 @@ export async function onRequestGet({ request, env }) {
     return new Response(JSON.stringify({ error: "title or artist required" }), { status: 400, headers: { "Content-Type": "application/json" } });
   }
 
-  // STEP 1: Try LRCLIB
   try {
     const q = new URLSearchParams({ artist_name: artist, track_name: title });
     const r = await fetch(`https://lrclib.net/api/get?${q}`);
@@ -28,19 +27,6 @@ export async function onRequestGet({ request, env }) {
       }
       if (d.plainLyrics) {
         return new Response(JSON.stringify({ source: "lrclib", type: "plain", lyrics: d.plainLyrics }), { headers: { "Content-Type": "application/json" } });
-      }
-    }
-  } catch (_) {}
-
-  // STEP 2: Fall back to lyrics.ovh
-  try {
-    const ovhUrl = `https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`;
-    const r = await fetch(ovhUrl);
-    
-    if (r.ok) {
-      const d = await r.json();
-      if (d.lyrics) {
-        return new Response(JSON.stringify({ source: "lyricsovh", type: "plain", lyrics: d.lyrics }), { headers: { "Content-Type": "application/json" } });
       }
     }
   } catch (_) {}
