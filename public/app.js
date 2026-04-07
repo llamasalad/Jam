@@ -5,6 +5,8 @@ let shuffle = localStorage.getItem('music_shuffle') === 'true', seeking = false,
 const SAVED_VOL = parseInt(localStorage.getItem('music_vol') || '80');
 let lastVol = SAVED_VOL;
 let playlists = [], currentPlaylist = null, ctxTrack = null, pendingPlaylistTrack = null;
+let isSelecting = false;
+let toggleMode = true;
 
 const audio = document.getElementById('audio');
 const player = document.getElementById('player');
@@ -206,31 +208,131 @@ function makeRow(t, showMenu = false) {
     const right = document.createElement('div'); right.className = 'track-right';
     const dur = document.createElement('div'); dur.className = 'track-dur'; dur.dataset.id = t.id; dur.textContent = fmt(t.duration);
     right.appendChild(dur);
+    
     if (showMenu) {
         const menuBtn = document.createElement('button'); menuBtn.className = 'track-menu-btn'; menuBtn.textContent = '\u2026'; menuBtn.title = 'Add to playlist';
         menuBtn.onclick = e => { e.stopPropagation(); openCtxMenu(e, t) };
         right.appendChild(menuBtn);
     }
+    
     div.append(thumb, info, right);
-    div.onclick = () => playTrack(t, filtered);
+
+    div.append(thumb, info, right);
+
+    // --- HYBRID & SWIPE-TO-SELECT LOGIC ---
+    const isTouchScreen = window.matchMedia("(pointer: coarse)").matches;
+
+    if (!isTouchScreen) {
+        // DESKTOP: Click and drag to highlight multiple rows
+        div.onmousedown = (e) => {
+            // Only trigger on Left-Click (button 0)
+            if (e.button !== 0) return; 
+            
+            isSelecting = true;
+            
+            // If not holding Ctrl/Cmd, clear previous selections
+            if (!e.ctrlKey && !e.metaKey) {
+                document.querySelectorAll('.track.selected').forEach(el => el.classList.remove('selected'));
+            }
+            
+            // Determine if we are highlighting or un-highlighting based on the first clicked row
+            toggleMode = !div.classList.contains('selected');
+            div.classList.toggle('selected', toggleMode);
+        };
+
+        // As the mouse enters other rows while held down, apply the selection
+        div.onmouseenter = () => {
+            if (isSelecting) {
+                div.classList.toggle('selected', toggleMode);
+            }
+        };
+
+        // Double click to actually play the track
+        div.ondblclick = () => playTrack(t, filtered);
+        
+    } else {
+        // MOBILE: Single tap to select and play immediately
+        div.onclick = () => {
+            document.querySelectorAll('.track.selected').forEach(e => e.classList.remove('selected'));
+            div.classList.add('selected');
+            playTrack(t, filtered);
+        };
+    }
+
     return div;
 }
 
 function openCtxMenu(e, t) {
     ctxTrack = t; 
-    const trackNameLabel = document.getElementById('ctx-track-name');
-    if (trackNameLabel) trackNameLabel.textContent = t.title || 'Track';
+    
+    // --- 1. GATHER HIGHLIGHTED TRACKS ---
+    let targetTracks = Array.from(document.querySelectorAll('.track.selected'))
+        .map(el => tracks.find(x => x.id === el.dataset.id))
+        .filter(Boolean);
 
+    if (!targetTracks.some(st => st.id === t.id)) {
+        targetTracks = [t];
+    }
+
+    // --- 2. UPDATE THE MENU HEADER ---
+    const trackNameLabel = document.getElementById('ctx-track-name');
+    if (trackNameLabel) {
+        trackNameLabel.textContent = targetTracks.length > 1 
+            ? `${targetTracks.length} tracks selected` 
+            : (t.title || 'Track');
+    }
+
+    // --- 3. BATCH PLAY NEXT ---
     const ctxPlayNext = document.getElementById('ctx-play-next');
     if (ctxPlayNext) {
         ctxPlayNext.onclick = () => {
-            if (!ctxTrack) return;
-            queue.splice(qIdx + 1, 0, ctxTrack);
-            showToast('Playing next');
+            queue.splice(qIdx + 1, 0, ...targetTracks);
+            showToast(`Playing ${targetTracks.length} track(s) next`);
             if (queueOpen) renderQueue();
             closeCtxMenu();
         };
     }
+
+    // --- 4. BATCH ADD TO QUEUE (It lives here now!) ---
+    const ctxAddQueue = document.getElementById('ctx-add-queue');
+    if (ctxAddQueue) {
+        ctxAddQueue.onclick = () => {
+            queue.push(...targetTracks);
+            showToast(`Added ${targetTracks.length} track(s) to queue`);
+            if (queueOpen) renderQueue();
+            closeCtxMenu();
+        };
+    }
+
+    // --- 5. BATCH ADD TO PLAYLISTS ---
+    if (ctxPlaylists) {
+        ctxPlaylists.innerHTML = '';
+        if (playlists.length) {
+            playlists.forEach(pl => {
+                const item = document.createElement('div'); 
+                item.className = 'ctx-item'; 
+                item.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 12H3"/><path d="M16 6H3"/><path d="M16 18H3"/><path d="M18 9v6"/><path d="M15 12h6"/></svg>${pl.name}`;
+                
+                item.onclick = async () => { 
+                    closeCtxMenu(); 
+                    for (const track of targetTracks) {
+                        await addToPlaylist(pl.id, track); 
+                    }
+                    showToast(`Added ${targetTracks.length} song(s) to ${pl.name}`);
+                };
+                
+                ctxPlaylists.appendChild(item);
+            });
+        }
+    }
+
+    // Position and open the menu
+    if (ctxMenu) {
+        ctxMenu.style.left = Math.min(e.clientX, window.innerWidth - 220) + 'px';
+        ctxMenu.style.top = Math.min(e.clientY, window.innerHeight - 300) + 'px';
+        ctxMenu.classList.add('open');
+    }
+}
 
     if (ctxPlaylists) {
         ctxPlaylists.innerHTML = '';
@@ -815,17 +917,6 @@ if (clearQueueBtn) {
     };
 }
 
-const ctxAddQueue = document.getElementById('ctx-add-queue');
-if (ctxAddQueue) {
-    ctxAddQueue.onclick = () => {
-        if (!ctxTrack) return;
-        queue.push(ctxTrack);
-        showToast('Added to queue');
-        if (queueOpen) renderQueue();
-        closeCtxMenu();
-    };
-}
-
 function updateMediaSession(t, coverUrl) {
     if (!('mediaSession' in navigator)) return;
     navigator.mediaSession.metadata = new MediaMetadata({
@@ -1140,6 +1231,11 @@ document.addEventListener('contextmenu', (e) => {
         // If they right-clicked the background/desktop, just close the menu
         closeCtxMenu();
     }
+});
+
+// Stop sweeping selection when the mouse is released
+document.addEventListener('mouseup', () => {
+    isSelecting = false;
 });
 
 (async () => { const ok = await checkAuth(); if (ok) init() })();
