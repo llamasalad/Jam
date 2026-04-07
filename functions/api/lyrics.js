@@ -67,11 +67,34 @@ export async function onRequestGet({ request, env }) {
       return new Response(JSON.stringify({ source: null, type: null, lyrics: null, _debug: debug }), { headers: { "Content-Type": "application/json" } });
     }
 
-    log(`genius hit: ${hit.result.title}`);
+    log(`genius hit: ${hit.result.title} url=${hit.result.url}`);
 
     const pageR = await fetch(hit.result.url, { headers: { "User-Agent": "Mozilla/5.0" } });
     const html = await pageR.text();
-    const lyrics = scrapeGeniusLyrics(html);
+    
+    log(`html length=${html.length}`);
+
+    // DEBUG: check what selectors find
+    const containerMatch = html.match(/data-lyrics-container="true"/g);
+    log(`data-lyrics-container found: ${containerMatch ? containerMatch.length : 0} times`);
+
+    const lyricsDivMatch = html.matchAll(/data-lyrics-container="true"[^>]*>([\s\S]*?)<\/div>/g);
+    const matches = [...lyricsDivMatch];
+    log(`full regex matches: ${matches.length}`);
+
+    // also check for alternative selectors
+    const hasLyricsClass = html.includes('class="lyrics"');
+    log(`has .lyrics class: ${hasLyricsClass}`);
+
+    const hasSongBody = html.includes('class="Lyrics__Container"');
+    log(`has Lyrics__Container: ${hasSongBody}`);
+
+    // grab a snippet of html around where lyrics should be for inspection
+    const lyricsIdx = html.indexOf('lyrics');
+    const snippet = lyricsIdx >= 0 ? html.substring(Math.max(0, lyricsIdx - 50), lyricsIdx + 200) : 'not found';
+    log(`snippet near "lyrics": ${snippet.substring(0, 300)}`);
+
+    const lyrics = scrapeGeniusLyrics(html, debug);
 
     if (lyrics) {
       log('genius SUCCESS');
@@ -86,11 +109,14 @@ export async function onRequestGet({ request, env }) {
   return new Response(JSON.stringify({ source: null, type: null, lyrics: null, _debug: debug }), { headers: { "Content-Type": "application/json" } });
 }
 
-function scrapeGeniusLyrics(html) {
+function scrapeGeniusLyrics(html, debug) {
   try {
     const matches = [...html.matchAll(/data-lyrics-container="true"[^>]*>([\s\S]*?)<\/div>/g)];
     if (!matches.length) return null;
     let lyrics = matches.map(m => m[1]).join('\n').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/\n{3,}/g, '\n\n').trim();
     return lyrics || null;
-  } catch (e) { return null; }
+  } catch (e) { 
+    if (debug) debug.steps.push(`scrape threw: ${e.message}`);
+    return null; 
+  }
 }
