@@ -1,3 +1,3 @@
 Jam!
 
-Lowkey Music Player with Cloudflare R2 Object Storage integration !*MADE WITH THE HELP OF AI*!
+Lowkey Music Player with Cloudflare R2 Object Storage integration
