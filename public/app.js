@@ -659,15 +659,19 @@ function renderQueue() {
     queue.forEach((t, i) => {
         const item = document.createElement('div');
         item.className = 'queue-item' + (i === qIdx ? ' active' : '');
-        item.draggable = true;
         item.dataset.idx = i;
         item.innerHTML = `<span class="queue-handle">⠿</span><span class="queue-num">${i === qIdx ? '▶' : i + 1}</span><div class="queue-info"><div class="queue-title">${t.title || 'Unknown'}</div><div class="queue-sub">${t.artist || '—'}</div></div><button class="queue-remove" title="remove">✕</button>`;
+
+        const handle = item.querySelector('.queue-handle');
+        handle.onpointerdown = e => startQueueDrag(e, item);
 
         item.querySelector('.queue-remove').onclick = e => {
             e.stopPropagation();
             queue.splice(i, 1);
             if (i < qIdx) qIdx--;
             renderQueue();
+            localStorage.setItem('music_queue', JSON.stringify(queue.map(x => x.id)));
+            localStorage.setItem('music_qidx', qIdx);
         };
 
         item.onclick = () => { qIdx = i; play(queue[qIdx]); updateActive(); renderQueue() };
@@ -676,6 +680,57 @@ function renderQueue() {
 
     const activeEl = queuePanel.querySelector('.queue-item.active');
     if (activeEl) activeEl.scrollIntoView({ block: 'center' });
+}
+
+let dragItem = null, dragIdx = -1, dragStartPos = 0;
+function startQueueDrag(e, item) {
+    e.preventDefault();
+    dragItem = item;
+    dragIdx = parseInt(item.dataset.idx);
+    dragStartPos = e.clientY;
+    item.classList.add('dragging');
+    item.setPointerCapture(e.pointerId);
+    
+    item.onpointermove = e => {
+        if (!dragItem) return;
+        const items = [...queuePanel.querySelectorAll('.queue-item')];
+        const over = items.find(it => {
+            if (it === dragItem) return false;
+            const r = it.getBoundingClientRect();
+            return e.clientY > r.top && e.clientY < r.bottom;
+        });
+        
+        items.forEach(it => it.classList.remove('drag-over'));
+        if (over) over.classList.add('drag-over');
+    };
+    
+    item.onpointerup = e => {
+        if (!dragItem) return;
+        const items = [...queuePanel.querySelectorAll('.queue-item')];
+        const over = items.find(it => it.classList.contains('drag-over'));
+        
+        if (over) {
+            const newIdx = parseInt(over.dataset.idx);
+            const [moved] = queue.splice(dragIdx, 1);
+            queue.splice(newIdx, 0, moved);
+            
+            // Adjust qIdx
+            if (qIdx === dragIdx) qIdx = newIdx;
+            else if (dragIdx < qIdx && newIdx >= qIdx) qIdx--;
+            else if (dragIdx > qIdx && newIdx <= qIdx) qIdx++;
+            
+            localStorage.setItem('music_queue', JSON.stringify(queue.map(x => x.id)));
+            localStorage.setItem('music_qidx', qIdx);
+        }
+        
+        dragItem.classList.remove('dragging');
+        items.forEach(it => it.classList.remove('drag-over'));
+        dragItem.onpointermove = null;
+        dragItem.onpointerup = null;
+        dragItem.releasePointerCapture(e.pointerId);
+        dragItem = null;
+        renderQueue();
+    };
 }
 
 const clearQueueBtn = document.getElementById('clear-queue-btn');
@@ -868,9 +923,28 @@ if (audio) {
         lastExpLyricIdx = idx;
 
         if (idx >= 0) {
-            if (expLyricCur) expLyricCur.textContent = syncedLyrics[idx].text || '\u00B7';
+            const curText = syncedLyrics[idx].text || '\u00B7';
             const nxt = syncedLyrics[idx + 1];
-            if (expLyricNext) expLyricNext.textContent = nxt ? (nxt.text || '\u00B7') : '';
+            const nextText = nxt ? (nxt.text || '\u00B7') : '';
+
+            if (expLyricCur) {
+                expLyricCur.style.opacity = '0';
+                expLyricCur.style.transform = 'translateY(10px)';
+                setTimeout(() => {
+                    expLyricCur.textContent = curText;
+                    expLyricCur.style.opacity = '1';
+                    expLyricCur.style.transform = 'translateY(0)';
+                }, 150);
+            }
+            if (expLyricNext) {
+                expLyricNext.style.opacity = '0';
+                expLyricNext.style.transform = 'translateY(10px)';
+                setTimeout(() => {
+                    expLyricNext.textContent = nextText;
+                    expLyricNext.style.opacity = '1';
+                    expLyricNext.style.transform = 'translateY(0)';
+                }, 150);
+            }
 
             const scroll = lyricsScroll();
             if (scroll) {
