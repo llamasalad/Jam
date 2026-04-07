@@ -1,122 +1,49 @@
 function authed(request, env) {
-  return true; // TEMP: bypass for debugging - RESTORE AFTER
+  if (!env.AUTH_TOKEN) return true;
+  const token = request.headers.get("x-auth-token") || new URL(request.url).searchParams.get("token");
+  return token === env.AUTH_TOKEN;
 }
 
 export async function onRequestGet({ request, env }) {
-  const debug = { steps: [] };
-  const log = (msg) => debug.steps.push(msg);
-
-  if (!authed(request, env)) {
-    log('AUTH FAIL');
-    return new Response(JSON.stringify({ error: "Unauthorized", _debug: debug }), { status: 401 });
-  }
+  if (!authed(request, env)) return new Response("Unauthorized", { status: 401 });
 
   const url = new URL(request.url);
   const title = url.searchParams.get("title") || "";
   const artist = url.searchParams.get("artist") || "";
 
-  log(`title="${title}" artist="${artist}"`);
-
   if (!title && !artist) {
-    return new Response(JSON.stringify({ error: "title/artist required", _debug: debug }), { status: 400, headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: "title or artist required" }), { status: 400, headers: { "Content-Type": "application/json" } });
   }
 
-  // LRCLIB
-  log('trying lrclib...');
+  // STEP 1: Try LRCLIB
   try {
     const q = new URLSearchParams({ artist_name: artist, track_name: title });
     const r = await fetch(`https://lrclib.net/api/get?${q}`);
-    log(`lrclib status=${r.status} ok=${r.ok}`);
     
     if (r.ok) {
       const d = await r.json();
-      log(`lrclib keys=[${Object.keys(d).join(',')}] synced=!!${!!d.syncedLyrics} plain=!!${!!d.plainLyrics}`);
       
-      if (d.syncedLyrics) return new Response(JSON.stringify({ source: "lrclib", type: "synced", lyrics: d.syncedLyrics, _debug: debug }), { headers: { "Content-Type": "application/json" } });
-      if (d.plainLyrics) return new Response(JSON.stringify({ source: "lrclib", type: "plain", lyrics: d.plainLyrics, _debug: debug }), { headers: { "Content-Type": "application/json" } });
-      log('lrclib no lyrics -> fall through');
-    } else {
-      log('lrclib !ok -> fall through');
+      if (d.syncedLyrics) {
+        return new Response(JSON.stringify({ source: "lrclib", type: "synced", lyrics: d.syncedLyrics }), { headers: { "Content-Type": "application/json" } });
+      }
+      if (d.plainLyrics) {
+        return new Response(JSON.stringify({ source: "lrclib", type: "plain", lyrics: d.plainLyrics }), { headers: { "Content-Type": "application/json" } });
+      }
     }
-  } catch (e) {
-    log(`lrclib threw: ${e.message}`);
-  }
+  } catch (_) {}
 
-  // GENIUS CHECK
-  log(`GENIUS_TOKEN exists=${!!env.GENIUS_TOKEN}`);
-  
-  if (!env.GENIUS_TOKEN) {
-    log('NO TOKEN -> returning null');
-    return new Response(JSON.stringify({ source: null, type: null, lyrics: null, _debug: debug }), { headers: { "Content-Type": "application/json" } });
-  }
-
-  log('CALLING GENIUS...');
-  
+  // STEP 2: Fall back to lyrics.ovh
   try {
-    const searchQ = encodeURIComponent(`${title} ${artist}`);
-    const searchR = await fetch(`https://api.genius.com/search?q=${searchQ}`, {
-      headers: { Authorization: `Bearer ${env.GENIUS_TOKEN}` }
-    });
-    log(`genius status=${searchR.status}`);
+    const ovhUrl = `https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`;
+    const r = await fetch(ovhUrl);
     
-    const searchD = await searchR.json();
-    const hit = searchD.response?.hits?.find(h => h.type === "song" && h.result.primary_artist.name.toLowerCase().includes(artist.toLowerCase())) || searchD.response?.hits?.[0];
-
-    if (!hit) {
-      log('genius no hit');
-      return new Response(JSON.stringify({ source: null, type: null, lyrics: null, _debug: debug }), { headers: { "Content-Type": "application/json" } });
+    if (r.ok) {
+      const d = await r.json();
+      if (d.lyrics) {
+        return new Response(JSON.stringify({ source: "lyricsovh", type: "plain", lyrics: d.lyrics }), { headers: { "Content-Type": "application/json" } });
+      }
     }
+  } catch (_) {}
 
-    log(`genius hit: ${hit.result.title} url=${hit.result.url}`);
-
-    const pageR = await fetch(hit.result.url, { headers: { "User-Agent": "Mozilla/5.0" } });
-    const html = await pageR.text();
-    
-    log(`html length=${html.length}`);
-
-    // DEBUG: check what selectors find
-    const containerMatch = html.match(/data-lyrics-container="true"/g);
-    log(`data-lyrics-container found: ${containerMatch ? containerMatch.length : 0} times`);
-
-    const lyricsDivMatch = html.matchAll(/data-lyrics-container="true"[^>]*>([\s\S]*?)<\/div>/g);
-    const matches = [...lyricsDivMatch];
-    log(`full regex matches: ${matches.length}`);
-
-    // also check for alternative selectors
-    const hasLyricsClass = html.includes('class="lyrics"');
-    log(`has .lyrics class: ${hasLyricsClass}`);
-
-    const hasSongBody = html.includes('class="Lyrics__Container"');
-    log(`has Lyrics__Container: ${hasSongBody}`);
-
-    // grab a snippet of html around where lyrics should be for inspection
-    const lyricsIdx = html.indexOf('lyrics');
-    const snippet = lyricsIdx >= 0 ? html.substring(Math.max(0, lyricsIdx - 50), lyricsIdx + 200) : 'not found';
-    log(`snippet near "lyrics": ${snippet.substring(0, 300)}`);
-
-    const lyrics = scrapeGeniusLyrics(html, debug);
-
-    if (lyrics) {
-      log('genius SUCCESS');
-      return new Response(JSON.stringify({ source: "genius", type: "plain", lyrics, _debug: debug }), { headers: { "Content-Type": "application/json" } });
-    }
-    log('genius scrape failed');
-  } catch (e) {
-    log(`genius threw: ${e.message}`);
-  }
-
-  log('END -> null');
-  return new Response(JSON.stringify({ source: null, type: null, lyrics: null, _debug: debug }), { headers: { "Content-Type": "application/json" } });
-}
-
-function scrapeGeniusLyrics(html, debug) {
-  try {
-    const matches = [...html.matchAll(/data-lyrics-container="true"[^>]*>([\s\S]*?)<\/div>/g)];
-    if (!matches.length) return null;
-    let lyrics = matches.map(m => m[1]).join('\n').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/\n{3,}/g, '\n\n').trim();
-    return lyrics || null;
-  } catch (e) { 
-    if (debug) debug.steps.push(`scrape threw: ${e.message}`);
-    return null; 
-  }
+  return new Response(JSON.stringify({ source: null, type: null, lyrics: null }), { headers: { "Content-Type": "application/json" } });
 }
