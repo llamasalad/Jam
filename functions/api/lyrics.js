@@ -5,93 +5,87 @@ function authed(request, env) {
 }
 
 export async function onRequestGet({ request, env }) {
-  console.log('[lyrics] === START ===');
-  
+  const debug = { steps: [] };
+  const log = (msg) => debug.steps.push(msg);
+
   if (!authed(request, env)) {
-    console.log('[lyrics] AUTH FAIL');
-    return new Response("Unauthorized", { status: 401 });
+    log('AUTH FAIL');
+    return new Response(JSON.stringify({ error: "Unauthorized", _debug: debug }), { status: 401 });
   }
 
   const url = new URL(request.url);
   const title = url.searchParams.get("title") || "";
   const artist = url.searchParams.get("artist") || "";
 
-  console.log(`[lyrics] title="${title}" artist="${artist}"`);
+  log(`title="${title}" artist="${artist}"`);
 
   if (!title && !artist) {
-    console.log('[lyrics] NO TITLE/ARTIST');
-    return new Response(JSON.stringify({ error: "title or artist required" }), { status: 400, headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: "title/artist required", _debug: debug }), { status: 400, headers: { "Content-Type": "application/json" } });
   }
 
   // LRCLIB
-  console.log('[lyrics] trying lrclib...');
+  log('trying lrclib...');
   try {
     const q = new URLSearchParams({ artist_name: artist, track_name: title });
     const r = await fetch(`https://lrclib.net/api/get?${q}`);
-    console.log(`[lyrics] lrclib status=${r.status} ok=${r.ok}`);
+    log(`lrclib status=${r.status} ok=${r.ok}`);
     
     if (r.ok) {
       const d = await r.json();
-      console.log(`[lyrics] lrclib response keys=[${Object.keys(d).join(',')}] hasSynced=!!${!!d.syncedLyrics} hasPlain=!!${!!d.plainLyrics}`);
+      log(`lrclib keys=[${Object.keys(d).join(',')}] synced=!!${!!d.syncedLyrics} plain=!!${!!d.plainLyrics}`);
       
-      if (d.syncedLyrics) {
-        console.log('[lyrics] RETURNING from lrclib synced');
-        return new Response(JSON.stringify({ source: "lrclib", type: "synced", lyrics: d.syncedLyrics }), { headers: { "Content-Type": "application/json" } });
-      }
-      if (d.plainLyrics) {
-        console.log('[lyrics] RETURNING from lrclib plain');
-        return new Response(JSON.stringify({ source: "lrclib", type: "plain", lyrics: d.plainLyrics }), { headers: { "Content-Type": "application/json" } });
-      }
-      console.log('[lyrics] lrclib had no lyrics -> falling through');
+      if (d.syncedLyrics) return new Response(JSON.stringify({ source: "lrclib", type: "synced", lyrics: d.syncedLyrics, _debug: debug }), { headers: { "Content-Type": "application/json" } });
+      if (d.plainLyrics) return new Response(JSON.stringify({ source: "lrclib", type: "plain", lyrics: d.plainLyrics, _debug: debug }), { headers: { "Content-Type": "application/json" } });
+      log('lrclib no lyrics -> fall through');
     } else {
-      console.log(`[lyrics] lrclib returned !ok -> falling through`);
+      log('lrclib !ok -> fall through');
     }
   } catch (e) {
-    console.log(`[lyrics] lrclib threw: ${e.message}`);
+    log(`lrclib threw: ${e.message}`);
   }
 
   // GENIUS CHECK
-  console.log(`[lyrics] checking GENIUS_TOKEN... exists=${!!env.GENIUS_TOKEN}`);
+  log(`GENIUS_TOKEN exists=${!!env.GENIUS_TOKEN}`);
   
   if (!env.GENIUS_TOKEN) {
-    console.log('[lyrics] NO TOKEN -> returning null');
-    return new Response(JSON.stringify({"source":null,"type":null,"lyrics":null}), { headers: { "Content-Type": "application/json" } });
+    log('NO TOKEN -> returning null');
+    return new Response(JSON.stringify({ source: null, type: null, lyrics: null, _debug: debug }), { headers: { "Content-Type": "application/json" } });
   }
 
-  console.log('[lyrics] CALLING GENIUS API NOW...');
+  log('CALLING GENIUS...');
   
   try {
     const searchQ = encodeURIComponent(`${title} ${artist}`);
     const searchR = await fetch(`https://api.genius.com/search?q=${searchQ}`, {
       headers: { Authorization: `Bearer ${env.GENIUS_TOKEN}` }
     });
-    console.log(`[lyrics] genius status=${searchR.status}`);
+    log(`genius status=${searchR.status}`);
     
     const searchD = await searchR.json();
     const hit = searchD.response?.hits?.find(h => h.type === "song" && h.result.primary_artist.name.toLowerCase().includes(artist.toLowerCase())) || searchD.response?.hits?.[0];
 
     if (!hit) {
-      console.log('[lyrics] genius no hit');
-      return new Response(JSON.stringify({ source: null, type: null, lyrics: null }), { headers: { "Content-Type": "application/json" } });
+      log('genius no hit');
+      return new Response(JSON.stringify({ source: null, type: null, lyrics: null, _debug: debug }), { headers: { "Content-Type": "application/json" } });
     }
 
-    console.log(`[lyrics] genius hit: ${hit.result.title}`);
+    log(`genius hit: ${hit.result.title}`);
 
     const pageR = await fetch(hit.result.url, { headers: { "User-Agent": "Mozilla/5.0" } });
     const html = await pageR.text();
     const lyrics = scrapeGeniusLyrics(html);
 
     if (lyrics) {
-      console.log('[lyrics] RETURNING from genius');
-      return new Response(JSON.stringify({ source: "genius", type: "plain", lyrics }), { headers: { "Content-Type": "application/json" } });
+      log('genius SUCCESS');
+      return new Response(JSON.stringify({ source: "genius", type: "plain", lyrics, _debug: debug }), { headers: { "Content-Type": "application/json" } });
     }
-    console.log('[lyrics] genius scrape failed');
+    log('genius scrape failed');
   } catch (e) {
-    console.log(`[lyrics] genius threw: ${e.message}`);
+    log(`genius threw: ${e.message}`);
   }
 
-  console.log('[lyrics] === END null ===');
-  return new Response(JSON.stringify({ source: null, type: null, lyrics: null }), { headers: { "Content-Type": "application/json" } });
+  log('END -> null');
+  return new Response(JSON.stringify({ source: null, type: null, lyrics: null, _debug: debug }), { headers: { "Content-Type": "application/json" } });
 }
 
 function scrapeGeniusLyrics(html) {
