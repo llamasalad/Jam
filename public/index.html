@@ -114,47 +114,62 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 #progress-row input::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer;margin-top:-4px;box-shadow:0 0 4px rgba(0,0,0,0.3)}
 .time-label{font-family:'SF Pro Display',-apple-system,sans-serif;font-size:11px;color:var(--muted);min-width:32px}
 
-@media(max-width:768px){
-  /* 1. Hide the desktop info so it doesn't double-up with the mobile info */
+@media(max-width:768px) {
+  /* 1. Hide the desktop info container to stop the "double text" glitch */
   #player-info { display: none !important; }
 
-  /* 2. Fix the overlap: Give the controls a fixed spot on the far right */
-  #player-center { 
-    flex: 0 0 auto; 
-    order: 3; 
-    z-index: 5;
-    background: var(--surface); /* Gives controls a solid background so text can't bleed through */
-    padding-left: 8px;
-  }
-
-  /* 3. The magic fix for the text: min-width: 0 */
-  /* Without this, flex items won't shrink smaller than the text inside them */
-  #player-right {
-    flex: 1; 
-    min-width: 0; 
-    display: flex;
-    flex-direction: row;
+  /* 2. Setup the main player bar as a single row */
+  #player {
+    display: flex !important;
+    flex-direction: row !important;
     align-items: center;
-    justify-content: flex-end; /* Keeps utils/meta aligned right */
-    gap: 8px;
+    justify-content: space-between;
+    padding: 8px 12px;
+    gap: 10px;
   }
 
-  #player-meta-mobile {
-    flex: 1;
-    min-width: 0; /* CRITICAL: allows the title to actually truncate */
+  /* 3. Assign the visual order */
+  #player-left { order: 1; flex: 0 0 auto; } /* Thumbnail */
+  
+  #player-meta-mobile { 
+    order: 2; 
+    flex: 1;      /* Grow to fill the middle */
+    min-width: 0; /* Critical for the 3 dots (...) to work */
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
     text-align: left;
   }
 
-  /* Ensure the title respects the ellipsis dots (...) */
+  /* All buttons (Controls + Utils) stay together on the right */
+  #player-center { order: 3; flex: 0 0 auto; display: flex; align-items: center; }
+  #player-right { order: 4; flex: 0 0 auto; display: flex; align-items: center; }
+
+  /* 4. Fix the "Large White Text" and "Wrapping" */
   #player-meta-mobile .title {
-    width: 100%;
+    color: var(--accent) !important; /* Forces the gold color */
+    font-size: 14px !important;      /* Keeps it a reasonable size */
+    font-weight: 600;
+    white-space: nowrap !important;  /* Stops the wrapping */
+    overflow: hidden !important;
+    text-overflow: ellipsis !important; /* Adds the (...) */
+    display: block;
+    margin: 0;
+  }
+
+  #player-meta-mobile .artist {
+    color: var(--muted) !important;
+    font-size: 11px !important;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    display: block; 
+    margin: 0;
+  }
+
+  /* 5. Keep icons small and tight on the right */
+  .ctrl-btn, .util-btn {
+    padding: 4px;
+    width: 32px;
+    height: 32px;
   }
 }
   
