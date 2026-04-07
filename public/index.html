@@ -37,7 +37,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 .spinner{width:28px;height:28px;border:2px solid var(--surface3);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .group-header{padding:16px 16px 6px;font-size:10px;font-family:'SF Pro Display',-apple-system,sans-serif;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;position:sticky;top:0;background:var(--bg);z-index:2;border-bottom:1px solid var(--border)}
-.track{display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:10px;padding:8px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s;position:relative}
+.track{display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:10px;padding:8px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s;position:relative;user-select:none;-webkit-user-select:none}
 .track:hover{background:var(--surface)}
 .track:hover .track-menu-btn{opacity:1}
 .track.active{background:var(--surface2)}
