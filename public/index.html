@@ -117,73 +117,80 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 @media(max-width:768px) {
   #player {
     display: flex !important;
-    flex-wrap: wrap !important; /* Allows the text to sit on its own line */
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 16px;
+    flex-direction: column !important; /* Stack everything vertically */
     height: auto !important;
-    gap: 10px;
+    padding: 10px 15px calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+    gap: 8px !important;
   }
 
-  /* 1. THE TEXT (Row 1) */
+  /* 1. LAYER 1: The Progress Bar (Seeker) */
+  #player-main {
+    order: 1 !important;
+    width: 100% !important;
+    display: block !important;
+  }
+
+  /* 2. LAYER 2: Title • Artist (Now centered above buttons) */
   #player-meta-mobile {
-    order: -1;           /* Forces text to the very top */
-    flex: 0 0 100%;      /* Makes text row take 100% width */
-    text-align: center;
+    order: 2 !important;
+    width: 100% !important;
     display: flex !important;
-    flex-direction: row !important; /* Keeps title and artist on one line */
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 4px;
-    min-width: 0;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    min-width: 0 !important;
+    margin: 4px 0 !important;
   }
 
   #player-meta-mobile .title {
     color: var(--accent) !important; /* Gold */
-    font-size: 14px;
+    font-size: 14px !important;
     font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 60%; /* Prevents it from touching the edges */
   }
 
-  /* The "•" Separator */
   #player-meta-mobile .title::after {
     content: " • ";
     color: var(--muted);
-    margin: 0 6px;
-    font-weight: 400;
+    margin: 0 4px;
   }
 
   #player-meta-mobile .artist {
-    color: #ffffff !important; /* Pure White */
-    font-size: 13px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: #ffffff !important; /* White */
+    font-size: 13px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 40%;
   }
 
-  /* 2. THE CONTROLS (Row 2) */
-  #player-left { order: 1; flex: 0 0 auto; } /* Thumbnail */
-  #player-center { order: 2; flex: 1; display: flex; justify-content: center; } /* Play/Pause */
-  
-  #player-right { 
-    order: 3; 
-    flex: 0 0 auto; 
-    display: flex !important; 
-    flex-direction: row !important; /* Force Queue/Lyrics to stay side-by-side */
-    gap: 8px; 
+  /* 3. LAYER 3: The Controls Row (Art, Play, Utils) */
+  /* We create a sub-row for the bottom floor */
+  .bottom-row-container {
+      display: flex;
+      width: 100%;
+      align-items: center;
+      justify-content: space-between;
+      order: 3;
   }
 
-  /* Ensure utility buttons are horizontal and clean */
+  #player-left { order: 1; flex: 0 0 auto; } /* Art */
+  #player-center { order: 2; flex: 1; display: flex; justify-content: center; } /* Controls */
+  #player-right { order: 3; flex: 0 0 auto; display: flex !important; gap: 8px !important; } /* Utils */
+
+  /* Ensure utils stay horizontal */
   #player-utils {
     display: flex !important;
     flex-direction: row !important;
     gap: 8px !important;
   }
 
-  /* Hide the desktop info to prevent double-text */
-  #player-info { display: none !important; }
+  /* 4. CLEANUP */
+  #player-info { display: none !important; } /* Hide desktop text */
+  #volume-row { display: none !important; } /* Hide volume on mobile */
 }
   
 @media(min-width:769px){
