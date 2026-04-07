@@ -63,7 +63,6 @@ function fmt(s){if(!s||isNaN(s))return'-';s=Math.round(s);return Math.floor(s/60
 function hdrs(){return token?{'x-auth-token':token,'Content-Type':'application/json'}:{'Content-Type':'application/json'}}
 function hget(){return token?{'x-auth-token':token}:{}}
 
-// Auth
 async function checkAuth(){
   const r=await fetch('/api/status',{headers:hget()});
   if(r.status===401){showAuth();return false}
@@ -79,7 +78,6 @@ authSubmit.onclick=async()=>{
 };
 authInput.addEventListener('keydown',e=>{if(e.key==='Enter')authSubmit.click()});
 
-// Tabs
 document.querySelectorAll('.tab').forEach(tab=>{
   tab.onclick=()=>{
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -93,7 +91,6 @@ document.querySelectorAll('.tab').forEach(tab=>{
   }
 });
 
-// Tracks
 async function loadTracks(){
   loading.style.display='flex';empty.style.display='none';trackList.innerHTML='';
   try{
@@ -164,7 +161,6 @@ function makeRow(t, showMenu=false){
   return div;
 }
 
-// Context menu
 function openCtxMenu(e,t){
   ctxTrack=t;ctxPlaylists.innerHTML='';
   if(playlists.length){
@@ -185,7 +181,6 @@ function closeCtxMenu(){ctxMenu.classList.remove('open');ctxTrack=null}
 document.addEventListener('click',e=>{if(!ctxMenu.contains(e.target))closeCtxMenu()});
 document.getElementById('ctx-new-playlist').onclick=()=>{pendingPlaylistTrack=ctxTrack;closeCtxMenu();openNewPlaylistModal()};
 
-// Playlists
 async function loadPlaylists(){
   const r=await fetch('/api/playlists',{headers:hget()});
   if(!r.ok)return;
@@ -212,8 +207,7 @@ function renderPlaylistDetail(pl){
   pl.tracks.forEach(pt=>{
     const t=tracks.find(x=>x.id===pt.trackId)||{id:pt.trackId,title:pt.title,artist:pt.artist,album:pt.album};
     const row=makeRow(t,false);
-    const removeBtn=document.createElement('button');removeBtn.className='track-menu-btn';removeBtn.textContent='\u2715';removeBtn.style.opacity='0';
-    removeBtn.title='Remove from playlist';
+    const removeBtn=document.createElement('button');removeBtn.className='track-menu-btn';removeBtn.textContent='\u2715';removeBtn.style.opacity='0';removeBtn.title='Remove from playlist';
     removeBtn.onclick=e=>{e.stopPropagation();removeFromPlaylist(pl.id,pt.trackId)};
     row.querySelector('.track-right').appendChild(removeBtn);
     row.onmouseenter=()=>removeBtn.style.opacity='1';
@@ -231,9 +225,8 @@ document.getElementById('playlist-play-btn').onclick=()=>{
 async function addToPlaylist(playlistId,t){
   const r=await fetch('/api/playlists/'+playlistId,{method:'POST',headers:hdrs(),body:JSON.stringify({trackId:t.id,title:t.title,artist:t.artist,album:t.album})});
   if(r.ok){const updated=await r.json();playlists=playlists.map(p=>p.id===playlistId?updated:p);if(currentPlaylist?.id===playlistId){currentPlaylist=updated;renderPlaylistDetail(updated)}showToast('Added to '+playlists.find(p=>p.id===playlistId)?.name||'playlist')}}
-}
 async function removeFromPlaylist(playlistId,trackId){
-  const r=await fetch('/api/playlists/'+playlistId+'?trackId='+encodeURIComponent(trackId),{method:'DELETE',headers:hget()});
+  const r=await fetch('/api/playlists/'+playlistID+'?trackId='+encodeURIComponent(trackId),{method:'DELETE',headers:hget()});
   if(r.ok){const updated=await r.json();playlists=playlists.map(p=>p.id===playlistId?updated:p);if(currentPlaylist?.id===playlistId){currentPlaylist=updated;renderPlaylistDetail(updated)}}
 }
 async function deletePlaylist(id){if(!confirm('Delete this playlist?'))return;await fetch('/api/playlists?id='+id,{method:'DELETE',headers:hget()});playlists=playlists.filter(p=>p.id!==id);renderPlaylists()}
@@ -247,32 +240,30 @@ document.getElementById('modal-confirm').onclick=async()=>{
 modalNameInput.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('modal-confirm').click()});
 document.getElementById('new-playlist-btn').onclick=openNewPlaylistModal;
 
-// Toast
 function showToast(msg){
   let t=document.getElementById('toast');
   if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;bottom:calc(var(--player-h)+12px);left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:8px 16px;border-radius:8px;font-size:13px;z-index:500;transition:opacity .3s';document.body.appendChild(t)}
   t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity='0',2000);
 }
 
-// Cover art
 const coverCache={};
 function loadCover(id,el){
   if(id in coverCache){if(coverCache[id])setCover(el,coverCache[id]);return}
   coverCache[id]=null;
-  const tokenSuffix=token?'?token='+encodeURIComponent(token):'';
-  fetch('/api/cover/'+id+tokenSuffix).then(r=>{if(r.ok){coverCache[id]=r.url;setCover(el,r.url)}}).catch(_=>{});
+  const ts=token?'?token='+encodeURIComponent(token):'';
+  fetch('/api/cover/'+id+ts).then(r=>{if(r.ok){coverCache[id]=r.url;setCover(el,r.url)}}).catch(_=>{});
 }
 function setCover(el,url){
   if(el.tagName==='IMG'){el.src=url}else{el.innerHTML='';const img=new Image();img.src=url;img.alt='';el.appendChild(img)}
 }
 const FALLBACK='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="%2326262e"/><text x="50%25" y="54%25" text-anchor="middle" fill="%237a7a8e" font-size="18">\u266A</text></svg>';
 
-// Playback
 function playTrack(t,list){
   queue=[...list];qIdx=queue.findIndex(x=>x.id===t.id);play(t);
   document.querySelectorAll('.track.active').forEach(e=>e.classList.remove('active'));
   const row=document.querySelector('.track[data-id="'+t.id+'"]');if(row)row.classList.add('active');
 }
+
 function play(t){
   const ts=token?'?token='+encodeURIComponent(token):'';
   audio.src='/api/stream/'+t.id+ts;audio.play();player.classList.remove('hidden');
@@ -334,27 +325,23 @@ btnPrev.onclick=()=>{if(audio.currentTime>3)audio.currentTime=0;else prevTrack()
 btnNext.onclick=()=>nextTrack();
 btnShuffle.onclick=()=>{shuffle=!shuffle;btnShuffle.style.color=shuffle?'var(--accent)':'var(--muted)';expShuffle.style.color=shuffle?'var(--accent)':'var(--muted)';localStorage.setItem('music_shuffle',shuffle)};
 
-// Repeat modes
+// Repeat modes - using simple text labels instead of SVG to avoid quote issues
 const btnRepeat=document.getElementById('btn-repeat');
 let repeatMode=localStorage.getItem('music_repeat')||'off';
-const repeatIcons={
-  off:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>',
-  all:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>',
-  one:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/><text x="12" y="15.5" text-anchor="middle" font-size="9" font-weight="bold" fill="currentColor">1</text></svg>'
-};
 
+const repeatLabels={off:'\u21BA',all:'\u27F3\uE042',one:'\u27F3\uE042\u00B9'};
 function applyRepeat(){
   btnRepeat.dataset.mode=repeatMode;
-  btnRepeat.innerHTML=repeatIcons[repeatMode];
+  btnRepeat.textContent=repeatLabels[repeatMode];
   btnRepeat.title='Repeat: '+repeatMode.charAt(0).toUpperCase()+repeatMode.slice(1);
   btnRepeat.classList.toggle('active',repeatMode!=='off');
   btnRepeat.classList.toggle('data-mode-one',repeatMode==='one');
 
   // sync expanded button
   expRepeat.dataset.mode=repeatMode;
-  expRepeat.innerHTML=repeatIcons[repeatMode];
+  expRepeat.textContent=repeatLabels[repeatMode];
   expRepeat.classList.toggle('active',repeatMode!=='off');
-  expRepeat.classList.toggle('data-mode-one',repeatMode==='one');
+  expRepeat.classList.toggle('data-mode-one',repeatMode==='one);
 }
 applyRepeat();
 
@@ -423,9 +410,7 @@ function openExpandedPlayer(){
   if(queueOpen){queuePanel.classList.remove('open');queueBtn.classList.remove('active');queueOpen=false}
   if(qIdx>=0)updateExpandedNowPlaying(queue[qIdx]);
 }
-function closeExpandedPlayer(){
-  playerExpanded=false;expPlayer.classList.remove('open');
-}
+function closeExpandedPlayer(){playerExpanded=false;expPlayer.classList.remove('open')}
 expCollapse.onclick=closeExpandedPlayer;
 expPlayer.addEventListener('click',e=>{if(e.target===expPlayer)closeExpandedPlayer()});
 
@@ -444,7 +429,8 @@ queueBtn.onclick = () => {
 function renderQueue() {
   queuePanel.querySelectorAll('.queue-item').forEach(e => e.remove());
   const oldEmpty = queuePanel.querySelector('[style*="padding:40px"]');
-  if(oldEmpty) oldEmpty.remove();
+  if (oldEmpty) oldEmpty.remove();
+
   if (!queue.length) {
     const empty = document.createElement('div');
     empty.style.cssText = 'padding:40px 20px;text-align:center;color:var(--muted);font-size:13px';
@@ -452,48 +438,58 @@ function renderQueue() {
     queuePanel.appendChild(empty);
     return;
   }
+
   queue.forEach((t, i) => {
     const item = document.createElement('div');
     item.className = 'queue-item' + (i === qIdx ? ' active' : '');
     item.draggable = true;
     item.dataset.idx = i;
-    item.innerHTML = '<span class="queue-handle">\u2398</span><span class="queue-num">' + (i === qIdx '\u25B6' : i + 1) + '</span><div class="queue-info"><div class="queue-title">' + (t.title || 'Unknown') + '</div><div class="queue-sub">' + (t.artist || '\u2014') + '</div></div><button class="queue-remove" title="Remove">\u2715</button>';
-    
+    item.innerHTML = '<span class="queue-handle">\u2398</span><span class="queue-num">' + (i === qIdx ? '\u25B6' : i + 1) + '</span><div class="queue-info"><div class="queue-title">' + (t.title || 'Unknown') + '</div><div class="queue-sub">' + (t.artist || '\u2014') + '</div></div><button class="queue-remove" title="Remove">\u2715</button>';
+
     item.querySelector('.queue-remove').onclick = e => {
       e.stopPropagation();
       queue.splice(i, 1);
       if (i < qIdx) qIdx--;
       renderQueue();
     };
+
     item.onclick = () => { qIdx = i; play(queue[qIdx]); updateActive(); renderQueue(); };
-    
+
     // Desktop drag
     item.addEventListener('dragstart', e => {
       item.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', i);
     });
+
     item.addEventListener('dragend', () => {
       item.classList.remove('dragging');
       document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
     });
+
     item.addEventListener('dragover', e => {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
       const d = document.querySelector('.dragging');
       if (d && d !== item) item.classList.add('drag-over');
     });
+
     item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+
     item.addEventListener('drop', e => {
       e.preventDefault();
       item.classList.remove('drag-over');
       const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+
       if (fromIdx === i || isNaN(fromIdx)) return;
+
       const [moved] = queue.splice(fromIdx, 1);
       queue.splice(i, 0, moved);
+
       if (qIdx === fromIdx) qIdx = i;
       else if (fromIdx < qIdx && i >= qIdx) qIdx--;
       else if (fromIdx > qIdx && i <= qIdx) qIdx++;
+
       renderQueue();
     });
 
@@ -501,14 +497,16 @@ function renderQueue() {
     initTouchDrag(item, i);
     queuePanel.appendChild(item);
   });
-  
+
   const activeEl = queuePanel.querySelector('.queue-item.active');
   if (activeEl) activeEl.scrollIntoView({ block: 'center' });
 }
 
 // Mobile long-press drag for queue items
 function initTouchDrag(item, idx) {
-  let pressTimer = null, longPress = false, touchStartX = 0, touchStartY = 0, clone = null, placeholder = null, dragOverIdx = null;
+  let pressTimer = null, longPress = false,
+      touchStartX = 0, touchStartY = 0,
+      clone = null, placeholder = null, dragOverIdx = null;
 
   item.addEventListener('touchstart', e => {
     longPress = false;
@@ -518,16 +516,13 @@ function initTouchDrag(item, idx) {
     pressTimer = setTimeout(() => {
       longPress = true;
 
-      // Create visual clone
       clone = item.cloneNode(true);
       clone.classList.add('dragging');
       clone.style.position = 'fixed';
       clone.style.width = item.offsetWidth + 'px';
       clone.style.zIndex = '999';
-
       document.body.appendChild(clone);
 
-      // Create placeholder
       placeholder = document.createElement('div');
       placeholder.style.height = item.offsetHeight + 'px';
       placeholder.style.background = 'var(--accent)';
@@ -552,7 +547,6 @@ function initTouchDrag(item, idx) {
     clone.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
     clone.style.pointerEvents = 'none';
 
-    // Find drop target
     clone.hidden = true;
     const elBelow = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
     clone.hidden = false;
@@ -562,14 +556,13 @@ function initTouchDrag(item, idx) {
     if (target && target !== item) {
       const targetIdx = parseInt(target.dataset.idx);
       if (dragOverIdx !== targetIdx) {
-        // Move placeholder before the target
         if (placeholder && placeholder.parentNode) {
           const sibling = placeholder.nextSibling;
           if (sibling === item) {
             target.parentNode.insertBefore(placeholder, sibling);
+          } else {
+            target.parentNode.insertBefore(placeholder, target.nextSibling);
           }
-        } else {
-          target.parentNode.insertBefore(placeholder, target.nextSibling);
         }
 
         dragOverIdx = targetIdx;
@@ -584,7 +577,6 @@ function initTouchDrag(item, idx) {
     if (!longPress) return;
     e.preventDefault();
 
-    // Determine final drop position
     const dropIdx = dragOverIdx !== null ? dragOverIdx : idx;
 
     if (dropIdx !== idx && dropIdx >= 0 && dropIdx <= queue.length) {
@@ -596,7 +588,6 @@ function initTouchDrag(item, idx) {
       else if (idx > qIdx && dropIdx <= qIdx) qIdx++;
     }
 
-    // Cleanup
     if (clone) clone.remove();
     if (placeholder && placeholder.parentNode) placeholder.remove();
     item.style.display = '';
@@ -618,6 +609,7 @@ function initTouchDrag(item, idx) {
       item.style.display = '';
       item.classList.remove('dragging');
     }
+
     longPress = false;
     clone = null;
     placeholder = null;
@@ -674,7 +666,7 @@ document.getElementById('lyrics-font-up').onclick = e => {
   lyricsFontSize = Math.min(22, lyricsFontSize + 1);
   localStorage.setItem('lyrics_font', lyricsFontSize);
   applyLyricsFontSize();
-};
+});
 
 document.getElementById('lyrics-font-down').onclick = e => {
   e.stopPropagation();
@@ -696,7 +688,6 @@ document.getElementById('lyrics-close-btn').onclick = () => {
   lyricsBtn.classList.remove('active');
 };
 
-// Drag lyrics panel
 (() => {
   const el = lyricsPanel;
   const header = document.getElementById('lyrics-panel-header');
@@ -816,7 +807,6 @@ audio.addEventListener('timeupdate', () => {
     expLyricNext.textContent = nxt ? (nxt.text || '\u00B7') : '';
   }
 
-  // Also update lyrics panel if open
   lyricsScroll().querySelectorAll('.lyric-line').forEach((el, i) => {
     el.classList.toggle('active', i === idx);
   });
