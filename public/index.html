@@ -114,22 +114,61 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 #progress-row input::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer;margin-top:-4px;box-shadow:0 0 4px rgba(0,0,0,0.3)}
 .time-label{font-family:'SF Pro Display',-apple-system,sans-serif;font-size:11px;color:var(--muted);min-width:32px}
 
-/* Fix 4: Mobile Responsive Restructure */
 @media(max-width:768px){
-  #player{padding:8px 12px calc(8px + env(safe-area-inset-bottom, 12px));gap:10px}
-  #player-main{flex-direction:row;align-items:center;justify-content:space-between}
-  #player-left{flex:0 0 auto}
-  #player-thumb{width:48px;height:48px}
-  #player-info{display:none}
-  #player-center{flex:1 1 auto;justify-content:center}
-  #player-right{flex:1; min-width:0; flex-direction:column; align-items:flex-end; gap:6px}
-  #player-meta-mobile{display:flex;flex-direction:column;align-items:flex-end;text-align:right;width:100%;min-width:0;cursor:pointer;}
-  #player-meta-mobile .title{font-size:13px;font-weight:600;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
-  #player-meta-mobile .artist{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
-  #player-utils{gap:4px}
-  #volume-row{display:none!important}
-  #controls{gap:4px}
-  .ctrl-btn.main{width:38px;height:38px}
+  #player{padding:8px 12px calc(8px + env(safe-area-inset-bottom, 12px)); gap:8px}
+  
+  #player-main {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+  #player-left { flex: 0 0 auto; margin-right: 10px; }
+  #player-thumb { width: 48px; height: 48px; }
+
+  #player-right {
+    flex: 1; 
+    min-width: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  #player-meta-mobile {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    flex: 1;
+    min-width: 0;
+  }
+
+  #player-meta-mobile .title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  display: block;
+}
+
+  #player-meta-mobile .artist {
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #player-center { flex: 0 0 auto; order: 3; }
+  #player-utils { display: flex; gap: 4px; }
+  
+  .ctrl-btn.main { width: 38px; height: 38px; }
+  #controls { gap: 4px; }
 }
 @media(min-width:769px){
   #player-meta-mobile{display:none}
