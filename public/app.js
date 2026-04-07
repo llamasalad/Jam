@@ -277,7 +277,7 @@ function play(t){
   loadLyrics(t);updateExpandedNowPlaying(t);
   const tsuf=token?'?token='+encodeURIComponent(token):'';
   const covUrl='/api/cover/'+t.id+tsuf;
-  fetch(covUrl,{method:'HEAD'}).then(r=>{if(r.ok)updateMediaSession(t,covUrl);else updateMediaSession(t,null)}).catch(()=>updateMediaSession(t,null)});
+  fetch(covUrl,{method:'HEAD'}).then(r=>{if(r.ok)updateMediaSession(t,covUrl);else updateMediaSession(t,null)}).catch(()=>updateMediaSession(t,null));
 }
 
 function updateExpandedNowPlaying(t){
