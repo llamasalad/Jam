@@ -397,7 +397,18 @@ function loadCover(id, el) {
     fetch('/api/cover/' + id + ts).then(r => { if (r.ok) { coverCache[id] = r.url; setCover(el, r.url) } }).catch(_ => { });
 }
 function setCover(el, url) {
-    if (el.tagName === 'IMG') { el.src = url } else { el.innerHTML = ''; const img = new Image(); img.src = url; img.alt = ''; el.appendChild(img) }
+    if (el.tagName === 'IMG') { 
+        el.src = url; 
+    } else { 
+        el.innerHTML = ''; 
+        const img = new Image(); 
+        img.src = url; 
+        img.alt = ''; 
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = el.classList.contains('thumb') ? 'cover' : 'contain';
+        el.appendChild(img); 
+    }
 }
 const FALLBACK = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="%2326262e"/><text x="50%25" y="54%25" text-anchor="middle" fill="%237a7a8e" font-size="18">\u266A</text></svg>';
 
@@ -439,7 +450,7 @@ function updateExpandedNowPlaying(t) {
     if (expArtist) expArtist.textContent = [t.artist, t.album].filter(Boolean).join(' \u00B7 ') || '\u2014';
     if (expCover) expCover.style.display = 'block'; 
     if (expCoverIcon) expCoverIcon.style.display = 'none';
-    if (expCoverWrap) loadCover(t.id, expCoverWrap);
+    if (expCover) loadCover(t.id, expCover);
     if (expCover) {
         expCover.onerror = () => { 
             expCover.style.display = 'none'; 
@@ -807,6 +818,42 @@ if (lyricsBtn) {
         lyricsBtn.classList.toggle('active', lyricsOpen);
         if (lyricsOpen) closeExpandedPlayer();
     };
+}
+
+// Lyrics Panel Dragging
+const lyricsHeader = document.getElementById('lyrics-panel-header');
+if (lyricsHeader && lyricsPanel) {
+    let isDragging = false;
+    let startX, startY, initialLeft, initialTop;
+
+    lyricsHeader.onmousedown = e => {
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        const rect = lyricsPanel.getBoundingClientRect();
+        initialLeft = rect.left;
+        initialTop = rect.top;
+        lyricsPanel.style.bottom = 'auto';
+        lyricsPanel.style.right = 'auto';
+        lyricsPanel.style.left = initialLeft + 'px';
+        lyricsPanel.style.top = initialTop + 'px';
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    };
+
+    function onMouseMove(e) {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        lyricsPanel.style.left = (initialLeft + dx) + 'px';
+        lyricsPanel.style.top = (initialTop + dy) + 'px';
+    }
+
+    function onMouseUp() {
+        isDragging = false;
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+    }
 }
 
 const lyricsCloseBtn = document.getElementById('lyrics-close-btn');
