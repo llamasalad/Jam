@@ -57,7 +57,16 @@ const expTimeTot = document.getElementById('exp-time-tot');
 const expIconPlay = document.getElementById('exp-icon-play');
 const expIconPause = document.getElementById('exp-icon-pause');
 
-if (audio) audio.volume = SAVED_VOL / 100;
+// Dynamic height fixing for correct panel positioning
+function updatePlayerHeight() {
+    if (player && !player.classList.contains('hidden')) {
+        document.documentElement.style.setProperty('--player-h', player.offsetHeight + 'px');
+    }
+}
+window.addEventListener('resize', updatePlayerHeight);
+
+// Initial Volume (cubic curve for natural hearing)
+if (audio) audio.volume = Math.pow(SAVED_VOL / 100, 3);
 
 function fmt(s) { if (!s || isNaN(s)) return '-'; s = Math.round(s); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') }
 function hdrs() { return token ? { 'x-auth-token': token, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' } }
@@ -437,7 +446,10 @@ function play(t) {
         audio.src = '/api/stream/' + t.id + ts; 
         audio.play().catch(e => console.error("Playback failed", e));
     }
-    if (player) player.classList.remove('hidden');
+    if (player) {
+        player.classList.remove('hidden');
+        updatePlayerHeight();
+    }
     const plTitle = document.getElementById('player-title');
     const plArtist = document.getElementById('player-artist');
     const mobTitle = document.querySelector('#player-meta-mobile .title');
@@ -519,26 +531,30 @@ if (expProgress) {
     expProgress.addEventListener('change', () => { if (audio && audio.duration) audio.currentTime = audio.duration * expProgress.value / 100 });
 }
 
+// Updated volume handling for smooth logarithmic curve and correct emoji mapping
 if (volumeSlider) {
     volumeSlider.addEventListener('input', () => {
-        const v = volumeSlider.value / 100; if (audio) audio.volume = v; muted = v === 0;
-        if (volumeIcon) volumeIcon.textContent = v === 0 ? '\uD83D\uDD07' : v < 0.5 ? '\uD83D\uDD09' : '\uD83D\uDCA0';
+        const v = volumeSlider.value / 100; 
+        if (audio) audio.volume = Math.pow(v, 3); // Cubic curve avoids volume spiking too fast
+        muted = v === 0;
+        if (volumeIcon) volumeIcon.textContent = v === 0 ? '🔇' : v < 0.5 ? '🔉' : '🔊';
         localStorage.setItem('music_vol', volumeSlider.value)
     });
 }
 if (volumeIcon) {
     volumeIcon.addEventListener('click', () => {
         if (muted) { 
-            if (audio) audio.volume = lastVol / 100; 
+            const sv = lastVol / 100;
+            if (audio) audio.volume = Math.pow(sv, 3); 
             if (volumeSlider) volumeSlider.value = lastVol; 
             muted = false; 
-            volumeIcon.textContent = lastVol < 50 ? '\uD83D\uDD09' : '\uD83D\uDCA0' 
+            volumeIcon.textContent = sv < 0.5 ? '🔉' : '🔊';
         } else { 
             lastVol = parseInt(volumeSlider ? volumeSlider.value : '80'); 
             if (audio) audio.volume = 0; 
             if (volumeSlider) volumeSlider.value = 0; 
             muted = true; 
-            volumeIcon.textContent = '\uD83D\uDD07' 
+            volumeIcon.textContent = '🔇';
         }
     });
 }
@@ -643,6 +659,13 @@ document.addEventListener('mouseup', () => {
     const diff = touchStartY - touchCurrentY;
     if (diff > 30 && !playerExpanded) openExpandedPlayer();
     else if (diff < -30 && playerExpanded) closeExpandedPlayer();
+});
+
+// Easily open the expanded player without dragging
+[document.getElementById('player-left'), document.getElementById('player-meta-mobile')].forEach(el => {
+    if (el) el.addEventListener('click', (e) => {
+        if (!e.target.closest('button')) openExpandedPlayer();
+    });
 });
 
 function openExpandedPlayer() {
@@ -1038,8 +1061,8 @@ async function init() {
 
     if (volumeSlider) volumeSlider.value = SAVED_VOL;
     const sv = SAVED_VOL / 100;
-    if (audio) audio.volume = sv;
-    if (volumeIcon) volumeIcon.textContent = sv === 0 ? '\uD83D\uDD07' : sv < 0.5 ? '\uD83D\uDD09' : '\uD83D\uDCA0';
+    if (audio) audio.volume = Math.pow(sv, 3);
+    if (volumeIcon) volumeIcon.textContent = sv === 0 ? '🔇' : sv < 0.5 ? '🔉' : '🔊';
 
     await Promise.all([loadTracks(), loadPlaylists()]);
 
@@ -1059,7 +1082,10 @@ async function init() {
                 queue = [t]; qIdx = 0;
             }
 
-            if (player) player.classList.remove('hidden');
+            if (player) {
+                player.classList.remove('hidden');
+                updatePlayerHeight();
+            }
             const plTitle = document.getElementById('player-title');
             const plArtist = document.getElementById('player-artist');
             if (plTitle) plTitle.textContent = t.title || 'Unknown';
