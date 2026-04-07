@@ -81,40 +81,37 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 #playlist-play-btn{margin:0 16px 12px;background:var(--accent);color:#000;border:none;border-radius:8px;padding:8px 16px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:background .15s}
 #playlist-play-btn:hover{background:var(--accent2)}
 #playlist-tracks{border-top:1px solid var(--border)}
-#player{position:fixed;bottom:0;left:0;right:0;height:var(--player-h);background:var(--surface);border-top:1px solid var(--border2);display:flex;flex-direction:column;justify-content:center;padding:8px 16px;gap:5px;z-index:10;touch-action:pan-y}
+#player{position:fixed;bottom:0;left:0;right:0;height:var(--player-h);background:var(--surface);border-top:1px solid var(--border2);display:flex;flex-direction:column;justify-content:center;padding:12px 16px;gap:8px;z-index:100;touch-action:pan-y}
 #player.hidden{display:none}
-#player-top{display:flex;align-items:center;gap:10px}
-#player-thumb{width:38px;height:38px;border-radius:7px;background:var(--surface3);object-fit:cover;flex-shrink:0}
-#player-info{flex:1;min-width:0}
-#player-title{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--accent)}
-#player-artist{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#controls{display:flex;align-items:center;gap:6px}
-.ctrl-btn{background:none;border:none;color:var(--muted);cursor:pointer;padding:5px;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:color .15s,background .15s}
+#player-top{display:flex;align-items:center;gap:12px;width:100%}
+#player-thumb{width:42px;height:42px;border-radius:8px;background:var(--surface3);object-fit:cover;flex-shrink:0}
+#player-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+#player-title{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--accent)}
+#player-artist{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#controls{display:flex;align-items:center;gap:8px}
+.ctrl-btn{background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:color .15s,background .15s}
 .ctrl-btn:hover{color:var(--text);background:var(--surface3)}
-.ctrl-btn.main{background:var(--accent);color:#000;border-radius:50%;width:34px;height:34px}
+.ctrl-btn.main{background:var(--accent);color:#000;border-radius:50%;width:38px;height:38px}
 .ctrl-btn.main:hover{background:var(--accent2)}
 svg{display:block}
 #btn-repeat{color:var(--muted)}
 #btn-repeat.active{color:var(--accent)}
 #btn-repeat[data-mode-one]{color:var(--accent2)}
-#expand-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 4px;cursor:pointer;flex-shrink:0;touch-action:none}
+#expand-handle{width:40px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 8px;cursor:pointer;flex-shrink:0;touch-action:none}
 #expand-handle:active{background:var(--muted)}
-#progress-row{display:flex;align-items:center;gap:8px}
-#progress-row input{height:3px;-webkit-appearance:none;appearance:none;border-radius:2px;background:var(--surface3);outline:none;cursor:pointer}
-#progress-row input::-webkit-slider-thumb{-webkit-appearance:none;border-radius:50%;background:var(--accent);cursor:pointer}
-#progress{flex:1}#progress::-webkit-slider-thumb{width:12px;height:12px}
-#progress-row input::-moz-range-thumb{border-radius:50%;background:var(--accent);border:none;cursor:pointer}
-#progress::-moz-range-thumb{width:12px;height:12px}
-.time-label{font-family:'SF Pro Display',-apple-system,sans-serif;font-size:11px;color:var(--muted);min-width:28px}
+#progress-row{display:flex;align-items:center;gap:10px;width:100%}
+#progress-row input{height:4px;-webkit-appearance:none;appearance:none;border-radius:2px;background:var(--surface3);outline:none;cursor:pointer;flex:1}
+#progress-row input::-webkit-slider-runnable-track{height:4px;border-radius:2px}
+#progress-row input::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer;margin-top:-4px;box-shadow:0 0 4px rgba(0,0,0,0.3)}
+#progress-row input::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;box-shadow:0 0 4px rgba(0,0,0,0.3)}
+.time-label{font-family:'SF Pro Display',-apple-system,sans-serif;font-size:11px;color:var(--muted);min-width:32px}
 .time-label:last-child{text-align:right}
-#volume-row{display:none}
+#volume-row{display:none;align-items:center;gap:10px;width:140px;margin-left:12px}
 @media(min-width:769px){#volume-row{display:flex!important}}
-#volume-row input{height:3px;-webkit-appearance:none;appearance:none;border-radius:2px;background:var(--surface3);outline:none;cursor:pointer}
-#volume-row input::-webkit-slider-thumb{-webkit-appearance:none;border-radius:50%;background:var(--accent);cursor:pointer}
-#volume{flex:1}#volume::-webkit-slider-thumb{width:10px;height:10px}
-#volume-row input::-moz-range-thumb{border-radius:50%;background:var(--accent);border:none;cursor:pointer}
-#volume::-moz-range-thumb{width:10px;height:10px}
-#volume-icon{font-size:13px;color:var(--muted);cursor:pointer;user-select:none;flex-shrink:0;width:16px;text-align:center}
+#volume-row input{height:4px;-webkit-appearance:none;appearance:none;border-radius:2px;background:var(--surface3);outline:none;cursor:pointer;flex:1}
+#volume-row input::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;border-radius:50%;background:var(--accent);cursor:pointer;margin-top:-3px}
+#volume-row input::-moz-range-thumb{width:10px;height:10px;border-radius:50%;background:var(--accent);border:none;cursor:pointer}
+#volume-icon{font-size:14px;color:var(--muted);cursor:pointer;user-select:none;flex-shrink:0;width:18px;text-align:center}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:300;padding:20px}
 .modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:24px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:14px}
 .modal h3{font-size:16px;font-weight:500}
@@ -175,29 +172,34 @@ svg{display:block}
 .lyric-line.active{color:var(--text);font-size:14px;font-weight:500}
 .lyric-line:hover{color:var(--text)}
 #lyrics-empty{padding:24px 14px;text-align:center;color:var(--muted);font-size:12px}
-#expanded-player{display:none;position:fixed;inset:0;background:var(--bg);z-index:50;flex-direction:column;align-items:center;padding:32px 24px env(safe-area-inset-bottom) 24px 24px;overflow-y:auto}
+#expanded-player{display:none;position:fixed;inset:0;background:var(--bg);z-index:200;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;overflow-y:auto}
 #expanded-player.open{display:flex}
 #expanded-player::-webkit-scrollbar{width:3px}
 #expanded-player::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
-#exp-collapse{position:absolute;top:12px;right:16px;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1;z-index:10}
-#exp-collapse:hover{color:var(--text)}
-#exp-cover-wrap{width:220px;height:220px;border-radius:16px;overflow:hidden;flex-shrink:0;background:var(--surface3);display:flex;align-items:center;justify-content:center;margin-bottom:24px;box-shadow:0 12px 40px rgba(0,0,0,.4)}
-#exp-cover{width:100%;height:100%;object-fit:cover}
-#exp-cover-icon{font-size:48px;color:var(--muted)}
-#exp-lyrics{text-align:center;margin-bottom:20px;min-height:52px;display:flex;flex-direction:column;justify-content:center;gap:2px}
-#exp-lyric-current{font-size:16px;font-weight:500;color:var(--text);transition:all .3s}
-#exp-lyric-next{font-size:14px;color:var(--muted);transition:all .3s}
-#exp-title{text-align:center;font-size:20px;font-weight:600;color:var(--text);margin-bottom:4px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#exp-artist{text-align:center;font-size:14px;color:var(--muted);margin-bottom:28px}
-#exp-controls{display:flex;align-items:center;gap:16px;width:100%;max-width:320px;justify-content:center}
-#exp-controls .ctrl-btn{padding:10px}
-#exp-controls .ctrl-btn.main{width:48px;height:48px}
-#exp-controls .ctrl-btn svg{width:24px;height:24px}
-#exp-progress-wrap{width:100%;max-width:400px;display:flex;align-items:center;gap:10px;margin-top:16px}
-#exp-progress-wrap .time-label{font-size:12px}
-#exp-progress{flex:1;height:4px}
-#exp-progress::-webkit-slider-thumb{width:16px;height:16px}
-#exp-progress::-moz-range-thumb{width:16px;height:16px}
+#exp-collapse{position:absolute;top:20px;right:24px;background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;padding:8px;border-radius:50%;line-height:1;z-index:10;transition:background .15s}
+#exp-collapse:hover{color:var(--text);background:var(--surface2)}
+#exp-content{width:100%;max-width:420px;display:flex;flex-direction:column;align-items:center;gap:32px}
+#exp-cover-wrap{width:min(80vw, 320px);aspect-ratio:1/1;border-radius:24px;overflow:hidden;flex-shrink:0;background:var(--surface3);display:flex;align-items:center;justify-content:center;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+#exp-cover{width:100%;height:100%;object-fit:contain;background:#000}
+#exp-cover-icon{font-size:64px;color:var(--muted)}
+#exp-info{text-align:center;width:100%}
+#exp-title{font-size:24px;font-weight:700;color:var(--text);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#exp-artist{font-size:16px;color:var(--muted);margin-bottom:0}
+#exp-lyrics-wrap{width:100%;height:80px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;position:relative;overflow:hidden}
+#exp-lyrics{width:100%;transition:transform .4s cubic-bezier(0.4, 0, 0.2, 1)}
+#exp-lyric-current{font-size:18px;font-weight:600;color:var(--text);margin-bottom:4px;transition:opacity .3s, transform .3s}
+#exp-lyric-next{font-size:15px;color:var(--muted);transition:opacity .3s, transform .3s}
+#exp-controls-row{width:100%;display:flex;flex-direction:column;gap:24px;align-items:center}
+#exp-controls{display:flex;align-items:center;gap:24px;justify-content:center}
+#exp-controls .ctrl-btn{padding:12px;border-radius:12px}
+#exp-controls .ctrl-btn.main{width:64px;height:64px}
+#exp-controls .ctrl-btn svg{width:28px;height:28px}
+#exp-progress-wrap{width:100%;display:flex;align-items:center;gap:12px}
+#exp-progress-wrap .time-label{font-size:12px;min-width:40px}
+#exp-progress{flex:1;height:6px;-webkit-appearance:none;appearance:none;border-radius:3px;background:var(--surface3);outline:none;cursor:pointer}
+#exp-progress::-webkit-slider-runnable-track{height:6px;border-radius:3px}
+#exp-progress::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;margin-top:-5px;box-shadow:0 0 6px rgba(0,0,0,0.4)}
+#exp-progress::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;box-shadow:0 0 6px rgba(0,0,0,0.4)}
 @media(max-width:380px){#search{width:120px}#search:focus{width:150px}}
 </style>
 </head>
@@ -223,18 +225,29 @@ svg{display:block}
   <div id="lyrics-panel"><div id="lyrics-panel-header"><span id="lyrics-panel-title">Lyrics</span><div style="display:flex;align-items:center;gap:4px"><button id="lyrics-font-down" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 4px;border-radius:3px;line-height:1" title="Smaller">A−</button><button id="lyrics-font-up" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 4px;border-radius:3px;line-height:1" title="Larger">A+</button><button id="lyrics-close-btn" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 2px;line-height:1;border-radius:3px">✕</button></div></div><div id="lyrics-scroll"><div id="lyrics-empty">No lyrics available</div></div></div>
   <div id="expanded-player">
     <button id="exp-collapse">✕</button>
-    <div id="exp-cover-wrap"><img id="exp-cover" src="" alt=""/><span id="exp-cover-icon" style="display:none">♪</span></div>
-    <div id="exp-lyrics"><div id="exp-lyric-current">—</div><div id="exp-lyric-next"></div></div>
-    <div id="exp-title"></div>
-    <div id="exp-artist"></div>
-    <div id="exp-controls">
-      <button class="ctrl-btn" id="exp-prev"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg></button>
-      <button class="ctrl-btn main" id="exp-play"><svg id="exp-icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><svg id="exp-icon-pause" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></button>
-      <button class="ctrl-btn" id="exp-next"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 3.9V8.1L8.5 12zM16 6h2v12h-2z"/></svg></button>
-      <button class="ctrl-btn" id="exp-shuffle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
-      <button class="ctrl-btn" id="exp-repeat"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
+    <div id="exp-content">
+      <div id="exp-cover-wrap"><img id="exp-cover" src="" alt=""/><span id="exp-cover-icon" style="display:none">♪</span></div>
+      <div id="exp-info">
+        <div id="exp-title"></div>
+        <div id="exp-artist"></div>
+      </div>
+      <div id="exp-lyrics-wrap">
+        <div id="exp-lyrics">
+          <div id="exp-lyric-current">—</div>
+          <div id="exp-lyric-next"></div>
+        </div>
+      </div>
+      <div id="exp-controls-row">
+        <div id="exp-progress-wrap"><span class="time-label" id="exp-time-cur">0:00</span><input id="exp-progress" type="range" min="0" max="100" value="0" step="0.1"/><span class="time-label" id="exp-time-tot">0:00</span></div>
+        <div id="exp-controls">
+          <button class="ctrl-btn" id="exp-shuffle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
+          <button class="ctrl-btn" id="exp-prev"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg></button>
+          <button class="ctrl-btn main" id="exp-play"><svg id="exp-icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><svg id="exp-icon-pause" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></button>
+          <button class="ctrl-btn" id="exp-next"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 3.9V8.1L8.5 12zM16 6h2v12h-2z"/></svg></button>
+          <button class="ctrl-btn" id="exp-repeat"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
+        </div>
+      </div>
     </div>
-    <div id="exp-progress-wrap"><span class="time-label" id="exp-time-cur">0:00</span><input id="exp-progress" type="range" min="0" max="100" value="0" step="0.1"/><span class="time-label" id="exp-time-tot">0:00</span></div>
   </div>
   <div id="player" class="hidden">
     <div id="expand-handle"></div>
@@ -242,16 +255,16 @@ svg{display:block}
       <img id="player-thumb" src="" alt=""/>
       <div id="player-info"><div id="player-title">—</div><div id="player-artist">—</div></div>
       <div id="controls">
-        <button class="ctrl-btn" id="btn-prev"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg></button>
-        <button class="ctrl-btn main" id="btn-play"><svg id="icon-play" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><svg id="icon-pause" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></button>
-        <button class="ctrl-btn" id="btn-next"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 3.9V8.1L8.5 12zM16 6h2v12h-2z"/></svg></button>
-        <button class="ctrl-btn" id="btn-shuffle"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
-        <button class="ctrl-btn" id="btn-repeat" data-mode="off" title="Repeat: Off"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
+        <button class="ctrl-btn" id="btn-prev"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg></button>
+        <button class="ctrl-btn main" id="btn-play"><svg id="icon-play" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><svg id="icon-pause" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></button>
+        <button class="ctrl-btn" id="btn-next"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 3.9V8.1L8.5 12zM16 6h2v12h-2z"/></svg></button>
+        <button class="ctrl-btn" id="btn-shuffle"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
+        <button class="ctrl-btn" id="btn-repeat" data-mode="off" title="Repeat: Off"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
       </div>
+      <div id="volume-row"><span id="volume-icon">🔊</span><input id="volume" type="range" min="0" max="100" step="1"/></div>
       <button id="queue-btn">queue</button><button id="lyrics-btn">lyrics</button>
     </div>
     <div id="progress-row"><span class="time-label" id="time-cur">0:00</span><input id="progress" type="range" min="0" max="100" value="0" step="0.1"/><span class="time-label" id="time-tot">0:00</span></div>
-    <div id="volume-row"><span id="volume-icon">🔊</span><input id="volume" type="range" min="0" max="100" step="1"/></div>
   </div>
 </div>
 <audio id="audio"></audio>
