@@ -170,7 +170,7 @@ function openCtxMenu(e,t){
       ctxPlaylists.appendChild(item);
     });
   } else {
-    const none=document.createElement('div');none.style.cssText='padding:6px 12px;font-size:12px;color:var(--muted);none.textContent='No playlists yet';
+    const none=document.createElement('div');none.style.cssText='padding:6px 12px;font-size:12px;color:var(--muted)';none.textContent='No playlists yet';
     ctxPlaylists.appendChild(none);
   }
   ctxMenu.style.left=Math.min(e.clientX,window.innerWidth-200)+'px';
