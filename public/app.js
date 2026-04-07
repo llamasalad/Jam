@@ -1120,5 +1120,26 @@ async function init() {
         }
     } catch (_) { }
 }
+// --- Custom Right-Click (Context Menu) Override ---
+document.addEventListener('contextmenu', (e) => {
+    // 1. Stop the browser's default right-click menu from showing up anywhere
+    e.preventDefault();
+
+    // 2. Check if the user right-clicked on a specific track
+    const trackRow = e.target.closest('.track');
+    
+    if (trackRow) {
+        // If they clicked a track, find its data and open your custom menu
+        const trackId = trackRow.dataset.id;
+        const trackData = tracks.find(x => x.id === trackId);
+        
+        if (trackData) {
+            openCtxMenu(e, trackData); 
+        }
+    } else {
+        // If they right-clicked the background/desktop, just close the menu
+        closeCtxMenu();
+    }
+});
 
 (async () => { const ok = await checkAuth(); if (ok) init() })();
