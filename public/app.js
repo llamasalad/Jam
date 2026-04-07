@@ -170,7 +170,7 @@ function openCtxMenu(e,t){
       ctxPlaylists.appendChild(item);
     });
   } else {
-    const none=document.createElement('div');none.style.cssText='padding:6px 12px;font-size:12px;color:var(--muted)';none.textContent='No playlists yet';
+    const none=document.createElement('div');none.style.cssText='padding:6px 12px;font-size:12px;color:var(--muted);none.textContent='No playlists yet';
     ctxPlaylists.appendChild(none);
   }
   ctxMenu.style.left=Math.min(e.clientX,window.innerWidth-200)+'px';
@@ -210,8 +210,7 @@ function renderPlaylistDetail(pl){
     const removeBtn=document.createElement('button');removeBtn.className='track-menu-btn';removeBtn.textContent='\u2715';removeBtn.style.opacity='0';removeBtn.title='Remove from playlist';
     removeBtn.onclick=e=>{e.stopPropagation();removeFromPlaylist(pl.id,pt.trackId)};
     row.querySelector('.track-right').appendChild(removeBtn);
-    row.onmouseenter=()=>removeBtn.style.opacity='1';
-    row.onmouseleave=()=>removeBtn.style.opacity='0';
+    row.onmouseenter=()=>removeBtn.style.opacity='1';row.onmouseleave=()=>removeBtn.style.opacity='0';
     container.appendChild(row);
   });
 }
@@ -278,7 +277,7 @@ function play(t){
   loadLyrics(t);updateExpandedNowPlaying(t);
   const tsuf=token?'?token='+encodeURIComponent(token):'';
   const covUrl='/api/cover/'+t.id+tsuf;
-  fetch(covUrl,{method:'HEAD'}).then(r=>{if(r.ok)updateMediaSession(t,covUrl);else updateMediaSession(t,null)}).catch(()=>updateMediaSession(t,null));
+  fetch(covUrl,{method:'HEAD'}).then(r=>{if(r.ok)updateMediaSession(t,covUrl);else updateMediaSession(t,null)}).catch(()=>updateMediaSession(t,null)});
 }
 
 function updateExpandedNowPlaying(t){
@@ -290,7 +289,7 @@ function updateExpandedNowPlaying(t){
 }
 
 audio.addEventListener('loadedmetadata',()=>{
-  if(audio.duration){timeTot.textContent=fmt(audio.duration);expTimeTot.textContent=fmt(audio.duration);if(qIdx>=0){const dur=document.querySelector('.track-dur[data-id="'+queue[qIdx]?.id+'"]');if(dur)dur.textContent=fmt(audio.duration)}}
+  if(audio.duration){timeTot.textContent=fmt(audio.duration);expTimeTot.textContent=fmt(audio.duration);if(qIdx>=0){const dur=document.querySelector('.track-dur[data-id="'+queue[qIdx]?.id+"']');if(dur)dur.textContent=fmt(audio.duration)}}
 });
 audio.addEventListener('timeupdate',()=>{
   if(audio.currentTime>0&&Math.round(audio.currentTime)%5===0)localStorage.setItem('music_pos',audio.currentTime);
@@ -325,33 +324,41 @@ btnPrev.onclick=()=>{if(audio.currentTime>3)audio.currentTime=0;else prevTrack()
 btnNext.onclick=()=>nextTrack();
 btnShuffle.onclick=()=>{shuffle=!shuffle;btnShuffle.style.color=shuffle?'var(--accent)':'var(--muted)';expShuffle.style.color=shuffle?'var(--accent)':'var(--muted)';localStorage.setItem('music_shuffle',shuffle)};
 
-// Repeat modes - using simple text labels instead of SVG to avoid quote issues
+// Repeat modes - FIXED: uses template literals for clean SVG handling
 const btnRepeat=document.getElementById('btn-repeat');
 let repeatMode=localStorage.getItem('music_repeat')||'off';
 
-const repeatLabels={off:'\u21BA',all:'\u27F3\uE042',one:'\u27F3\uE042\u00B9'};
-function applyRepeat(){
-  btnRepeat.dataset.mode=repeatMode;
-  btnRepeat.textContent=repeatLabels[repeatMode];
-  btnRepeat.title='Repeat: '+repeatMode.charAt(0).toUpperCase()+repeatMode.slice(1);
-  btnRepeat.classList.toggle('active',repeatMode!=='off');
-  btnRepeat.classList.toggle('data-mode-one',repeatMode==='one');
+// Using template literals (backticks) so we can use quotes freely inside
+const repeatIcons = {
+  off: `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>`,
+  all: `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>`,
+  one: `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/><text x="12" y="15.5" text-anchor="middle" font-size="9" font-weight="bold" fill="currentColor">1</text></svg>`
+};
 
-  // sync expanded button
-  expRepeat.dataset.mode=repeatMode;
-  expRepeat.textContent=repeatLabels[repeatMode];
-  expRepeat.classList.toggle('active',repeatMode!=='off');
-  expRepeat.classList.toggle('data-mode-one',repeatMode==='one);
+function applyRepeat(){
+  btnRepeat.dataset.mode = repeatMode;
+  btnRepeat.innerHTML = repeatIcons[repeatMode];
+  btnRepeat.title = 'Repeat: ' + repeatMode.charAt(0).toUpperCase() + repeatMode.slice(1);
+  btnRepeat.classList.toggle('active', repeatMode !== 'off');
+  btnRepeat.classList.toggle('data-mode-one', repeatMode === 'one');
+
+  // Sync expanded button
+  expRepeat.dataset.mode = repeatMode;
+  expRepeat.innerHTML = repeatIcons[repeatMode];
+  expRepeat.classList.toggle('active', repeatMode !== 'off');
+  expRepeat.classList.toggle('data-mode-one', repeatMode === 'one');
 }
+
 applyRepeat();
 
-btnRepeat.onclick=()=>{
-  const modes=['off','all','one'];
-  repeatMode=modes[(modes.indexOf(repeatMode)+1)%3];
-  localStorage.setItem('music_repeat',repeatMode);
+btnRepeat.onclick = () => {
+  const modes = ['off', 'all', 'one'];
+  repeatMode = modes[(modes.indexOf(repeatMode) + 1) % 3];
+  localStorage.setItem('music_repeat', repeatMode);
   applyRepeat();
 };
-expRepeat.onclick=()=>btnRepeat.onclick();
+
+expRepeat.onclick = () => btnRepeat.onclick();
 
 function nextTrack(){
   if(!queue.length)return;
@@ -364,7 +371,7 @@ function nextTrack(){
 function prevTrack(){if(!queue.length)return;qIdx=(qIdx-1+queue.length)%queue.length;play(queue[qIdx]);updateActive()}
 function updateActive(){
   document.querySelectorAll('.track.active').forEach(e=>e.classList.remove('active'));
-  if(qIdx>=0){const row=document.querySelector('.track[data-id="'+queue[qIdx]?.id+'"]');if(row)row.classList.add('active')}
+  if(qIdx>=0){const row=document.querySelector(`.track[data-id="${queue[qIdx]?.id}"]`);if(row)row.classList.add('active')}
   if(queueOpen)renderQueue();
 }
 
@@ -429,7 +436,7 @@ queueBtn.onclick = () => {
 function renderQueue() {
   queuePanel.querySelectorAll('.queue-item').forEach(e => e.remove());
   const oldEmpty = queuePanel.querySelector('[style*="padding:40px"]');
-  if (oldEmpty) oldEmpty.remove();
+  if(oldEmpty) oldEmpty.remove();
 
   if (!queue.length) {
     const empty = document.createElement('div');
@@ -444,8 +451,8 @@ function renderQueue() {
     item.className = 'queue-item' + (i === qIdx ? ' active' : '');
     item.draggable = true;
     item.dataset.idx = i;
-    item.innerHTML = '<span class="queue-handle">\u2398</span><span class="queue-num">' + (i === qIdx ? '\u25B6' : i + 1) + '</span><div class="queue-info"><div class="queue-title">' + (t.title || 'Unknown') + '</div><div class="queue-sub">' + (t.artist || '\u2014') + '</div></div><button class="queue-remove" title="Remove">\u2715</button>';
-
+    item.innerHTML = `<span class="queue-handle">⠿</span><span class="queue-num">${i === qIdx ? '▶' : i + 1}</span><div class="queue-info"><div class="queue-title">${t.title || 'Unknown'}</div><div class="queue-sub">${t.artist || '—'}</div></div><button class="queue-remove" title="remove">✕</button>`;
+    
     item.querySelector('.queue-remove').onclick = e => {
       e.stopPropagation();
       queue.splice(i, 1);
@@ -453,7 +460,7 @@ function renderQueue() {
       renderQueue();
     };
 
-    item.onclick = () => { qIdx = i; play(queue[qIdx]); updateActive(); renderQueue(); };
+    item.onclick = () => { qIdx = i; play(queue[qIdx]); updateActive(); renderQueue() };
 
     // Desktop drag
     item.addEventListener('dragstart', e => {
@@ -479,6 +486,7 @@ function renderQueue() {
     item.addEventListener('drop', e => {
       e.preventDefault();
       item.classList.remove('drag-over');
+
       const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
 
       if (fromIdx === i || isNaN(fromIdx)) return;
@@ -499,7 +507,7 @@ function renderQueue() {
   });
 
   const activeEl = queuePanel.querySelector('.queue-item.active');
-  if (activeEl) activeEl.scrollIntoView({ block: 'center' });
+  if(activeEl) activeEl.scrollIntoView({ block: 'center' });
 }
 
 // Mobile long-press drag for queue items
@@ -544,14 +552,14 @@ function initTouchDrag(item, idx) {
     const tx = e.touches[0].clientX - touchStartX;
     const ty = e.touches[0].clientY - touchStartY;
 
-    clone.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
+    clone.style.transform = `translate(${tx}px,${ty}px)`;
     clone.style.pointerEvents = 'none';
 
     clone.hidden = true;
     const elBelow = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
     clone.hidden = false;
 
-    const target = elBelow && elBelow.closest ? elBelow.closest('.queue-item') : null;
+    const target = elBelow && elBelow.closest && elBelow.closest('.queue-item');
 
     if (target && target !== item) {
       const targetIdx = parseInt(target.dataset.idx);
@@ -631,7 +639,7 @@ document.getElementById('ctx-add-queue').onclick = () => {
   if (!ctxTrack) return;
   queue.push(ctxTrack);
   showToast('Added to queue');
-  if (queueOpen) renderQueue();
+  if(queueOpen) renderQueue();
   closeCtxMenu();
 };
 
@@ -644,6 +652,7 @@ function updateMediaSession(t, coverUrl) {
     album: t.album || 'Unknown',
     artwork: coverUrl ? [{ src: coverUrl, sizes: '256x256' }] : []
   });
+
   navigator.mediaSession.setActionHandler('play', () => audio.play());
   navigator.mediaSession.setActionHandler('pause', () => audio.pause());
   navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack());
@@ -666,7 +675,7 @@ document.getElementById('lyrics-font-up').onclick = e => {
   lyricsFontSize = Math.min(22, lyricsFontSize + 1);
   localStorage.setItem('lyrics_font', lyricsFontSize);
   applyLyricsFontSize();
-});
+};
 
 document.getElementById('lyrics-font-down').onclick = e => {
   e.stopPropagation();
@@ -719,14 +728,14 @@ async function loadLyrics(t) {
   lyricsTrackId = t.id;
   syncedLyrics = []; plainLyrics = '';
 
-  lyricsScroll().innerHTML = '<div style="padding:24px 14px;text-align:center;color:var(--muted);font-size:12px">Loading lyrics\u2026</div>';
-  expLyricCur.textContent = '\u2026';
+  lyricsScroll().innerHTML = '<div style="padding:24px 14px;text-align:center;color:var(--muted);font-size:12px">Loading lyrics…</div>';
+  expLyricCur.textContent = '…';
   expLyricNext.textContent = '';
 
   try {
     const cleanTitle = (t.title || '').replace(/^\d{1,3}[\s.\-_]+/, '').trim();
     const q = new URLSearchParams({ title: cleanTitle, artist: t.artist || '', album: t.album || '' });
-    const r = await fetch('/api/lyrics?' + q, { headers: token ? { 'x-auth-token': token } : {} });
+    const r = await fetch(`/api/lyrics?${q}`, { headers: token ? { 'x-auth-token': token } : {} });
 
     if (!r.ok) throw new Error('not found');
     const d = await r.json();
@@ -734,15 +743,15 @@ async function loadLyrics(t) {
     if (d.type === 'synced' && d.lyrics) {
       syncedLyrics = parseLRC(d.lyrics);
       renderSyncedLyrics();
-      document.getElementById('lyrics-panel-title').textContent = d.source === 'lrclib' ? 'Lyrics' : 'Lyrics \u00B7 ' + d.source;
+      document.getElementById('lyrics-panel-title').textContent = d.source === 'lrclib' ? 'Lyrics' : `Lyrics · ${d.source}`;
     } else if (d.type === 'plain' && d.lyrics) {
       plainLyrics = d.lyrics;
       renderPlainLyrics();
-      document.getElementById('lyrics-panel-title').textContent = d.source === 'lrclib' ? 'Lyrics' : 'Lyrics \u00B7 ' + d.source;
+      document.getElementById('lyrics-panel-title').textContent = d.source === 'lrclib' ? 'Lyrics' : `Lyrics · ${d.source}`;
     } else {
       lyricsScroll().innerHTML = '<div style="padding:24px 14px;text-align:center;color:var(--muted);font-size:12px">No lyrics found</div>';
       document.getElementById('lyrics-panel-title').textContent = 'Lyrics';
-      expLyricCur.textContent = '\u2014';
+      expLyricCur.textContent = '—';
       expLyricNext.textContent = '';
     }
   } catch (_) {
@@ -770,9 +779,10 @@ function renderSyncedLyrics() {
     div.className = 'lyric-line';
     div.textContent = l.text || '\u00B7';
     div.dataset.idx = i;
-    div.onclick = () => { audio.currentTime = l.time; };
+    div.onclick = () => { audio.currentTime = l.time };
     scroll.appendChild(div);
   });
+
   applyLyricsFontSize();
 }
 
@@ -785,6 +795,7 @@ function renderPlainLyrics() {
     div.textContent = line || ' ';
     scroll.appendChild(div);
   });
+
   applyLyricsFontSize();
 }
 
@@ -805,17 +816,16 @@ audio.addEventListener('timeupdate', () => {
     expLyricCur.textContent = syncedLyrics[idx].text || '\u00B7';
     const nxt = syncedLyrics[idx + 1];
     expLyricNext.textContent = nxt ? (nxt.text || '\u00B7') : '';
-  }
 
-  lyricsScroll().querySelectorAll('.lyric-line').forEach((el, i) => {
-    el.classList.toggle('active', i === idx);
+    lyricsScroll().querySelectorAll('.lyric-line').forEach((el, i) => {
+      el.classList.toggle('active', i === idx);
+    });
+
+    if (idx >= 0 && lyricsOpen) {
+      const el = lyricsScroll().querySelector(`[data-idx="${idx}"]`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   });
-
-  if (idx >= 0 && lyricsOpen) {
-    const el = lyricsScroll().querySelector('[data-idx="' + idx + '"]');
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-});
 
 // Init
 async function init() {
@@ -849,17 +859,14 @@ async function init() {
 
       player.classList.remove('hidden');
       document.getElementById('player-title').textContent = t.title || 'Unknown';
-      document.getElementById('player-artist').textContent = [t.artist, t.album].filter(Boolean).join(' \u00B7 ') || '\u2014';
-
+      document.getElementById('player-artist').textContent = [t.artist, t.album].filter(Boolean).join(' · ') || '—';
       const pt = document.getElementById('player-thumb');
       pt.src = FALLBACK;
       loadCover(t.id, pt);
-
-      document.title = (t.title || '?') + ' \u00B7 Jam!';
+      document.title = (t.title || '?') + ' · Jam!';
 
       const ts = token ? '?token=' + encodeURIComponent(token) : '';
       audio.src = '/api/stream/' + t.id + ts;
-
       audio.addEventListener('loadedmetadata', () => {
         if (pos > 0 && pos < audio.duration - 5) audio.currentTime = pos;
       }, { once: true });
