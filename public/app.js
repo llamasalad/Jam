@@ -209,22 +209,35 @@ function makeRow(t, showMenu = false) {
 
 function openCtxMenu(e, t) {
     ctxTrack = t; 
+    const trackNameLabel = document.getElementById('ctx-track-name');
+    if (trackNameLabel) trackNameLabel.textContent = t.title || 'Track';
+
+    const ctxPlayNext = document.getElementById('ctx-play-next');
+    if (ctxPlayNext) {
+        ctxPlayNext.onclick = () => {
+            if (!ctxTrack) return;
+            queue.splice(qIdx + 1, 0, ctxTrack);
+            showToast('Playing next');
+            if (queueOpen) renderQueue();
+            closeCtxMenu();
+        };
+    }
+
     if (ctxPlaylists) {
         ctxPlaylists.innerHTML = '';
         if (playlists.length) {
             playlists.forEach(pl => {
-                const item = document.createElement('div'); item.className = 'ctx-item'; item.textContent = pl.name;
+                const item = document.createElement('div'); 
+                item.className = 'ctx-item'; 
+                item.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 12H3"/><path d="M16 6H3"/><path d="M16 18H3"/><path d="M18 9v6"/><path d="M15 12h6"/></svg>${pl.name}`;
                 item.onclick = () => { addToPlaylist(pl.id, t); closeCtxMenu() };
                 ctxPlaylists.appendChild(item);
             });
-        } else {
-            const none = document.createElement('div'); none.style.cssText = 'padding:6px 12px;font-size:12px;color:var(--muted)'; none.textContent = 'No playlists yet';
-            ctxPlaylists.appendChild(none);
         }
     }
     if (ctxMenu) {
-        ctxMenu.style.left = Math.min(e.clientX, window.innerWidth - 200) + 'px';
-        ctxMenu.style.top = Math.min(e.clientY, window.innerHeight - 200) + 'px';
+        ctxMenu.style.left = Math.min(e.clientX, window.innerWidth - 220) + 'px';
+        ctxMenu.style.top = Math.min(e.clientY, window.innerHeight - 300) + 'px';
         ctxMenu.classList.add('open');
     }
 }
@@ -427,8 +440,16 @@ function play(t) {
     if (player) player.classList.remove('hidden');
     const plTitle = document.getElementById('player-title');
     const plArtist = document.getElementById('player-artist');
-    if (plTitle) plTitle.textContent = t.title || 'Unknown';
-    if (plArtist) plArtist.textContent = [t.artist, t.album].filter(Boolean).join(' \u00B7 ') || '\u2014';
+    const mobTitle = document.querySelector('#player-meta-mobile .title');
+    const mobArtist = document.querySelector('#player-meta-mobile .artist');
+    const fullTitle = t.title || 'Unknown';
+    const fullArtist = [t.artist, t.album].filter(Boolean).join(' \u00B7 ') || '\u2014';
+
+    if (plTitle) plTitle.textContent = fullTitle;
+    if (plArtist) plArtist.textContent = fullArtist;
+    if (mobTitle) mobTitle.textContent = fullTitle;
+    if (mobArtist) mobArtist.textContent = fullArtist;
+
     const pt = document.getElementById('player-thumb'); 
     if (pt) {
         pt.src = FALLBACK; 
@@ -696,6 +717,7 @@ function renderQueue() {
 let dragItem = null, dragIdx = -1, dragStartPos = 0;
 function startQueueDrag(e, item) {
     e.preventDefault();
+    document.body.classList.add('is-dragging');
     dragItem = item;
     dragIdx = parseInt(item.dataset.idx);
     dragStartPos = e.clientY;
@@ -717,6 +739,7 @@ function startQueueDrag(e, item) {
     
     item.onpointerup = e => {
         if (!dragItem) return;
+        document.body.classList.remove('is-dragging');
         const items = [...queuePanel.querySelectorAll('.queue-item')];
         const over = items.find(it => it.classList.contains('drag-over'));
         
