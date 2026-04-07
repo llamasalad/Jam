@@ -115,62 +115,75 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 .time-label{font-family:'SF Pro Display',-apple-system,sans-serif;font-size:11px;color:var(--muted);min-width:32px}
 
 @media(max-width:768px) {
-  /* 1. Hide the desktop info container to stop the "double text" glitch */
-  #player-info { display: none !important; }
-
-  /* 2. Setup the main player bar as a single row */
   #player {
     display: flex !important;
-    flex-direction: row !important;
-    align-items: center;
+    flex-wrap: wrap !important; /* Allows the text to sit on its own line */
     justify-content: space-between;
-    padding: 8px 12px;
+    align-items: center;
+    padding: 12px 16px;
+    height: auto !important;
     gap: 10px;
   }
 
-  /* 3. Assign the visual order */
-  #player-left { order: 1; flex: 0 0 auto; } /* Thumbnail */
-  
-  #player-meta-mobile { 
-    order: 2; 
-    flex: 1;      /* Grow to fill the middle */
-    min-width: 0; /* Critical for the 3 dots (...) to work */
-    display: flex;
-    flex-direction: column;
-    text-align: left;
+  /* 1. THE TEXT (Row 1) */
+  #player-meta-mobile {
+    order: -1;           /* Forces text to the very top */
+    flex: 0 0 100%;      /* Makes text row take 100% width */
+    text-align: center;
+    display: flex !important;
+    flex-direction: row !important; /* Keeps title and artist on one line */
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 4px;
+    min-width: 0;
   }
 
-  /* All buttons (Controls + Utils) stay together on the right */
-  #player-center { order: 3; flex: 0 0 auto; display: flex; align-items: center; }
-  #player-right { order: 4; flex: 0 0 auto; display: flex; align-items: center; }
-
-  /* 4. Fix the "Large White Text" and "Wrapping" */
   #player-meta-mobile .title {
-    color: var(--accent) !important; /* Forces the gold color */
-    font-size: 14px !important;      /* Keeps it a reasonable size */
+    color: var(--accent) !important; /* Gold */
+    font-size: 14px;
     font-weight: 600;
-    white-space: nowrap !important;  /* Stops the wrapping */
-    overflow: hidden !important;
-    text-overflow: ellipsis !important; /* Adds the (...) */
-    display: block;
-    margin: 0;
-  }
-
-  #player-meta-mobile .artist {
-    color: var(--muted) !important;
-    font-size: 11px !important;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin: 0;
   }
 
-  /* 5. Keep icons small and tight on the right */
-  .ctrl-btn, .util-btn {
-    padding: 4px;
-    width: 32px;
-    height: 32px;
+  /* The "•" Separator */
+  #player-meta-mobile .title::after {
+    content: " • ";
+    color: var(--muted);
+    margin: 0 6px;
+    font-weight: 400;
   }
+
+  #player-meta-mobile .artist {
+    color: #ffffff !important; /* Pure White */
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* 2. THE CONTROLS (Row 2) */
+  #player-left { order: 1; flex: 0 0 auto; } /* Thumbnail */
+  #player-center { order: 2; flex: 1; display: flex; justify-content: center; } /* Play/Pause */
+  
+  #player-right { 
+    order: 3; 
+    flex: 0 0 auto; 
+    display: flex !important; 
+    flex-direction: row !important; /* Force Queue/Lyrics to stay side-by-side */
+    gap: 8px; 
+  }
+
+  /* Ensure utility buttons are horizontal and clean */
+  #player-utils {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+  }
+
+  /* Hide the desktop info to prevent double-text */
+  #player-info { display: none !important; }
 }
   
 @media(min-width:769px){
