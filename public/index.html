@@ -13,7 +13,7 @@
   --bg:#0d0d0f;--surface:#16161a;--surface2:#1e1e24;--surface3:#26262e;
   --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);
   --text:#f0f0f5;--muted:#7a7a8e;--accent:#c8a86b;--accent2:#e8c88b;
-  --danger:#e05252;--radius:12px;--player-h:150px;
+  --danger:#e05252;--radius:12px;--player-h:85px; /* Updated default height */
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro Display',-apple-system,sans-serif;overscroll-behavior:none}
 #app{display:flex;flex-direction:column;height:100%;height:100dvh}
@@ -81,25 +81,29 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 #playlist-play-btn{margin:0 16px 12px;background:var(--accent);color:#000;border:none;border-radius:8px;padding:8px 16px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:background .15s}
 #playlist-play-btn:hover{background:var(--accent2)}
 #playlist-tracks{border-top:1px solid var(--border)}
+
+/* Fix 1 & 5: Player layouts and expansion handles */
 #player{position:fixed;bottom:0;left:0;right:0;height:auto;background:var(--surface);border-top:1px solid var(--border2);display:flex;flex-direction:column;padding:8px 16px calc(8px + env(safe-area-inset-bottom, 12px));gap:8px;z-index:100;touch-action:pan-y}
 #player.hidden{display:none}
-#player-main{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%}
-#player-left{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+#expand-handle { width: 40px; height: 5px; background: var(--surface3); border-radius: 3px; margin: 0 auto 4px auto; cursor: pointer; transition: background 0.2s;}
+#expand-handle:hover { background: var(--border2); }
+#player-main{display:flex;align-items:center;justify-content:space-between;width:100%;gap:12px}
+#player-left{display:flex;align-items:center;gap:12px;flex:1;min-width:0;cursor:pointer;}
 #player-thumb{width:44px;height:44px;border-radius:8px;background:var(--surface3);object-fit:cover;flex-shrink:0}
 #player-info{min-width:0;display:flex;flex-direction:column}
 #player-title{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--accent)}
 #player-artist{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#player-center{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1.5}
+#player-center{display:flex;flex-direction:column;align-items:center;gap:4px;flex:0 0 auto;}
 #controls{display:flex;align-items:center;gap:12px}
 .ctrl-btn{background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:color .15s,background .15s}
 .ctrl-btn:hover{color:var(--text);background:var(--surface3)}
 .ctrl-btn.main{background:var(--accent);color:#000;border-radius:50%;width:40px;height:40px}
 .ctrl-btn.main:hover{background:var(--accent2)}
-#player-right{display:flex;align-items:center;gap:16px;flex:1;justify-content:flex-end}
+#player-right{display:flex;align-items:center;gap:16px;flex:1;min-width:0;justify-content:flex-end}
 #volume-row{display:none;align-items:center;gap:8px;width:120px}
 #volume-row input{height:4px;-webkit-appearance:none;appearance:none;border-radius:2px;background:var(--surface3);outline:none;cursor:pointer;flex:1}
 #volume-row input::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;border-radius:50%;background:var(--accent);cursor:pointer;margin-top:-3px}
-#volume-icon{font-size:14px;color:var(--muted);width:18px;text-align:center}
+#volume-icon{font-size:14px;color:var(--muted);width:18px;text-align:center;cursor:pointer;}
 #player-utils{display:flex;align-items:center;gap:6px}
 
 #progress-row{display:flex;align-items:center;gap:10px;width:100%}
@@ -108,22 +112,22 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 #progress-row input::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer;margin-top:-4px;box-shadow:0 0 4px rgba(0,0,0,0.3)}
 .time-label{font-family:'SF Pro Display',-apple-system,sans-serif;font-size:11px;color:var(--muted);min-width:32px}
 
+/* Fix 4: Mobile Responsive Restructure */
 @media(max-width:768px){
-  #player{padding:8px 12px calc(8px + env(safe-area-inset-bottom, 12px));gap:12px}
+  #player{padding:8px 12px calc(8px + env(safe-area-inset-bottom, 12px));gap:10px}
   #player-main{flex-direction:row;align-items:center;justify-content:space-between}
   #player-left{flex:0 0 auto}
-  #player-thumb{width:52px;height:52px}
+  #player-thumb{width:48px;height:48px}
   #player-info{display:none}
-  #player-center{flex:1;justify-content:center}
-  #player-right{flex:0 0 100px;flex-direction:column;align-items:flex-end;gap:4px}
-  #player-meta-mobile{display:flex;flex-direction:column;align-items:flex-end;text-align:right;width:100%;min-width:0}
-  #player-meta-mobile .title{font-size:12px;font-weight:600;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
-  #player-meta-mobile .artist{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
+  #player-center{flex:1 1 auto;justify-content:center}
+  #player-right{flex:1; min-width:0; flex-direction:column; align-items:flex-end; gap:6px}
+  #player-meta-mobile{display:flex;flex-direction:column;align-items:flex-end;text-align:right;width:100%;min-width:0;cursor:pointer;}
+  #player-meta-mobile .title{font-size:13px;font-weight:600;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
+  #player-meta-mobile .artist{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
   #player-utils{gap:4px}
   #volume-row{display:none!important}
-  #controls{gap:8px}
-  .ctrl-btn.main{width:36px;height:36px}
-  #btn-shuffle,#btn-repeat{display:none}
+  #controls{gap:4px}
+  .ctrl-btn.main{width:38px;height:38px}
 }
 @media(min-width:769px){
   #player-meta-mobile{display:none}
@@ -283,7 +287,7 @@ body.is-dragging{user-select:none;-webkit-user-select:none}
           <button class="ctrl-btn" id="exp-shuffle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
           <button class="ctrl-btn" id="exp-prev"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg></button>
           <button class="ctrl-btn main" id="exp-play"><svg id="exp-icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><svg id="exp-icon-pause" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></button>
-          <button class="ctrl-btn" id="exp-next"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 3.9V8.1L8.5 12zM16 6h2v12h-2z"/></svg></button>
+          <button class="ctrl-btn" id="exp-next"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
           <button class="ctrl-btn" id="exp-repeat"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
         </div>
       </div>
@@ -309,7 +313,7 @@ body.is-dragging{user-select:none;-webkit-user-select:none}
           <button class="ctrl-btn" id="btn-shuffle"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
           <button class="ctrl-btn" id="btn-prev"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg></button>
           <button class="ctrl-btn main" id="btn-play"><svg id="icon-play" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><svg id="icon-pause" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></button>
-          <button class="ctrl-btn" id="btn-next"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 3.9V8.1L8.5 12zM16 6h2v12h-2z"/></svg></button>
+          <button class="ctrl-btn" id="btn-next"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
           <button class="ctrl-btn" id="btn-repeat" data-mode="off" title="Repeat: Off"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
         </div>
       </div>
