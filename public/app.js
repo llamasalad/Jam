@@ -587,6 +587,8 @@ function applyRepeat() {
         btnRepeat.title = 'Repeat: ' + repeatMode.charAt(0).toUpperCase() + repeatMode.slice(1);
         btnRepeat.classList.toggle('active', repeatMode !== 'off');
         btnRepeat.classList.toggle('data-mode-one', repeatMode === 'one');
+        
+        // Fixes the main bottom player
         btnRepeat.style.color = repeatMode !== 'off' ? 'var(--accent)' : 'var(--muted)';
     }
 
@@ -595,6 +597,9 @@ function applyRepeat() {
         expRepeat.innerHTML = repeatIcons[repeatMode];
         expRepeat.classList.toggle('active', repeatMode !== 'off');
         expRepeat.classList.toggle('data-mode-one', repeatMode === 'one');
+        
+        // Fixes the expanded full-screen player
+        expRepeat.style.color = repeatMode !== 'off' ? 'var(--accent)' : 'var(--muted)';
     }
 }
 
