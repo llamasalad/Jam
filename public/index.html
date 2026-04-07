@@ -115,76 +115,88 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 .time-label{font-family:'SF Pro Display',-apple-system,sans-serif;font-size:11px;color:var(--muted);min-width:32px}
 
 @media(max-width:768px) {
-  #player {
-    display: flex !important;
-    flex-direction: column !important; 
-    height: auto !important;
-    padding: 12px 16px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
-    gap: 12px !important;
-  }
-
-  /* 1. TOP ROW: Title • Artist */
-  #player-meta-mobile {
-    order: 1 !important; /* Move to top */
-    width: 100% !important;
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: center !important;
-    align-items: center !important;
-    min-width: 0 !important;
-  }
-
-  #player-meta-mobile .title {
-    color: var(--accent) !important;
-    font-size: 14px !important;
-    font-weight: 600;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    max-width: 60%; 
-  }
-
-  #player-meta-mobile .title::after {
-    content: " • ";
-    color: var(--muted);
-    margin: 0 6px;
-  }
-
-  #player-meta-mobile .artist {
-    color: #ffffff !important;
-    font-size: 13px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    max-width: 35%;
-  }
-
-  /* 2. MIDDLE ROW: Art, Controls, and Utils */
-  /* We group these three together visually */
-  #player-left, #player-center, #player-right {
-    order: 2 !important; 
-  }
-
-  #player-left { flex: 0 0 auto; }
-  #player-center { flex: 1; display: flex; justify-content: center; }
-  #player-right { 
-    flex: 0 0 auto; 
-    display: flex !important; 
-    flex-direction: row !important; 
-    gap: 8px !important; 
-  }
-
-  /* 3. BOTTOM ROW: The Seeker */
-  #player-main {
-    order: 3 !important; /* Move to bottom */
-    width: 100% !important;
-    margin-top: 4px;
-  }
-
-  /* Cleanup */
-  #player-info { display: none !important; }
-  #volume-row { display: none !important; }
+/* 1. The Main Player Container (The 3-Tier Stack) */
+#player {
+  display: flex !important;
+  flex-direction: column !important; 
+  height: auto !important;
+  padding: 12px 16px calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+  gap: 12px !important;
+  align-items: center !important;
 }
+
+/* 2. THE TOP ROW: Centered Title • Artist */
+#player-meta-mobile {
+  order: 1 !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: center !important;
+  align-items: center !important;
+  margin: 0 0 4px 0 !important;
+  min-width: 0 !important;
+}
+
+#player-meta-mobile .title {
+  color: var(--accent) !important;
+  font-size: 14px !important;
+  font-weight: 600;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 50% !important; /* Safety gate */
+  display: inline-block !important;
+  text-align: right !important;
+}
+
+/* The Dot */
+#player-meta-mobile .title::after {
+  content: "•";
+  color: var(--muted);
+  margin: 0 8px;
+  font-weight: 400;
+}
+
+#player-meta-mobile .artist {
+  color: #ffffff !important;
+  font-size: 13px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 45% !important; /* Safety gate */
+  display: inline-block !important;
+  text-align: left !important;
+}
+
+/* 3. THE MIDDLE ROW: Art | Controls | Utils */
+#player-left, #player-center, #player-right {
+  order: 2 !important;
+}
+
+#player-left { flex: 0 0 auto; }
+#player-center { flex: 1; display: flex; justify-content: center; }
+#player-right { 
+  flex: 0 0 auto; 
+  display: flex !important; 
+  flex-direction: row !important; 
+  gap: 10px !important; 
+}
+
+#player-utils {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 10px !important;
+}
+
+/* 4. THE BOTTOM ROW: The Seeker */
+#player-main {
+  order: 3 !important;
+  width: 100% !important;
+  padding: 0 4px !important;
+}
+
+/* 5. CLEANUP: Kill the "Ghost" desktop elements */
+#player-info, #volume-row { display: none !important; }
   
 @media(min-width:769px){
   #player-meta-mobile{display:none}
