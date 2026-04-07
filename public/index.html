@@ -115,52 +115,49 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 .time-label{font-family:'SF Pro Display',-apple-system,sans-serif;font-size:11px;color:var(--muted);min-width:32px}
 
 @media(max-width:768px){
-  #player{padding:8px 12px calc(8px + env(safe-area-inset-bottom, 12px)); gap:8px}
-  
-  #player-main {
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
+  /* 1. Hide the desktop info so it doesn't double-up with the mobile info */
+  #player-info { display: none !important; }
+
+  /* 2. Fix the overlap: Give the controls a fixed spot on the far right */
+  #player-center { 
+    flex: 0 0 auto; 
+    order: 3; 
+    z-index: 5;
+    background: var(--surface); /* Gives controls a solid background so text can't bleed through */
+    padding-left: 8px;
   }
 
-  #player-left { flex: 0 0 auto; margin-right: 10px; }
-  #player-thumb { width: 48px; height: 48px; }
-
+  /* 3. The magic fix for the text: min-width: 0 */
+  /* Without this, flex items won't shrink smaller than the text inside them */
   #player-right {
     flex: 1; 
-    min-width: 0;
+    min-width: 0; 
     display: flex;
     flex-direction: row;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end; /* Keeps utils/meta aligned right */
     gap: 8px;
   }
 
-  #player-meta-mobile .title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--accent);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 100%;
-  display: block;
-}
+  #player-meta-mobile {
+    flex: 1;
+    min-width: 0; /* CRITICAL: allows the title to actually truncate */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+  }
 
-  #player-meta-mobile .artist {
-    font-size: 11px;
-    color: var(--muted);
+  /* Ensure the title respects the ellipsis dots (...) */
+  #player-meta-mobile .title {
+    width: 100%;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: block; 
   }
-
-  #player-center { flex: 0 0 auto; order: 3; }
-  #player-utils { display: flex; gap: 4px; }
-  
-  .ctrl-btn.main { width: 38px; height: 38px; }
-  #controls { gap: 4px; }
 }
+  
 @media(min-width:769px){
   #player-meta-mobile{display:none}
   #volume-row{display:flex}
