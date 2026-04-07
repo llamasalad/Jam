@@ -116,6 +116,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 .ctrl-btn.main{background:var(--accent);color:#000;border-radius:50%;width:34px;height:34px}
 .ctrl-btn.main:hover{background:var(--accent2)}
 svg{display:block}
+#btn-repeat{color:var(--muted)}
+#btn-repeat.active{color:var(--accent)}
+#btn-repeat[data-mode="one"]{color:var(--accent2)}
 #progress-row,#volume-row{display:flex;align-items:center;gap:8px}
 #progress-row input,#volume-row input{height:3px;-webkit-appearance:none;appearance:none;border-radius:2px;background:var(--surface3);outline:none;cursor:pointer}
 #progress-row input::-webkit-slider-thumb,#volume-row input::-webkit-slider-thumb{-webkit-appearance:none;border-radius:50%;background:var(--accent);cursor:pointer}
@@ -164,6 +167,11 @@ svg{display:block}
 .queue-item:hover{background:var(--surface2)}
 .queue-item.active{background:var(--surface2)}
 .queue-item.active .queue-title{color:var(--accent)}
+.queue-handle{cursor:grab;color:var(--muted);font-size:14px;padding:0 2px;user-select:none;flex-shrink:0;transition:color .15s;line-height:1}
+.queue-handle:hover{color:var(--text)}
+.queue-handle:active{cursor:grabbing}
+.queue-item.dragging{opacity:0.35}
+.queue-item.drag-over{border-top:2px solid var(--accent)}
 .queue-num{font-family:'SF Pro Display',-apple-system,sans-serif;font-size:11px;color:var(--muted);min-width:20px;text-align:right;flex-shrink:0}
 .queue-info{flex:1;min-width:0}
 .queue-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -304,6 +312,9 @@ svg{display:block}
         </button>
         <button class="ctrl-btn" id="btn-shuffle">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+        </button>
+        <button class="ctrl-btn" id="btn-repeat" data-mode="off" title="Repeat: Off">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
         </button>
       </div>
       <button id="queue-btn">queue</button><button id="lyrics-btn">lyrics</button>
@@ -546,7 +557,6 @@ function renderPlaylistDetail(pl){
   pl.tracks.forEach(pt=>{
     const t=tracks.find(x=>x.id===pt.trackId)||{id:pt.trackId,title:pt.title,artist:pt.artist,album:pt.album};
     const row=makeRow(t,false);
-    // add remove button
     const removeBtn=document.createElement('button');removeBtn.className='track-menu-btn';removeBtn.textContent='✕';removeBtn.style.opacity='0';
     removeBtn.title='Remove from playlist';
     removeBtn.onclick=e=>{e.stopPropagation();removeFromPlaylist(pl.id,pt.trackId)};
@@ -667,7 +677,6 @@ function play(t){
   localStorage.setItem('music_queue',JSON.stringify(queue.map(x=>x.id)));
   localStorage.setItem('music_qidx',qIdx);
   loadLyrics(t);
-  // Media session cover loads async
   const tsuf=token?`?token=${encodeURIComponent(token)}`:'';
   const covUrl=`/api/cover/${t.id}${tsuf}`;
   fetch(covUrl,{method:'HEAD'}).then(r=>{ if(r.ok) updateMediaSession(t,covUrl); else updateMediaSession(t,null); }).catch(()=>updateMediaSession(t,null));
@@ -704,7 +713,22 @@ btnPrev.onclick=()=>{if(audio.currentTime>3)audio.currentTime=0;else prevTrack()
 btnNext.onclick=()=>nextTrack();
 btnShuffle.onclick=()=>{shuffle=!shuffle;btnShuffle.style.color=shuffle?'var(--accent)':'var(--muted)';localStorage.setItem('music_shuffle',shuffle)};
 
-function nextTrack(){if(!queue.length)return;qIdx=shuffle?Math.floor(Math.random()*queue.length):(qIdx+1)%queue.length;play(queue[qIdx]);updateActive()}
+// ── Repeat modes ──────────────────────────────────────────────────────────
+const btnRepeat=document.getElementById('btn-repeat');
+let repeatMode=localStorage.getItem('music_repeat')||'off';
+const repeatIcons={off:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>',all:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/><text x="12" y="15" text-anchor="middle" font-size="9" font-weight="bold" fill="currentColor">1</text></svg>',one:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/><text x="12" y="15" text-anchor="middle" font-size="9" font-weight="bold" fill="currentColor">1</text></svg>'};
+function applyRepeat(){btnRepeat.dataset.mode=repeatMode;btnRepeat.innerHTML=repeatIcons[repeatMode];btnRepeat.title=`Repeat: ${repeatMode.charAt(0).toUpperCase()+repeatMode.slice(1)}`;btnRepeat.classList.toggle('active',repeatMode!=='off')}
+applyRepeat();
+btnRepeat.onclick=()=>{const modes=['off','all','one'];repeatMode=modes[(modes.indexOf(repeatMode)+1)%3];localStorage.setItem('music_repeat',repeatMode);applyRepeat()};
+
+function nextTrack(){
+  if(!queue.length)return;
+  if(repeatMode==='one'){audio.currentTime=0;audio.play();return}
+  const isLast=qIdx>=queue.length-1;
+  if(repeatMode==='off'&&isLast)return;
+  qIdx=shuffle?Math.floor(Math.random()*queue.length):(qIdx+1)%queue.length;
+  play(queue[qIdx]);updateActive()
+}
 function prevTrack(){if(!queue.length)return;qIdx=(qIdx-1+queue.length)%queue.length;play(queue[qIdx]);updateActive()}
 function updateActive(){
   document.querySelectorAll('.track.active').forEach(e=>e.classList.remove('active'));
@@ -721,10 +745,9 @@ document.addEventListener('keydown',e=>{
 });
 
 async function init(){
-  // Restore shuffle state
   btnShuffle.style.color=shuffle?'var(--accent)':'var(--muted)';
+  applyRepeat();
 
-  // Restore volume
   volumeSlider.value=SAVED_VOL;
   const savedVol=SAVED_VOL/100;
   audio.volume=savedVol;
@@ -732,7 +755,6 @@ async function init(){
 
   await Promise.all([loadTracks(),loadPlaylists()]);
 
-  // Restore last played track + queue
   try{
     const last=JSON.parse(localStorage.getItem('music_last')||'null');
     const pos=parseFloat(localStorage.getItem('music_pos')||'0');
@@ -740,7 +762,6 @@ async function init(){
     const savedQIdx=parseInt(localStorage.getItem('music_qidx')||'0');
     if(last&&last.id){
       const t=tracks.find(x=>x.id===last.id)||last;
-      // Rebuild queue from saved track IDs
       if(savedQueueIds.length){
         queue=savedQueueIds.map(id=>tracks.find(x=>x.id===id)).filter(Boolean);
         qIdx=Math.min(savedQIdx,queue.length-1);
@@ -748,14 +769,12 @@ async function init(){
       } else {
         queue=[t];qIdx=0;
       }
-      // Show in player bar without auto-playing
       player.classList.remove('hidden');
       document.getElementById('player-title').textContent=t.title||'Unknown';
       document.getElementById('player-artist').textContent=[t.artist,t.album].filter(Boolean).join(' · ')||'—';
       const pt=document.getElementById('player-thumb');pt.src=FALLBACK;
       loadCover(t.id,pt);
       document.title=`${t.title||'?'} · Jam!`;
-      // Set up audio ready to play from last position
       const ts=token?`?token=${encodeURIComponent(token)}`:'';
       audio.src=`/api/stream/${t.id}${ts}`;
       audio.addEventListener('loadedmetadata',()=>{
@@ -781,8 +800,9 @@ queueBtn.onclick = () => {
 };
 
 function renderQueue() {
-  // Remove old items but keep header
   queuePanel.querySelectorAll('.queue-item').forEach(e => e.remove());
+  const oldEmpty = queuePanel.querySelector('[style*="padding:40px"]');
+  if(oldEmpty) oldEmpty.remove();
   if (!queue.length) {
     const empty = document.createElement('div');
     empty.style.cssText = 'padding:40px 20px;text-align:center;color:var(--muted);font-size:13px';
@@ -793,7 +813,10 @@ function renderQueue() {
   queue.forEach((t, i) => {
     const item = document.createElement('div');
     item.className = 'queue-item' + (i === qIdx ? ' active' : '');
+    item.draggable = true;
+    item.dataset.idx = i;
     item.innerHTML = `
+      <span class="queue-handle">⠿</span>
       <span class="queue-num">${i === qIdx ? '▶' : i + 1}</span>
       <div class="queue-info">
         <div class="queue-title">${t.title || 'Unknown'}</div>
@@ -807,9 +830,25 @@ function renderQueue() {
       renderQueue();
     };
     item.onclick = () => { qIdx = i; play(queue[qIdx]); updateActive(); renderQueue(); };
+    // drag reorder
+    item.addEventListener('dragstart', e => { item.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', i) });
+    item.addEventListener('dragend', () => { item.classList.remove('dragging'); document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over')) });
+    item.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; const d = document.querySelector('.dragging'); if (d && d !== item) item.classList.add('drag-over') });
+    item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+    item.addEventListener('drop', e => {
+      e.preventDefault(); item.classList.remove('drag-over');
+      const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+      const toIdx = i;
+      if (fromIdx === toIdx || isNaN(fromIdx)) return;
+      const [moved] = queue.splice(fromIdx, 1);
+      queue.splice(toIdx, 0, moved);
+      if (qIdx === fromIdx) qIdx = toIdx;
+      else if (fromIdx < qIdx && toIdx >= qIdx) qIdx--;
+      else if (fromIdx > qIdx && toIdx <= qIdx) qIdx++;
+      renderQueue();
+    });
     queuePanel.appendChild(item);
   });
-  // Scroll to current
   const activeEl = queuePanel.querySelector('.queue-item.active');
   if (activeEl) activeEl.scrollIntoView({ block: 'center' });
 }
@@ -833,8 +872,6 @@ document.getElementById('ctx-add-queue').onclick = () => {
   closeCtxMenu();
 };
 
-// Re-render queue when track changes
-const _origUpdateActive = updateActive;
 // ── Media Session API ──────────────────────────────────────────────────────
 function updateMediaSession(t, coverUrl) {
   if (!('mediaSession' in navigator)) return;
