@@ -351,7 +351,7 @@ function openCtxMenu(e, t) {
         ctxMenu.style.top = Math.min(e.clientY, window.innerHeight - 300) + 'px';
         ctxMenu.classList.add('open');
     }
-}
+
 function closeCtxMenu() { if (ctxMenu) ctxMenu.classList.remove('open'); ctxTrack = null }
 document.addEventListener('click', e => { if (ctxMenu && !ctxMenu.contains(e.target)) closeCtxMenu() });
 const ctxNewPlaylist = document.getElementById('ctx-new-playlist');
