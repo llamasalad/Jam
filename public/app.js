@@ -405,7 +405,7 @@ function showToast(msg) {
     if (!t) { 
         t = document.createElement('div'); 
         t.id = 'toast'; 
-        t.style.cssText = 'position:fixed;bottom:calc(var(--player-h)+12px);left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:8px 16px;border-radius:8px;font-size:13px;z-index:500;transition:opacity .3s'; 
+        t.style.cssText = 'position:fixed;bottom: calc(var(--player-h) + 8px);left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:8px 16px;border-radius:8px;font-size:13px;z-index:500;transition:opacity .3s'; 
         document.body.appendChild(t) 
     }
     t.textContent = msg; t.style.opacity = '1'; clearTimeout(t._t); t._t = setTimeout(() => t.style.opacity = '0', 2000);
@@ -587,6 +587,7 @@ function applyRepeat() {
         btnRepeat.title = 'Repeat: ' + repeatMode.charAt(0).toUpperCase() + repeatMode.slice(1);
         btnRepeat.classList.toggle('active', repeatMode !== 'off');
         btnRepeat.classList.toggle('data-mode-one', repeatMode === 'one');
+        btnRepeat.style.color = repeatMode !== 'off' ? 'var(--accent)' : 'var(--muted)';
     }
 
     if (expRepeat) {
