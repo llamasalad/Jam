@@ -40,10 +40,19 @@ export async function onRequestGet({ request, env }) {
 
   // --- ATTEMPT 2: Fallback with a cleaned title ---
   if (!result) {
-    // This Regex removes strings like "(feat. Wizkid)", "[ft Drake]", "(featuring Tyla)" etc.
-    const cleanTitle = title.replace(/\s*[\(\[](feat\.?|ft\.?|featuring)[^\)\]]*[\)\]]/gi, '').trim();
+    let cleanTitle = title;
+
+    // Step 1: Remove features inside parentheses or brackets 
+    // Example: "DYNAMITE (feat. Wizkid & Tems)" -> "DYNAMITE"
+    cleanTitle = cleanTitle.replace(/\s*[\(\[](feat\.?|ft\.?|featuring)[^\)\]]*[\)\]]/gi, '');
+
+    // Step 2: Remove features without parentheses (assumes they go to the end of the title)
+    // Example: "DYNAMITE feat. Wizkid & Someone" -> "DYNAMITE"
+    cleanTitle = cleanTitle.replace(/\s+(feat\.?|ft\.?|featuring).*$/gi, '');
+
+    cleanTitle = cleanTitle.trim();
     
-    // Only try again if the regex actually changed the title to avoid duplicate requests
+    // Only try again if the cleaner actually changed something
     if (cleanTitle !== title && cleanTitle.length > 0) {
       result = await fetchLyrics(artist, cleanTitle);
     }
