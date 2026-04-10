@@ -13,7 +13,7 @@
   --bg:#0d0d0f;--surface:#16161a;--surface2:#1e1e24;--surface3:#26262e;
   --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);
   --text:#f0f0f5;--muted:#7a7a8e;--accent:#c8a86b;--accent2:#e8c88b;
-  --danger:#e05252;--radius:12px;--player-h:85px; /* Updated default height */
+  --danger:#e05252;--radius:12px;--player-h:85px; 
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro Display',-apple-system,sans-serif;overscroll-behavior:none}
 #app{display:flex;flex-direction:column;height:100%;height:100dvh}
@@ -162,6 +162,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
   padding-bottom: 0 !important; 
 }
 
+/* Pull up the cover for mobile exactly 8px */
+#exp-cover-wrap { margin-top: -8px !important; }
+
 /* The Dot */
 #player-meta-mobile .title::after {
   content: "•";
@@ -290,7 +293,8 @@ body.is-dragging{user-select:none;-webkit-user-select:none}
 #exp-collapse{position:absolute;top:20px;right:24px;background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;padding:8px;border-radius:50%;line-height:1;z-index:10;transition:background .15s}
 #exp-collapse:hover{color:var(--text);background:var(--surface2)}
 #exp-content{width:100%;max-width:800px;display:flex;flex-direction:column;align-items:center;gap:12px}
-#exp-cover-wrap{width:min(85vw, 380px);aspect-ratio:1/1;border-radius:24px;overflow:hidden;flex-shrink:0;background:var(--surface3);display:flex;align-items:center;justify-content:center;box-shadow:0 20px 60px rgba(0,0,0,.5);position:relative}
+/* Pulled cover art up 5px for Desktop */
+#exp-cover-wrap{width:min(85vw, 380px);aspect-ratio:1/1;border-radius:24px;overflow:hidden;flex-shrink:0;background:var(--surface3);display:flex;align-items:center;justify-content:center;box-shadow:0 20px 60px rgba(0,0,0,.5);position:relative;margin-top:-5px}
 #exp-cover{width:100%;height:100%;object-fit:contain;display:block}
 #exp-cover-icon{font-size:64px;color:var(--muted);position:absolute}
 #exp-info{text-align:center;width:100%}
