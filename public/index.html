@@ -150,7 +150,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 }
 
 #exp-offset-controls {
-    display: none !important;
+  display: none !important;
+}
+    
+#exp-lyrics-wrap {
+  margin-top: -25px !important;
 }
 
 /* The Dot */
@@ -280,7 +284,7 @@ body.is-dragging{user-select:none;-webkit-user-select:none}
 #expanded-player::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
 #exp-collapse{position:absolute;top:20px;right:24px;background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;padding:8px;border-radius:50%;line-height:1;z-index:10;transition:background .15s}
 #exp-collapse:hover{color:var(--text);background:var(--surface2)}
-#exp-content{width:100%;max-width:800px;display:flex;flex-direction:column;align-items:center;gap:24px}
+#exp-content{width:100%;max-width:800px;display:flex;flex-direction:column;align-items:center;gap:12px}
 #exp-cover-wrap{width:min(85vw, 380px);aspect-ratio:1/1;border-radius:24px;overflow:hidden;flex-shrink:0;background:var(--surface3);display:flex;align-items:center;justify-content:center;box-shadow:0 20px 60px rgba(0,0,0,.5);position:relative}
 #exp-cover{width:100%;height:100%;object-fit:contain;display:block}
 #exp-cover-icon{font-size:64px;color:var(--muted);position:absolute}
@@ -288,7 +292,7 @@ body.is-dragging{user-select:none;-webkit-user-select:none}
 #exp-title{width:100%;font-size:26px;font-weight:700;color:var(--text);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #exp-artist{font-size:17px;color:var(--muted);margin-bottom:0}
 #exp-lyrics-wrap{width:100%;height:70px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;position:relative;overflow:hidden;margin-top:-12px}
-#exp-lyrics{width:100%;transition:transform .4s cubic-bezier(0.4, 0, 0.2, 1)}
+#exp-lyrics{width:100%;transition:transform .4s cubic-bezier(0.4, 0, 0.2, 1);padding-bottom:20px}
 #exp-lyric-current{font-size:19px;font-weight:600;color:var(--text);margin-bottom:4px;transition:opacity .3s, transform .3s}
 #exp-lyric-next{font-size:15px;color:var(--muted);transition:opacity .3s, transform .3s}
 #exp-controls-row{width:100%;display:flex;flex-direction:column;gap:20px;align-items:center}
@@ -360,13 +364,13 @@ body.is-dragging{user-select:none;-webkit-user-select:none}
       <div id="exp-title"></div>
       <div id="exp-artist" style="margin-bottom:0 !important;"></div>
     </div>
-    <div id="exp-lyrics-wrap" style="margin-top:-12px !important; padding-top:0 !important;">
-      <div id="exp-offset-controls" style="display:flex;align-items:center;gap:6px;margin-top:0px;justify-content:center">
+    <div id="exp-lyrics-wrap" style="margin-top:-15px !important; padding-top:0 !important; flex:1; min-height:0; display:flex; flex-direction:column;">
+      <div id="exp-offset-controls" style="display:flex;align-items:center;gap:6px;margin-bottom:8px;justify-content:center">
         <button onclick="adjustLyricsOffset(-0.1)" style="background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:13px;padding:2px 8px;border-radius:5px;line-height:1.4" title="Lyrics later">−</button>
         <span class="lyrics-offset-display" style="font-size:11px;color:var(--muted);min-width:36px;text-align:center">+0.0s</span>
         <button onclick="adjustLyricsOffset(0.1)" style="background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:13px;padding:2px 8px;border-radius:5px;line-height:1.4" title="Lyrics earlier">+</button>
       </div>
-      <div id="exp-lyrics">
+      <div id="exp-lyrics" style="overflow-y:auto; flex:1;">
         <div id="exp-lyric-current">—</div>
         <div id="exp-lyric-next"></div>
       </div>
