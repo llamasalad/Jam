@@ -1,3 +1,3 @@
 Jam!
 
-Lowkey Music Player with Cloudflare R2 Object Storage integration
+Web-based lowkey music player built with cloudflare pages. R2 integrated
