@@ -7,6 +7,7 @@ let lastVol = SAVED_VOL;
 let playlists = [], currentPlaylist = null, ctxTrack = null, pendingPlaylistTrack = null;
 let isSelecting = false;
 let toggleMode = true;
+let lastSavedSec = -1;
 
 const audio = document.getElementById('audio');
 const player = document.getElementById('player');
@@ -65,7 +66,14 @@ function updatePlayerHeight() {
         document.documentElement.style.setProperty('--player-h', player.offsetHeight + 'px');
     }
 }
-window.addEventListener('resize', updatePlayerHeight);
+if (player) new ResizeObserver(updatePlayerHeight).observe(player);
+
+function debounce(fn, ms) {
+    let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms) };
+}
+  
+if (searchEl) searchEl.addEventListener('input', applyFilter);
+if (searchEl) searchEl.addEventListener('input', debounce(applyFilter, 120));
 
 // Initial Volume (cubic curve for natural hearing)
 if (audio) audio.volume = Math.pow(SAVED_VOL / 100, 3);
@@ -215,8 +223,6 @@ function makeRow(t, showMenu = false) {
         right.appendChild(menuBtn);
     }
     
-    div.append(thumb, info, right);
-
     div.append(thumb, info, right);
 
     // --- HYBRID & SWIPE-TO-SELECT LOGIC ---
@@ -498,9 +504,12 @@ function showToast(msg) {
 const coverCache = {};
 function loadCover(id, el) {
     if (id in coverCache) { if (coverCache[id]) setCover(el, coverCache[id]); return }
-    coverCache[id] = null;
     const ts = token ? '?token=' + encodeURIComponent(token) : '';
-    fetch('/api/cover/' + id + ts).then(r => { if (r.ok) { coverCache[id] = r.url; setCover(el, r.url) } }).catch(_ => { });
+    const url = '/api/cover/' + id + ts;
+    coverCache[id] = null; // mark in-flight
+    fetch(url, { method: 'HEAD' }).then(r => {
+        if (r.ok) { coverCache[id] = url; setCover(el, url) }
+    }).catch(() => {});
 }
 function setCover(el, url) {
     if (el.tagName === 'IMG') { 
@@ -1079,8 +1088,10 @@ let lastExpLyricIdx = -1;
 if (audio) {
     audio.addEventListener('timeupdate', () => {
         // 1. Progress Bar Logic
-        if (audio.currentTime > 0 && Math.round(audio.currentTime) % 5 === 0) {
-            localStorage.setItem('music_pos', audio.currentTime);
+        const sec = Math.floor(audio.currentTime);
+        if (sec > 0 && sec % 5 === 0 && sec !== lastSavedSec) {
+        lastSavedSec = sec;
+        localStorage.setItem('music_pos', audio.currentTime);
         }
         if (!seeking && audio.duration) {
             const pct = (audio.currentTime / audio.duration) * 100;
