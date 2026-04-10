@@ -8,6 +8,7 @@ let playlists = [], currentPlaylist = null, ctxTrack = null, pendingPlaylistTrac
 let isSelecting = false;
 let toggleMode = true;
 let lastSavedSec = -1;
+let lyricsOffset = parseFloat(localStorage.getItem('lyrics_offset') || '0');
 
 const audio = document.getElementById('audio');
 const player = document.getElementById('player');
@@ -174,6 +175,13 @@ if (sortBtn) {
 function sort() {
     filtered.sort((a, b) => { const ka = (a[sortMode] || '').toLowerCase(), kb = (b[sortMode] || '').toLowerCase(); return ka < kb ? -1 : ka > kb ? 1 : 0 });
     renderList();
+}
+
+function adjustLyricsOffset(delta) {
+    lyricsOffset = Math.round((lyricsOffset + delta) * 10) / 10;
+    localStorage.setItem('lyrics_offset', lyricsOffset);
+    const display = (lyricsOffset >= 0 ? '+' : '') + lyricsOffset.toFixed(1) + 's';
+    document.querySelectorAll('.lyrics-offset-display').forEach(el => el.textContent = display);
 }
 
 function groupKey(t) {
@@ -1103,7 +1111,7 @@ if (audio) {
 
         // 2. Lyrics Logic
         if (!syncedLyrics.length) return;
-        const t = audio.currentTime;
+        const t = audio.currentTime + lyricsOffset;
         let idx = syncedLyrics.findIndex((l, i) => {
             const next = syncedLyrics[i + 1];
             return t >= l.time && (!next || t < next.time);
