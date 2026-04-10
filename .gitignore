@@ -1,3 +1,5 @@
+public/
+wrangler.toml
+
 node_modules/
 .env
-wrangler.toml
