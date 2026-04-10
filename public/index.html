@@ -303,7 +303,7 @@ body.is-dragging{user-select:none;-webkit-user-select:none}
 #exp-info {text-align: center;width: 100%;margin-bottom: 24px !important;padding-bottom: 0 !important;}
 #exp-title{width:100%;font-size:26px;font-weight:700;color:var(--text);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #exp-artist{font-size:17px;color:var(--muted);margin-bottom:0}
-#exp-lyrics-wrap{width:100%;height:70px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;position:relative;overflow:hidden;margin-top:-12px}
+#exp-lyrics-wrap{width:100%;height:70px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;position:relative;overflow:hidden;margin-top: 0 !important}
 #exp-lyrics{width:100%;transition:transform .4s cubic-bezier(0.4, 0, 0.2, 1);padding-bottom:20px}
 #exp-lyric-current{font-size:19px;font-weight:600;color:var(--text);margin-bottom:4px;transition:opacity .3s, transform .3s}
 #exp-lyric-next{font-size:15px;color:var(--muted);transition:opacity .3s, transform .3s}
@@ -372,11 +372,11 @@ body.is-dragging{user-select:none;-webkit-user-select:none}
   <button id="exp-collapse">✕</button>
   <div id="exp-content">
     <div id="exp-cover-wrap"><img id="exp-cover" src="" alt=""/><span id="exp-cover-icon" style="display:none">♪</span></div>
-    <div id="exp-info" style="margin-bottom:0 !important; padding-bottom:0 !important;">
+    <div id="exp-info">
       <div id="exp-title"></div>
-      <div id="exp-artist" style="margin-bottom:0 !important;"></div>
+      <div id="exp-artist"></div>
     </div>
-    <div id="exp-lyrics-wrap" style="margin-top:-15px !important; padding-top:0 !important; flex:1; min-height:0; display:flex; flex-direction:column;">
+    <div id="exp-lyrics-wrap" style="flex:1; min-height:0; display:flex; flex-direction:column;">
       <div id="exp-offset-controls" style="display:flex;align-items:center;gap:6px;margin-bottom:8px;justify-content:center">
         <button onclick="adjustLyricsOffset(-0.1)" style="background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:13px;padding:2px 8px;border-radius:5px;line-height:1.4" title="Lyrics later">−</button>
         <span class="lyrics-offset-display" style="font-size:11px;color:var(--muted);min-width:36px;text-align:center">+0.0s</span>
