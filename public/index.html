@@ -337,7 +337,16 @@ body.is-dragging{user-select:none;-webkit-user-select:none}
     </div>
   </div>
   <div id="queue-panel"><div id="queue-header" style="display:flex;align-items:center;justify-content:space-between">Up next<button id="clear-queue-btn" style="background:none;border:none;color:var(--muted);font-size:11px;font-family:inherit;cursor:pointer;padding:2px 6px;border-radius:4px;transition:color .15s" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--muted)'">clear</button></div></div>
-  <div id="lyrics-panel"><div id="lyrics-panel-header"><span id="lyrics-panel-title">Lyrics</span><div style="display:flex;align-items:center;gap:4px"><button id="lyrics-font-down" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 4px;border-radius:3px;line-height:1" title="Smaller">A−</button><button id="lyrics-font-up" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 4px;border-radius:3px;line-height:1" title="Larger">A+</button><button id="lyrics-close-btn" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 2px;line-height:1;border-radius:3px">✕</button></div></div><div id="lyrics-scroll"><div id="lyrics-empty">No lyrics available</div></div></div>
+  <div id="lyrics-panel"><div id="lyrics-panel-header"><span id="lyrics-panel-title">Lyrics</span><div style="display:flex;align-items:center;gap:4px">
+  <button id="lyrics-font-down" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 4px;border-radius:3px;line-height:1" title="Smaller">A−</button>
+  <button id="lyrics-font-up" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 4px;border-radius:3px;line-height:1" title="Larger">A+</button>
+  <div style="display:flex;align-items:center;gap:2px;margin:0 2px;border-left:1px solid var(--border);padding-left:6px">
+    <button onclick="adjustLyricsOffset(-0.1)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 3px;border-radius:3px;line-height:1" title="Lyrics earlier">−</button>
+    <span class="lyrics-offset-display" style="font-size:10px;color:var(--muted);min-width:32px;text-align:center">+0.0s</span>
+    <button onclick="adjustLyricsOffset(0.1)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 3px;border-radius:3px;line-height:1" title="Lyrics later">+</button>
+  </div>
+  <button id="lyrics-close-btn" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 2px;line-height:1;border-radius:3px">✕</button>
+</div></div><div id="lyrics-scroll"><div id="lyrics-empty">No lyrics available</div></div></div>
   <div id="expanded-player">
     <button id="exp-collapse">✕</button>
     <div id="exp-content">
@@ -347,6 +356,11 @@ body.is-dragging{user-select:none;-webkit-user-select:none}
         <div id="exp-artist"></div>
       </div>
       <div id="exp-lyrics-wrap">
+        <div style="display:flex;align-items:center;gap:6px;margin-top:8px;justify-content:center">
+          <button onclick="adjustLyricsOffset(-0.1)" style="background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:13px;padding:2px 8px;border-radius:5px;line-height:1.4" title="Lyrics earlier">−</button>
+          <span class="lyrics-offset-display" style="font-size:11px;color:var(--muted);min-width:36px;text-align:center">+0.0s</span>
+          <button onclick="adjustLyricsOffset(0.1)" style="background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:13px;padding:2px 8px;border-radius:5px;line-height:1.4" title="Lyrics later">+</button>
+        </div>
         <div id="exp-lyrics">
           <div id="exp-lyric-current">—</div>
           <div id="exp-lyric-next"></div>
