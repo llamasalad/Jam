@@ -115,7 +115,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 .time-label{font-family:'SF Pro Display',-apple-system,sans-serif;font-size:11px;color:var(--muted);min-width:32px}
 
 @media(max-width:768px) {
-/* 1. The Main Player Container (The 3-Tier Stack) */
+
 #player {
   display: flex !important;
   flex-direction: column !important; 
@@ -162,10 +162,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
   padding-bottom: 0 !important; 
 }
 
-/* Pull up the cover for mobile exactly 8px */
-#exp-cover-wrap { margin-top: -8px !important; }
+#exp-cover-wrap {
+  margin-top: -16px !important;
+}
 
-/* The Dot */
+#exp-info {
+  margin-bottom: 16px !important; 
+}
+
 #player-meta-mobile .title::after {
   content: "•";
   color: var(--muted);
@@ -293,11 +297,10 @@ body.is-dragging{user-select:none;-webkit-user-select:none}
 #exp-collapse{position:absolute;top:20px;right:24px;background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;padding:8px;border-radius:50%;line-height:1;z-index:10;transition:background .15s}
 #exp-collapse:hover{color:var(--text);background:var(--surface2)}
 #exp-content{width:100%;max-width:800px;display:flex;flex-direction:column;align-items:center;gap:12px}
-/* Pulled cover art up 5px for Desktop */
-#exp-cover-wrap{width:min(85vw, 380px);aspect-ratio:1/1;border-radius:24px;overflow:hidden;flex-shrink:0;background:var(--surface3);display:flex;align-items:center;justify-content:center;box-shadow:0 20px 60px rgba(0,0,0,.5);position:relative;margin-top:-5px}
+#exp-cover-wrap {width: min(85vw, 380px);aspect-ratio: 1/1;border-radius: 24px;overflow: hidden;flex-shrink: 0;background: var(--surface3);display: flex;align-items: center;justify-content: center;box-shadow: 0 20px 60px rgba(0,0,0,.5);position: relative;margin-top:-15px !important;}
 #exp-cover{width:100%;height:100%;object-fit:contain;display:block}
 #exp-cover-icon{font-size:64px;color:var(--muted);position:absolute}
-#exp-info{text-align:center;width:100%}
+#exp-info {text-align: center;width: 100%;margin-bottom: 24px !important;padding-bottom: 0 !important;}
 #exp-title{width:100%;font-size:26px;font-weight:700;color:var(--text);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #exp-artist{font-size:17px;color:var(--muted);margin-bottom:0}
 #exp-lyrics-wrap{width:100%;height:70px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;position:relative;overflow:hidden;margin-top:-12px}
