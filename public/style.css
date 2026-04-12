@@ -653,8 +653,8 @@ body.is-dragging{user-select:none;-webkit-user-select:none}
 #lyrics-scroll{flex:1;overflow-y:auto;padding:8px 0}
 #lyrics-scroll::-webkit-scrollbar{width:3px}
 #lyrics-scroll::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
-.lyric-line{padding:5px 14px;font-size:13px;color:var(--muted);cursor:pointer;transition:color .2s;line-height:1.5}
-.lyric-line.active{color:var(--text);font-size:14px;font-weight:500}
+.lyric-line{padding:5px 14px;color:var(--muted);cursor:pointer;transition:color .2s;line-height:1.5}
+.lyric-line.active{color:var(--text);font-weight:500}
 .lyric-line:hover{color:var(--text)}
 #lyrics-empty{padding:24px 14px;text-align:center;color:var(--muted);font-size:12px}
 /* Desktop expanded player */
@@ -768,6 +768,13 @@ body.menu-open::before{
     color: #000 !important;
     transform: scale(0.92) !important;
     box-shadow: inset 0 2px 8px rgba(0,0,0,0.2) !important;
+  }
+  /* Ensure all control buttons have visible active state */
+  .ctrl-btn:active {
+    background: var(--surface2) !important;
+    color: var(--text) !important;
+    transform: scale(0.92) !important;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.3) !important;
   }
   #exp-collapse:active { transform: none !important; }
   #sort-btn:hover { color: var(--muted) !important; }
