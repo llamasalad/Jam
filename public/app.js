@@ -5,6 +5,7 @@ let shuffle = localStorage.getItem('music_shuffle') === 'true', seeking = false,
 const SAVED_VOL = parseInt(localStorage.getItem('music_vol') || '80');
 let lastVol = SAVED_VOL;
 let playlists = [], currentPlaylist = null, ctxTrack = null, pendingPlaylistTrack = null;
+let queueOpen = false, lyricsTrackId = null, lyricsOpen = false;
 let isSelecting = false;
 let toggleMode = true;
 let lastSavedSec = -1;
@@ -1197,21 +1198,6 @@ function removeFromQueue(idx) {
     localStorage.setItem('music_qidx', qIdx);
 }
 
-// Queue panel swipe-down to close (mobile only)
-const queuePanelHandle = document.getElementById('queue-panel-mobile-handle');
-if (queuePanel) {
-    queuePanel.addEventListener('touchstart', e => {
-        if (!isMobile()) return;
-        if (e.target.tagName === 'INPUT' || e.target.closest('.queue-handle')) return;
-        // Only trigger if at top of scroll or on handle
-        if (queuePanel.scrollTop > 20 && !e.target.closest('#queue-panel-mobile-handle')) return;
-        swipeStartY = e.touches[0].clientY;
-        swipeDeltaY = 0;
-        isSwiping = true;
-        swipeTarget = 'queue-close';
-    }, { passive: true });
-}
-
 const handle = document.getElementById('expand-handle');
 if (handle) {
     handle.addEventListener('click', e => {
@@ -1226,9 +1212,9 @@ if (handle) {
     });
 });
 
+// queueOpen declared at top of file
 const queuePanel = document.getElementById('queue-panel');
 const queueBtn = document.getElementById('queue-btn');
-let queueOpen = false;
 
 if (queueBtn) {
     queueBtn.onclick = () => {
@@ -1237,6 +1223,21 @@ if (queueBtn) {
         queueBtn.classList.toggle('active', queueOpen);
         if (queueOpen) { closeExpandedPlayer(); renderQueue() }
     };
+}
+
+// Queue panel swipe-down to close (mobile only)
+const queuePanelHandle = document.getElementById('queue-panel-mobile-handle');
+if (queuePanel) {
+    queuePanel.addEventListener('touchstart', e => {
+        if (!isMobile()) return;
+        if (e.target.tagName === 'INPUT' || e.target.closest('.queue-handle')) return;
+        // Only trigger if at top of scroll or on handle
+        if (queuePanel.scrollTop > 20 && !e.target.closest('#queue-panel-mobile-handle')) return;
+        swipeStartY = e.touches[0].clientY;
+        swipeDeltaY = 0;
+        isSwiping = true;
+        swipeTarget = 'queue-close';
+    }, { passive: true });
 }
 
 function renderQueue() {
@@ -1389,9 +1390,10 @@ function updateMediaSession(t, coverUrl) {
     navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack());
 }
 
+// lyricsTrackId and lyricsOpen declared at top of file
 const lyricsPanel = document.getElementById('lyrics-panel');
 const lyricsBtn = document.getElementById('lyrics-btn');
-let syncedLyrics = [], plainLyrics = '', lyricsTrackId = null, lyricsOpen = false;
+let syncedLyrics = [], plainLyrics = '';
 // FIX: Track IDs that failed to load so loadLyrics() can retry them
 // instead of being silently blocked by the early-return guard.
 let lyricsFailed = new Set();

@@ -2,3 +2,15 @@ wrangler.toml
 
 node_modules/
 .env
+
+# Deployment scripts
+*.bat
+*.ps1
+
+# GitHub Actions workflow is kept for auto-deploy
+# .github/
+
+# Misc
+*.log
+.DS_Store
+Thumbs.db
