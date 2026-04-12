@@ -55,7 +55,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 .track-dur{font-family:'SF Pro Display',-apple-system,sans-serif;font-size:11px;color:var(--muted)}
 .track-menu-btn{background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;opacity:0;transition:opacity .15s;font-size:16px;line-height:1;border-radius:4px}
 .track-menu-btn:hover{color:var(--text);background:var(--surface3)}
-#ctx-menu{position:fixed;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:6px;z-index:200;min-width:180px;display:none;box-shadow:0 8px 24px rgba(0,0,0,.4);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#ctx-menu{position:fixed;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:6px;z-index:350;min-width:180px;display:none;box-shadow:0 8px 24px rgba(0,0,0,.4);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 #ctx-menu.open{display:block}
 .ctx-item{padding:8px 12px;font-size:13px;cursor:pointer;border-radius:6px;display:flex;align-items:center;gap:8px;color:var(--text);user-select:none;-webkit-user-select:none}
 .ctx-item:hover{background:var(--surface3)}
@@ -742,19 +742,9 @@ body.menu-open::before{
   position:relative;
   z-index:298;
 }
-#ctx-menu{z-index:1000!important;position:fixed!important;}
-
 /* -- Disable hover effects on touch devices -- */
 @media (hover: none), (pointer: coarse) {
-  /* Disable ALL hover effects on touch devices */
-  *:hover {
-    background: initial !important;
-    color: initial !important;
-    transform: none !important;
-    opacity: initial !important;
-    box-shadow: initial !important;
-  }
-  
+  /* Suppress hover ghost states on specific interactive elements instead of nuking all via * */
   .track:hover { background: transparent !important; }
   .track:hover .track-menu-btn { opacity: 0 !important; }
   .playlist-card:hover { background: transparent !important; }
