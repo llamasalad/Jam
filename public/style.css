@@ -517,6 +517,7 @@ button,
 }
 #exp-progress{height:4px;touch-action:none}
 
+/* -- Mobile lyrics card -- */
 #exp-lyrics-card{
   display:block;
   width:100%;
