@@ -175,7 +175,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 }
   
 /* -- Mobile overrides -- */
-/* -- Mobile overrides -- */
 @media(max-width:768px){
 
 * {
@@ -186,6 +185,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
   width: 0 !important;
   height: 0 !important;
   display: none !important;
+}
+
+/* Hide the 3-dot menu explicitly on mobile devices */
+.track-menu-btn {
+  display: none !important;
+}
+
+/* Force vertical scrolling to be native but prevent diagonal interference for smooth swiping */
+.track, .queue-item {
+  touch-action: pan-y !important;
 }
 
 html,body,#main,#expanded-player,#queue-panel,#exp-lyrics-card-scroll,#lyrics-panel,#lyrics-scroll{
