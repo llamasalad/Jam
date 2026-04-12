@@ -608,6 +608,33 @@ button,
   #exp-collapse{position:absolute;top:20px;right:24px;background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;padding:8px;border-radius:50%;line-height:1;z-index:10;transition:background .15s}
   #exp-collapse:hover{color:var(--text);background:var(--surface2)}
   #exp-cover-wrap{margin-top:0 !important}
+
+  /* --- DESKTOP LYRICS RESTORED --- */
+  #expanded-player.desktop-lyrics-open{
+    justify-content:flex-start;
+    align-items:center;
+    padding-top:24px;
+  }
+  #exp-content.desktop-lyrics-open{align-items:center}
+  #exp-content.desktop-lyrics-open #exp-main-shell{flex-direction:row;align-items:center;justify-content:center;gap:28px}
+  #exp-content.desktop-lyrics-open #exp-main-left{width:min(46%,460px);align-items:center;transform:none}
+  #exp-content.desktop-lyrics-open #exp-lyrics-wrap{display:none !important}
+  #exp-content.desktop-lyrics-open #exp-info{text-align:center}
+  #exp-content.desktop-lyrics-open #exp-title,
+  #exp-content.desktop-lyrics-open #exp-artist{width:100%}
+  #exp-content.desktop-lyrics-open #exp-controls-row{align-items:center}
+  #exp-content.desktop-lyrics-open #exp-controls,
+  #exp-content.desktop-lyrics-open #exp-progress-wrap,
+  #exp-content.desktop-lyrics-open #exp-utils{justify-content:center}
+  #exp-content.desktop-lyrics-open #exp-desktop-lyrics-panel{display:flex}
+  #exp-desktop-lyrics-panel{width:min(42vw,520px);min-width:340px;max-width:520px;max-height:calc(100dvh - 64px);background:var(--surface);border:1px solid var(--border2);border-radius:18px;overflow:hidden;display:none;flex-direction:column;box-shadow:0 18px 48px rgba(0,0,0,.35)}
+  #exp-desktop-lyrics-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)}
+  #exp-desktop-lyrics-title{font-size:11px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+  #exp-desktop-lyrics-tools{display:flex;align-items:center;gap:6px}
+  #exp-desktop-lyrics-body{display:flex;flex-direction:column;min-height:0;flex:1}
+  #exp-desktop-lyrics-scroll{flex:1;overflow-y:auto;padding:10px 0}
+  #exp-desktop-lyrics-scroll::-webkit-scrollbar{width:3px}
+  #exp-desktop-lyrics-scroll::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
 }
 
 .queue-item,.queue-handle{user-select:none;-webkit-user-select:none}
