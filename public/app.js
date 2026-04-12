@@ -241,6 +241,8 @@ function bindTapActivation(el, handler, options = {}) {
     let longPressTimer = null;
     let longPressed = false;
     const longPressMs = options.longPressMs || 420;
+    // Track if this is a swipe to prevent long-press
+    let isSwipe = false;
 
     const isNestedControl = target => {
         const control = target.closest('button, input, a, select, textarea, label');
@@ -261,6 +263,7 @@ function bindTapActivation(el, handler, options = {}) {
         startY = e.clientY;
         moved = false;
         longPressed = false;
+        isSwipe = false;
         clearLongPress();
         if (options.onLongPress) {
             longPressTimer = setTimeout(() => {
@@ -274,7 +277,13 @@ function bindTapActivation(el, handler, options = {}) {
 
     el.addEventListener('pointermove', e => {
         if (e.pointerType !== 'touch') return;
-        if (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10) {
+        const deltaX = Math.abs(e.clientX - startX);
+        const deltaY = Math.abs(e.clientY - startY);
+        // Mark as swipe if horizontal movement exceeds vertical
+        if (deltaX > 15 && deltaX > deltaY) {
+            isSwipe = true;
+        }
+        if (deltaX > 10 || deltaY > 10) {
             moved = true;
             clearLongPress();
         }
@@ -355,8 +364,8 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
 
         // Swipe gestures for mobile
         let touchStartX = 0, touchStartY = 0, isSwiping = false, swipeTriggered = false;
-        const SWIPE_THRESHOLD = 35; // Lower threshold for easier triggering
-        const SWIPE_PREVIEW_THRESHOLD = 15; // Show preview feedback earlier
+        const SWIPE_THRESHOLD = 30; // Lower threshold for easier triggering
+        const SWIPE_PREVIEW_THRESHOLD = 10; // Show preview feedback earlier
         
         div.addEventListener('touchstart', e => {
             if (e.target.closest('button')) return;
