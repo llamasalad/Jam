@@ -369,6 +369,7 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
         
         div.addEventListener('touchstart', e => {
             if (e.target.closest('button')) return;
+            e.stopPropagation(); // Prevent parent swipe interference
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
             isSwiping = true;
@@ -377,6 +378,7 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
         }, { passive: true });
 
         div.addEventListener('touchmove', e => {
+            e.stopPropagation(); // Prevent parent swipe interference
             if (!isSwiping || swipeTriggered) return;
             const deltaX = e.touches[0].clientX - touchStartX;
             const deltaY = e.touches[0].clientY - touchStartY;
@@ -1341,12 +1343,14 @@ function renderQueue(skipScroll = false) {
             let touchStartX = 0, touchStartY = 0, isRemoving = false;
             item.addEventListener('touchstart', e => {
                 if (e.target.closest('.queue-handle')) return;
+                e.stopPropagation(); // Prevent panel swipe
                 touchStartX = e.touches[0].clientX;
                 touchStartY = e.touches[0].clientY;
                 isRemoving = false;
                 item.classList.remove('swiped-left');
             }, { passive: true });
             item.addEventListener('touchmove', e => {
+                e.stopPropagation(); // Prevent panel swipe
                 const deltaX = e.touches[0].clientX - touchStartX;
                 const deltaY = e.touches[0].clientY - touchStartY;
                 // Only handle horizontal swipes
