@@ -224,7 +224,7 @@ function renderList() {
             h.textContent = g; 
             frag.appendChild(h) 
         }
-        frag.appendChild(makeRow(t, true));
+        frag.appendChild(makeRow(t, false));
     }
     if (trackList) trackList.appendChild(frag);
     // FIX: bindLongPress() call removed — touch long-press is handled
@@ -301,7 +301,7 @@ function bindTapActivation(el, handler, options = {}) {
     });
 }
 
-function makeRow(t, showMenu = false) {
+function makeRow(t, showMenu = false, inPlaylist = false) {
     const div = document.createElement('div'); div.className = 'track'; div.dataset.id = t.id;
     if (qIdx >= 0 && queue[qIdx]?.id === t.id) div.classList.add('active');
     const thumb = document.createElement('div'); thumb.className = 'thumb';
@@ -315,7 +315,8 @@ function makeRow(t, showMenu = false) {
     const dur = document.createElement('div'); dur.className = 'track-dur'; dur.dataset.id = t.id; dur.textContent = fmt(t.duration);
     right.appendChild(dur);
     
-    if (showMenu) {
+    // Only show 3-dot menu in library, not in playlist
+    if (showMenu && !inPlaylist) {
         const menuBtn = document.createElement('button'); menuBtn.className = 'track-menu-btn'; menuBtn.textContent = '\u2026'; menuBtn.title = 'Add to playlist';
         menuBtn.onclick = e => { e.stopPropagation(); openCtxMenu(e, t) };
         right.appendChild(menuBtn);
@@ -352,10 +353,10 @@ function makeRow(t, showMenu = false) {
             }, t)
         });
 
-        // Swipe gestures for mobile: right=add to queue, left=quick playlist menu
+        // Swipe gestures for mobile
         let touchStartX = 0, touchStartY = 0, isSwiping = false, swipeTriggered = false;
-        const SWIPE_THRESHOLD = 40; // Lower threshold for easier triggering
-        const SWIPE_PREVIEW_THRESHOLD = 20; // Show preview feedback earlier
+        const SWIPE_THRESHOLD = 35; // Lower threshold for easier triggering
+        const SWIPE_PREVIEW_THRESHOLD = 15; // Show preview feedback earlier
         
         div.addEventListener('touchstart', e => {
             if (e.target.closest('button')) return;
@@ -393,16 +394,25 @@ function makeRow(t, showMenu = false) {
             // Haptic feedback if available
             if (navigator.vibrate) navigator.vibrate(10);
             
-            if (deltaX > 0) {
-                // Swipe right - add to queue
-                div.classList.add('swiped-right');
-                queue.push(t);
-                showToast(`Added "${t.title}" to queue`);
-                localStorage.setItem('music_queue', JSON.stringify(queue.map(x => x.id)));
+            if (inPlaylist) {
+                // In playlist: swipe left to remove from playlist
+                if (deltaX < 0) {
+                    div.classList.add('swiped-left');
+                    if (currentPlaylist) {
+                        removeFromPlaylist(currentPlaylist.id, t.id);
+                        showToast(`Removed "${t.title}" from ${currentPlaylist.name}`);
+                        div.style.opacity = '0.5';
+                        setTimeout(() => div.remove(), 300);
+                    }
+                }
             } else {
-                // Swipe left - show quick playlist menu
-                div.classList.add('swiped-left');
-                openQuickPlaylistMenu(div, t);
+                // In library: swipe right to add to queue
+                if (deltaX > 0) {
+                    div.classList.add('swiped-right');
+                    queue.push(t);
+                    showToast(`Added "${t.title}" to queue`);
+                    localStorage.setItem('music_queue', JSON.stringify(queue.map(x => x.id)));
+                }
             }
         }, { passive: true });
 
@@ -658,7 +668,7 @@ function renderPlaylistDetail(pl) {
 
     pl.tracks.forEach(pt => {
         const t = tracks.find(x => x.id === pt.trackId) || { id: pt.trackId, title: pt.title, artist: pt.artist, album: pt.album };
-        const row = makeRow(t, false);
+        const row = makeRow(t, false, true);
         
         // Only add remove button on desktop (not touch screens)
         // Mobile users can use the context menu (long-press) to remove songs
@@ -1305,10 +1315,12 @@ function renderQueue(skipScroll = false) {
         const item = document.createElement('div');
         item.className = 'queue-item' + (i === qIdx ? ' active' : '');
         item.dataset.idx = i;
-        item.innerHTML = `<span class="queue-handle">\u283f</span><span class="queue-num">${i === qIdx ? '\u25b6' : i + 1}</span><div class="queue-info"><div class="queue-title">${t.title || 'Unknown'}</div><div class="queue-sub">${t.artist || '\u2014'}</div></div><button class="queue-remove" title="remove">\u2715</button>`;
+        item.innerHTML = `<span class="queue-handle" style="${isMobile() ? 'display:none' : ''}">\u283f</span><span class="queue-num">${i === qIdx ? '\u25b6' : i + 1}</span><div class="queue-info"><div class="queue-title">${t.title || 'Unknown'}</div><div class="queue-sub">${t.artist || '\u2014'}</div></div><button class="queue-remove" title="remove">\u2715</button>`;
 
         const handle = item.querySelector('.queue-handle');
-        handle.onpointerdown = e => startQueueDrag(e, item);
+        // On mobile, make whole row draggable; on desktop, only handle
+        const dragTarget = isMobile() ? item : handle;
+        if (dragTarget) dragTarget.onpointerdown = e => startQueueDrag(e, item);
 
         item.querySelector('.queue-remove').onclick = e => {
             e.stopPropagation();
