@@ -45,7 +45,7 @@ if errorlevel 1 (
 
 echo.
 echo Setting up main branch...
-git branch -M main 2>nul || git branch -M master
+git branch -M main 2>nul || git branch -M main
 
 echo.
 echo Committing files...
