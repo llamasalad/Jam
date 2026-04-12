@@ -1,3 +1,6 @@
+const mobileQuery = window.matchMedia('(max-width:768px)');
+const isMobile = () => mobileQuery.matches;
+
 const TOKEN_KEY = 'music_token';
 let token = localStorage.getItem(TOKEN_KEY) || '';
 let tracks = [], filtered = [], queue = [], qIdx = -1, sortMode = 'title';
@@ -964,6 +967,7 @@ function play(t) {
 }
 
 function updateExpandedNowPlaying(t) {
+    if (!t) return;
     if (expTitle) expTitle.textContent = t.title || 'Unknown';
     if (expArtist) expArtist.textContent = [t.artist, t.album].filter(Boolean).join(' \u00B7 ') || '\u2014';
     if (expCover) expCover.style.display = 'block'; 
@@ -1207,7 +1211,7 @@ function openExpandedPlayer(options = {}) {
         if (queueBtn) queueBtn.classList.remove('active'); 
         queueOpen = false 
     }
-    if (qIdx >= 0) updateExpandedNowPlaying(queue[qIdx]);
+    if (qIdx >= 0 && queue[qIdx]) updateExpandedNowPlaying(queue[qIdx]);
 
     if (!isMobile()) {
         setDesktopExpandedLyricsOpen(revealLyrics);
@@ -1232,9 +1236,6 @@ function closeExpandedPlayer() {
 
 if (expCollapse) expCollapse.onclick = closeExpandedPlayer;
 if (expPlayer) expPlayer.addEventListener('click', e => { if (e.target === expPlayer) closeExpandedPlayer() });
-
-const mobileQuery = window.matchMedia('(max-width:768px)');
-const isMobile = () => mobileQuery.matches;
 
 function setDesktopExpandedLyricsOpen(open) {
     desktopExpandedLyricsOpen = !!open;
