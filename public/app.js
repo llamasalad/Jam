@@ -67,7 +67,13 @@ const expLyricsToggle = document.getElementById('exp-lyrics-toggle');
 const expDesktopLyricsPanel = document.getElementById('exp-desktop-lyrics-panel');
 const expDesktopLyricsScroll = document.getElementById('exp-desktop-lyrics-scroll');
 
-// Dynamic height fixing for correct panel positioning
+// SVG Icons for Swipe Actions
+const SWIPE_ICONS = {
+    queue: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`,
+    playlist: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>`,
+    trash: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`
+};
+
 function updatePlayerHeight() {
     if (player && !player.classList.contains('hidden')) {
         document.documentElement.style.setProperty('--player-h', player.offsetHeight + 'px');
@@ -81,7 +87,6 @@ function debounce(fn, ms) {
 
 if (searchEl) searchEl.addEventListener('input', debounce(applyFilter, 120));
 
-// Initial Volume (cubic curve for natural hearing)
 if (audio) audio.volume = Math.pow(SAVED_VOL / 100, 3);
 
 function fmt(s) { if (!s || isNaN(s)) return '-'; s = Math.round(s); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') }
@@ -236,10 +241,9 @@ function bindTapActivation(el, handler, options = {}) {
     let longPressTimer = null;
     let longPressed = false;
     const longPressMs = options.longPressMs || 420;
-    let isSwipe = false;
 
     const isNestedControl = target => {
-        const control = target.closest('button, input, a, select, textarea, label');
+        const control = target.closest('button, input, a, select, textarea, label, .queue-handle');
         return control && control !== el;
     };
 
@@ -257,7 +261,6 @@ function bindTapActivation(el, handler, options = {}) {
         startY = e.clientY;
         moved = false;
         longPressed = false;
-        isSwipe = false;
         clearLongPress();
         if (options.onLongPress) {
             longPressTimer = setTimeout(() => {
@@ -273,9 +276,6 @@ function bindTapActivation(el, handler, options = {}) {
         if (e.pointerType !== 'touch') return;
         const deltaX = Math.abs(e.clientX - startX);
         const deltaY = Math.abs(e.clientY - startY);
-        if (deltaX > 15 && deltaX > deltaY) {
-            isSwipe = true;
-        }
         if (deltaX > 10 || deltaY > 10) {
             moved = true;
             clearLongPress();
@@ -303,99 +303,143 @@ function bindTapActivation(el, handler, options = {}) {
     });
 }
 
-function attachSwipeHandlers(el, handlers) {
+function attachSwipeHandlers(container, content, bgElement, handlers) {
     let startX = 0, startY = 0;
     let isRowSwiping = false, isRowScrolling = false;
     let deltaX = 0;
-    const ACTION_THRESHOLD = 70; // Native Apple Music/Spotify threshold distance
+    const ACTION_THRESHOLD = 70;
 
-    el.addEventListener('touchstart', e => {
+    container.addEventListener('touchstart', e => {
         if (e.target.closest('button') || e.target.closest('.queue-handle')) return;
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
         isRowSwiping = false;
         isRowScrolling = false;
-        el.classList.remove('swiped-left', 'swiped-right', 'swiped-left-preview', 'swiped-right-preview');
+        deltaX = 0;
+        content.style.transition = 'none'; 
+        bgElement.className = 'track-actions';
+        bgElement.innerHTML = ''; 
     }, { passive: true });
 
-    el.addEventListener('touchmove', e => {
+    container.addEventListener('touchmove', e => {
         if (!startX) return;
         const currentX = e.touches[0].clientX;
         const currentY = e.touches[0].clientY;
         deltaX = currentX - startX;
         const deltaY = currentY - startY;
 
-        // Direction Lock Algorithm
         if (!isRowSwiping && !isRowScrolling) {
             if (Math.abs(deltaY) > 10 && Math.abs(deltaY) > Math.abs(deltaX)) {
-                isRowScrolling = true; // Mostly moving up/down -> Cancel Swipe
+                isRowScrolling = true;
             } else if (Math.abs(deltaX) > 10) {
-                isRowSwiping = true;   // Mostly moving left/right -> Lock Swipe
+                isRowSwiping = true;
+                if (deltaX > 0 && handlers.right) {
+                    bgElement.className = 'track-actions right-active';
+                    bgElement.innerHTML = `<div class="action-icon">${handlers.right.icon}</div>`;
+                } else if (deltaX < 0 && handlers.left) {
+                    bgElement.className = 'track-actions left-active';
+                    bgElement.innerHTML = `<div class="action-icon">${handlers.left.icon}</div>`;
+                }
             }
         }
 
         if (isRowScrolling) return;
 
         if (isRowSwiping) {
-            e.stopPropagation(); // Prevents the panel from catching the drag
+            e.stopPropagation(); 
             
-            if (deltaX > 0 && handlers.right) {
-                el.classList.add('swiped-right-preview');
-                el.classList.remove('swiped-left-preview');
-            } else if (deltaX < 0 && handlers.left) {
-                el.classList.add('swiped-left-preview');
-                el.classList.remove('swiped-right-preview');
+            if (deltaX > 0 && !handlers.right) deltaX = 0;
+            if (deltaX < 0 && !handlers.left) deltaX = 0;
+
+            let translateVal = deltaX;
+            if (translateVal > ACTION_THRESHOLD) {
+                translateVal = ACTION_THRESHOLD + (translateVal - ACTION_THRESHOLD) * 0.2;
+            } else if (translateVal < -ACTION_THRESHOLD) {
+                translateVal = -ACTION_THRESHOLD + (translateVal + ACTION_THRESHOLD) * 0.2;
+            }
+
+            content.style.transform = `translate3d(${translateVal}px, 0, 0)`;
+
+            if (deltaX > ACTION_THRESHOLD && handlers.right) {
+                bgElement.classList.add('locked');
+                if (!container.dataset.hapticRight) {
+                    if (navigator.vibrate) navigator.vibrate(10);
+                    container.dataset.hapticRight = 'true';
+                }
+            } else if (deltaX < -ACTION_THRESHOLD && handlers.left) {
+                bgElement.classList.add('locked');
+                if (!container.dataset.hapticLeft) {
+                    if (navigator.vibrate) navigator.vibrate(10);
+                    container.dataset.hapticLeft = 'true';
+                }
             } else {
-                el.classList.remove('swiped-left-preview', 'swiped-right-preview');
+                bgElement.classList.remove('locked');
+                container.dataset.hapticRight = '';
+                container.dataset.hapticLeft = '';
             }
         }
     }, { passive: true });
 
-    el.addEventListener('touchend', e => {
+    container.addEventListener('touchend', e => {
         if (!startX) return;
         startX = 0;
 
         if (isRowSwiping) {
             e.stopPropagation();
-            el.classList.remove('swiped-left-preview', 'swiped-right-preview');
-
+            content.style.transition = 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)';
+            
             if (deltaX >= ACTION_THRESHOLD && handlers.right) {
-                el.classList.add('swiped-right');
-                if (navigator.vibrate) navigator.vibrate(10);
-                if (handlers.right) handlers.right();
-                setTimeout(() => el.classList.remove('swiped-right'), 300);
+                handlers.right.action();
             } else if (deltaX <= -ACTION_THRESHOLD && handlers.left) {
-                el.classList.add('swiped-left');
-                if (navigator.vibrate) navigator.vibrate(10);
-                if (handlers.left) handlers.left();
-                setTimeout(() => el.classList.remove('swiped-left'), 300);
+                handlers.left.action();
             }
+            
+            content.style.transform = `translate3d(0, 0, 0)`;
+            setTimeout(() => {
+                bgElement.className = 'track-actions';
+                bgElement.innerHTML = '';
+                container.dataset.hapticRight = '';
+                container.dataset.hapticLeft = '';
+            }, 300);
         }
     });
 }
 
 function makeRow(t, showMenu = false, inPlaylist = false) {
-    const div = document.createElement('div'); div.className = 'track'; div.dataset.id = t.id;
+    const div = document.createElement('div'); 
+    div.className = 'track'; 
+    div.dataset.id = t.id;
     if (qIdx >= 0 && queue[qIdx]?.id === t.id) div.classList.add('active');
+    if (inPlaylist) div.dataset.inPlaylist = "true";
+
+    const actionsBg = document.createElement('div');
+    actionsBg.className = 'track-actions';
+    div.appendChild(actionsBg);
+
+    const content = document.createElement('div');
+    content.className = 'track-content';
+
     const thumb = document.createElement('div'); thumb.className = 'thumb';
     const sp = document.createElement('span'); sp.className = 'thumb-icon'; sp.textContent = '\u266A'; thumb.appendChild(sp);
     loadCover(t.id, thumb);
+    
     const info = document.createElement('div'); info.className = 'track-info';
     const ti = document.createElement('div'); ti.className = 'track-title'; ti.textContent = t.title || 'Unknown';
     const ts = document.createElement('div'); ts.className = 'track-sub'; ts.textContent = [t.artist, t.album].filter(Boolean).join(' \u00B7 ') || '\u2014';
     info.append(ti, ts);
+    
     const right = document.createElement('div'); right.className = 'track-right';
     const dur = document.createElement('div'); dur.className = 'track-dur'; dur.dataset.id = t.id; dur.textContent = fmt(t.duration);
     right.appendChild(dur);
     
-    // Only show 3-dot menu in library, not in playlist
     if (showMenu && !inPlaylist) {
-        const menuBtn = document.createElement('button'); menuBtn.className = 'track-menu-btn'; menuBtn.textContent = '\u2026'; menuBtn.title = 'Add to playlist';
+        const menuBtn = document.createElement('button'); menuBtn.className = 'track-menu-btn'; menuBtn.textContent = '\u2026'; menuBtn.title = 'Options';
         menuBtn.onclick = e => { e.stopPropagation(); openCtxMenu(e, t) };
         right.appendChild(menuBtn);
     }
     
-    div.append(thumb, info, right);
+    content.append(thumb, info, right);
+    div.appendChild(content);
 
     const isTouchScreen = window.matchMedia("(pointer: coarse)").matches;
 
@@ -424,29 +468,37 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
             }, t)
         });
 
-        // Setup Swipe Actions
         let rowHandlers = {};
         if (inPlaylist) {
-            rowHandlers.left = () => {
-                if (currentPlaylist) {
-                    removeFromPlaylist(currentPlaylist.id, t.id);
-                    showToast(`Removed "${t.title}" from ${currentPlaylist.name}`);
-                    div.style.opacity = '0.5';
-                    setTimeout(() => div.remove(), 300);
-                }
+            rowHandlers.left = {
+                action: () => {
+                    if (currentPlaylist) {
+                        removeFromPlaylist(currentPlaylist.id, t.id);
+                        showToast(`Removed "${t.title}"`);
+                        div.style.opacity = '0.5';
+                        setTimeout(() => div.remove(), 300);
+                    }
+                },
+                icon: SWIPE_ICONS.trash
             };
         } else {
-            rowHandlers.right = () => {
-                queue.push(t);
-                showToast(`Added "${t.title}" to queue`);
-                localStorage.setItem('music_queue', JSON.stringify(queue.map(x => x.id)));
+            rowHandlers.right = {
+                action: () => {
+                    queue.push(t);
+                    showToast(`Added "${t.title}" to queue`);
+                    localStorage.setItem('music_queue', JSON.stringify(queue.map(x => x.id)));
+                },
+                icon: SWIPE_ICONS.queue
             };
-            rowHandlers.left = () => {
-                openQuickPlaylistMenu(div, t);
+            rowHandlers.left = {
+                action: () => {
+                    openQuickPlaylistMenu(div, t);
+                },
+                icon: SWIPE_ICONS.playlist
             };
         }
         
-        attachSwipeHandlers(div, rowHandlers);
+        attachSwipeHandlers(div, content, actionsBg, rowHandlers);
     }
     return div;
 }
@@ -598,7 +650,7 @@ function openCtxMenu(e, t) {
                 for (const track of targetTracks) {
                     await removeFromPlaylist(currentPlaylist.id, track.id);
                 }
-                showToast(`Removed ${targetTracks.length} song(s) from ${currentPlaylist.name}`);
+                showToast(`Removed ${targetTracks.length} song(s)`);
                 const updated = await fetchPlaylist(currentPlaylist.id);
                 if (updated) {
                     currentPlaylist = updated;
@@ -1325,28 +1377,38 @@ function renderQueue(skipScroll = false) {
         const item = document.createElement('div');
         item.className = 'queue-item' + (i === qIdx ? ' active' : '');
         item.dataset.idx = i;
-        item.innerHTML = `<span class="queue-handle" style="${isMobile() ? 'display:none' : ''}">\u283f</span><span class="queue-num">${i === qIdx ? '\u25b6' : i + 1}</span><div class="queue-info"><div class="queue-title">${t.title || 'Unknown'}</div><div class="queue-sub">${t.artist || '\u2014'}</div></div><button class="queue-remove" title="remove">\u2715</button>`;
+        
+        const actionsBg = document.createElement('div'); 
+        actionsBg.className = 'track-actions';
+        item.appendChild(actionsBg);
+        
+        const content = document.createElement('div');
+        content.className = 'queue-item-content';
+        content.innerHTML = `<span class="queue-handle">\u283f</span><span class="queue-num">${i === qIdx ? '\u25b6' : i + 1}</span><div class="queue-info"><div class="queue-title">${t.title || 'Unknown'}</div><div class="queue-sub">${t.artist || '\u2014'}</div></div><button class="queue-remove" title="remove">\u2715</button>`;
+        item.appendChild(content);
 
-        const handle = item.querySelector('.queue-handle');
-        const dragTarget = isMobile() ? item : handle;
-        if (dragTarget) dragTarget.onpointerdown = e => startQueueDrag(e, item);
+        const handle = content.querySelector('.queue-handle');
+        if (handle) handle.onpointerdown = e => startQueueDrag(e, item);
 
-        item.querySelector('.queue-remove').onclick = e => {
+        content.querySelector('.queue-remove').onclick = e => {
             e.stopPropagation();
             removeFromQueue(i);
         };
 
         if (isMobile()) {
-            attachSwipeHandlers(item, {
-                left: () => {
-                    item.style.opacity = '0.5';
-                    setTimeout(() => removeFromQueue(i), 200);
+            attachSwipeHandlers(item, content, actionsBg, {
+                left: {
+                    action: () => {
+                        item.style.opacity = '0.5';
+                        setTimeout(() => removeFromQueue(i), 200);
+                    },
+                    icon: SWIPE_ICONS.trash
                 }
             });
         }
 
-        item.onclick = () => { 
-            if (item.classList.contains('swiped-left')) return;
+        item.onclick = (e) => { 
+            if (e.target.closest('.queue-handle') || item.style.opacity === '0.5') return;
             qIdx = i; play(queue[qIdx]); updateActive(); renderQueue() 
         };
         queuePanel.appendChild(item);
