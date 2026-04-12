@@ -25,4 +25,5 @@ git push origin main
 ### Setup
 1. Create GitHub repo and push this code
 2. For GitHub Pages: Enable in Settings > Pages
+<<<<<<< HEAD
 3. For Cloudflare: Run `wrangler login` then `wrangler pages project create`
