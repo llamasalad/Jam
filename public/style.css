@@ -601,15 +601,47 @@ button,
 @media(min-width:769px){
   #player-meta-mobile{display:none}
   #volume-row{display:flex}
+  
+  /* --- BASE EXPANDED PLAYER STYLES (RESTORED) --- */
   #expanded-player{display:none;position:fixed;inset:0;background:var(--bg);z-index:200;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;overflow-y:auto}
   #expanded-player.open{display:flex}
-  #exp-lyrics-card{display:none !important}
-  #exp-offset-controls{display:flex}
+  #expanded-player::-webkit-scrollbar{width:3px}
+  #expanded-player::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
   #exp-collapse{position:absolute;top:20px;right:24px;background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;padding:8px;border-radius:50%;line-height:1;z-index:10;transition:background .15s}
   #exp-collapse:hover{color:var(--text);background:var(--surface2)}
-  #exp-cover-wrap{margin-top:0 !important}
+  #exp-content{width:100%;max-width:1100px;display:flex;flex-direction:column;align-items:center;gap:12px}
+  #exp-main-shell{width:100%;display:flex;flex-direction:column;align-items:center;gap:12px}
+  #exp-main-left{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;transition:transform .3s ease,width .3s ease,opacity .3s ease}
+  #exp-desktop-lyrics-panel{display:none}
+  #exp-cover-wrap{width:min(85vw,380px);aspect-ratio:1/1;border-radius:24px;overflow:hidden;flex-shrink:0;background:var(--surface3);display:flex;align-items:center;justify-content:center;box-shadow:0 20px 60px rgba(0,0,0,.5);position:relative;margin-top:-15px !important}
+  #exp-cover{width:100%;height:100%;object-fit:contain;display:block}
+  #exp-cover-icon{font-size:64px;color:var(--muted);position:absolute}
+  #exp-info{text-align:center;width:100%;margin-bottom:24px !important;padding-bottom:0 !important}
+  #exp-title{width:100%;font-size:26px;font-weight:700;color:var(--text);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #exp-artist{font-size:17px;color:var(--muted);margin-bottom:0}
+  #exp-lyrics-wrap{width:100%;height:70px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;position:relative;overflow:hidden;margin-top:0 !important}
+  #exp-lyrics{width:100%;transition:transform .4s cubic-bezier(0.4,0,0.2,1);padding-bottom:20px}
+  #exp-lyric-current{font-size:19px;font-weight:600;color:var(--text);margin-bottom:4px;transition:opacity .3s,transform .3s}
+  #exp-lyric-next{font-size:15px;color:var(--muted);transition:opacity .3s,transform .3s}
+  #exp-controls-row{width:100%;display:flex;flex-direction:column;gap:20px;align-items:center}
+  #exp-controls{display:flex;align-items:center;gap:24px;justify-content:center}
+  #exp-utils{display:flex;align-items:center;justify-content:center;gap:10px}
+  #exp-lyrics-toggle{background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'SF Pro Display',-apple-system,sans-serif;cursor:pointer;transition:color .15s,border-color .15s,background .15s}
+  #exp-lyrics-toggle:hover,#exp-lyrics-toggle.active{color:var(--accent);border-color:var(--accent)}
+  #exp-controls .ctrl-btn{padding:12px;border-radius:14px}
+  #exp-controls .ctrl-btn.main{width:68px;height:68px}
+  #exp-controls .ctrl-btn svg{width:30px;height:30px}
+  #exp-progress-wrap{width:100%;display:flex;align-items:center;gap:12px}
+  #exp-progress-wrap .time-label{font-size:12px;min-width:40px}
+  #exp-progress{flex:1;height:4px;-webkit-appearance:none;appearance:none;border-radius:2px;background:var(--surface3);outline:none;cursor:pointer}
+  #exp-progress::-webkit-slider-runnable-track{height:4px;border-radius:2px}
+  #exp-progress::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;margin-top:-5px;box-shadow:0 0 6px rgba(0,0,0,0.4)}
+  #exp-progress::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;box-shadow:0 0 6px rgba(0,0,0,0.4)}
 
-  /* --- DESKTOP LYRICS RESTORED --- */
+  #exp-lyrics-card{display:none !important}
+  #exp-offset-controls{display:flex}
+
+  /* --- DESKTOP LYRICS --- */
   #expanded-player.desktop-lyrics-open{
     justify-content:flex-start;
     align-items:center;
