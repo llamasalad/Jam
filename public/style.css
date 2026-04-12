@@ -746,22 +746,37 @@ body.menu-open::before{
 
 /* -- Disable hover effects on touch devices -- */
 @media (hover: none), (pointer: coarse) {
+  /* Disable ALL hover effects on touch devices */
+  *:hover {
+    background: initial !important;
+    color: initial !important;
+    transform: none !important;
+    opacity: initial !important;
+    box-shadow: initial !important;
+  }
+  
   .track:hover { background: transparent !important; }
-  .btn:hover, #btn-play:hover, #exp-play:hover { transform: none !important; background: initial !important; }
   .track:hover .track-menu-btn { opacity: 0 !important; }
   .playlist-card:hover { background: transparent !important; }
   .playlist-card:hover .playlist-del { opacity: 0 !important; }
-  .ctrl-btn { transition: transform 0.1s, background 0.1s, color 0.1s !important; }
-  .ctrl-btn:hover { background: transparent !important; color: var(--muted) !important; }
-  .ctrl-btn:active { background: var(--surface2) !important; color: var(--text) !important; transform: scale(0.92) !important; box-shadow: inset 0 2px 8px rgba(0,0,0,0.3) !important; }
-  .ctrl-btn.main:hover { background: var(--accent) !important; }
-  .ctrl-btn.main:active { background: var(--accent2) !important; color: #000 !important; transform: scale(0.92) !important; box-shadow: inset 0 2px 8px rgba(0,0,0,0.2) !important; }
-  /* Ensure all buttons have visible active state on touch */
-  button:active, .ctrl-btn:active, #sort-btn:active, #new-playlist-btn:active, 
-  #playlist-play-btn:active, #queue-btn:active, #lyrics-btn:active, 
-  #exp-lyrics-toggle:active, .lyrics-timing-btn:active {
-    transform: scale(0.92) !important;
+  
+  /* Button active states */
+  .ctrl-btn {
+    transition: transform 0.1s, background 0.1s, color 0.1s !important;
   }
+  .ctrl-btn:active {
+    background: var(--surface2) !important;
+    color: var(--text) !important;
+    transform: scale(0.92) !important;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.3) !important;
+  }
+  .ctrl-btn.main:active {
+    background: var(--accent2) !important;
+    color: #000 !important;
+    transform: scale(0.92) !important;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.2) !important;
+  }
+  
   /* Main play buttons specific active states */
   #btn-play:active, #exp-play:active {
     background: var(--accent2) !important;
@@ -769,35 +784,15 @@ body.menu-open::before{
     transform: scale(0.92) !important;
     box-shadow: inset 0 2px 8px rgba(0,0,0,0.2) !important;
   }
-  /* Ensure all control buttons have visible active state */
-  .ctrl-btn:active {
-    background: var(--surface2) !important;
-    color: var(--text) !important;
+  
+  /* Ensure all buttons have visible active state on touch */
+  button:active, .ctrl-btn:active, #sort-btn:active, #new-playlist-btn:active, 
+  #playlist-play-btn:active, #queue-btn:active, #lyrics-btn:active, 
+  #exp-lyrics-toggle:active, .lyrics-timing-btn:active {
     transform: scale(0.92) !important;
-    box-shadow: inset 0 2px 8px rgba(0,0,0,0.3) !important;
   }
+  
   #exp-collapse:active { transform: none !important; }
-  #sort-btn:hover { color: var(--muted) !important; }
-  #new-playlist-btn:hover { background: var(--accent) !important; }
-  #playlist-back:hover { color: var(--muted) !important; }
-  #playlist-play-btn:hover { background: var(--accent) !important; }
-  #expand-handle:hover { color: var(--muted) !important; transform: none !important; }
-  .track-menu-btn:hover { background: transparent !important; color: var(--muted) !important; }
-  .playlist-del:hover { color: var(--muted) !important; }
-  .ctx-item:hover { background: transparent !important; }
-  .queue-item:hover { background: transparent !important; }
-  .queue-item:hover .queue-remove { opacity: 0 !important; }
-  .queue-remove:hover { color: var(--muted) !important; }
-  .queue-handle:hover { color: var(--muted) !important; }
-  #queue-btn:hover, #lyrics-btn:hover { color: var(--muted) !important; border-color: var(--border) !important; }
-  #lyrics-btn:hover, #lyrics-btn.active:hover { color: var(--muted) !important; }
-  #exp-collapse:hover { background: transparent !important; color: var(--muted) !important; }
-  #exp-lyrics-toggle:hover { color: var(--muted) !important; border-color: var(--border) !important; }
-  .lyrics-timing-btn:hover { background: var(--surface2) !important; color: var(--muted) !important; border-color: var(--border) !important; }
-  .lyric-line:hover { color: var(--muted) !important; }
-  .btn-cancel:hover { background: var(--surface3) !important; }
-  .btn-confirm:hover { background: var(--accent) !important; }
-  #auth-submit:hover { background: var(--accent) !important; }
   
   /* Always show action buttons on touch - no hover needed */
   .track-menu-btn { 
