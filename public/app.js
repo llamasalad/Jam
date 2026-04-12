@@ -224,7 +224,7 @@ function renderList() {
             h.textContent = g; 
             frag.appendChild(h) 
         }
-        frag.appendChild(makeRow(t, false));
+        frag.appendChild(makeRow(t, true));
     }
     if (trackList) trackList.appendChild(frag);
     // FIX: bindLongPress() call removed — touch long-press is handled
@@ -417,12 +417,15 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
                     }
                 }
             } else {
-                // In library: swipe right to add to queue
+                // In library: swipe right to add to queue, swipe left for playlist menu
                 if (deltaX > 0) {
                     div.classList.add('swiped-right');
                     queue.push(t);
                     showToast(`Added "${t.title}" to queue`);
                     localStorage.setItem('music_queue', JSON.stringify(queue.map(x => x.id)));
+                } else if (deltaX < 0) {
+                    div.classList.add('swiped-left');
+                    openQuickPlaylistMenu(div, t);
                 }
             }
         }, { passive: true });
@@ -488,6 +491,7 @@ async function openQuickPlaylistMenu(trackRow, track) {
             item.ontouchend = () => setTimeout(() => item.style.background = 'transparent', 150);
             item.onclick = async () => {
                 await addToPlaylist(pl.id, track);
+                showToast(`Added "${track.title}" to ${pl.name}`);
                 menu.remove();
             };
             menu.appendChild(item);
@@ -733,7 +737,6 @@ async function addToPlaylist(playlistId, t) {
                 currentPlaylist = updated; 
                 renderPlaylistDetail(updated) 
             } 
-            showToast('Added to ' + (playlists.find(p => p.id === playlistId)?.name || 'playlist')) 
         }
     } catch (e) { console.error("Failed to add to playlist", e); }
 }
@@ -964,6 +967,7 @@ if (audio) {
 function setupSeekBar(el, onSeek) {
     if (!el) return;
     let active = false;
+    let didSeekOnPointerUp = false;
     el.addEventListener('pointerdown', () => { active = true; seeking = true; });
     el.addEventListener('pointermove', e => {
         if (!active) return;
@@ -977,10 +981,13 @@ function setupSeekBar(el, onSeek) {
         if (!active) return;
         active = false;
         seeking = false;
+        didSeekOnPointerUp = true;
         if (audio && audio.duration) audio.currentTime = audio.duration * el.value / 100;
     });
     el.addEventListener('pointercancel', () => { active = false; seeking = false; });
     el.addEventListener('change', () => {
+        // pointerup already sought; this fires for keyboard nav (arrow keys) where pointerup won't
+        if (didSeekOnPointerUp) { didSeekOnPointerUp = false; seeking = false; return; }
         if (audio && audio.duration) audio.currentTime = audio.duration * el.value / 100;
         seeking = false;
     });
@@ -1012,6 +1019,7 @@ if (volumeSlider) {
         const v = volumeSlider.value / 100; 
         if (audio) audio.volume = Math.pow(v, 3);
         muted = v === 0;
+        if (v > 0) lastVol = parseInt(volumeSlider.value); // keep lastVol in sync for unmute
         if (volumeIcon) volumeIcon.innerHTML = v === 0 ? volIcons.muted : v < 0.5 ? volIcons.low : volIcons.high;
         localStorage.setItem('music_vol', volumeSlider.value);
     });
