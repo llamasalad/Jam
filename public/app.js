@@ -79,8 +79,6 @@ function debounce(fn, ms) {
     let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms) };
 }
 
-// FIX: Only one debounced input listener. The duplicate raw listener
-// that was registered later in the file has been removed.
 if (searchEl) searchEl.addEventListener('input', debounce(applyFilter, 120));
 
 // Initial Volume (cubic curve for natural hearing)
@@ -227,9 +225,6 @@ function renderList() {
         frag.appendChild(makeRow(t, true));
     }
     if (trackList) trackList.appendChild(frag);
-    // FIX: bindLongPress() call removed — touch long-press is handled
-    // exclusively by bindTapActivation inside makeRow, avoiding the
-    // double-handler race that caused context menus to fire twice.
 }
 
 function bindTapActivation(el, handler, options = {}) {
@@ -241,7 +236,6 @@ function bindTapActivation(el, handler, options = {}) {
     let longPressTimer = null;
     let longPressed = false;
     const longPressMs = options.longPressMs || 420;
-    // Track if this is a swipe to prevent long-press
     let isSwipe = false;
 
     const isNestedControl = target => {
@@ -279,7 +273,6 @@ function bindTapActivation(el, handler, options = {}) {
         if (e.pointerType !== 'touch') return;
         const deltaX = Math.abs(e.clientX - startX);
         const deltaY = Math.abs(e.clientY - startY);
-        // Mark as swipe if horizontal movement exceeds vertical
         if (deltaX > 15 && deltaX > deltaY) {
             isSwipe = true;
         }
@@ -307,6 +300,77 @@ function bindTapActivation(el, handler, options = {}) {
             return;
         }
         handler(e);
+    });
+}
+
+function attachSwipeHandlers(el, handlers) {
+    let startX = 0, startY = 0;
+    let isRowSwiping = false, isRowScrolling = false;
+    let deltaX = 0;
+    const ACTION_THRESHOLD = 70; // Native Apple Music/Spotify threshold distance
+
+    el.addEventListener('touchstart', e => {
+        if (e.target.closest('button') || e.target.closest('.queue-handle')) return;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        isRowSwiping = false;
+        isRowScrolling = false;
+        el.classList.remove('swiped-left', 'swiped-right', 'swiped-left-preview', 'swiped-right-preview');
+    }, { passive: true });
+
+    el.addEventListener('touchmove', e => {
+        if (!startX) return;
+        const currentX = e.touches[0].clientX;
+        const currentY = e.touches[0].clientY;
+        deltaX = currentX - startX;
+        const deltaY = currentY - startY;
+
+        // Direction Lock Algorithm
+        if (!isRowSwiping && !isRowScrolling) {
+            if (Math.abs(deltaY) > 10 && Math.abs(deltaY) > Math.abs(deltaX)) {
+                isRowScrolling = true; // Mostly moving up/down -> Cancel Swipe
+            } else if (Math.abs(deltaX) > 10) {
+                isRowSwiping = true;   // Mostly moving left/right -> Lock Swipe
+            }
+        }
+
+        if (isRowScrolling) return;
+
+        if (isRowSwiping) {
+            e.stopPropagation(); // Prevents the panel from catching the drag
+            
+            if (deltaX > 0 && handlers.right) {
+                el.classList.add('swiped-right-preview');
+                el.classList.remove('swiped-left-preview');
+            } else if (deltaX < 0 && handlers.left) {
+                el.classList.add('swiped-left-preview');
+                el.classList.remove('swiped-right-preview');
+            } else {
+                el.classList.remove('swiped-left-preview', 'swiped-right-preview');
+            }
+        }
+    }, { passive: true });
+
+    el.addEventListener('touchend', e => {
+        if (!startX) return;
+        startX = 0;
+
+        if (isRowSwiping) {
+            e.stopPropagation();
+            el.classList.remove('swiped-left-preview', 'swiped-right-preview');
+
+            if (deltaX >= ACTION_THRESHOLD && handlers.right) {
+                el.classList.add('swiped-right');
+                if (navigator.vibrate) navigator.vibrate(10);
+                if (handlers.right) handlers.right();
+                setTimeout(() => el.classList.remove('swiped-right'), 300);
+            } else if (deltaX <= -ACTION_THRESHOLD && handlers.left) {
+                el.classList.add('swiped-left');
+                if (navigator.vibrate) navigator.vibrate(10);
+                if (handlers.left) handlers.left();
+                setTimeout(() => el.classList.remove('swiped-left'), 300);
+            }
+        }
     });
 }
 
@@ -350,8 +414,6 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
         };
         div.ondblclick = () => playTrack(t, filtered);
     } else {
-        // FIX: bindTapActivation is the single source of truth for touch
-        // interaction on track rows. bindLongPress has been removed entirely.
         bindTapActivation(div, () => {
             playTrack(t, filtered);
         }, {
@@ -362,80 +424,29 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
             }, t)
         });
 
-        // Swipe gestures for mobile
-        let touchStartX = 0, touchStartY = 0, isSwiping = false, swipeTriggered = false;
-        const SWIPE_THRESHOLD = 30; // Lower threshold for easier triggering
-        const SWIPE_PREVIEW_THRESHOLD = 10; // Show preview feedback earlier
+        // Setup Swipe Actions
+        let rowHandlers = {};
+        if (inPlaylist) {
+            rowHandlers.left = () => {
+                if (currentPlaylist) {
+                    removeFromPlaylist(currentPlaylist.id, t.id);
+                    showToast(`Removed "${t.title}" from ${currentPlaylist.name}`);
+                    div.style.opacity = '0.5';
+                    setTimeout(() => div.remove(), 300);
+                }
+            };
+        } else {
+            rowHandlers.right = () => {
+                queue.push(t);
+                showToast(`Added "${t.title}" to queue`);
+                localStorage.setItem('music_queue', JSON.stringify(queue.map(x => x.id)));
+            };
+            rowHandlers.left = () => {
+                openQuickPlaylistMenu(div, t);
+            };
+        }
         
-        div.addEventListener('touchstart', e => {
-            if (e.target.closest('button')) return;
-            e.stopPropagation(); // Prevent parent swipe interference
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-            isSwiping = true;
-            swipeTriggered = false;
-            div.classList.remove('swiped-left', 'swiped-right');
-        }, { passive: true });
-
-        div.addEventListener('touchmove', e => {
-            e.stopPropagation(); // Prevent parent swipe interference
-            if (!isSwiping || swipeTriggered) return;
-            const deltaX = e.touches[0].clientX - touchStartX;
-            const deltaY = e.touches[0].clientY - touchStartY;
-            
-            // Progressive visual feedback before threshold
-            if (Math.abs(deltaX) > SWIPE_PREVIEW_THRESHOLD && Math.abs(deltaX) > Math.abs(deltaY)) {
-                if (deltaX > 0) {
-                    div.classList.add('swiped-right-preview');
-                    div.classList.remove('swiped-left-preview');
-                } else {
-                    div.classList.add('swiped-left-preview');
-                    div.classList.remove('swiped-right-preview');
-                }
-            } else {
-                div.classList.remove('swiped-left-preview', 'swiped-right-preview');
-            }
-            
-            // Only trigger action after full threshold
-            if (Math.abs(deltaX) < Math.abs(deltaY) || Math.abs(deltaX) < SWIPE_THRESHOLD) return;
-            
-            swipeTriggered = true;
-            div.classList.remove('swiped-left-preview', 'swiped-right-preview');
-            
-            // Haptic feedback if available
-            if (navigator.vibrate) navigator.vibrate(10);
-            
-            if (inPlaylist) {
-                // In playlist: swipe left to remove from playlist
-                if (deltaX < 0) {
-                    div.classList.add('swiped-left');
-                    if (currentPlaylist) {
-                        removeFromPlaylist(currentPlaylist.id, t.id);
-                        showToast(`Removed "${t.title}" from ${currentPlaylist.name}`);
-                        div.style.opacity = '0.5';
-                        setTimeout(() => div.remove(), 300);
-                    }
-                }
-            } else {
-                // In library: swipe right to add to queue, swipe left for playlist menu
-                if (deltaX > 0) {
-                    div.classList.add('swiped-right');
-                    queue.push(t);
-                    showToast(`Added "${t.title}" to queue`);
-                    localStorage.setItem('music_queue', JSON.stringify(queue.map(x => x.id)));
-                } else if (deltaX < 0) {
-                    div.classList.add('swiped-left');
-                    openQuickPlaylistMenu(div, t);
-                }
-            }
-        }, { passive: true });
-
-        div.addEventListener('touchend', () => {
-            isSwiping = false;
-            div.classList.remove('swiped-left-preview', 'swiped-right-preview');
-            // Clear visual feedback after delay
-            setTimeout(() => div.classList.remove('swiped-left', 'swiped-right'), 300);
-        });
+        attachSwipeHandlers(div, rowHandlers);
     }
     return div;
 }
@@ -445,18 +456,14 @@ function hideCtxWithBackdrop() {
   document.querySelectorAll('.track.long-press').forEach(t => t.classList.remove('long-press'));
   document.body.classList.remove('menu-open');
   ctxTrack = null;
-  // Also hide any quick playlist menu
   const quickMenu = document.getElementById('quick-playlist-menu');
   if (quickMenu) quickMenu.remove();
 }
 
-// Quick playlist menu for swipe-left on mobile tracks
 async function openQuickPlaylistMenu(trackRow, track) {
-    // Remove any existing quick menu
     const existing = document.getElementById('quick-playlist-menu');
     if (existing) existing.remove();
     
-    // Ensure playlists are loaded
     if (playlists.length === 0) {
         await loadPlaylists();
     }
@@ -510,7 +517,6 @@ async function openQuickPlaylistMenu(trackRow, track) {
     
     document.body.appendChild(menu);
     
-    // Auto-close after 5 seconds or on outside tap
     const autoClose = setTimeout(() => menu.remove(), 5000);
     
     const closeOnTap = e => {
@@ -528,9 +534,6 @@ async function openQuickPlaylistMenu(trackRow, track) {
     }, 100);
 }
 
-// FIX: Single unified click handler for closing the context menu.
-// The duplicate document click listener that called closeCtxMenu() a
-// second time has been removed.
 document.addEventListener('click', e => {
   if (!e.target.closest('#ctx-menu') && !e.target.closest('#quick-playlist-menu')) {
     document.body.classList.remove('menu-open');
@@ -584,7 +587,6 @@ function openCtxMenu(e, t) {
         };
     }
 
-    // Show remove from playlist option if in playlist view
     const ctxRemoveFromPlaylist = document.getElementById('ctx-remove-from-playlist');
     const ctxRemoveSep = document.getElementById('ctx-remove-sep');
     if (ctxRemoveFromPlaylist && ctxRemoveSep) {
@@ -597,7 +599,6 @@ function openCtxMenu(e, t) {
                     await removeFromPlaylist(currentPlaylist.id, track.id);
                 }
                 showToast(`Removed ${targetTracks.length} song(s) from ${currentPlaylist.name}`);
-                // Refresh the playlist view
                 const updated = await fetchPlaylist(currentPlaylist.id);
                 if (updated) {
                     currentPlaylist = updated;
@@ -685,8 +686,6 @@ function renderPlaylistDetail(pl) {
         const t = tracks.find(x => x.id === pt.trackId) || { id: pt.trackId, title: pt.title, artist: pt.artist, album: pt.album };
         const row = makeRow(t, false, true);
         
-        // Only add remove button on desktop (not touch screens)
-        // Mobile users can use the context menu (long-press) to remove songs
         if (!isTouchScreen) {
             const removeBtn = document.createElement('button');
             removeBtn.className = 'track-menu-btn';
@@ -702,8 +701,6 @@ function renderPlaylistDetail(pl) {
         
         container.appendChild(row);
     });
-    // FIX: bindLongPress() call removed here too — makeRow already
-    // attaches touch handlers via bindTapActivation.
 }
 const plBack = document.getElementById('playlist-back');
 if (plBack) {
@@ -803,7 +800,6 @@ function showToast(msg) {
     t.textContent = msg; t.style.opacity = '1'; clearTimeout(t._t); t._t = setTimeout(() => t.style.opacity = '0', 2000);
 }
 
-// FIX: Object URLs are revoked when replaced so they don't accumulate.
 const coverCache = {};
 const coverRequests = {};
 
@@ -814,7 +810,6 @@ async function ensureCoverUrl(id) {
     coverRequests[id] = fetch('/api/cover/' + id).then(async r => {
         if (!r.ok) return null;
         const blob = await r.blob();
-        // Revoke any previous URL for this id before replacing it
         if (coverCache[id]) URL.revokeObjectURL(coverCache[id]);
         const objectUrl = URL.createObjectURL(blob);
         coverCache[id] = objectUrl;
@@ -876,7 +871,6 @@ function playTrack(t, list) {
 }
 
 function play(t) {
-    // Reset Lyrics Offset whenever a new track plays
     lyricsOffset = 0;
     updateLyricsOffsetUI();
 
@@ -914,15 +908,10 @@ function play(t) {
     loadLyrics(t); 
     updateExpandedNowPlaying(t);
     
-    // FIX: mediaSession.metadata is set only here, in updateMediaSession,
-    // once the cover URL is resolved. The duplicate assignment that was
-    // inside updateExpandedNowPlaying has been removed.
     ensureCoverUrl(t.id).then(covUrl => updateMediaSession(t, covUrl)).catch(() => updateMediaSession(t, null));
 }
 
 function updateExpandedNowPlaying(t) {
-    // FIX: mediaSession.metadata removed from here — updateMediaSession
-    // is the single owner of that assignment (called from play()).
     if (expTitle) expTitle.textContent = t.title || 'Unknown';
     if (expArtist) expArtist.textContent = [t.artist, t.album].filter(Boolean).join(' \u00B7 ') || '\u2014';
     if (expCover) expCover.style.display = 'block'; 
@@ -963,7 +952,6 @@ if (audio) {
     audio.addEventListener('ended', () => nextTrack());
 }
 
-// Smooth seekbar: use pointer events for better mobile feel
 function setupSeekBar(el, onSeek) {
     if (!el) return;
     let active = false;
@@ -986,7 +974,6 @@ function setupSeekBar(el, onSeek) {
     });
     el.addEventListener('pointercancel', () => { active = false; seeking = false; });
     el.addEventListener('change', () => {
-        // pointerup already sought; this fires for keyboard nav (arrow keys) where pointerup won't
         if (didSeekOnPointerUp) { didSeekOnPointerUp = false; seeking = false; return; }
         if (audio && audio.duration) audio.currentTime = audio.duration * el.value / 100;
         seeking = false;
@@ -1019,7 +1006,7 @@ if (volumeSlider) {
         const v = volumeSlider.value / 100; 
         if (audio) audio.volume = Math.pow(v, 3);
         muted = v === 0;
-        if (v > 0) lastVol = parseInt(volumeSlider.value); // keep lastVol in sync for unmute
+        if (v > 0) lastVol = parseInt(volumeSlider.value); 
         if (volumeIcon) volumeIcon.innerHTML = v === 0 ? volIcons.muted : v < 0.5 ? volIcons.low : volIcons.high;
         localStorage.setItem('music_vol', volumeSlider.value);
     });
@@ -1136,7 +1123,6 @@ function updateActive() {
     if (queueOpen) renderQueue();
 }
 
-// Keyboard controls
 document.addEventListener('keydown', e => {
     if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
     if (e.key === ' ') { e.preventDefault(); if (audio) (audio.paused ? audio.play() : audio.pause()) }
@@ -1149,7 +1135,6 @@ if (expPrev) expPrev.onclick = () => { if (audio && audio.currentTime > 3) audio
 if (expNext) expNext.onclick = () => nextTrack();
 if (expShuffle) expShuffle.onclick = () => btnShuffle && btnShuffle.onclick();
 
-// Expand/collapse state
 let playerExpanded = false;
 let desktopExpandedLyricsOpen = false;
 
@@ -1209,15 +1194,16 @@ function setDesktopExpandedLyricsOpen(open) {
     }
 }
 
-let swipeStartY = 0, swipeDeltaY = 0, isSwiping = false, swipeTarget = null;
+let swipeStartX = 0, swipeStartY = 0, swipeDeltaY = 0, isPanelSwiping = false, swipeTarget = null;
 const SWIPE_THRESHOLD = 50;
 
 if (player) {
     player.addEventListener('touchstart', e => {
         if (e.target.tagName === 'INPUT') return;
+        swipeStartX = e.touches[0].clientX;
         swipeStartY = e.touches[0].clientY;
         swipeDeltaY = 0;
-        isSwiping = true;
+        isPanelSwiping = true;
         swipeTarget = 'expand';
     }, { passive: true });
 }
@@ -1228,24 +1214,31 @@ if (expPlayer) {
         const collapseZone = e.target.closest('#exp-collapse, #exp-cover-wrap, #exp-info, #exp-lyrics-wrap');
         if (!collapseZone || expPlayer.scrollTop > 24) {
             swipeTarget = null;
-            isSwiping = false;
+            isPanelSwiping = false;
             return;
         }
+        swipeStartX = e.touches[0].clientX;
         swipeStartY = e.touches[0].clientY;
         swipeDeltaY = 0;
-        isSwiping = true;
+        isPanelSwiping = true;
         swipeTarget = 'collapse';
     }, { passive: true });
 }
 
 document.addEventListener('touchmove', e => {
-    if (!isSwiping) return;
+    if (!isPanelSwiping) return;
+    const deltaX = e.touches[0].clientX - swipeStartX;
     swipeDeltaY = e.touches[0].clientY - swipeStartY;
+
+    if (Math.abs(deltaX) > 15 && Math.abs(deltaX) > Math.abs(swipeDeltaY)) {
+        isPanelSwiping = false;
+        swipeTarget = null;
+    }
 }, { passive: true });
 
 document.addEventListener('touchend', () => {
-    if (!isSwiping) return;
-    isSwiping = false;
+    if (!isPanelSwiping) return;
+    isPanelSwiping = false;
 
     if (!isMobile()) { swipeTarget = null; return; }
 
@@ -1288,7 +1281,6 @@ if (handle) {
     });
 });
 
-// queueOpen declared at top of file
 const queuePanel = document.getElementById('queue-panel');
 const queueBtn = document.getElementById('queue-btn');
 
@@ -1301,17 +1293,16 @@ if (queueBtn) {
     };
 }
 
-// Queue panel swipe-down to close (mobile only)
 const queuePanelHandle = document.getElementById('queue-panel-mobile-handle');
 if (queuePanel) {
     queuePanel.addEventListener('touchstart', e => {
         if (!isMobile()) return;
         if (e.target.tagName === 'INPUT' || e.target.closest('.queue-handle')) return;
-        // Only trigger if at top of scroll or on handle
         if (queuePanel.scrollTop > 20 && !e.target.closest('#queue-panel-mobile-handle')) return;
+        swipeStartX = e.touches[0].clientX;
         swipeStartY = e.touches[0].clientY;
         swipeDeltaY = 0;
-        isSwiping = true;
+        isPanelSwiping = true;
         swipeTarget = 'queue-close';
     }, { passive: true });
 }
@@ -1337,7 +1328,6 @@ function renderQueue(skipScroll = false) {
         item.innerHTML = `<span class="queue-handle" style="${isMobile() ? 'display:none' : ''}">\u283f</span><span class="queue-num">${i === qIdx ? '\u25b6' : i + 1}</span><div class="queue-info"><div class="queue-title">${t.title || 'Unknown'}</div><div class="queue-sub">${t.artist || '\u2014'}</div></div><button class="queue-remove" title="remove">\u2715</button>`;
 
         const handle = item.querySelector('.queue-handle');
-        // On mobile, make whole row draggable; on desktop, only handle
         const dragTarget = isMobile() ? item : handle;
         if (dragTarget) dragTarget.onpointerdown = e => startQueueDrag(e, item);
 
@@ -1346,35 +1336,11 @@ function renderQueue(skipScroll = false) {
             removeFromQueue(i);
         };
 
-        // Swipe-left to remove on mobile
         if (isMobile()) {
-            let touchStartX = 0, touchStartY = 0, isRemoving = false;
-            item.addEventListener('touchstart', e => {
-                if (e.target.closest('.queue-handle')) return;
-                e.stopPropagation(); // Prevent panel swipe
-                touchStartX = e.touches[0].clientX;
-                touchStartY = e.touches[0].clientY;
-                isRemoving = false;
-                item.classList.remove('swiped-left');
-            }, { passive: true });
-            item.addEventListener('touchmove', e => {
-                e.stopPropagation(); // Prevent panel swipe
-                const deltaX = e.touches[0].clientX - touchStartX;
-                const deltaY = e.touches[0].clientY - touchStartY;
-                // Only handle horizontal swipes
-                if (Math.abs(deltaX) > Math.abs(deltaY) && deltaX < -30) {
-                    item.classList.add('swiped-left');
-                    isRemoving = true;
-                } else if (deltaX > 0) {
-                    item.classList.remove('swiped-left');
-                    isRemoving = false;
-                }
-            }, { passive: true });
-            item.addEventListener('touchend', e => {
-                if (isRemoving && item.classList.contains('swiped-left')) {
+            attachSwipeHandlers(item, {
+                left: () => {
+                    item.style.opacity = '0.5';
                     setTimeout(() => removeFromQueue(i), 200);
-                } else {
-                    item.classList.remove('swiped-left');
                 }
             });
         }
@@ -1472,19 +1438,14 @@ function updateMediaSession(t, coverUrl) {
     navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack());
 }
 
-// lyricsTrackId and lyricsOpen declared at top of file
 const lyricsPanel = document.getElementById('lyrics-panel');
 const lyricsBtn = document.getElementById('lyrics-btn');
 let syncedLyrics = [], plainLyrics = '';
-// FIX: Track IDs that failed to load so loadLyrics() can retry them
-// instead of being silently blocked by the early-return guard.
 let lyricsFailed = new Set();
 let lyricsFontSize = parseInt(localStorage.getItem('lyrics_font') || '13');
 let lyricsRequestSeq = 0;
 const LYRICS_OFFSET_STEP = 0.2;
 
-// FIX: Lyric scroll containers are cached once instead of being queried
-// on every timeupdate tick (which fires ~4 times per second).
 let _lyricScrollEls = null;
 function getLyricScrollEls() {
     if (!_lyricScrollEls) {
@@ -1496,7 +1457,6 @@ function getLyricScrollEls() {
     }
     return _lyricScrollEls;
 }
-// Invalidate cache when lyrics are re-rendered so new DOM nodes are picked up
 function invalidateLyricScrollCache() { _lyricScrollEls = null; }
 
 document.querySelectorAll('[data-offset-action]').forEach(btn => {
@@ -1512,8 +1472,6 @@ document.querySelectorAll('[data-offset-action]').forEach(btn => {
     });
 });
 
-// FIX: Instead of iterating every .lyric-line element, set font-size on
-// the scroll container and let CSS inheritance do the work.
 function applyLyricsFontSize() {
     const val = lyricsFontSize + 'px';
     getLyricScrollEls().forEach(el => { el.style.fontSize = val; });
@@ -1569,18 +1527,15 @@ function openLyricsCard() {
     lyricsCardOpen = true;
     expLyricsCard.classList.add('open');
     if (expLyricsCardControls) expLyricsCardControls.style.display = 'flex';
-    // Scroll lyrics card into view on mobile - wait for transition then center active lyric
     if (isMobile()) {
         setTimeout(() => {
             expLyricsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            // After card is visible, scroll to center the currently active lyric line
             setTimeout(() => {
                 const cardScroll = document.getElementById('exp-lyrics-card-scroll');
                 const activeLine = cardScroll?.querySelector('.lyric-line.active');
                 if (activeLine) {
                     activeLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 } else if (cardScroll) {
-                    // If no active line yet, scroll to top
                     cardScroll.scrollTop = 0;
                 }
             }, 350);
@@ -1679,9 +1634,6 @@ if (lyricsCloseBtn) {
 }
 
 async function loadLyrics(t) {
-    // FIX: Allow retry if a previous attempt for this track failed.
-    // Previously lyricsTrackId was set before the fetch, so any error
-    // would permanently block retries for that track ID.
     if (lyricsTrackId === t.id && !lyricsFailed.has(t.id)) return;
     lyricsFailed.delete(t.id);
 
@@ -1743,8 +1695,6 @@ async function loadLyrics(t) {
         }
     } catch (_) {
         if (requestSeq !== lyricsRequestSeq || lyricsTrackId !== t.id) return;
-        // FIX: Mark this track as failed so the next call to loadLyrics
-        // for the same track ID can attempt a fresh fetch.
         lyricsFailed.add(t.id);
         const errMsg = '<div style="padding:24px 14px;text-align:center;color:var(--muted);font-size:12px">No lyrics found</div>';
         const errMsgCard = '<div style="padding:20px 14px;text-align:center;color:var(--muted);font-size:12px">No lyrics found</div>';
@@ -1824,8 +1774,6 @@ function updateSyncedLyricsState(force = false) {
     if (expLyricNext){ expLyricNext.style.opacity='0'; expLyricNext.style.transform='translateY(6px)';
         setTimeout(()=>{ expLyricNext.textContent=nextText; expLyricNext.style.opacity='1'; expLyricNext.style.transform='translateY(0)' },120) }
 
-    // FIX: Uses cached getLyricScrollEls() instead of document.querySelectorAll
-    // on every timeupdate tick.
     getLyricScrollEls().forEach(scroll => {
         scroll.querySelectorAll('.lyric-line').forEach((el,i)=>el.classList.toggle('active',i===idx));
         if(idx>=0){
@@ -1857,7 +1805,6 @@ if (audio) {
     });
 }
 
-// Media Session API
 if ('mediaSession' in navigator) {
   navigator.mediaSession.setActionHandler('play', () => audio.play());
   navigator.mediaSession.setActionHandler('pause', () => audio.pause());
