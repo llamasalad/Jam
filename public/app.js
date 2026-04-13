@@ -3,6 +3,9 @@ const isMobile = () => mobileQuery.matches;
 
 const TOKEN_KEY = 'music_token';
 let token = localStorage.getItem(TOKEN_KEY) || '';
+if (token) {
+    document.cookie = `music_token=${encodeURIComponent(token)}; path=/; max-age=31536000; SameSite=Lax`;
+}
 let tracks = [], filtered = [], queue = [], qIdx = -1, sortMode = 'title';
 let shuffle = localStorage.getItem('music_shuffle') === 'true', seeking = false, muted = false;
 const SAVED_VOL = parseInt(localStorage.getItem('music_vol') || '80');
@@ -116,6 +119,7 @@ if (authSubmit) {
         const ok = await checkAuth();
         if (ok) {
             localStorage.setItem(TOKEN_KEY, token);
+            document.cookie = `music_token=${encodeURIComponent(token)}; path=/; max-age=31536000; SameSite=Lax`;
             hideAuth();
             init();
         } else {
@@ -930,7 +934,6 @@ function play(t) {
     updateLyricsOffsetUI();
 
     if (audio) {
-		const qs = token ? '?token=' + encodeURIComponent(token) : '';
         audio.src = '/api/stream/' + t.id;
         audio.play().catch(e => console.error("Playback failed", e));
     }
@@ -1936,7 +1939,6 @@ async function init() {
             loadLyrics(t);
 
             if (audio) {
-        		const qs = token ? '?token=' + encodeURIComponent(token) : '';
                 audio.src = '/api/stream/' + t.id;
                 audio.addEventListener('loadedmetadata', () => {
                     if (pos > 0 && pos < audio.duration - 5) audio.currentTime = pos;
