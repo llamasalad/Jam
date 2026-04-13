@@ -95,7 +95,6 @@ if (audio) audio.volume = Math.pow(SAVED_VOL / 100, 3);
 function fmt(s) { if (!s || isNaN(s)) return '-'; s = Math.round(s); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') }
 function hdrs() { return token ? { 'x-auth-token': token, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' } }
 function hget() { return token ? { 'x-auth-token': token } : {} }
-function authQuery() { return token ? '?token=' + encodeURIComponent(token) : '' }
 
 async function checkAuth() {
     try {
@@ -963,6 +962,7 @@ function play(t) {
 
     loadLyrics(t);
     updateExpandedNowPlaying(t);
+    // Use direct HTTP URL — blob: URLs are silently rejected by OS media overlays
     updateMediaSession(t);
 }
 
@@ -1477,14 +1477,12 @@ if (clearQueueBtn) {
 // Control Center (iOS), and the macOS Now Playing widget.
 function updateMediaSession(t) {
     if (!('mediaSession' in navigator) || !t) return;
-    const base = window.location.origin;
-    const qs = token ? '?token=' + encodeURIComponent(token) : '';
     navigator.mediaSession.metadata = new MediaMetadata({
         title:  t.title  || 'Unknown',
         artist: t.artist || 'Unknown',
         album:  t.album  || 'Unknown',
         artwork: [
-            { src: base + '/api/cover/' + t.id + qs, sizes: '512x512', type: 'image/jpeg' }
+            { src: '/api/cover/' + t.id, sizes: '512x512', type: 'image/jpeg' }
         ]
     });
 }
@@ -1928,6 +1926,9 @@ async function init() {
             document.title = (t.title || '?') + ' \u2014 ' + (t.artist || '?');
 
             updateExpandedNowPlaying(t);
+
+            // FIX: populate media session on page restore so lock screen
+            // shows correct metadata without waiting for a manual play
             updateMediaSession(t);
             loadLyrics(t);
 
