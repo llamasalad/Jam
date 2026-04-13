@@ -1880,6 +1880,10 @@ if ('mediaSession' in navigator) {
 }
 
 async function init() {
+
+    if (token) {
+        document.cookie = `music_token=${encodeURIComponent(token)}; path=/; max-age=31536000; SameSite=Lax; Secure`;
+    }
     if (btnShuffle) btnShuffle.style.color = shuffle ? 'var(--accent)' : 'var(--muted)';
     if (expShuffle) expShuffle.style.color = shuffle ? 'var(--accent)' : 'var(--muted)';
     applyRepeat();
