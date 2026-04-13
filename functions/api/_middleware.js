@@ -1,37 +1,35 @@
 export async function onRequest(context) {
-  const { request, env, next } = context
-  const url = new URL(request.url)
+  const { request, env, next } = context;
+  const url = new URL(request.url);
 
-  // FIX 1: Allow all OPTIONS requests to pass. 
-  // Browsers don't send auth headers/cookies with preflights.
-  if (request.method === "OPTIONS") {
-    return next()
-  }
+  // 1. ALWAYS let OPTIONS through (Safari pre-flight)
+  if (request.method === "OPTIONS") return next();
 
-  // let login and status through without a token
+  // 2. Public routes
   if (url.pathname === '/api/status' || url.pathname === '/api/login') {
-    return next()
+    return next();
   }
 
-  const headerToken = request.headers.get('x-auth-token')
-  const cookie = request.headers.get('Cookie') || ''
-  const cookieMatch = cookie.match(/(?:^|;\s*)music_token=([^;]+)/)
-  const cookieToken = cookieMatch ? decodeURIComponent(cookieMatch[1]) : null
-  const queryToken = url.searchParams.get('token')
+  const headerToken = request.headers.get('x-auth-token');
+  const queryToken = url.searchParams.get('token');
+  
+  // 3. Robust Cookie Parsing (handles Safari's double quotes)
+  const cookieHeader = request.headers.get('Cookie') || '';
+  let cookieToken = null;
+  const match = cookieHeader.match(/(?:^|; )music_token=([^;]*)/);
+  if (match) {
+    // Strip potential quotes that Safari/Cloudflare might add
+    cookieToken = decodeURIComponent(match[1]).replace(/^"|"$/g, '');
+  }
 
-  const token = headerToken || cookieToken || queryToken
+  const token = (headerToken || queryToken || cookieToken || '').trim();
 
-  // Debugging: This allows you to see in the Network tab which token was found
-  // (Remove this after it works)
-  const response = await (async () => {
-    if (token !== env.AUTH_TOKEN) {
-      return new Response('unauthorized', { 
-        status: 401,
-        headers: { 'X-Debug-Reason': 'Token-Mismatch' } 
-      })
-    }
-    return next()
-  })()
+  // 4. Verification
+  if (token !== env.AUTH_TOKEN.trim()) {
+    // If it's a media request, Safari is very picky about 401s.
+    // We return a clear 401.
+    return new Response('unauthorized', { status: 401 });
+  }
 
-  return response
+  return next();
 }

@@ -4,7 +4,7 @@ const isMobile = () => mobileQuery.matches;
 const TOKEN_KEY = 'music_token';
 let token = localStorage.getItem(TOKEN_KEY) || '';
 if (token) {
-    document.cookie = `music_token=${encodeURIComponent(token)}; path=/; max-age=31536000; SameSite=Lax`;
+    document.cookie = `music_token=${encodeURIComponent(token)}; path=/; max-age=31536000; SameSite=Lax; Secure`;
 }
 let tracks = [], filtered = [], queue = [], qIdx = -1, sortMode = 'title';
 let shuffle = localStorage.getItem('music_shuffle') === 'true', seeking = false, muted = false;
@@ -119,7 +119,7 @@ if (authSubmit) {
         const ok = await checkAuth();
         if (ok) {
             localStorage.setItem(TOKEN_KEY, token);
-            document.cookie = `music_token=${encodeURIComponent(token)}; path=/; max-age=31536000; SameSite=Lax`;
+    		document.cookie = `music_token=${encodeURIComponent(token)}; path=/; max-age=31536000; SameSite=Lax; Secure`;
             hideAuth();
             init();
         } else {
