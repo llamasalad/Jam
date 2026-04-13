@@ -95,6 +95,7 @@ if (audio) audio.volume = Math.pow(SAVED_VOL / 100, 3);
 function fmt(s) { if (!s || isNaN(s)) return '-'; s = Math.round(s); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') }
 function hdrs() { return token ? { 'x-auth-token': token, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' } }
 function hget() { return token ? { 'x-auth-token': token } : {} }
+function authQuery() { return token ? '?token=' + encodeURIComponent(token) : '' }
 
 async function checkAuth() {
     try {
