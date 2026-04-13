@@ -1002,17 +1002,7 @@ if (audio) {
             }
             
             // FIX: Set initial position state as soon as metadata loads so lock screen shows proper playback info
-            if ('mediaSession' in navigator && !isNaN(audio.duration)) {
-                try {
-                    navigator.mediaSession.setPositionState({
-                        duration: audio.duration,
-                        playbackRate: audio.playbackRate || 1,
-                        position: audio.currentTime || 0
-                    });
-                } catch (e) {
-                    console.warn('Failed to set initial position state:', e);
-                }
-            }
+            updatePositionState(true);
         }
     });
 
@@ -1022,14 +1012,20 @@ if (audio) {
         if (iconPause)    iconPause.style.display    = 'block';
         if (expIconPlay)  expIconPlay.style.display  = 'none';
         if (expIconPause) expIconPause.style.display = 'block';
-        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = 'playing';
+            updatePositionState(true);
+        }
     });
     audio.addEventListener('pause', () => {
         if (iconPlay)     iconPlay.style.display     = 'block';
         if (iconPause)    iconPause.style.display    = 'none';
         if (expIconPlay)  expIconPlay.style.display  = 'block';
         if (expIconPause) expIconPause.style.display = 'none';
-        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = 'paused';
+            updatePositionState(true);
+        }
     });
     audio.addEventListener('ended', () => {
         if ('mediaSession' in navigator) {
@@ -1054,7 +1050,11 @@ if (audio) {
     });
 
     // FIX: clear seeking flag only after the audio engine confirms the seek landed
-    audio.addEventListener('seeked', () => { seeking = false; });
+    // Also: Update MediaSession position state after user seeks
+    audio.addEventListener('seeked', () => {
+        seeking = false;
+        updatePositionState(true);
+    });
 }
 
 // FIX: unified seekbar — syncs both bars on input, keeps seeking=true until 'seeked' fires
@@ -1915,21 +1915,51 @@ if (audio) {
             if (expTimeCur) expTimeCur.textContent = fmt(audio.currentTime);
         }
 
-        // FIX: Update MediaSession position state so lock screen shows progress
-        if ('mediaSession' in navigator && audio.duration && !isNaN(audio.duration)) {
-            try {
-                navigator.mediaSession.setPositionState({
-                    duration: audio.duration,
-                    playbackRate: audio.playbackRate || 1,
-                    position: audio.currentTime
-                });
-            } catch (e) {
-                console.warn('Failed to update position state:', e);
-            }
-        }
+        // FIX: Update MediaSession position state so lock screen shows progress (throttled via helper)
+        updatePositionState();
 
         updateSyncedLyricsState();
     });
+}
+
+// FIX: Helper to update MediaSession position state with throttling and guards
+// Called from multiple audio event listeners to keep lock screen in sync
+let lastPositionUpdateTime = 0;
+let lastPositionValue = -1;
+
+function updatePositionState(force = false) {
+    if (!('mediaSession' in navigator) || !audio) return;
+    
+    // Guard against invalid duration
+    if (!audio.duration || isNaN(audio.duration) || !isFinite(audio.duration)) return;
+    
+    const now = Date.now();
+    const currentPos = audio.currentTime;
+    
+    // Throttle: only update if:
+    // - forced update, OR
+    // - 200ms+ has passed since last update AND position changed ≥1 second
+    if (!force) {
+        const timeSinceLastUpdate = now - lastPositionUpdateTime;
+        const positionChanged = Math.abs(currentPos - lastPositionValue) >= 1;
+        
+        if (timeSinceLastUpdate < 200 || !positionChanged) {
+            return;
+        }
+    }
+    
+    lastPositionUpdateTime = now;
+    lastPositionValue = currentPos;
+    
+    try {
+        navigator.mediaSession.setPositionState({
+            duration: audio.duration,
+            playbackRate: audio.playbackRate || 1,
+            position: currentPos
+        });
+    } catch (e) {
+        console.warn('Failed to update MediaSession position state:', e);
+    }
 }
 
 // FIX: single canonical block for all Media Session action handlers —
@@ -1940,6 +1970,7 @@ if ('mediaSession' in navigator) {
         if (audio && audio.paused) {
             try {
                 await audio.play();
+                updatePositionState(true);
             } catch (e) {
                 console.error('Play action failed:', e);
             }
@@ -1949,6 +1980,7 @@ if ('mediaSession' in navigator) {
     navigator.mediaSession.setActionHandler('pause', () => {
         if (audio && !audio.paused) {
             audio.pause();
+            updatePositionState(true);
         }
     });
     
@@ -1972,6 +2004,7 @@ if ('mediaSession' in navigator) {
         if (audio && audio.duration) {
             try {
                 audio.currentTime = Math.max(0, audio.currentTime - (d.seekOffset || 10));
+                updatePositionState(true);
             } catch (e) {
                 console.error('Seek backward action failed:', e);
             }
@@ -1982,8 +2015,28 @@ if ('mediaSession' in navigator) {
         if (audio && audio.duration) {
             try {
                 audio.currentTime = Math.min(audio.duration, audio.currentTime + (d.seekOffset || 10));
+                updatePositionState(true);
             } catch (e) {
                 console.error('Seek forward action failed:', e);
+            }
+        }
+    });
+    
+    // FIX: Handle seekto action — enables scrubber/seek bar in iOS Control Center, macOS Now Playing, Chrome HUD
+    navigator.mediaSession.setActionHandler('seekto', (d) => {
+        if (audio && audio.duration && d.seekTime !== undefined) {
+            try {
+                const seekTime = Math.max(0, Math.min(d.seekTime, audio.duration));
+                // Use fastSeek if available during scrubbing (prevents playback interruption)
+                // FastSeek is ideal during continuous drag operations (fastSeek=true)
+                if ('fastSeek' in audio && typeof audio.fastSeek === 'function' && d.fastSeek === true) {
+                    audio.fastSeek(seekTime);
+                } else {
+                    audio.currentTime = seekTime;
+                }
+                updatePositionState(true);
+            } catch (e) {
+                console.error('Seek to action failed:', e);
             }
         }
     });
@@ -2050,6 +2103,13 @@ async function init() {
             // FIX: populate media session on page restore so lock screen
             // shows correct metadata without waiting for a manual play
             updateMediaSession(t);
+            
+            // FIX: Initialize playback state to paused on page restore
+            // since audio does not auto-play on page load
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.playbackState = 'paused';
+            }
+            
             loadLyrics(t);
 
             if (audio) {
