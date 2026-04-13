@@ -862,7 +862,7 @@ async function ensureCoverUrl(id) {
     if (id in coverCache) return coverCache[id];
     if (coverRequests[id]) return coverRequests[id];
 
-    coverRequests[id] = fetch('/api/cover/' + id).then(async r => {
+    coverRequests[id] = fetch('/api/cover/' + id, { headers: hget() }).then(async r => {
         if (!r.ok) return null;
         const blob = await r.blob();
         if (coverCache[id]) URL.revokeObjectURL(coverCache[id]);
@@ -930,6 +930,7 @@ function play(t) {
     updateLyricsOffsetUI();
 
     if (audio) {
+		const qs = token ? '?token=' + encodeURIComponent(token) : '';
         audio.src = '/api/stream/' + t.id;
         audio.play().catch(e => console.error("Playback failed", e));
     }
@@ -1935,6 +1936,7 @@ async function init() {
             loadLyrics(t);
 
             if (audio) {
+        		const qs = token ? '?token=' + encodeURIComponent(token) : '';
                 audio.src = '/api/stream/' + t.id;
                 audio.addEventListener('loadedmetadata', () => {
                     if (pos > 0 && pos < audio.duration - 5) audio.currentTime = pos;
