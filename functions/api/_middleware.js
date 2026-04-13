@@ -2,6 +2,18 @@ export async function onRequest(context) {
   const { request, env, next } = context;
   const url = new URL(request.url);
 
+  // Handle CORS preflight requests early - allow OPTIONS without auth check
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS, POST, PUT, DELETE",
+        "Access-Control-Allow-Headers": "Content-Type, x-auth-token",
+        "Access-Control-Cache-Max-Age": "31536000",
+      }
+    });
+  }
+
   // 1. Truly public routes (ONLY the login attempt itself)
   if (url.pathname === '/api/login') {
     return next();

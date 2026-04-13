@@ -1,3 +1,16 @@
+export async function onRequest({ request }) {
+  // Handle CORS preflight
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+        "Access-Control-Cache-Max-Age": "31536000",
+      }
+    });
+  }
+}
+
 export async function onRequestGet({ params, request, env }) {
   if (!env.MUSIC_BUCKET) return new Response("No bucket", { status: 500 });
 
@@ -11,6 +24,9 @@ export async function onRequestGet({ params, request, env }) {
       headers: {
         "Content-Type": cached.httpMetadata?.contentType || "image/jpeg",
         "Cache-Control": "public, max-age=31536000",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+        "Access-Control-Cache-Max-Age": "31536000",
       }
     });
   }
@@ -34,6 +50,9 @@ export async function onRequestGet({ params, request, env }) {
     headers: {
       "Content-Type": cover.mime,
       "Cache-Control": "public, max-age=31536000",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+      "Access-Control-Cache-Max-Age": "31536000",
     }
   });
 }

@@ -1018,7 +1018,18 @@ if (audio) {
         if (expIconPause) expIconPause.style.display = 'none';
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
     });
-    audio.addEventListener('ended', () => nextTrack());
+    audio.addEventListener('ended', () => {
+        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+        nextTrack();
+    });
+    
+    // FIX: Handle playback errors to clear stale metadata
+    audio.addEventListener('error', () => {
+        if ('mediaSession' in navigator) {
+            try { navigator.mediaSession.playbackState = 'paused'; } catch (_) { }
+        }
+        console.error('Audio playback error:', audio.error?.message || 'Unknown error');
+    });
 
     // FIX: clear seeking flag only after the audio engine confirms the seek landed
     audio.addEventListener('seeked', () => { seeking = false; });
@@ -1485,18 +1496,34 @@ if (clearQueueBtn) {
 
 // FIX: use direct /api/cover/ URL — blob: URLs are silently rejected by OS lock screens,
 // Control Center (iOS), and the macOS Now Playing widget.
+// Also: Ensure CORS headers are set on the cover endpoint for lock screen access
 function updateMediaSession(t) {
     if (!('mediaSession' in navigator) || !t) return;
-    const base = window.location.origin;
-    const qs = token ? '?token=' + encodeURIComponent(token) : '';
-    navigator.mediaSession.metadata = new MediaMetadata({
-        title:  t.title  || 'Unknown',
-        artist: t.artist || 'Unknown',
-        album:  t.album  || 'Unknown',
-        artwork: [
-            { src: base + '/api/cover/' + t.id + qs, sizes: '512x512', type: 'image/jpeg' }
-        ]
-    });
+    
+    try {
+        const base = window.location.origin;
+        // Build artwork URL with CORS-friendly construction
+        let coverUrl = base + '/api/cover/' + t.id;
+        // Only add token if available (fallback for public access)
+        if (token) {
+            coverUrl += '?token=' + encodeURIComponent(token);
+        }
+        
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title:  t.title  || 'Unknown',
+            artist: t.artist || 'Unknown',
+            album:  t.album  || 'Unknown',
+            artwork: [
+                { src: coverUrl, sizes: '512x512', type: 'image/jpeg' }
+            ]
+        });
+    } catch (e) {
+        console.error('Failed to update MediaSession metadata:', e);
+        // Clear metadata on error to prevent stale data
+        try {
+            navigator.mediaSession.metadata = null;
+        } catch (_) { }
+    }
 }
 
 const lyricsPanel = document.getElementById('lyrics-panel');
@@ -1872,16 +1899,58 @@ if (audio) {
 
 // FIX: single canonical block for all Media Session action handlers —
 // replaces the duplicate partial registration that was spread across the file.
+// Also: Add proper error handling and checks for audio element readiness
 if ('mediaSession' in navigator) {
-    navigator.mediaSession.setActionHandler('play',          () => audio && audio.play());
-    navigator.mediaSession.setActionHandler('pause',         () => audio && audio.pause());
-    navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack());
-    navigator.mediaSession.setActionHandler('nexttrack',     () => nextTrack());
-    navigator.mediaSession.setActionHandler('seekbackward', d => {
-        if (audio) audio.currentTime = Math.max(0, audio.currentTime - (d.seekOffset || 10));
+    navigator.mediaSession.setActionHandler('play', async () => {
+        if (audio && audio.paused) {
+            try {
+                await audio.play();
+            } catch (e) {
+                console.error('Play action failed:', e);
+            }
+        }
     });
-    navigator.mediaSession.setActionHandler('seekforward', d => {
-        if (audio) audio.currentTime = Math.min(audio.duration, audio.currentTime + (d.seekOffset || 10));
+    
+    navigator.mediaSession.setActionHandler('pause', () => {
+        if (audio && !audio.paused) {
+            audio.pause();
+        }
+    });
+    
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+        try {
+            prevTrack();
+        } catch (e) {
+            console.error('Previous track action failed:', e);
+        }
+    });
+    
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+        try {
+            nextTrack();
+        } catch (e) {
+            console.error('Next track action failed:', e);
+        }
+    });
+    
+    navigator.mediaSession.setActionHandler('seekbackward', (d) => {
+        if (audio && audio.duration) {
+            try {
+                audio.currentTime = Math.max(0, audio.currentTime - (d.seekOffset || 10));
+            } catch (e) {
+                console.error('Seek backward action failed:', e);
+            }
+        }
+    });
+    
+    navigator.mediaSession.setActionHandler('seekforward', (d) => {
+        if (audio && audio.duration) {
+            try {
+                audio.currentTime = Math.min(audio.duration, audio.currentTime + (d.seekOffset || 10));
+            } catch (e) {
+                console.error('Seek forward action failed:', e);
+            }
+        }
     });
 }
 
