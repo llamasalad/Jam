@@ -1476,7 +1476,6 @@ if (clearQueueBtn) {
 // FIX: use direct /api/cover/ URL — blob: URLs are silently rejected by OS lock screens,
 // Control Center (iOS), and the macOS Now Playing widget.
 function updateMediaSession(t) {
-    console.log('mediaSession token:', token, 'track:', t?.title);
     if (!('mediaSession' in navigator) || !t) return;
     const base = window.location.origin;
     const qs = token ? '?token=' + encodeURIComponent(token) : '';
