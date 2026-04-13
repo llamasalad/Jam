@@ -1477,12 +1477,14 @@ if (clearQueueBtn) {
 // Control Center (iOS), and the macOS Now Playing widget.
 function updateMediaSession(t) {
     if (!('mediaSession' in navigator) || !t) return;
+    const base = window.location.origin;
+    const qs = token ? '?token=' + encodeURIComponent(token) : '';
     navigator.mediaSession.metadata = new MediaMetadata({
         title:  t.title  || 'Unknown',
         artist: t.artist || 'Unknown',
         album:  t.album  || 'Unknown',
         artwork: [
-            { src: '/api/cover/' + t.id, sizes: '512x512', type: 'image/jpeg' }
+            { src: base + '/api/cover/' + t.id + qs, sizes: '512x512', type: 'image/jpeg' }
         ]
     });
 }
