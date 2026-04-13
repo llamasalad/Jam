@@ -114,15 +114,21 @@ function hideAuth() { if (authOverlay) authOverlay.style.display = 'none' }
 
 if (authSubmit) {
     authSubmit.onclick = async () => {
-        token = authInput.value.trim();
+        const enteredToken = authInput.value.trim(); // Get value from input
         if (authError) authError.style.display = 'none';
-        const ok = await checkAuth();
-        if (ok) {
+    
+        // TEMPORARILY set the token so checkAuth can use it
+        token = enteredToken; 
+    
+        const r = await fetch('/api/status', { headers: { 'x-auth-token': token } });
+        if (r.ok) {
             localStorage.setItem(TOKEN_KEY, token);
-    		document.cookie = `music_token=${encodeURIComponent(token)}; path=/; max-age=31536000; SameSite=Lax; Secure`;
+            // Set cookie immediately so media works
+            document.cookie = `music_token=${encodeURIComponent(token)}; path=/; max-age=31536000; SameSite=Lax; Secure`;
             hideAuth();
             init();
         } else {
+            token = ''; // Clear it if failed
             if (authError) authError.style.display = 'block';
         }
     };
