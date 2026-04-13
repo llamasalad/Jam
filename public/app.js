@@ -1000,6 +1000,19 @@ if (audio) {
                 const dur = document.querySelector('.track-dur[data-id="' + queue[qIdx]?.id + '"]');
                 if (dur) dur.textContent = fmt(audio.duration)
             }
+            
+            // FIX: Set initial position state as soon as metadata loads so lock screen shows proper playback info
+            if ('mediaSession' in navigator && !isNaN(audio.duration)) {
+                try {
+                    navigator.mediaSession.setPositionState({
+                        duration: audio.duration,
+                        playbackRate: audio.playbackRate || 1,
+                        position: audio.currentTime || 0
+                    });
+                } catch (e) {
+                    console.warn('Failed to set initial position state:', e);
+                }
+            }
         }
     });
 
@@ -1019,14 +1032,23 @@ if (audio) {
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
     });
     audio.addEventListener('ended', () => {
-        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = 'paused';
+            // Clear position state when track ends
+            try {
+                navigator.mediaSession.setPositionState(null);
+            } catch (_) { }
+        }
         nextTrack();
     });
     
     // FIX: Handle playback errors to clear stale metadata
     audio.addEventListener('error', () => {
         if ('mediaSession' in navigator) {
-            try { navigator.mediaSession.playbackState = 'paused'; } catch (_) { }
+            try { 
+                navigator.mediaSession.playbackState = 'paused';
+                navigator.mediaSession.setPositionState(null);
+            } catch (_) { }
         }
         console.error('Audio playback error:', audio.error?.message || 'Unknown error');
     });
@@ -1891,6 +1913,19 @@ if (audio) {
             if (expProgress) expProgress.value = pct;
             if (timeCur)    timeCur.textContent    = fmt(audio.currentTime);
             if (expTimeCur) expTimeCur.textContent = fmt(audio.currentTime);
+        }
+
+        // FIX: Update MediaSession position state so lock screen shows progress
+        if ('mediaSession' in navigator && audio.duration && !isNaN(audio.duration)) {
+            try {
+                navigator.mediaSession.setPositionState({
+                    duration: audio.duration,
+                    playbackRate: audio.playbackRate || 1,
+                    position: audio.currentTime
+                });
+            } catch (e) {
+                console.warn('Failed to update position state:', e);
+            }
         }
 
         updateSyncedLyricsState();
