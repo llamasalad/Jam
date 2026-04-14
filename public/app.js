@@ -283,13 +283,25 @@ function applyTheme() {
 function showThemeMenu() {
     if (!themeMenu) return;
     const rect = themeToggle.getBoundingClientRect();
-    themeMenu.style.left = rect.left + 'px';
+    const menuWidth = 160; // Approximate width from CSS
+    
+    // Position below button, but shift left if it would go off-screen
+    let left = rect.left;
+    if (left + menuWidth > window.innerWidth) {
+        left = window.innerWidth - menuWidth - 10;
+    }
+    
+    themeMenu.style.left = Math.max(10, left) + 'px';
     themeMenu.style.top = (rect.bottom + 5) + 'px';
     themeMenu.classList.add('open');
+    document.body.classList.add('menu-open');
+    if (menuBackdrop) menuBackdrop.style.display = 'block';
 }
 
 function hideThemeMenu() {
     if (themeMenu) themeMenu.classList.remove('open');
+    document.body.classList.remove('menu-open');
+    if (menuBackdrop) menuBackdrop.style.display = 'none';
 }
 
 if (themeToggle) {
