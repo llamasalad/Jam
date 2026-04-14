@@ -136,8 +136,20 @@
       <div id="exp-lyrics-card-scroll"></div>
     </div>
   </div>
+</div>  <!-- Mobile-only lyrics card, hidden on desktop via CSS -->
+    <div id="exp-lyrics-card">
+      <div id="exp-lyrics-card-header">
+        <span id="exp-lyrics-card-title">Lyrics</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span id="exp-lyrics-card-chevron">▾</span>
+        </div>
+      </div>
+      <div id="exp-lyrics-card-controls" class="lyrics-timing mobile" style="display:none"><div class="lyrics-timing-actions"><button class="lyrics-timing-btn" data-offset-action="earlier">Earlier</button><span class="lyrics-offset-display">In sync</span><button class="lyrics-timing-btn" data-offset-action="later">Later</button><button class="lyrics-timing-btn reset" data-offset-action="reset">Reset</button></div></div>
+      <div id="exp-lyrics-card-scroll"></div>
+    </div>
+  </div>
 </div>
-<div id="player" class="hidden">
+  <div id="player" class="hidden">
     <button id="expand-handle" aria-label="Expand player">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
     </button>
