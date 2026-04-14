@@ -893,7 +893,17 @@ body.is-dragging{user-select:none;-webkit-user-select:none}
 }
 
 body.menu-open #app,
-body.menu-open #expanded-player {
+body.menu-open #expanded-player,
+body.menu-open #player,
+body.menu-open #lyrics-panel,
+body.menu-open #view-library,
+body.menu-open #view-playlists {
+  pointer-events: none !important;
+}
+
+/* Force block all buttons and inputs in the background */
+body.menu-open button:not(#ctx-menu button):not(#quick-playlist-menu button):not(#theme-menu button),
+body.menu-open input:not(#ctx-menu input) {
   pointer-events: none !important;
 }
 
@@ -904,8 +914,13 @@ body.menu-open #expanded-player {
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
   z-index: 500;
-  pointer-events: auto;
+  pointer-events: auto !important;
   touch-action: none;
+  display: none;
+}
+
+body.menu-open #menu-backdrop {
+  display: block;
 }
 
 #ctx-menu,
