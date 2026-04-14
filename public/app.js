@@ -450,6 +450,7 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
         isRowSwiping = false;
         isRowScrolling = false;
         deltaX = 0;
+        container.classList.add('swiping');
         content.style.transition = 'none';
         bgElement.className = 'track-actions';
         bgElement.innerHTML = '';
@@ -540,7 +541,10 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
                 bgElement.innerHTML = '';
                 container.dataset.hapticRight = '';
                 container.dataset.hapticLeft = '';
+                container.classList.remove('swiping');
             }, 400);
+        } else {
+            container.classList.remove('swiping');
         }
     });
 }
@@ -1422,12 +1426,14 @@ if (player) {
 if (expPlayer) {
     expPlayer.addEventListener('touchstart', e => {
         if (e.target.tagName === 'INPUT' || !isMobile()) return;
-        const collapseZone = e.target.closest('#exp-collapse, #exp-cover-wrap, #exp-info, #exp-lyrics-wrap');
-        if (!collapseZone || expPlayer.scrollTop > 24) {
+        
+        // Allow swiping down from anywhere if we're at the top of the scroll
+        if (expPlayer.scrollTop > 5) {
             swipeTarget = null;
             isPanelSwiping = false;
             return;
         }
+        
         swipeStartX = e.touches[0].clientX;
         swipeStartY = e.touches[0].clientY;
         swipeStartTime = Date.now();

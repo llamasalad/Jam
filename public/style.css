@@ -80,7 +80,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
   padding: 8px 16px;
   background: var(--bg);
   position: relative;
-  z-index: 2;
+  z-index: 5;
+  transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+
+.track.swiping .track-dur,
+.track.swiping .track-menu-btn {
+  opacity: 0 !important;
+  transition: opacity 0.1s ease;
 }
 
 /* SWIPE ACTION LAYERS */
@@ -92,6 +100,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
   z-index: 1;
   padding: 0 20px;
   opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.track.swiping .track-actions {
+  opacity: 1;
 }
 .track:hover .track-content { background: var(--surface); }
 .track:hover .track-menu-btn { opacity: 1; }
@@ -104,16 +116,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
 .light-theme .track.active .track-title {color: var(--accent);}
 .light-theme .track.active.selected .track-title {color: var(--accent) !important;}
 
-/* SWIPE ACTION LAYERS */
-.track-actions {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  z-index: 2;
-  padding: 0 20px;
-  opacity: 0;
-}
 .track-actions.right-active,
 .track-actions.left-active {
   opacity: 1;
