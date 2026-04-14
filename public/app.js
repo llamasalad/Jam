@@ -1,3 +1,32 @@
+let resizeObserver = null;
+let searchListener = null;
+let authKeydownListener = null;
+let globalClickListener = null;
+
+function cleanup() {
+    // Disconnect ResizeObserver
+    if (resizeObserver) {
+        resizeObserver.disconnect();
+        resizeObserver = null;
+    }
+    
+    // Remove event listeners
+    if (searchListener && searchEl) {
+        searchEl.removeEventListener('input', searchListener);
+        searchListener = null;
+    }
+    
+    if (authKeydownListener && authInput) {
+        authInput.removeEventListener('keydown', authKeydownListener);
+        authKeydownListener = null;
+    }
+    
+    if (globalClickListener) {
+        document.removeEventListener('click', globalClickListener);
+        globalClickListener = null;
+    }
+}
+
 const mobileQuery = window.matchMedia('(max-width:768px)');
 const isMobile = () => mobileQuery.matches;
 
@@ -25,6 +54,8 @@ const loading = document.getElementById('loading');
 const empty = document.getElementById('empty');
 const searchEl = document.getElementById('search');
 const sortBtn = document.getElementById('sort-btn');
+const themeToggle = document.getElementById('theme-toggle');
+const themeMenu = document.getElementById('theme-menu');
 const btnPlay = document.getElementById('btn-play');
 const btnPrev = document.getElementById('btn-prev');
 const btnNext = document.getElementById('btn-next');
@@ -85,13 +116,19 @@ function updatePlayerHeight() {
         document.documentElement.style.setProperty('--player-h', player.offsetHeight + 'px');
     }
 }
-if (player) new ResizeObserver(updatePlayerHeight).observe(player);
+if (player && !resizeObserver) {
+    resizeObserver = new ResizeObserver(updatePlayerHeight);
+    resizeObserver.observe(player);
+}
 
 function debounce(fn, ms) {
     let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms) };
 }
 
-if (searchEl) searchEl.addEventListener('input', debounce(applyFilter, 120));
+if (searchEl && !searchListener) {
+    searchListener = debounce(applyFilter, 120);
+    searchEl.addEventListener('input', searchListener);
+}
 
 if (audio) audio.volume = Math.pow(SAVED_VOL / 100, 3);
 
@@ -134,8 +171,9 @@ if (authSubmit) {
     };
 }
 
-if (authInput) {
-    authInput.addEventListener('keydown', e => { if (e.key === 'Enter') authSubmit.click() });
+if (authInput && !authKeydownListener) {
+    authKeydownListener = (e) => { if (e.key === 'Enter') authSubmit.click() };
+    authInput.addEventListener('keydown', authKeydownListener);
 }
 
 document.querySelectorAll('.tab').forEach(tab => {
@@ -147,11 +185,13 @@ document.querySelectorAll('.tab').forEach(tab => {
         const viewPlaylists = document.getElementById('view-playlists');
         const searchWrap = document.getElementById('search-wrap');
         const sortBtn = document.getElementById('sort-btn');
+        const themeToggle = document.getElementById('theme-toggle');
 
         if (viewLibrary) viewLibrary.classList.toggle('active', name === 'library');
         if (viewPlaylists) viewPlaylists.classList.toggle('active', name === 'playlists');
         if (searchWrap) searchWrap.style.display = name === 'library' ? '' : 'none';
         if (sortBtn) sortBtn.style.display = name === 'library' ? '' : 'none';
+        if (themeToggle) themeToggle.style.display = '';
 
         if (name === 'playlists') loadPlaylists();
     }
@@ -194,6 +234,86 @@ if (sortBtn) {
         sort()
     };
 }
+
+// Theme menu functionality
+let currentTheme = localStorage.getItem('music_theme') || 'default';
+function applyTheme() {
+    // Remove all theme classes
+    document.body.classList.remove('light-theme', 'purple-theme', 'purple-light-theme');
+    
+    // Apply the current theme
+    if (currentTheme === 'light') {
+        document.body.classList.add('light-theme');
+    } else if (currentTheme === 'purple') {
+        document.body.classList.add('purple-theme');
+    } else if (currentTheme === 'purple-light') {
+        document.body.classList.add('purple-light-theme');
+    }
+    // default theme has no class applied
+    
+    // Update meta theme color
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+        const themeColors = {
+            'default': '#0d0d0f',
+            'purple': '#0f0f0f', 
+            'light': '#f8f9fa',
+            'purple-light': '#f0f0ff'
+        };
+        metaThemeColor.setAttribute('content', themeColors[currentTheme] || '#0d0d0f');
+    }
+    
+    // Update theme menu active state
+    document.querySelectorAll('.theme-option').forEach(option => {
+        option.classList.toggle('active', option.dataset.theme === currentTheme);
+    });
+}
+
+function showThemeMenu() {
+    if (!themeMenu) return;
+    const rect = themeToggle.getBoundingClientRect();
+    themeMenu.style.left = rect.left + 'px';
+    themeMenu.style.top = (rect.bottom + 5) + 'px';
+    themeMenu.classList.add('open');
+}
+
+function hideThemeMenu() {
+    if (themeMenu) themeMenu.classList.remove('open');
+}
+
+if (themeToggle) {
+    themeToggle.onclick = (e) => {
+        e.stopPropagation();
+        if (themeMenu.classList.contains('open')) {
+            hideThemeMenu();
+        } else {
+            showThemeMenu();
+        }
+    };
+}
+
+if (themeMenu) {
+    document.querySelectorAll('.theme-option').forEach(option => {
+        option.onclick = () => {
+            currentTheme = option.dataset.theme;
+            localStorage.setItem('music_theme', currentTheme);
+            applyTheme();
+            hideThemeMenu();
+        };
+    });
+}
+
+// Close theme menu when clicking outside
+if (!globalClickListener) {
+    globalClickListener = (e) => {
+        if (!themeMenu.contains(e.target) && e.target !== themeToggle) {
+            hideThemeMenu();
+        }
+    };
+    document.addEventListener('click', globalClickListener);
+}
+
+applyTheme(); // Apply initial theme
 
 function sort() {
     filtered.sort((a, b) => { const ka = (a[sortMode] || '').toLowerCase(), kb = (b[sortMode] || '').toLowerCase(); return ka < kb ? -1 : ka > kb ? 1 : 0 });
@@ -2043,6 +2163,8 @@ if ('mediaSession' in navigator) {
 }
 
 async function init() {
+    // Cleanup any existing listeners before initializing
+    cleanup();
 
     if (token) {
         document.cookie = `music_token=${encodeURIComponent(token)}; path=/; max-age=31536000; SameSite=Lax; Secure`;
@@ -2137,4 +2259,8 @@ document.addEventListener('contextmenu', (e) => {
 
 document.addEventListener('mouseup', () => { isSelecting = false; });
 
+// Cleanup on page unload
+window.addEventListener('beforeunload', cleanup);
+
+// Final initialization
 (async () => { const ok = await checkAuth(); if (ok) init() })();
