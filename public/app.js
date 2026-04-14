@@ -1430,13 +1430,7 @@ if (expPlayer) {
 
 document.addEventListener('touchmove', e => {
     if (!isPanelSwiping) return;
-    const deltaX = e.touches[0].clientX - swipeStartX;
     swipeDeltaY = e.touches[0].clientY - swipeStartY;
-
-    if (Math.abs(deltaX) > 15 && Math.abs(deltaX) > Math.abs(swipeDeltaY)) {
-        isPanelSwiping = false;
-        swipeTarget = null;
-    }
 }, { passive: true });
 
 document.addEventListener('touchend', () => {

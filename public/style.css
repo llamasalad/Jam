@@ -469,6 +469,7 @@ button,
 
 /* -- Mobile expanded player -- */
 #expanded-player{
+  display:block !important;
   position:fixed;
   inset:0;
   background:var(--bg);
