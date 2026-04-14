@@ -660,6 +660,9 @@ async function openQuickPlaylistMenu(trackRow, track) {
     const existing = document.getElementById('quick-playlist-menu');
     if (existing) existing.remove();
 
+    document.body.classList.add('menu-open');
+    trackRow.classList.add('long-press');
+
     if (playlists.length === 0) {
         await loadPlaylists();
     }
@@ -748,6 +751,10 @@ document.addEventListener('touchstart', e => {
 
 function openCtxMenu(e, t) {
     ctxTrack = t;
+    document.body.classList.add('menu-open');
+    const row = document.querySelector(`.track[data-id="${t.id}"]`);
+    if (row) row.classList.add('long-press');
+
     let targetTracks = Array.from(document.querySelectorAll('.track.selected'))
         .map(el => tracks.find(x => x.id === el.dataset.id))
         .filter(Boolean);
@@ -834,7 +841,12 @@ function openCtxMenu(e, t) {
     }
 }
 
-function closeCtxMenu() { if (ctxMenu) ctxMenu.classList.remove('open'); ctxTrack = null }
+function closeCtxMenu() {
+    if (ctxMenu) ctxMenu.classList.remove('open');
+    document.body.classList.remove('menu-open');
+    document.querySelectorAll('.track.long-press').forEach(t => t.classList.remove('long-press'));
+    ctxTrack = null;
+}
 
 const ctxNewPlaylist = document.getElementById('ctx-new-playlist');
 if (ctxNewPlaylist) {
