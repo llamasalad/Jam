@@ -892,6 +892,18 @@ body.is-dragging{user-select:none;-webkit-user-select:none}
     position: relative !important;
 }
 
+body.menu-open #app,
+body.menu-open #expanded-player {
+  pointer-events: none !important;
+}
+
+body.menu-open #ctx-menu,
+body.menu-open #quick-playlist-menu,
+body.menu-open #theme-menu,
+body.menu-open #auth-overlay {
+  pointer-events: auto !important;
+}
+
 body.menu-open::before{
   content:'';
   position:fixed;
