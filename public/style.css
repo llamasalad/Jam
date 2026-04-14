@@ -901,7 +901,7 @@ body.menu-open #view-playlists {
   pointer-events: none !important;
 }
 
-/* Force block all buttons and inputs in the background */
+/* Force block all buttons and inputs in the background hi creeper */
 body.menu-open button:not(#ctx-menu button):not(#quick-playlist-menu button):not(#theme-menu button),
 body.menu-open input:not(#ctx-menu input) {
   pointer-events: none !important;
