@@ -333,6 +333,8 @@ button#new-playlist-btn {
   touch-action: pan-y !important;
 }
 
+.track-content{transition:transform .3s cubic-bezier(0.32,.72,0,1)}
+
 html,body,#main,#expanded-player,#queue-panel,#exp-lyrics-card-scroll,#lyrics-panel,#lyrics-scroll{
   scrollbar-width:none !important;
   -ms-overflow-style:none !important;
