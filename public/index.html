@@ -136,57 +136,7 @@
       <div id="exp-lyrics-card-scroll"></div>
     </div>
   </div>
-</div>
-  <div id="exp-content">
-    <div id="exp-main-shell">
-    <div id="exp-main-left">
-    <div id="exp-cover-wrap"><img id="exp-cover" src="" alt=""/><span id="exp-cover-icon" style="display:none">♪</span></div>
-    <div id="exp-info">
-      <div id="exp-title"></div>
-      <div id="exp-artist"></div>
-    </div>
-    <div id="exp-lyrics-wrap" style="flex:1;min-height:0;display:flex;flex-direction:column">
-      <div id="exp-lyrics" style="overflow-y:auto;flex:1">
-        <div id="exp-lyric-current">-</div>
-        <div id="exp-lyric-next"></div>
-      </div>
-    </div>
-    <div id="exp-controls-row">
-      <div id="exp-progress-wrap"><span class="time-label" id="exp-time-cur">0:00</span><input id="exp-progress" type="range" min="0" max="100" value="0" step="0.1"/><span class="time-label" id="exp-time-tot">0:00</span></div>
-      <div id="exp-controls">
-        <button class="ctrl-btn" id="exp-shuffle"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
-        <button class="ctrl-btn" id="exp-prev"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg></button>
-        <button class="ctrl-btn main" id="exp-play"><svg id="exp-icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><svg id="exp-icon-pause" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></button>
-        <button class="ctrl-btn" id="exp-next"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
-        <button class="ctrl-btn" id="exp-repeat"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
-      </div>
-      <div id="exp-utils">
-        <button id="exp-lyrics-toggle">lyrics</button>
-      </div>
-    </div>
-    </div>
-    <div id="exp-desktop-lyrics-panel">
-      <div id="exp-desktop-lyrics-header">
-        <span id="exp-desktop-lyrics-title">Lyrics</span>
-        <div id="exp-desktop-lyrics-tools">
-          <button id="lyrics-font-down-desktop" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 4px;border-radius:3px;line-height:1" title="Smaller">A−</button>
-          <button id="lyrics-font-up-desktop" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 4px;border-radius:3px;line-height:1" title="Larger">A+</button>
-        </div>
-      </div>
-      <div id="exp-desktop-lyrics-body">
-        <div id="exp-desktop-lyrics-timing" class="lyrics-timing">
-          <div class="lyrics-timing-actions">
-            <button class="lyrics-timing-btn" data-offset-action="earlier">Earlier</button>
-            <span class="lyrics-offset-display">In sync</span>
-            <button class="lyrics-timing-btn" data-offset-action="later">Later</button>
-            <button class="lyrics-timing-btn reset" data-offset-action="reset">Reset</button>
-          </div>
-        </div>
-        <div id="exp-desktop-lyrics-scroll"></div>
-      </div>
-    </div>
-    </div>
-    <!-- Mobile-only lyrics card, hidden on desktop via CSS -->
+  </div>
     <div id="exp-lyrics-card">
       <div id="exp-lyrics-card-header">
         <span id="exp-lyrics-card-title">Lyrics</span>
