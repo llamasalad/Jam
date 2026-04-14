@@ -82,6 +82,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
   position: relative;
   z-index: 2;
 }
+
+/* SWIPE ACTION LAYERS */
+.track-actions {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  z-index: 1;
+  padding: 0 20px;
+  opacity: 0;
+}
 .track:hover .track-content { background: var(--surface); }
 .track:hover .track-menu-btn { opacity: 1; }
 .track.active .track-content { background: var(--surface2); }
@@ -99,19 +110,25 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'SF Pro
   inset: 0;
   display: flex;
   align-items: center;
-  z-index: 1;
+  z-index: 2;
   padding: 0 20px;
   opacity: 0;
 }
-.track-actions.right-active {
+.track-actions.right-active,
+.track-actions.left-active {
   opacity: 1;
+}
+.track-actions.right-active {
   background: var(--accent);
   justify-content: flex-start;
 }
 .track-actions.left-active {
-  opacity: 1;
   background: var(--accent2);
   justify-content: flex-end;
+}
+.track-actions.right-active .track-dur,
+.track-actions.left-active .track-dur {
+  display: none;
 }
 .track[data-in-playlist="true"] .track-actions.left-active,
 .queue-item .track-actions.left-active {
