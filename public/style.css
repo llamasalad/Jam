@@ -480,7 +480,6 @@ button,
   padding:0;
 }
 #expanded-player.open{
-  display: block !important;
   transform:translateY(0) !important;
 }
 
