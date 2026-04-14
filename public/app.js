@@ -437,7 +437,7 @@ function bindTapActivation(el, handler, options = {}) {
 }
 
 function attachSwipeHandlers(container, content, bgElement, handlers) {
-    let startX = 0, startY = 0;
+    let startX = 0, startY = 0, startTime = 0;
     let isRowSwiping = false, isRowScrolling = false;
     let deltaX = 0;
     const ACTION_THRESHOLD = 70;
@@ -446,6 +446,7 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
         if (e.target.closest('button') || e.target.closest('.queue-handle')) return;
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
+        startTime = Date.now();
         isRowSwiping = false;
         isRowScrolling = false;
         deltaX = 0;
@@ -462,9 +463,9 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
         const deltaY = currentY - startY;
 
         if (!isRowSwiping && !isRowScrolling) {
-            if (Math.abs(deltaY) > 10 && Math.abs(deltaY) > Math.abs(deltaX)) {
+            if (Math.abs(deltaY) > 8 && Math.abs(deltaY) > Math.abs(deltaX)) {
                 isRowScrolling = true;
-            } else if (Math.abs(deltaX) > 10) {
+            } else if (Math.abs(deltaX) > 8) {
                 isRowSwiping = true;
                 if (deltaX > 0 && handlers.right) {
                     bgElement.className = 'track-actions right-active';
@@ -479,10 +480,11 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
         if (isRowScrolling) return;
 
         if (isRowSwiping) {
+            if (e.cancelable) e.preventDefault();
             e.stopPropagation();
 
-            if (deltaX > 0 && !handlers.right) deltaX = 0;
-            if (deltaX < 0 && !handlers.left) deltaX = 0;
+            if (deltaX > 0 && !handlers.right) deltaX = deltaX * 0.2;
+            if (deltaX < 0 && !handlers.left) deltaX = deltaX * 0.2;
 
             let translateVal = deltaX;
             if (translateVal > ACTION_THRESHOLD) {
@@ -511,19 +513,24 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
                 container.dataset.hapticLeft = '';
             }
         }
-    }, { passive: true });
+    }, { passive: false });
 
     container.addEventListener('touchend', e => {
         if (!startX) return;
+        const duration = Date.now() - startTime;
+        const velocity = Math.abs(deltaX) / duration;
         startX = 0;
 
         if (isRowSwiping) {
             e.stopPropagation();
-            content.style.transition = 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)';
+            content.style.transition = 'transform 0.4s cubic-bezier(0.32, 0.72, 0, 1)';
 
-            if (deltaX >= ACTION_THRESHOLD && handlers.right) {
+            const isFlick = velocity > 0.5;
+            const isPastThreshold = Math.abs(deltaX) >= ACTION_THRESHOLD;
+
+            if ((isFlick || isPastThreshold) && deltaX > 0 && handlers.right) {
                 handlers.right.action();
-            } else if (deltaX <= -ACTION_THRESHOLD && handlers.left) {
+            } else if ((isFlick || isPastThreshold) && deltaX < 0 && handlers.left) {
                 handlers.left.action();
             }
 
@@ -533,7 +540,7 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
                 bgElement.innerHTML = '';
                 container.dataset.hapticRight = '';
                 container.dataset.hapticLeft = '';
-            }, 300);
+            }, 400);
         }
     });
 }
@@ -1397,14 +1404,15 @@ function setDesktopExpandedLyricsOpen(open) {
     }
 }
 
-let swipeStartX = 0, swipeStartY = 0, swipeDeltaY = 0, isPanelSwiping = false, swipeTarget = null;
+let swipeStartX = 0, swipeStartY = 0, swipeDeltaY = 0, swipeStartTime = 0, isPanelSwiping = false, swipeTarget = null;
 const SWIPE_THRESHOLD = 50;
 
 if (player) {
     player.addEventListener('touchstart', e => {
-        if (e.target.tagName === 'INPUT') return;
+        if (e.target.tagName === 'INPUT' || !isMobile()) return;
         swipeStartX = e.touches[0].clientX;
         swipeStartY = e.touches[0].clientY;
+        swipeStartTime = Date.now();
         swipeDeltaY = 0;
         isPanelSwiping = true;
         swipeTarget = 'expand';
@@ -1413,7 +1421,7 @@ if (player) {
 
 if (expPlayer) {
     expPlayer.addEventListener('touchstart', e => {
-        if (e.target.tagName === 'INPUT') return;
+        if (e.target.tagName === 'INPUT' || !isMobile()) return;
         const collapseZone = e.target.closest('#exp-collapse, #exp-cover-wrap, #exp-info, #exp-lyrics-wrap');
         if (!collapseZone || expPlayer.scrollTop > 24) {
             swipeTarget = null;
@@ -1422,6 +1430,7 @@ if (expPlayer) {
         }
         swipeStartX = e.touches[0].clientX;
         swipeStartY = e.touches[0].clientY;
+        swipeStartTime = Date.now();
         swipeDeltaY = 0;
         isPanelSwiping = true;
         swipeTarget = 'collapse';
@@ -1433,24 +1442,58 @@ document.addEventListener('touchmove', e => {
     const deltaX = e.touches[0].clientX - swipeStartX;
     swipeDeltaY = e.touches[0].clientY - swipeStartY;
 
-    if (Math.abs(deltaX) > 15 && Math.abs(deltaX) > Math.abs(swipeDeltaY)) {
+    if (Math.abs(deltaX) > 20 && Math.abs(deltaX) > Math.abs(swipeDeltaY)) {
         isPanelSwiping = false;
         swipeTarget = null;
+        if (expPlayer) { expPlayer.classList.remove('swiping'); expPlayer.style.transform = ''; }
+        if (queuePanel) { queuePanel.classList.remove('swiping'); queuePanel.style.transform = ''; }
+        return;
+    }
+
+    if (swipeTarget === 'expand' && swipeDeltaY < 0) {
+        const translate = Math.max(0, 100 + (swipeDeltaY / window.innerHeight) * 100);
+        expPlayer.classList.add('swiping');
+        expPlayer.style.transform = `translateY(${translate}%)`;
+    } else if (swipeTarget === 'collapse' && swipeDeltaY > 0) {
+        const translate = Math.min(100, (swipeDeltaY / window.innerHeight) * 100);
+        expPlayer.classList.add('swiping');
+        expPlayer.style.transform = `translateY(${translate}%)`;
+    } else if (swipeTarget === 'queue-close' && swipeDeltaY > 0) {
+        const translate = Math.min(100, (swipeDeltaY / window.innerHeight) * 100);
+        queuePanel.classList.add('swiping');
+        queuePanel.style.transform = `translateY(${translate}%)`;
     }
 }, { passive: true });
 
 document.addEventListener('touchend', () => {
     if (!isPanelSwiping) return;
+    const duration = Date.now() - swipeStartTime;
+    const velocity = Math.abs(swipeDeltaY) / duration;
     isPanelSwiping = false;
 
     if (!isMobile()) { swipeTarget = null; return; }
 
-    if (swipeTarget === 'expand' && swipeDeltaY < -SWIPE_THRESHOLD && !playerExpanded) {
-        openExpandedPlayer();
-    } else if (swipeTarget === 'collapse' && swipeDeltaY > SWIPE_THRESHOLD && playerExpanded) {
-        closeExpandedPlayer();
-    } else if (swipeTarget === 'queue-close' && swipeDeltaY > SWIPE_THRESHOLD && queueOpen) {
-        closeQueuePanel();
+    const isFlick = velocity > 0.5;
+    const isPastThreshold = Math.abs(swipeDeltaY) > SWIPE_THRESHOLD;
+
+    if (swipeTarget === 'expand') {
+        expPlayer.classList.remove('swiping');
+        expPlayer.style.transform = '';
+        if ((isFlick && swipeDeltaY < 0) || (isPastThreshold && swipeDeltaY < -SWIPE_THRESHOLD)) {
+            openExpandedPlayer();
+        }
+    } else if (swipeTarget === 'collapse') {
+        expPlayer.classList.remove('swiping');
+        expPlayer.style.transform = '';
+        if ((isFlick && swipeDeltaY > 0) || (isPastThreshold && swipeDeltaY > SWIPE_THRESHOLD)) {
+            closeExpandedPlayer();
+        }
+    } else if (swipeTarget === 'queue-close') {
+        queuePanel.classList.remove('swiping');
+        queuePanel.style.transform = '';
+        if ((isFlick && swipeDeltaY > 0) || (isPastThreshold && swipeDeltaY > SWIPE_THRESHOLD)) {
+            closeQueuePanel();
+        }
     }
     swipeTarget = null;
 }, { passive: true });
@@ -1504,6 +1547,7 @@ if (queuePanel) {
         if (queuePanel.scrollTop > 20 && !e.target.closest('#queue-panel-mobile-handle')) return;
         swipeStartX = e.touches[0].clientX;
         swipeStartY = e.touches[0].clientY;
+        swipeStartTime = Date.now();
         swipeDeltaY = 0;
         isPanelSwiping = true;
         swipeTarget = 'queue-close';
