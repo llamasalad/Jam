@@ -897,27 +897,28 @@ body.menu-open #expanded-player {
   pointer-events: none !important;
 }
 
-body.menu-open #ctx-menu,
-body.menu-open #quick-playlist-menu,
-body.menu-open #theme-menu,
-body.menu-open #auth-overlay {
+#menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 500;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+#ctx-menu,
+#theme-menu,
+#quick-playlist-menu {
+  z-index: 600 !important;
   pointer-events: auto !important;
 }
 
-body.menu-open::before{
-  content:'';
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.55);
-  backdrop-filter:blur(2px);
-  -webkit-backdrop-filter:blur(2px);
-  z-index:300;
-  pointer-events:auto;
-}
 .track.long-press{
   background:var(--surface2) !important;
   position:relative;
-  z-index:298;
+  z-index: 298;
 }
 
 @media (hover: none), (pointer: coarse) {

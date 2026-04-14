@@ -103,6 +103,17 @@ const expIconPause = document.getElementById('exp-icon-pause');
 const expLyricsToggle = document.getElementById('exp-lyrics-toggle');
 const expDesktopLyricsPanel = document.getElementById('exp-desktop-lyrics-panel');
 const expDesktopLyricsScroll = document.getElementById('exp-desktop-lyrics-scroll');
+const menuBackdrop = document.getElementById('menu-backdrop');
+
+if (menuBackdrop) {
+    menuBackdrop.onclick = () => {
+        closeCtxMenu();
+        const qm = document.getElementById('quick-playlist-menu');
+        if (qm) qm.remove();
+        const tm = document.getElementById('theme-menu');
+        if (tm) tm.classList.remove('open');
+    };
+}
 
 // SVG Icons for Swipe Actions
 const SWIPE_ICONS = {
@@ -651,6 +662,7 @@ function hideCtxWithBackdrop() {
     if (ctxMenu) ctxMenu.classList.remove('open');
     document.querySelectorAll('.track.long-press').forEach(t => t.classList.remove('long-press'));
     document.body.classList.remove('menu-open');
+    if (menuBackdrop) menuBackdrop.style.display = 'none';
     ctxTrack = null;
     const quickMenu = document.getElementById('quick-playlist-menu');
     if (quickMenu) quickMenu.remove();
@@ -661,6 +673,7 @@ async function openQuickPlaylistMenu(trackRow, track) {
     if (existing) existing.remove();
 
     document.body.classList.add('menu-open');
+    if (menuBackdrop) menuBackdrop.style.display = 'block';
     trackRow.classList.add('long-press');
 
     if (playlists.length === 0) {
@@ -752,6 +765,7 @@ document.addEventListener('touchstart', e => {
 function openCtxMenu(e, t) {
     ctxTrack = t;
     document.body.classList.add('menu-open');
+    if (menuBackdrop) menuBackdrop.style.display = 'block';
     const row = document.querySelector(`.track[data-id="${t.id}"]`);
     if (row) row.classList.add('long-press');
 
@@ -844,6 +858,7 @@ function openCtxMenu(e, t) {
 function closeCtxMenu() {
     if (ctxMenu) ctxMenu.classList.remove('open');
     document.body.classList.remove('menu-open');
+    if (menuBackdrop) menuBackdrop.style.display = 'none';
     document.querySelectorAll('.track.long-press').forEach(t => t.classList.remove('long-press'));
     ctxTrack = null;
 }
