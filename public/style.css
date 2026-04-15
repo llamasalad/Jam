@@ -35,7 +35,7 @@ input, textarea {
   --surface: #1a1a2e;
   --surface2: #1a1a2e;
   --surface3: #1a1a2e;
-  --border: rgba(255, 255, 255, 0.06);
+  --border: rgba(0, 0, 0, 0.06);
   --border2:rgba(255,255,255,0.12);
   --text: #ffffff;
   --muted: #c8c8c9;
@@ -292,7 +292,18 @@ button#new-playlist-btn {
 #player-artist{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #player-center{display:flex;flex-direction:column;align-items:center;gap:4px;flex:0 0 auto}
 #controls{display:flex;align-items:center;gap:12px}
-.ctrl-btn{background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:color .15s,background .15s}
+.ctrl-btn{
+  background:none;
+  border:none;
+  color:var(--muted);
+  cursor:pointer;
+  padding:6px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:color .15s,background .15s
+}
 .ctrl-btn:hover{color:var(--text);background:var(--surface3)}
 .ctrl-btn.main{background:var(--accent);color:var(--bg);border-radius:50%;width:40px;height:40px}
 .ctrl-btn.main:hover{background:var(--accent2)}
@@ -434,8 +445,8 @@ button#new-playlist-btn {
   background:none;
   border:1px solid var(--border);
   color:var(--muted);
-  border-radius:6px;
-  padding:6px 10px;
+  border-radius:20px;
+  padding:6px 14px;
   font-size:12px;
   font-family:'SF Pro Display',-apple-system,sans-serif;
   cursor:pointer;
