@@ -123,6 +123,7 @@ const expArtist = document.getElementById('exp-artist');
 const expLyricCur = document.getElementById('exp-lyric-current');
 const expLyricNext = document.getElementById('exp-lyric-next');
 const expLyricsWrap = document.getElementById('exp-lyrics-wrap');
+const expMainShell = document.getElementById('exp-main-shell');
 const expPlay = document.getElementById('exp-play');
 const expPrev = document.getElementById('exp-prev');
 const expNext = document.getElementById('exp-next');

@@ -190,7 +190,6 @@ body {
   .track:active .track-content {
     background: var(--surface2) !important;
     opacity: 0.96;
-    transform: none !important;
   }
 }
 
@@ -2754,6 +2753,17 @@ button:active,
 }
 
 .track:active .track-content {
-  background: var(--surface2) !important;
-  transform: scale(0.98) !important;
+  background: var(--surface2);
+  transition: background 0s;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .track:active .track-content {
+    background: transparent !important;
+    transform: none !important;
+  }
+}
+
+.track.active .track-content {
+  background: var(--surface2);
 }
