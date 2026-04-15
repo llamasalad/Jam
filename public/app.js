@@ -781,11 +781,16 @@ function openCtxMenu(e, t) {
     const row = document.querySelector(`.track[data-id="${t.id}"]`);
     if (row) row.classList.add('long-press');
 
-    let targetTracks = Array.from(document.querySelectorAll('.track.selected'))
-        .map(el => tracks.find(x => x.id === el.dataset.id))
-        .filter(Boolean);
+    const isTouch = window.matchMedia("(pointer: coarse)").matches;
+    let targetTracks = [];
+    
+    if (!isTouch) {
+        targetTracks = Array.from(document.querySelectorAll('.track.selected'))
+            .map(el => tracks.find(x => x.id === el.dataset.id))
+            .filter(Boolean);
+    }
 
-    if (!targetTracks.some(st => st.id === t.id)) {
+    if (!targetTracks.length || !targetTracks.some(st => st.id === t.id)) {
         targetTracks = [t];
     }
 
