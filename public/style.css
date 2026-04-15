@@ -2023,20 +2023,21 @@ body.is-dragging {
   }
 
   #player-center {
-    flex: 1 1 auto;
-    min-width: 0;
+    flex: 0 0 auto !important;
     display: flex;
     justify-content: center;
     order: 2 !important;
   }
 
   #player-right {
-    flex: 0 0 auto;
+    position: absolute !important;
+    top: 14px !important;
+    right: 16px !important;
     display: flex !important;
     flex-direction: row !important;
-    gap: 10px !important;
+    gap: 8px !important;
+    order: unset !important;
     flex-shrink: 0 !important;
-    order: 2 !important;
   }
 
   #player-utils {
@@ -2066,7 +2067,8 @@ body.is-dragging {
     order: 3 !important;
     width: 100% !important;
     padding: 0 4px !important;
-    gap: 8px !important;
+    gap: 12px !important;
+    justify-content: space-between !important;
   }
 
   #player-info {
