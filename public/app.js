@@ -571,7 +571,7 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
         div.ondblclick = () => playTrack(t, filtered);
     } else {
         bindTapActivation(div, () => playTrack(t, filtered), {
-            onLongPress: e => openCtxMenu({ clientX: e.clientX, clientY: e.clientY, stopPropagation() {} }, t)
+            onLongPress: e => openCtxMenu({ clientX: e.clientX, clientY: e.clientY, stopPropagation() { } }, t)
         });
 
         let rowHandlers = {};
@@ -1103,13 +1103,13 @@ if (audio) {
     audio.addEventListener('ended', () => {
         if ('mediaSession' in navigator) {
             navigator.mediaSession.playbackState = 'paused';
-            try { navigator.mediaSession.setPositionState(null); } catch (_) {}
+            try { navigator.mediaSession.setPositionState(null); } catch (_) { }
         }
         nextTrack();
     });
     audio.addEventListener('error', () => {
         if ('mediaSession' in navigator) {
-            try { navigator.mediaSession.playbackState = 'paused'; navigator.mediaSession.setPositionState(null); } catch (_) {}
+            try { navigator.mediaSession.playbackState = 'paused'; navigator.mediaSession.setPositionState(null); } catch (_) { }
         }
         console.error('Audio playback error:', audio.error?.message || 'Unknown error');
     });
@@ -1295,7 +1295,7 @@ function openExpandedPlayer(options = {}) {
         queueOpen = false;
     }
     if (qIdx >= 0 && queue[qIdx]) {
-                updateExpandedNowPlaying(queue[qIdx]);
+        updateExpandedNowPlaying(queue[qIdx]);
         updateAdaptiveBackground();
     }
 
@@ -1340,6 +1340,7 @@ const SWIPE_THRESHOLD = 50;
 if (player) {
     player.addEventListener('touchstart', e => {
         if (e.target.tagName === 'INPUT' || !isMobile()) return;
+        if (window.innerHeight - e.touches[0].clientY < 30) return; // Prevent OS app switcher interference
         swipeStartX = e.touches[0].clientX;
         swipeStartY = e.touches[0].clientY;
         swipeStartTime = Date.now();
@@ -1425,11 +1426,11 @@ document.addEventListener('touchend', () => {
     } else if (swipeTarget === 'queue-swipe') {
         queuePanel.classList.remove('swiping');
         queuePanel.style.transform = '';
-        
-        const finalTranslate = queueExpanded 
-            ? (swipeDeltaY / window.innerHeight) * 100 
+
+        const finalTranslate = queueExpanded
+            ? (swipeDeltaY / window.innerHeight) * 100
             : 40 + (swipeDeltaY / window.innerHeight) * 100;
-            
+
         if ((isFlick && swipeDeltaY < 0) || finalTranslate < 20) {
             queueExpanded = true;
             queuePanel.classList.add('expanded');
@@ -1441,6 +1442,24 @@ document.addEventListener('touchend', () => {
             queuePanel.classList.remove('expanded');
             queuePanel.classList.add('open');
         }
+    }
+    swipeTarget = null;
+}, { passive: true });
+
+document.addEventListener('touchcancel', () => {
+    if (!isPanelSwiping) return;
+    isPanelSwiping = false;
+
+    if (swipeTarget === 'expand' && expPlayer) {
+        expPlayer.classList.remove('swiping');
+        expPlayer.style.transform = '';
+    } else if (swipeTarget === 'collapse' && expPlayer) {
+        expPlayer.classList.remove('swiping');
+        expPlayer.style.transform = '';
+    } else if (swipeTarget === 'queue-swipe' && queuePanel) {
+        queuePanel.classList.remove('swiping');
+        queuePanel.style.transform = '';
+        if (!queueExpanded) queuePanel.classList.add('open');
     }
     swipeTarget = null;
 }, { passive: true });
@@ -1649,7 +1668,7 @@ if (clearQueueBtn) {
 // Also: Ensure CORS headers are set on the cover endpoint for lock screen access
 function updateMediaSession(t) {
     if (!('mediaSession' in navigator) || !t) return;
-    
+
     try {
         const base = window.location.origin;
         // Build artwork URL with CORS-friendly construction
@@ -1658,11 +1677,11 @@ function updateMediaSession(t) {
         if (token) {
             coverUrl += '?token=' + encodeURIComponent(token);
         }
-        
+
         navigator.mediaSession.metadata = new MediaMetadata({
-            title:  t.title  || 'Unknown',
+            title: t.title || 'Unknown',
             artist: t.artist || 'Unknown',
-            album:  t.album  || 'Unknown',
+            album: t.album || 'Unknown',
             artwork: [
                 { src: coverUrl, sizes: '512x512', type: 'image/jpeg' }
             ]
@@ -2037,9 +2056,9 @@ if (audio) {
         }
         if (!seeking && audio.duration) {
             const pct = (audio.currentTime / audio.duration) * 100;
-            if (progress)    progress.value    = pct;
+            if (progress) progress.value = pct;
             if (expProgress) expProgress.value = pct;
-            if (timeCur)    timeCur.textContent    = fmt(audio.currentTime);
+            if (timeCur) timeCur.textContent = fmt(audio.currentTime);
             if (expTimeCur) expTimeCur.textContent = fmt(audio.currentTime);
         }
         updatePositionState();
