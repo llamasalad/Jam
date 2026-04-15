@@ -2025,6 +2025,7 @@ async function loadLyrics(t) {
                 expLyricsWrap.style.display = 'none';
                 expLyricsWrap.style.flex = '0';
             }
+            if (expContent) expContent.style.height = '100%';
             if (expMainShell) {
                 expMainShell.style.display = 'flex';
                 expMainShell.style.flexDirection = 'column';
