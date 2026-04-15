@@ -251,6 +251,27 @@
       </div>
     </div>
   </div>
+  <div id="modal-new" class="modal-overlay">
+    <div class="modal">
+      <h3>New Playlist</h3>
+      <input type="text" id="modal-name" placeholder="Playlist name" maxlength="50" autocomplete="off" />
+      <div class="modal-btns">
+        <button id="modal-cancel">Cancel</button>
+        <button id="modal-confirm" class="primary">Create</button>
+      </div>
+    </div>
+  </div>
+  <div id="modal-edit" class="modal-overlay">
+    <div class="modal">
+      <h3>Edit Metadata</h3>
+      <div class="field"><label>Title</label><input type="text" id="edit-title" /></div>
+      <div class="field"><label>Artist</label><input type="text" id="edit-artist" /></div>
+      <div class="modal-btns">
+        <button id="edit-cancel">Cancel</button>
+        <button id="edit-confirm" class="primary">Save</button>
+      </div>
+    </div>
+  </div>
   <div id="player" class="hidden">
     <button id="expand-handle" aria-label="Expand player">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
@@ -311,7 +332,6 @@
         </div>
       </div>
     </div>
-  </div>
   </div>
   <audio id="audio" crossorigin="use-credentials"></audio>
   <script src="/app.js"></script>

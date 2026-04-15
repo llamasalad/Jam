@@ -1103,6 +1103,14 @@ function updateExpandedNowPlaying(t) {
         loadCover(t.id, expCover);
         expCover.onerror = () => { expCover.style.display = 'none'; if (expCoverIcon) expCoverIcon.style.display = 'block'; };
     }
+    if (expLyricsWrap) {
+        expLyricsWrap.style.display = 'flex';
+        expLyricsWrap.style.flex = '1';
+    }
+    if (expMainShell) {
+        expMainShell.style.justifyContent = 'flex-start';
+        expMainShell.style.flex = '';
+    }
 }
 
 if (audio) {
@@ -1980,6 +1988,13 @@ async function loadLyrics(t) {
                 expLyricsWrap.style.display = 'none';
                 expLyricsWrap.style.flex = '0';
             }
+            if (expMainShell) {
+                expMainShell.style.display = 'flex';
+                expMainShell.style.flexDirection = 'column';
+                expMainShell.style.justifyContent = 'center';
+                expMainShell.style.flex = '1';
+                expMainShell.style.height = '100%';
+            }
             setLyricsMessage("No lyrics found", "");
             if (plTitle) plTitle.textContent = 'Lyrics';
             if (cardTitle) cardTitle.textContent = 'Lyrics';
@@ -1991,6 +2006,13 @@ async function loadLyrics(t) {
         if (expLyricsWrap) {
             expLyricsWrap.style.display = 'none';
             expLyricsWrap.style.flex = '0';
+        }
+        if (expMainShell) {
+            expMainShell.style.display = 'flex';
+            expMainShell.style.flexDirection = 'column';
+            expMainShell.style.justifyContent = 'center';
+            expMainShell.style.flex = '1';
+            expMainShell.style.height = '100%';
         }
         setLyricsMessage("No lyrics found", "");
     }
