@@ -830,7 +830,6 @@ function openCtxMenu(e, t) {
     }
 
     const ctxRemoveFromPlaylist = document.getElementById('ctx-remove-from-playlist');
-    const ctxEditMetadata = document.getElementById('ctx-edit-metadata');
     const ctxRemoveSep = document.getElementById('ctx-remove-sep');
     if (ctxRemoveFromPlaylist && ctxRemoveSep) {
         if (currentPlaylist) {
