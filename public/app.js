@@ -113,10 +113,9 @@ let heartbeatInterval = null;
 if (menuBackdrop) {
     menuBackdrop.onclick = () => {
         closeCtxMenu();
+        hideThemeMenu();
         const qm = document.getElementById('quick-playlist-menu');
         if (qm) qm.remove();
-        const tm = document.getElementById('theme-menu');
-        if (tm) tm.classList.remove('open');
     };
 }
 
@@ -280,30 +279,33 @@ function applyTheme() {
     });
 }
 
+document.addEventListener('click', (e) => {
+    if (themeMenu?.classList.contains('open') && 
+        !themeMenu.contains(e.target) && 
+        !themeToggle.contains(e.target)) {
+        hideThemeMenu();
+    }
+});
+
 function showThemeMenu() {
     if (!themeMenu) return;
     const rect = themeToggle.getBoundingClientRect();
-    const menuWidth = 160; // Approximate width from CSS
-    
-    // Position below button, but shift left if it would go off-screen
+    const menuWidth = 160;
     let left = rect.left;
     if (left + menuWidth > window.innerWidth) {
         left = window.innerWidth - menuWidth - 10;
     }
-    
     themeMenu.style.left = Math.max(10, left) + 'px';
     themeMenu.style.top = (rect.bottom + 5) + 'px';
     themeMenu.classList.add('open');
-    document.body.classList.add('menu-open');
-    if (menuBackdrop) menuBackdrop.style.display = 'block';
+    document.body.classList.add('theme-menu-open');
 }
 
 function hideThemeMenu() {
     if (themeMenu) themeMenu.classList.remove('open');
-    document.body.classList.remove('menu-open');
-    if (menuBackdrop) menuBackdrop.style.display = 'none';
+    document.body.classList.remove('theme-menu-open');
+    menuBackdrop.style.display = '';
 }
-
 if (themeToggle) {
     themeToggle.onclick = (e) => {
         e.stopPropagation();
