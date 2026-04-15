@@ -190,6 +190,7 @@ body {
   .track:active .track-content {
     background: var(--surface2) !important;
     opacity: 0.96;
+    transform: none !important;
   }
 }
 
@@ -445,24 +446,19 @@ body {
   opacity: 1;
 }
 
-@media (hover: hover) and (pointer: fine) {
+@media (hover: hover) {
   .track:hover .track-content {
     background: var(--surface2);
   }
 }
 
 .track .track-content {
-  position: relative;
-  z-index: 2;
-  transition: background 0.4s ease, transform 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-  background: var(--bg);
-  will-change: transform;
+  transition: background 0.4s ease;
 }
 
 .track:active .track-content {
-  background: var(--surface2);
-  transform: scale(0.98);
-  transition: background 0s, transform 0.1s;
+  background: var(--surface3);
+  transition: background 0s;
 }
 
 .track.active .track-content {
@@ -660,11 +656,8 @@ body {
   flex-shrink: 0;
 }
 
-@media (hover: hover) {
-  .ctx-item:hover {
-    background: var(--surface3);
-    color: var(--text);
-  }
+.ctx-item:hover {
+  background: var(--surface3);
 }
 
 .ctx-item.danger {
@@ -717,11 +710,8 @@ body {
   padding: 6px 8px;
 }
 
-@media (hover: hover) {
-  .theme-option:hover {
-    background: var(--surface3);
-    border-color: var(--accent);
-  }
+.theme-option:hover {
+  background: var(--surface3);
 }
 
 .theme-option.active {
@@ -766,8 +756,6 @@ body {
 @media (hover: hover) {
   .playlist-card:hover {
     background: var(--surface);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow);
   }
 }
 
@@ -1852,10 +1840,10 @@ body.is-dragging {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, .6);
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 300;
   padding: 20px;
 }
 
@@ -2426,7 +2414,7 @@ body.is-dragging {
 
   .lyrics-timing.mobile .lyrics-timing-btn {
     min-height: 36px;
-    padding: 6px 10px;
+    padding: 7px 12px;
   }
 
   .lyrics-timing.mobile .lyrics-offset-display {
@@ -2753,17 +2741,5 @@ button:active,
 }
 
 .track:active .track-content {
-  background: var(--surface2);
-  transition: background 0s;
-}
-
-@media (hover: none), (pointer: coarse) {
-  .track:active .track-content {
-    background: transparent !important;
-    transform: none !important;
-  }
-}
-
-.track.active .track-content {
-  background: var(--surface2);
+  background: var(--surface2) !important;
 }
