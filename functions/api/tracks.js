@@ -4,21 +4,11 @@ function getDuration(bytes) {
   const sig = String.fromCharCode(bytes[0],bytes[1],bytes[2],bytes[3]);
 
   // ── FLAC ──────────────────────────────────────────────────────────────────
-  // fLaC marker (4 bytes) + block header (4 bytes) + STREAMINFO data
-  // STREAMINFO layout (34 bytes total):
-  //   0-1:  min block size
-  //   2-3:  max block size
-  //   4-6:  min frame size (24 bits)
-  //   7-9:  max frame size (24 bits)
-  //   10-12+: sample rate (20 bits), channels (3 bits), bit depth (5 bits), total samples (36 bits)
   if (sig === 'fLaC') {
     const blockType = bytes[4] & 0x7f;
     if (blockType !== 0) return null; // must be STREAMINFO
-    // STREAMINFO data starts at byte 8 (4 marker + 4 block header)
     const off = 8;
-    // sample rate: bits 0-19 of bytes at off+10, off+11, off+12
     const sampleRate = (bytes[off+10] << 12) | (bytes[off+11] << 4) | (bytes[off+12] >> 4);
-    // total samples: bits 4-39 = lower 4 bits of byte off+13, then bytes off+14 to off+17
     const totalSamples =
       ((bytes[off+13] & 0x0F) * 0x100000000) +
       (bytes[off+14] * 0x1000000) +
@@ -64,12 +54,10 @@ function getDuration(bytes) {
 
   // ── MP3 (ID3v2 + Xing/Info header) ────────────────────────────────────────
   if (bytes[0]===0x49&&bytes[1]===0x44&&bytes[2]===0x33) {
-    // Skip ID3v2 tag to find first MP3 frame
     const id3Size = ((bytes[6]&0x7f)<<21)|((bytes[7]&0x7f)<<14)|((bytes[8]&0x7f)<<7)|(bytes[9]&0x7f);
     const frameStart = 10 + id3Size;
     if (frameStart + 4 >= bytes.length) return null;
 
-    // Parse MP3 frame header
     const b1 = bytes[frameStart+1];
     const b2 = bytes[frameStart+2];
     const srIdx = (b2 >> 2) & 0x3;
@@ -77,7 +65,6 @@ function getDuration(bytes) {
     const sampleRate = srTable[srIdx];
     if (!sampleRate) return null;
 
-    // Look for Xing/Info header (36 bytes into frame for MPEG1 Layer3)
     const xOff = frameStart + 36;
     if (xOff + 12 < bytes.length) {
       const xSig = String.fromCharCode(bytes[xOff],bytes[xOff+1],bytes[xOff+2],bytes[xOff+3]);
@@ -113,13 +100,28 @@ export async function onRequestGet({ env }) {
 
     const tracks = await Promise.all(trackObjects.map(async obj => {
       const key = obj.key;
+      // Fetch sidecar metadata if it exists
+      let title, artist, album;
+      try {
+        const meta = await env.MUSIC_BUCKET.get(`${key}.meta.json`);
+        if (meta) {
+          const data = await meta.json();
+          title = data.title;
+          artist = data.artist;
+          album = data.album;
+        }
+      } catch(_) {}
+
       const parts = key.split("/");
       const filename = parts[parts.length - 1];
       const ext = filename.slice(filename.lastIndexOf("."));
-      let title = filename.slice(0, filename.length - ext.length);
-      title = title.replace(/^\d{1,3}[\s.\-_]+/, '').trim();
-      const artist = parts.length >= 3 ? parts[parts.length - 3] : "Unknown";
-      const album = parts.length >= 2 ? parts[parts.length - 2] : "Unknown";
+      if (!title) {
+        title = filename.slice(0, filename.length - ext.length);
+        title = title.replace(/^\d{1,3}[\s.\-_]+/, '').trim();
+      }
+      if (!artist) artist = parts.length >= 3 ? parts[parts.length - 3] : "Unknown";
+      if (!album) album = parts.length >= 2 ? parts[parts.length - 2] : "Unknown";
+      
       const id = encodeURIComponent(key).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16));
 
       let duration = null;
@@ -161,11 +163,7 @@ export async function onRequestPost({ request, env }) {
       return new Response(JSON.stringify({ error: "No file provided" }), { status: 400 });
     }
 
-    // Default structure: Uploads/Unknown/Unknown/filename
-    // The GET handler looks for parts[parts.length-3] as artist
     const key = `Uploads/Unknown/Unknown/${file.name}`;
-    
-    // Check if file already exists
     const existing = await env.MUSIC_BUCKET.head(key);
     if (existing) {
       return new Response(JSON.stringify({ error: "File already exists" }), { status: 409 });
@@ -178,6 +176,23 @@ export async function onRequestPost({ request, env }) {
     return new Response(JSON.stringify({ success: true, key }), {
       headers: { "Content-Type": "application/json" }
     });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500, headers: { "Content-Type": "application/json" }
+    });
+  }
+}
+
+export async function onRequestPut({ request, env }) {
+  const token = request.headers.get("x-auth-token");
+  if (!token) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+
+  try {
+    const { key, title, artist, album } = await request.json();
+    const metaKey = `${key}.meta.json`;
+    await env.MUSIC_BUCKET.put(metaKey, JSON.stringify({ title, artist, album }));
+
+    return new Response(JSON.stringify({ success: true }));
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500, headers: { "Content-Type": "application/json" }

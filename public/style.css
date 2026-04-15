@@ -117,10 +117,10 @@ html,body{
 #search{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:6px 10px 6px 28px;width:160px;outline:none;transition:border-color .2s,width .2s}
 #search:focus{border-color:var(--border2);width:200px}
 #search-icon{position:absolute;left:9px;color:var(--muted);pointer-events:none;font-size:13px}
-#theme-toggle{background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:6px 9px;font-size:11px;cursor:pointer;font-family:'SF Pro Display',-apple-system,sans-serif;white-space:nowrap;transition:color .15s, border-color .15s}
-#theme-toggle:hover{color:var(--accent);border-color:var(--accent)}
-#sort-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:6px 9px;font-size:11px;cursor:pointer;font-family:'SF Pro Display',-apple-system,sans-serif;white-space:nowrap;transition:color .15s, border-color .15s}
-#sort-btn:hover{color:var(--accent);border-color:var(--accent)}
+#theme-toggle{background:none !important;border:1px solid var(--border) !important;color:var(--muted) !important;border-radius:6px !important;padding:6px 9px !important;font-size:11px !important;cursor:pointer !important;font-family:'SF Pro Display',-apple-system,sans-serif !important;white-space:nowrap !important;transition:color .15s, border-color .15s !important}
+#theme-toggle:hover{color:var(--accent) !important;border-color:var(--accent) !important}
+#sort-btn{background:none !important;border:1px solid var(--border) !important;color:var(--muted) !important;border-radius:6px !important;padding:6px 9px !important;font-size:11px !important;cursor:pointer !important;font-family:'SF Pro Display',-apple-system,sans-serif !important;white-space:nowrap !important;transition:color .15s, border-color .15s !important}
+#sort-btn:hover{color:var(--accent) !important;border-color:var(--accent) !important}
 #tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
 .tab{flex:1;padding:10px;font-size:13px;text-align:center;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
@@ -1009,11 +1009,12 @@ body.menu-open #view-playlists {
   pointer-events: none !important;
 }
 
-/* Force block all buttons and inputs in the background hi creeper */
-body.menu-open button:not(#ctx-menu button):not(#quick-playlist-menu button):not(#theme-menu button),
+/* Force block all buttons and inputs in the background */
+body.menu-open button:not(#ctx-menu button):not(#quick-playlist-menu button):not(#theme-menu button):not(.track-menu-btn):not(.playlist-del):not(.queue-remove),
 body.menu-open input:not(#ctx-menu input) {
   pointer-events: none !important;
 }
+
 
 @media (max-width: 768px) {
   body.menu-open #menu-backdrop {

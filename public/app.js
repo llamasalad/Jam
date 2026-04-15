@@ -822,6 +822,7 @@ function openCtxMenu(e, t) {
     }
 
     const ctxRemoveFromPlaylist = document.getElementById('ctx-remove-from-playlist');
+    const ctxEditMetadata = document.getElementById('ctx-edit-metadata');
     const ctxRemoveSep = document.getElementById('ctx-remove-sep');
     if (ctxRemoveFromPlaylist && ctxRemoveSep) {
         if (currentPlaylist) {
@@ -843,6 +844,12 @@ function openCtxMenu(e, t) {
             ctxRemoveSep.style.display = 'none';
             ctxRemoveFromPlaylist.style.display = 'none';
         }
+    }
+    if (ctxEditMetadata) {
+        ctxEditMetadata.onclick = () => {
+            closeCtxMenu();
+            openEditMetadataModal(t);
+        };
     }
 
     if (ctxPlaylists) {
@@ -2261,7 +2268,48 @@ if ('mediaSession' in navigator) {
     });
 }
 
-// ADAPTIVE BACKGROUND LOGIC
+function openEditMetadataModal(t) {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal">
+            <h3>Edit Metadata</h3>
+            <input id="edit-title" value="${t.title || ''}" placeholder="Title" />
+            <input id="edit-artist" value="${t.artist || ''}" placeholder="Artist" />
+            <input id="edit-album" value="${t.album || ''}" placeholder="Album" />
+            <div class="modal-btns">
+                <button class="btn-cancel">Cancel</button>
+                <button class="btn-confirm">Save</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    modal.querySelector('.btn-cancel').onclick = () => modal.remove();
+    modal.querySelector('.btn-confirm').onclick = async () => {
+        const title = document.getElementById('edit-title').value;
+        const artist = document.getElementById('edit-artist').value;
+        const album = document.getElementById('edit-album').value;
+        
+        showToast('Saving...');
+        try {
+            await fetch('/api/tracks', {
+                method: 'PUT',
+                headers: hdrs(),
+                body: JSON.stringify({ key: t.key, title, artist, album })
+            });
+            
+            t.title = title; t.artist = artist; t.album = album;
+            renderList();
+            modal.remove();
+            showToast('Metadata updated!');
+        } catch (e) {
+            console.error('Update error:', e);
+            showToast('Save failed');
+        }
+    };
+}
 function getDominantColor(img) {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
