@@ -198,6 +198,9 @@ document.querySelectorAll('.tab').forEach(tab => {
         if (searchWrap) searchWrap.style.display = name === 'library' ? '' : 'none';
         if (sortBtn) sortBtn.style.display = name === 'library' ? '' : 'none';
         if (themeToggle) themeToggle.style.display = '';
+        currentPlaylist = null;
+        if (playlistDetail) playlistDetail.classList.remove('active');
+        if (playlistsListView) playlistsListView.style.display = '';
         if (name === 'playlists') loadPlaylists();
     }
 });
