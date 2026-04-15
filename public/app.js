@@ -27,9 +27,7 @@ const isMobile = () => mobileQuery.matches;
 
 const TOKEN_KEY = 'music_token';
 let token = localStorage.getItem(TOKEN_KEY) || '';
-if (token) {
-    document.cookie = `music_token=${encodeURIComponent(token)}; path=/; max-age=31536000; SameSite=Lax; Secure`;
-}
+setTokenCookie(token);
 let tracks = [], filtered = [], queue = [], qIdx = -1, sortMode = 'title';
 let shuffle = localStorage.getItem('music_shuffle') === 'true', seeking = false, muted = false;
 const SAVED_VOL = parseInt(localStorage.getItem('music_vol') || '80');
@@ -40,6 +38,31 @@ let isSelecting = false;
 let toggleMode = true;
 let lastSavedSec = -1;
 let lyricsOffset = 0;
+
+function setTokenCookie(t) {
+    if (t) document.cookie = `music_token=${encodeURIComponent(t)}; path=/; max-age=31536000; SameSite=Lax; Secure`;
+}
+
+function saveQueueState() {
+    saveQueueState();
+}
+
+function updatePlayerMetadata(t) {
+    updatePlayerMetadata(t);
+}
+
+function setLyricsMessage(msg, curMsg) {
+    const scrollEl = document.getElementById('lyrics-scroll');
+    const cardScroll = document.getElementById('exp-lyrics-card-scroll');
+    const desktopScroll = document.getElementById('exp-desktop-lyrics-scroll');
+    if (scrollEl) scrollEl.innerHTML = `<div style="padding:24px 14px;text-align:center;color:var(--muted);font-size:12px">${msg}</div>`;
+    if (desktopScroll) desktopScroll.innerHTML = `<div style="padding:24px 14px;text-align:center;color:var(--muted);font-size:12px">${msg}</div>`;
+    if (cardScroll) cardScroll.innerHTML = `<div style="padding:20px 14px;text-align:center;color:var(--muted);font-size:12px">${msg}</div>`;
+    if (curMsg !== undefined) {
+        if (expLyricCur) expLyricCur.textContent = curMsg;
+        if (expLyricNext) expLyricNext.textContent = '';
+    }
+}
 
 const audio = document.getElementById('audio');
 if (audio) audio.preload = 'metadata';
@@ -168,7 +191,7 @@ if (authSubmit) {
         const r = await fetch('/api/status', { headers: { 'x-auth-token': token } });
         if (r.ok) {
             localStorage.setItem(TOKEN_KEY, token);
-            document.cookie = `music_token=${encodeURIComponent(token)}; path=/; max-age=31536000; SameSite=Lax; Secure`;
+            setTokenCookie(token);
             hideAuth();
             init();
         } else {
@@ -592,7 +615,7 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
                 action: () => {
                     queue.push(t);
                     showToast(`Added "${t.title}" to queue`);
-                    localStorage.setItem('music_queue', JSON.stringify(queue.map(x => x.id)));
+                    saveQueueState();
                 },
                 icon: SWIPE_ICONS.queue
             };
@@ -1038,23 +1061,13 @@ function play(t) {
         audio.play().catch(e => console.error("Playback failed", e));
     }
     if (player) { player.classList.remove('hidden'); updatePlayerHeight(); }
-    const plTitle = document.getElementById('player-title');
-    const plArtist = document.getElementById('player-artist');
-    const mobTitle = document.querySelector('#player-meta-mobile .title');
-    const mobArtist = document.querySelector('#player-meta-mobile .artist');
-    const fullTitle = t.title || 'Unknown';
-    const fullArtist = [t.artist, t.album].filter(Boolean).join(' \u00B7 ') || '\u2014';
-    if (plTitle) plTitle.textContent = fullTitle;
-    if (plArtist) plArtist.textContent = fullArtist;
-    if (mobTitle) mobTitle.textContent = fullTitle;
-    if (mobArtist) mobArtist.textContent = fullArtist;
+    updatePlayerMetadata(t);
     const pt = document.getElementById('player-thumb');
     if (pt) { pt.src = FALLBACK; loadCover(t.id, pt); }
     document.title = (t.title || '?') + ' \u2014 ' + (t.artist || '?');
     if (timeTot) timeTot.textContent = '-';
     localStorage.setItem('music_last', JSON.stringify({ id: t.id, title: t.title, artist: t.artist, album: t.album }));
-    localStorage.setItem('music_queue', JSON.stringify(queue.map(x => x.id)));
-    localStorage.setItem('music_qidx', qIdx);
+    saveQueueState();
     loadLyrics(t);
     updateExpandedNowPlaying(t);
     updateAdaptiveBackground();
@@ -1187,7 +1200,7 @@ if (btnShuffle) {
                 [rest[i], rest[j]] = [rest[j], rest[i]];
             }
             queue = [...queue.slice(0, qIdx + 1), ...rest];
-            localStorage.setItem('music_queue', JSON.stringify(queue.map(x => x.id)));
+            saveQueueState();
             if (queueOpen) renderQueue();
         }
     };
@@ -1476,8 +1489,7 @@ function removeFromQueue(idx) {
     if (idx < qIdx) qIdx--;
     else if (idx === qIdx && qIdx >= queue.length) qIdx = queue.length - 1;
     renderQueue();
-    localStorage.setItem('music_queue', JSON.stringify(queue.map(x => x.id)));
-    localStorage.setItem('music_qidx', qIdx);
+    saveQueueState();
 }
 
 const handle = document.getElementById('expand-handle');
@@ -1636,8 +1648,7 @@ function startQueueDrag(e, item) {
             if (qIdx === dragIdx) qIdx = newIdx;
             else if (dragIdx < qIdx && newIdx >= qIdx) qIdx--;
             else if (dragIdx > qIdx && newIdx <= qIdx) qIdx++;
-            localStorage.setItem('music_queue', JSON.stringify(queue.map(x => x.id)));
-            localStorage.setItem('music_qidx', qIdx);
+            saveQueueState();
         }
         dragItem.classList.remove('dragging');
         items.forEach(it => it.classList.remove('drag-over'));
@@ -1658,8 +1669,7 @@ if (clearQueueBtn) {
         queue = current ? [current] : [];
         qIdx = 0;
         renderQueue();
-        localStorage.setItem('music_queue', JSON.stringify(queue.map(x => x.id)));
-        localStorage.setItem('music_qidx', qIdx);
+        saveQueueState();
     };
 }
 
@@ -1734,25 +1744,21 @@ function applyLyricsFontSize() {
     getLyricScrollEls().forEach(el => { el.style.fontSize = val; });
 }
 
-const lyricsFontUp = document.getElementById('lyrics-font-up');
-if (lyricsFontUp) {
-    lyricsFontUp.onclick = e => {
+function bindLyricsFontChange(btnId, delta) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.onclick = e => {
         e.stopPropagation();
-        lyricsFontSize = Math.min(22, lyricsFontSize + 1);
+        lyricsFontSize = delta > 0 ? Math.min(22, lyricsFontSize + delta) : Math.max(10, lyricsFontSize + delta);
         localStorage.setItem('lyrics_font', lyricsFontSize);
         applyLyricsFontSize();
     };
 }
 
-const lyricsFontDown = document.getElementById('lyrics-font-down');
-if (lyricsFontDown) {
-    lyricsFontDown.onclick = e => {
-        e.stopPropagation();
-        lyricsFontSize = Math.max(10, lyricsFontSize - 1);
-        localStorage.setItem('lyrics_font', lyricsFontSize);
-        applyLyricsFontSize();
-    };
-}
+bindLyricsFontChange('lyrics-font-up', 1);
+bindLyricsFontChange('lyrics-font-down', -1);
+bindLyricsFontChange('lyrics-font-up-desktop', 1);
+bindLyricsFontChange('lyrics-font-down-desktop', -1);
 const lyricsFontUpDesktop = document.getElementById('lyrics-font-up-desktop');
 if (lyricsFontUpDesktop) {
     lyricsFontUpDesktop.onclick = e => {
@@ -1900,16 +1906,7 @@ async function loadLyrics(t) {
     lastExpLyricIdx = -1;
     invalidateLyricScrollCache();
 
-    const loadingMsg = '<div style="padding:24px 14px;text-align:center;color:var(--muted);font-size:12px">Loading lyrics\u2026</div>';
-    const cardLoadingMsg = '<div style="padding:20px 14px;text-align:center;color:var(--muted);font-size:12px">Loading lyrics\u2026</div>';
-    const scrollEl = document.getElementById('lyrics-scroll');
-    const cardScroll = document.getElementById('exp-lyrics-card-scroll');
-    const desktopScroll = expDesktopLyricsScroll;
-    if (scrollEl) scrollEl.innerHTML = loadingMsg;
-    if (cardScroll) cardScroll.innerHTML = cardLoadingMsg;
-    if (desktopScroll) desktopScroll.innerHTML = loadingMsg;
-    if (expLyricCur) expLyricCur.textContent = '\u2026';
-    if (expLyricNext) expLyricNext.textContent = '';
+    setLyricsMessage("Loading lyrics\u2026", "\u2026");
 
     try {
         const cleanTitle = (t.title || '').replace(/^\d{1,3}[\s.\-_]+/, '').trim();
@@ -1939,28 +1936,15 @@ async function loadLyrics(t) {
             if (cardTitle) cardTitle.textContent = titleText;
             if (desktopTitle) desktopTitle.textContent = titleText;
         } else {
-            const noLyricsMsg = '<div style="padding:24px 14px;text-align:center;color:var(--muted);font-size:12px">No lyrics found</div>';
-            const noLyricsMsgCard = '<div style="padding:20px 14px;text-align:center;color:var(--muted);font-size:12px">No lyrics found</div>';
-            if (scrollEl) scrollEl.innerHTML = noLyricsMsg;
-            if (cardScroll) cardScroll.innerHTML = noLyricsMsgCard;
-            if (desktopScroll) desktopScroll.innerHTML = noLyricsMsg;
+            setLyricsMessage("No lyrics found", "\u2014");
             if (plTitle) plTitle.textContent = 'Lyrics';
             if (cardTitle) cardTitle.textContent = 'Lyrics';
             if (desktopTitle) desktopTitle.textContent = 'Lyrics';
-            if (expLyricCur) expLyricCur.textContent = '\u2014';
-            if (expLyricNext) expLyricNext.textContent = '';
         }
     } catch (_) {
         if (requestSeq !== lyricsRequestSeq || lyricsTrackId !== t.id) return;
         lyricsFailed.add(t.id);
-        const errMsg = '<div style="padding:24px 14px;text-align:center;color:var(--muted);font-size:12px">No lyrics found</div>';
-        const errMsgCard = '<div style="padding:20px 14px;text-align:center;color:var(--muted);font-size:12px">No lyrics found</div>';
-        if (scrollEl) scrollEl.innerHTML = errMsg;
-        const cardScroll2 = document.getElementById('exp-lyrics-card-scroll');
-        if (cardScroll2) cardScroll2.innerHTML = errMsgCard;
-        if (desktopScroll) desktopScroll.innerHTML = errMsg;
-        if (expLyricCur) expLyricCur.textContent = '-';
-        if (expLyricNext) expLyricNext.textContent = '';
+        setLyricsMessage("No lyrics found", "-");
     }
 }
 
@@ -2273,9 +2257,7 @@ async function init() {
         searchListener = debounce(applyFilter, 120);
         searchEl.addEventListener('input', searchListener);
     }
-    if (token) {
-        document.cookie = `music_token=${encodeURIComponent(token)}; path=/; max-age=31536000; SameSite=Lax; Secure`;
-    }
+    setTokenCookie(token);
     if (btnShuffle) btnShuffle.style.color = shuffle ? 'var(--accent)' : 'var(--muted)';
     if (expShuffle) expShuffle.style.color = shuffle ? 'var(--accent)' : 'var(--muted)';
     applyRepeat();
@@ -2303,17 +2285,7 @@ async function init() {
             }
             if (player) { player.classList.remove('hidden'); updatePlayerHeight(); }
 
-            const plTitle = document.getElementById('player-title');
-            const plArtist = document.getElementById('player-artist');
-            const mobTitle = document.querySelector('#player-meta-mobile .title');
-            const mobArtist = document.querySelector('#player-meta-mobile .artist');
-            const fullTitle = t.title || 'Unknown';
-            const fullArtist = [t.artist, t.album].filter(Boolean).join(' \u00b7 ') || '\u2014';
-
-            if (plTitle) plTitle.textContent = fullTitle;
-            if (plArtist) plArtist.textContent = fullArtist;
-            if (mobTitle) mobTitle.textContent = fullTitle;
-            if (mobArtist) mobArtist.textContent = fullArtist;
+            updatePlayerMetadata(t);
 
             const pt = document.getElementById('player-thumb');
             if (pt) { pt.src = FALLBACK; loadCover(t.id, pt); }
@@ -2368,5 +2340,11 @@ document.addEventListener('visibilitychange', () => {
         });
     }
 });
+
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => console.error('SW registration failed:', err));
+    });
+}
 
 (async () => { const ok = await checkAuth(); if (ok) init() })();

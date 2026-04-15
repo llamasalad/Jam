@@ -1,33 +1,33 @@
-function read32be(b, o) { return ((b[o]<<24)|(b[o+1]<<16)|(b[o+2]<<8)|b[o+3])>>>0; }
+function read32be(b, o) { return ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]) >>> 0; }
 
 function getDuration(bytes) {
-  const sig = String.fromCharCode(bytes[0],bytes[1],bytes[2],bytes[3]);
+  const sig = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
 
   // ── FLAC ──────────────────────────────────────────────────────────────────
   if (sig === 'fLaC') {
     const blockType = bytes[4] & 0x7f;
     if (blockType !== 0) return null; // must be STREAMINFO
     const off = 8;
-    const sampleRate = (bytes[off+10] << 12) | (bytes[off+11] << 4) | (bytes[off+12] >> 4);
+    const sampleRate = (bytes[off + 10] << 12) | (bytes[off + 11] << 4) | (bytes[off + 12] >> 4);
     const totalSamples =
-      ((bytes[off+13] & 0x0F) * 0x100000000) +
-      (bytes[off+14] * 0x1000000) +
-      (bytes[off+15] * 0x10000) +
-      (bytes[off+16] * 0x100) +
-      bytes[off+17];
+      ((bytes[off + 13] & 0x0F) * 0x100000000) +
+      (bytes[off + 14] * 0x1000000) +
+      (bytes[off + 15] * 0x10000) +
+      (bytes[off + 16] * 0x100) +
+      bytes[off + 17];
     if (sampleRate > 0 && totalSamples > 0) return Math.round(totalSamples / sampleRate);
     return null;
   }
 
   // ── MP4/M4A ───────────────────────────────────────────────────────────────
-  if (bytes[4]===0x66&&bytes[5]===0x74&&bytes[6]===0x79&&bytes[7]===0x70) {
+  if (bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70) {
     function findBox(buf, start, end, name) {
       let off = start;
       while (off < end - 8) {
         const size = read32be(buf, off);
-        const type = String.fromCharCode(buf[off+4],buf[off+5],buf[off+6],buf[off+7]);
+        const type = String.fromCharCode(buf[off + 4], buf[off + 5], buf[off + 6], buf[off + 7]);
         if (size < 8 || size > end - off) break;
-        if (type === name) return { end: off+size, dataStart: off+8 };
+        if (type === name) return { end: off + size, dataStart: off + 8 };
         off += size;
       }
       return null;
@@ -49,17 +49,17 @@ function getDuration(bytes) {
         const duration = read32be(bytes, mvhd.dataStart + 16);
         return timescale > 0 ? Math.round(duration / timescale) : null;
       }
-    } catch(_) { return null; }
+    } catch (_) { return null; }
   }
 
   // ── MP3 (ID3v2 + Xing/Info header) ────────────────────────────────────────
-  if (bytes[0]===0x49&&bytes[1]===0x44&&bytes[2]===0x33) {
-    const id3Size = ((bytes[6]&0x7f)<<21)|((bytes[7]&0x7f)<<14)|((bytes[8]&0x7f)<<7)|(bytes[9]&0x7f);
+  if (bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) {
+    const id3Size = ((bytes[6] & 0x7f) << 21) | ((bytes[7] & 0x7f) << 14) | ((bytes[8] & 0x7f) << 7) | (bytes[9] & 0x7f);
     const frameStart = 10 + id3Size;
     if (frameStart + 4 >= bytes.length) return null;
 
-    const b1 = bytes[frameStart+1];
-    const b2 = bytes[frameStart+2];
+    const b1 = bytes[frameStart + 1];
+    const b2 = bytes[frameStart + 2];
     const srIdx = (b2 >> 2) & 0x3;
     const srTable = [44100, 48000, 32000, 0];
     const sampleRate = srTable[srIdx];
@@ -67,7 +67,7 @@ function getDuration(bytes) {
 
     const xOff = frameStart + 36;
     if (xOff + 12 < bytes.length) {
-      const xSig = String.fromCharCode(bytes[xOff],bytes[xOff+1],bytes[xOff+2],bytes[xOff+3]);
+      const xSig = String.fromCharCode(bytes[xOff], bytes[xOff + 1], bytes[xOff + 2], bytes[xOff + 3]);
       if (xSig === 'Xing' || xSig === 'Info') {
         const flags = read32be(bytes, xOff + 4);
         if (flags & 0x1) {
@@ -110,7 +110,7 @@ export async function onRequestGet({ env }) {
           artist = data.artist;
           album = data.album;
         }
-      } catch(_) {}
+      } catch (_) { }
 
       const parts = key.split("/");
       const filename = parts[parts.length - 1];
@@ -121,7 +121,7 @@ export async function onRequestGet({ env }) {
       }
       if (!artist) artist = parts.length >= 3 ? parts[parts.length - 3] : "Unknown";
       if (!album) album = parts.length >= 2 ? parts[parts.length - 2] : "Unknown";
-      
+
       const id = encodeURIComponent(key).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16));
 
       let duration = null;
@@ -131,7 +131,7 @@ export async function onRequestGet({ env }) {
           const buf = await partial.arrayBuffer();
           duration = getDuration(new Uint8Array(buf));
         }
-      } catch(_) {}
+      } catch (_) { }
 
       return { id, key, title, artist, album, duration };
     }));
@@ -152,9 +152,6 @@ export async function onRequestPost({ request, env }) {
       status: 500, headers: { "Content-Type": "application/json" }
     });
   }
-
-  const token = request.headers.get("x-auth-token");
-  if (!token) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
 
   try {
     const formData = await request.formData();
@@ -184,8 +181,6 @@ export async function onRequestPost({ request, env }) {
 }
 
 export async function onRequestPut({ request, env }) {
-  const token = request.headers.get("x-auth-token");
-  if (!token) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
 
   try {
     const { key, title, artist, album } = await request.json();

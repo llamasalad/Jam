@@ -14,11 +14,6 @@ export async function onRequest(context) {
     });
   }
 
-  // 1. Truly public routes (ONLY the login attempt itself)
-  if (url.pathname === '/api/login') {
-    return next();
-  }
-
   // 2. Get the token from all possible sources
   const headerToken = request.headers.get('x-auth-token');
   const queryToken = url.searchParams.get('token');
