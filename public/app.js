@@ -1334,6 +1334,7 @@ function setDesktopExpandedLyricsOpen(open) {
 }
 
 let swipeStartX = 0, swipeStartY = 0, swipeDeltaY = 0, swipeStartTime = 0, isPanelSwiping = false, swipeTarget = null;
+let queueExpanded = false;
 const SWIPE_THRESHOLD = 50;
 
 if (player) {
@@ -1386,8 +1387,13 @@ document.addEventListener('touchmove', e => {
         const translate = Math.min(100, (swipeDeltaY / window.innerHeight) * 100);
         expPlayer.classList.add('swiping');
         expPlayer.style.transform = `translateY(${translate}%)`;
-    } else if (swipeTarget === 'queue-close' && swipeDeltaY > 0) {
-        const translate = Math.min(100, (swipeDeltaY / window.innerHeight) * 100);
+    } else if (swipeTarget === 'queue-swipe' && swipeDeltaY !== 0) {
+        let translate;
+        if (queueExpanded) {
+            translate = Math.max(0, Math.min(100, (swipeDeltaY / window.innerHeight) * 100));
+        } else {
+            translate = Math.max(0, Math.min(100, 40 + (swipeDeltaY / window.innerHeight) * 100));
+        }
         queuePanel.classList.add('swiping');
         queuePanel.style.transform = `translateY(${translate}%)`;
     }
@@ -1416,11 +1422,24 @@ document.addEventListener('touchend', () => {
         if ((isFlick && swipeDeltaY > 0) || (isPastThreshold && swipeDeltaY > SWIPE_THRESHOLD)) {
             closeExpandedPlayer();
         }
-    } else if (swipeTarget === 'queue-close') {
+    } else if (swipeTarget === 'queue-swipe') {
         queuePanel.classList.remove('swiping');
         queuePanel.style.transform = '';
-        if ((isFlick && swipeDeltaY > 0) || (isPastThreshold && swipeDeltaY > SWIPE_THRESHOLD)) {
+        
+        const finalTranslate = queueExpanded 
+            ? (swipeDeltaY / window.innerHeight) * 100 
+            : 40 + (swipeDeltaY / window.innerHeight) * 100;
+            
+        if ((isFlick && swipeDeltaY < 0) || finalTranslate < 20) {
+            queueExpanded = true;
+            queuePanel.classList.add('expanded');
+            queuePanel.classList.add('open');
+        } else if ((isFlick && swipeDeltaY > 0 && finalTranslate > 55) || finalTranslate > 70) {
             closeQueuePanel();
+        } else {
+            queueExpanded = false;
+            queuePanel.classList.remove('expanded');
+            queuePanel.classList.add('open');
         }
     }
     swipeTarget = null;
@@ -1428,7 +1447,8 @@ document.addEventListener('touchend', () => {
 
 function closeQueuePanel() {
     queueOpen = false;
-    if (queuePanel) queuePanel.classList.remove('open');
+    queueExpanded = false;
+    if (queuePanel) { queuePanel.classList.remove('open', 'expanded'); queuePanel.style.transform = ''; }
     if (queueBtn) queueBtn.classList.remove('active');
 }
 
@@ -1461,11 +1481,33 @@ const queueBtn = document.getElementById('queue-btn');
 if (queueBtn) {
     queueBtn.onclick = () => {
         queueOpen = !queueOpen;
-        if (queuePanel) queuePanel.classList.toggle('open', queueOpen);
-        queueBtn.classList.toggle('active', queueOpen);
-        if (queueOpen) { closeExpandedPlayer(); renderQueue() }
+        if (queueOpen) {
+            queueExpanded = false;
+            if (queuePanel) { queuePanel.classList.add('open'); queuePanel.classList.remove('expanded'); }
+            if (queueBtn) queueBtn.classList.add('active');
+            renderQueue();
+        } else {
+            closeQueuePanel();
+        }
     };
 }
+
+const expQueueBtn = document.getElementById('exp-queue-btn');
+if (expQueueBtn) {
+    expQueueBtn.onclick = () => {
+        queueOpen = true;
+        queueExpanded = false;
+        if (queuePanel) { queuePanel.classList.add('open'); queuePanel.classList.remove('expanded'); }
+        if (queueBtn) queueBtn.classList.add('active');
+        renderQueue();
+    };
+}
+
+document.addEventListener('click', e => {
+    if (isMobile() && queueOpen && queuePanel && !queuePanel.contains(e.target) && !e.target.closest('#queue-btn') && !e.target.closest('#exp-queue-btn') && !e.target.closest('.track') && !e.target.closest('.ctx-item')) {
+        closeQueuePanel();
+    }
+});
 
 if (queuePanel) {
     queuePanel.addEventListener('touchstart', e => {
@@ -1477,7 +1519,7 @@ if (queuePanel) {
         swipeStartTime = Date.now();
         swipeDeltaY = 0;
         isPanelSwiping = true;
-        swipeTarget = 'queue-close';
+        swipeTarget = 'queue-swipe';
     }, { passive: true });
 }
 

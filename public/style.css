@@ -2030,14 +2030,7 @@ body.is-dragging {
   }
 
   #player-right {
-    position: absolute !important;
-    top: 14px !important;
-    right: 16px !important;
-    display: flex !important;
-    flex-direction: row !important;
-    gap: 8px !important;
-    order: unset !important;
-    flex-shrink: 0 !important;
+    display: none !important;
   }
 
   #player-utils {
@@ -2239,6 +2232,10 @@ body.is-dragging {
     display: inline-flex !important;
   }
 
+  #exp-queue-btn {
+    display: inline-flex !important;
+  }
+
   #exp-lyrics-card {
     order: 5;
   }
@@ -2374,13 +2371,20 @@ body.is-dragging {
     z-index: 250;
     background: var(--bg);
     border-top: none;
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.5);
     transform: translateY(100%);
-    transition: transform .35s cubic-bezier(0.32, 0.72, 0, 1);
+    transition: transform .35s cubic-bezier(0.32, 0.72, 0, 1), border-radius .35s;
     will-change: transform;
   }
 
   #queue-panel.open {
+    transform: translateY(40%);
+  }
+
+  #queue-panel.expanded {
     transform: translateY(0);
+    border-radius: 0;
   }
 
   #queue-panel.swiping {
