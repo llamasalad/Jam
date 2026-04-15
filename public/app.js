@@ -2528,5 +2528,23 @@ document.addEventListener('mouseup', () => { isSelecting = false; });
 // Cleanup on page unload
 window.addEventListener('beforeunload', cleanup);
 
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  const ep = document.getElementById('expanded-player');
+  if (!ep.classList.contains('open')) {
+    ep.style.transition = 'none';
+    ep.style.transform = 'translateY(100%)';
+    ep.style.visibility = 'hidden';
+    // re-enable transition after next frame
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        ep.style.transition = '';
+        ep.style.transform = '';
+        ep.style.visibility = '';
+      });
+    });
+  }
+});
+
 // Final initialization
 (async () => { const ok = await checkAuth(); if (ok) init() })();

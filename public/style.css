@@ -114,11 +114,12 @@ html,body{
 #drop-zone-text { color: var(--accent); font-size: 24px; font-weight: 700; }
 #header h1{font-size:17px;font-weight:500;letter-spacing:0.02em;flex:1}
 #search-wrap{position:relative;display:flex;align-items:center}
-#search{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:6px 10px 6px 28px;width:160px;outline:none;transition:border-color .2s,width .2s}
-#search:focus{border-color:var(--border2);width:200px}
+#search{background:none !important;border:1px solid var(--border) !important;color:var(--text) !important;border-radius:8px !important;font-family:inherit !important;font-size:13px !important;padding:6px 10px 6px 28px !important;width:160px !important;outline:none !important;transition:border-color .2s,width .2s !important;-webkit-box-shadow:0 0 0 30px transparent inset !important;box-shadow:0 0 0 30px transparent inset !important;-webkit-text-fill-color:var(--text) !important}
+#search:focus{border-color:var(--accent) !important}
+#search:-webkit-autofill,
+#search:-webkit-autofill:hover,
+#search:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 30px transparent inset !important;-webkit-text-fill-color:var(--text) !important;transition:background-color 9999s ease-in-out 0s}
 #search-icon{position:absolute;left:9px;color:var(--muted);pointer-events:none;font-size:13px}
-/* --- GLOBAL UI OVERRIDES --- */
-/* Forces transparency, borders, and accent colors for all header/action buttons */
 #theme-toggle,
 #sort-btn,
 #new-playlist-btn,
@@ -151,7 +152,6 @@ html,body{
   border-color: var(--accent) !important;
 }
 
-/* Ensure remove/menu buttons are also transparent and clickable */
 .track-menu-btn,
 .playlist-del,
 .queue-remove {
@@ -160,18 +160,31 @@ html,body{
   color: var(--muted) !important;
   border-radius: 6px !important;
   padding: 6px !important;
-  opacity: 1 !important;
+  opacity: 0;
   display: flex !important;
   align-items: center;
   justify-content: center;
   pointer-events: auto !important;
+  transition: opacity .15s, color .15s, border-color .15s !important;
 }
-
+.track:hover .track-menu-btn,
+.playlist-card:hover .playlist-del,
+.queue-item:hover .queue-remove {
+  opacity: 1;
+}
 .track-menu-btn:hover,
 .playlist-del:hover,
 .queue-remove:hover {
   color: var(--accent) !important;
   border-color: var(--accent) !important;
+}
+
+@media (max-width: 768px) {
+  .track-menu-btn,
+  .playlist-del,
+  .queue-remove {
+    display: none !important;
+  }
 }
 #tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
 .tab{flex:1;padding:10px;font-size:13px;text-align:center;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
@@ -1066,14 +1079,11 @@ body.menu-open .playlist-del,
 body.menu-open .queue-remove {
   pointer-events: auto !important;
 }
-
-
-@media (max-width: 768px) {
-  body.menu-open #menu-backdrop {
-    display: block;
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-  }
+/* Remove the @media (max-width: 768px) wrapper — apply everywhere */
+body.menu-open #menu-backdrop {
+  display: block;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 #menu-backdrop {
@@ -1081,14 +1091,11 @@ body.menu-open .queue-remove {
   inset: 0;
   background: rgba(0,0,0,.55);
   z-index: 500;
-  pointer-events: auto !important;
+  pointer-events: none;
   touch-action: none;
   display: none;
 }
-
-body.menu-open #menu-backdrop {
-  display: block;
-}
+body.menu-open #menu-backdrop { display: block; }
 
 #ctx-menu,
 #theme-menu,
@@ -1139,20 +1146,17 @@ body.menu-open #menu-backdrop {
   #exp-collapse:active { transform: none !important; }
   
   .track-menu-btn { 
-    opacity: 1 !important; 
     color: var(--muted);
     padding: 8px !important;
     min-width: 32px;
     min-height: 32px;
   }
   .playlist-del { 
-    opacity: 1 !important;
     padding: 8px !important;
     min-width: 32px;
     min-height: 32px;
   }
   .queue-remove {
-    opacity: 1 !important;
     padding: 8px !important;
   }
   
