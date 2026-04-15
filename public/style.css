@@ -1342,7 +1342,8 @@ body {
 }
 
 #exp-lyrics-toggle,
-#exp-adaptive-btn {
+#exp-adaptive-btn,
+#exp-queue-btn {
   background: none;
   border: 1px solid var(--border);
   color: var(--muted);
@@ -1357,7 +1358,9 @@ body {
 #exp-lyrics-toggle:hover,
 #exp-lyrics-toggle.active,
 #exp-adaptive-btn:hover,
-#exp-adaptive-btn.active {
+#exp-adaptive-btn.active,
+#exp-queue-btn:hover,
+#exp-queue-btn.active {
   color: var(--accent);
   border-color: var(--accent);
 }
@@ -2617,6 +2620,8 @@ body.is-dragging {
   #queue-btn:active,
   #lyrics-btn:active,
   #exp-lyrics-toggle:active,
+  #exp-adaptive-btn:active,
+  #exp-queue-btn:active,
   .lyrics-timing-btn:active {
     transform: scale(0.92) !important;
   }
