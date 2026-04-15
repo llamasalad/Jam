@@ -27,7 +27,7 @@ input, textarea {
 .light-theme{
   --bg:#f8f9fa;--surface:#ffffff;--surface2:#f1f3f4;--surface3:#e8eaed;
   --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.16);
-  --text:#202124;--muted:#5f6368;--accent:#c8a86b;--accent2:#e8c88b;
+  --text:var(--accent);--muted:#5f6368;--accent:#c8a86b;--accent2:#e8c88b;
   --danger:#ea4335;--radius:12px;--player-h:85px;
 }
 .purple-theme{
@@ -48,7 +48,7 @@ input, textarea {
 .purple-light-theme{
   --bg:#f0f0ff;--surface:#ffffff;--surface2:#f8f8ff;--surface3:#e8e8ff;
   --border:rgba(83, 58, 183, 0.12);--border2:rgba(83, 58, 183, 0.24);
-  --text:#1a1a2e;--muted:#666699;--accent:#533AB7;--accent2:#6b4bc8;
+  --text:var(--accent);--muted:#666699;--accent:#533AB7;--accent2:#6b4bc8;
   --danger:#e05252;--radius:12px;--player-h:85px;
 }
 
@@ -429,18 +429,33 @@ button#new-playlist-btn {
 #exp-controls-row{width:100%;display:flex;flex-direction:column;gap:20px;align-items:center}
 #exp-controls{display:flex;align-items:center;gap:24px;justify-content:center}
 #exp-utils{display:flex;align-items:center;justify-content:center;gap:10px}
-#exp-lyrics-toggle{background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:6px 10px;font-size:12px;font-family:'SF Pro Display',-apple-system,sans-serif;cursor:pointer;transition:color .15s,border-color .15s,background .15s}
-#exp-lyrics-toggle:hover,#exp-lyrics-toggle.active{color:var(--accent);border-color:var(--accent)}
+#exp-lyrics-toggle,
+#exp-adaptive-btn {
+  background:none;
+  border:1px solid var(--border);
+  color:var(--muted);
+  border-radius:6px;
+  padding:6px 10px;
+  font-size:12px;
+  font-family:'SF Pro Display',-apple-system,sans-serif;
+  cursor:pointer;
+  transition:color .15s,border-color .15s,background .15s
+}
+#exp-lyrics-toggle:hover, #exp-lyrics-toggle.active,
+#exp-adaptive-btn:hover, #exp-adaptive-btn.active {
+  color:var(--accent);
+  border-color:var(--accent)
+}
 #exp-controls .ctrl-btn{padding:12px;border-radius:14px}
-#exp-controls .ctrl-btn.main{width:68px;height:68px}
+#exp-controls .ctrl-btn.main{width:68px;height:68px;border-radius: 50%;}
 #exp-controls .ctrl-btn svg{width:30px;height:30px}
 #exp-progress-wrap{width:100%;display:flex;align-items:center;gap:12px}
 #exp-progress-wrap .time-label{font-size:12px;min-width:40px}
-#exp-progress{flex:1;height:4px;-webkit-appearance:none;appearance:none;border-radius:2px;background:var(--surface3);outline:none;cursor:pointer}
+#exp-progress{flex:1;height:4px;-webkit-appearance:none;appearance:none;border-radius:2px;background:var(--accent);outline:none;cursor:pointer}
 #exp-progress::-webkit-slider-runnable-track{height:4px;border-radius:2px}
 #exp-progress::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;margin-top:-5px;box-shadow:0 0 6px rgba(0,0,0,0.4)}
 #exp-progress::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;box-shadow:0 0 6px rgba(0,0,0,0.4)}
-  
+
 /* -- Mobile overrides -- */
 @media(max-width:768px){
 
@@ -717,6 +732,7 @@ button,
 #exp-controls .ctrl-btn.main{
   width:72px !important;
   height:72px !important;
+  border-radius:50% !important;
 }
 #exp-controls .ctrl-btn svg{
   width:28px !important;
