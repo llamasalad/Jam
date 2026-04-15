@@ -608,7 +608,6 @@ body.is-dragging{user-select:none;-webkit-user-select:none}
 .queue-item.active .queue-title { color: var(--accent); }
 .queue-item.dragging { opacity: 0.35; transform: scale(1.02); z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,.4); border-color: var(--accent); }
 .queue-item.drag-over { border-top: 2px solid var(--accent); }
-
 .queue-handle{cursor:grab;color:var(--muted);font-size:14px;padding:10px;margin-left:-10px;user-select:none;flex-shrink:0;transition:color .15s;line-height:1;touch-action:none}
 .queue-handle:hover{color:var(--text)}
 .queue-handle:active{cursor:grabbing}
@@ -619,9 +618,7 @@ body.is-dragging{user-select:none;-webkit-user-select:none}
 .queue-remove{background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;opacity:0;font-size:14px;border-radius:4px;flex-shrink:0}
 .queue-item:hover .queue-remove{opacity:1}
 .queue-remove:hover{color:var(--danger)}
-
 #queue-panel-mobile-handle{display:none}
-
 #lyrics-panel{display:none;flex-direction:column;position:fixed;bottom:calc(var(--player-h) + 12px);right:16px;width:280px;height:200px;min-width:200px;min-height:120px;max-width:480px;max-height:420px;background:var(--surface);border:1px solid var(--border2);border-radius:12px;overflow:hidden;z-index:9;resize:both;box-shadow:0 8px 32px rgba(0,0,0,.4)}
 #lyrics-panel.open{display:flex}
 #lyrics-panel::-webkit-scrollbar{width:3px}
@@ -637,6 +634,7 @@ body.is-dragging{user-select:none;-webkit-user-select:none}
 .lyric-line.active{color:var(--text);font-weight:500}
 .lyric-line:hover{color:var(--text)}
 #lyrics-empty{padding:24px 14px;text-align:center;color:var(--muted);font-size:12px}
+
 
 #lyrics-scroll,
 #exp-lyrics-card-scroll,
@@ -924,6 +922,8 @@ body.theme-menu-open #menu-backdrop {
     font-weight:600 !important;
     font-size:17px;
   }
+
+  #exp-adaptive-btn {background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:6px 14px;font-size:12px;font-family:'SF Pro Display',-apple-system,sans-serif;cursor:pointer;transition:color .15s,border-color .15s,background .15s}
 
 } /* end @media(max-width:768px) */
 
