@@ -801,6 +801,14 @@ function openCtxMenu(e, t) {
             : (t.title || 'Track');
     }
 
+    const ctxEditMetadata = document.getElementById('ctx-edit-metadata');
+    if (ctxEditMetadata) {
+        ctxEditMetadata.onclick = () => {
+            closeCtxMenu();
+            openEditMetadataModal(t);
+        };
+    }
+
     const ctxPlayNext = document.getElementById('ctx-play-next');
     if (ctxPlayNext) {
         ctxPlayNext.onclick = () => {
