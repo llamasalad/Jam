@@ -93,10 +93,21 @@ html,body{
   transition: transform 0.1s cubic-bezier(0, 0, 0.2, 1) !important;
 }
 
-/* Track haptic — only fires when NOT clicking the menu button */
-.track:active:not(:has(.track-menu-btn:hover)) .track-content {
-  transform: scale(0.96) !important;
-  transition: transform 0.1s cubic-bezier(0, 0, 0.2, 1) !important;
+/* Desktop: keep scale haptic on rows */
+@media (hover: hover) and (pointer: fine) {
+  .track:active:not(:has(.track-menu-btn:hover)) .track-content {
+    transform: scale(0.96) !important;
+    transition: transform 0.1s cubic-bezier(0, 0, 0.2, 1) !important;
+  }
+}
+
+/* Touch: haptic feel without breaking swipe */
+@media (hover: none), (pointer: coarse) {
+  .track:active .track-content {
+    background: var(--surface2) !important;
+    opacity: 0.96;
+    transform: none !important;
+  }
 }
 
 .track-menu-btn:active {
@@ -195,6 +206,9 @@ html,body{
 }
 
 @media (max-width: 768px) {
+  .track-content {
+    transition: none !important;
+  }
   .track-menu-btn,
   .playlist-del,
   .queue-remove {
@@ -205,7 +219,7 @@ html,body{
 #tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
 .tab{flex:1;padding:10px;font-size:13px;text-align:center;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-#main{flex:1;overflow-y:auto;padding-bottom:calc(var(--player-h) + 20px)}
+#main{flex:1;overflow-y:auto;padding-bottom:calc(var(--player-h) + env(safe-area-inset-bottom, 0px) + 20px)}
 #main::-webkit-scrollbar{width:4px}
 #main::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:4px}
 #view-library,#view-playlists{display:none}
@@ -462,7 +476,7 @@ html,body{
   justify-content: center;
   padding: 40px 24px;
   overflow-y: auto;
-  transform: translateY(calc(100vh + 10px));
+  transform: translateY(150vh);
   transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
   visibility: hidden;
   will-change: transform;
@@ -560,8 +574,8 @@ body.is-dragging{user-select:none;-webkit-user-select:none}
 #auth-submit:hover{background:var(--accent2)}
 #auth-error{font-size:12px;color:var(--danger);display:none}
 
-#queue-panel{display:none;flex-direction:column;position:fixed;bottom:var(--player-h);left:0;right:0;height:220px;background:var(--surface);border-top:1px solid var(--border2);overflow-y:auto;z-index:9}
-#queue-panel.open{display:flex}
+#queue-panel{display:flex;flex-direction:column;position:fixed;bottom:var(--player-h);left:0;right:0;height:220px;background:var(--surface);border-top:1px solid var(--border2);overflow-y:auto;z-index:9;transform:translateY(100%);transition:transform .35s cubic-bezier(0.32, 0.72, 0, 1);}
+#queue-panel.open{transform:translateY(0);}
 #queue-panel::-webkit-scrollbar{width:3px}
 #queue-panel::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
 #queue-header{padding:10px 16px;font-size:11px;font-family:'SF Pro Display',-apple-system,sans-serif;letter-spacing:0.08em;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border);flex-shrink:0}
