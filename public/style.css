@@ -1853,10 +1853,10 @@ body.is-dragging {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, .6);
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
-  z-index: 300;
+  z-index: 1000;
   padding: 20px;
 }
 

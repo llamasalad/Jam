@@ -103,7 +103,11 @@ const authError = document.getElementById('auth-error');
 const ctxMenu = document.getElementById('ctx-menu');
 const ctxPlaylists = document.getElementById('ctx-playlists');
 const modalNew = document.getElementById('modal-new');
-const modalNameInput = document.getElementById('modal-name-input');
+const modalNameInput = document.getElementById('modal-name');
+const modalEdit = document.getElementById('modal-edit');
+const editTitle = document.getElementById('edit-title');
+const editArtist = document.getElementById('edit-artist');
+const editAlbum = document.getElementById('edit-album');
 const playlistsContainer = document.getElementById('playlists-container');
 const playlistDetail = document.getElementById('playlist-detail');
 const playlistsListView = document.getElementById('playlists-list-view');
@@ -987,6 +991,38 @@ if (modalConfirm) {
                 if (modalNew) modalNew.style.display = 'none';
             }
         } catch (e) { console.error("Failed to create playlist", e); }
+    };
+}
+
+const editCancel = document.getElementById('edit-cancel');
+if (editCancel) editCancel.onclick = () => { if (modalEdit) modalEdit.style.display = 'none'; ctxTrack = null; };
+
+const editConfirm = document.getElementById('edit-confirm');
+if (editConfirm) {
+    editConfirm.onclick = async () => {
+        if (!ctxTrack) return;
+        const title = editTitle ? editTitle.value.trim() : '';
+        const artist = editArtist ? editArtist.value.trim() : '';
+        const album = editAlbum ? editAlbum.value.trim() : '';
+        showToast('Saving...');
+        try {
+            const r = await fetch('/api/tracks', {
+                method: 'PUT',
+                headers: hdrs(),
+                body: JSON.stringify({ key: ctxTrack.key, title, artist, album })
+            });
+            if (r.ok) {
+                ctxTrack.title = title;
+                ctxTrack.artist = artist;
+                ctxTrack.album = album;
+                applyFilter();
+                if (modalEdit) modalEdit.style.display = 'none';
+                showToast('Metadata updated!');
+            }
+        } catch (e) {
+            console.error('Failed to update metadata', e);
+            showToast('Save failed');
+        }
     };
 }
 
@@ -2187,42 +2223,12 @@ if ('mediaSession' in navigator) {
 }
 
 function openEditMetadataModal(t) {
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal">
-            <h3>Edit Metadata</h3>
-            <input id="edit-title" value="${t.title || ''}" placeholder="Title" />
-            <input id="edit-artist" value="${t.artist || ''}" placeholder="Artist" />
-            <input id="edit-album" value="${t.album || ''}" placeholder="Album" />
-            <div class="modal-btns">
-                <button class="btn-cancel">Cancel</button>
-                <button class="btn-confirm">Save</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    modal.querySelector('.btn-cancel').onclick = () => modal.remove();
-    modal.querySelector('.btn-confirm').onclick = async () => {
-        const title = document.getElementById('edit-title').value;
-        const artist = document.getElementById('edit-artist').value;
-        const album = document.getElementById('edit-album').value;
-        showToast('Saving...');
-        try {
-            await fetch('/api/tracks', {
-                method: 'PUT',
-                headers: hdrs(),
-                body: JSON.stringify({ key: t.key, title, artist, album })
-            });
-            t.title = title; t.artist = artist; t.album = album;
-            renderList();
-            modal.remove();
-            showToast('Metadata updated!');
-        } catch (e) {
-            console.error('Update error:', e);
-            showToast('Save failed');
-        }
-    };
+    ctxTrack = t;
+    if (modalEdit) modalEdit.style.display = 'flex';
+    if (editTitle) editTitle.value = t.title || '';
+    if (editArtist) editArtist.value = t.artist || '';
+    if (editAlbum) editAlbum.value = t.album || '';
+    if (editTitle) setTimeout(() => editTitle.focus(), 50);
 }
 
 function getDominantColor(img) {
