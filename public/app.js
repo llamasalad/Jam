@@ -101,9 +101,14 @@ const expTimeTot = document.getElementById('exp-time-tot');
 const expIconPlay = document.getElementById('exp-icon-play');
 const expIconPause = document.getElementById('exp-icon-pause');
 const expLyricsToggle = document.getElementById('exp-lyrics-toggle');
+const expAdaptiveBtn = document.getElementById('exp-adaptive-btn');
+const dropZone = document.getElementById('drop-zone');
 const expDesktopLyricsPanel = document.getElementById('exp-desktop-lyrics-panel');
 const expDesktopLyricsScroll = document.getElementById('exp-desktop-lyrics-scroll');
 const menuBackdrop = document.getElementById('menu-backdrop');
+
+let adaptiveMode = localStorage.getItem('adaptive_mode') === 'true';
+let heartbeatInterval = null;
 
 if (menuBackdrop) {
     menuBackdrop.onclick = () => {
@@ -134,11 +139,6 @@ if (player && !resizeObserver) {
 
 function debounce(fn, ms) {
     let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms) };
-}
-
-if (searchEl && !searchListener) {
-    searchListener = debounce(applyFilter, 120);
-    searchEl.addEventListener('input', searchListener);
 }
 
 if (audio) audio.volume = Math.pow(SAVED_VOL / 100, 3);
@@ -1142,6 +1142,8 @@ function play(t) {
 
     loadLyrics(t);
     updateExpandedNowPlaying(t);
+    updateAdaptiveBackground();
+    startHeartbeat();
     // Use direct HTTP URL — blob: URLs are silently rejected by OS media overlays
     updateMediaSession(t);
 }
@@ -1411,7 +1413,10 @@ function openExpandedPlayer(options = {}) {
         if (queueBtn) queueBtn.classList.remove('active');
         queueOpen = false
     }
-    if (qIdx >= 0 && queue[qIdx]) updateExpandedNowPlaying(queue[qIdx]);
+    if (qIdx >= 0 && queue[qIdx]) {
+        updateExpandedNowPlaying(queue[qIdx]);
+        updateAdaptiveBackground();
+    }
 
     if (!isMobile()) {
         setDesktopExpandedLyricsOpen(revealLyrics);
@@ -2251,9 +2256,121 @@ if ('mediaSession' in navigator) {
     });
 }
 
+// ADAPTIVE BACKGROUND LOGIC
+function getDominantColor(img) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 1;
+    canvas.height = 1;
+    ctx.drawImage(img, 0, 0, 1, 1);
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+    // Darken the color for better readability
+    const factor = 0.4;
+    return `rgb(${Math.round(r * factor)}, ${Math.round(g * factor)}, ${Math.round(b * factor)})`;
+}
+
+async function updateAdaptiveBackground() {
+    if (!adaptiveMode || !playerExpanded || !expCover || expCover.style.display === 'none') {
+        if (expPlayer) expPlayer.classList.remove('adaptive');
+        return;
+    }
+    
+    if (expCover.complete && expCover.naturalWidth !== 0) {
+        const color = getDominantColor(expCover);
+        document.documentElement.style.setProperty('--adaptive-color', color);
+        expPlayer.classList.add('adaptive');
+    } else {
+        expCover.onload = () => {
+            const color = getDominantColor(expCover);
+            document.documentElement.style.setProperty('--adaptive-color', color);
+            expPlayer.classList.add('adaptive');
+        };
+    }
+}
+
+if (expAdaptiveBtn) {
+    expAdaptiveBtn.classList.toggle('active', adaptiveMode);
+    expAdaptiveBtn.onclick = () => {
+        adaptiveMode = !adaptiveMode;
+        localStorage.setItem('adaptive_mode', adaptiveMode);
+        expAdaptiveBtn.classList.toggle('active', adaptiveMode);
+        updateAdaptiveBackground();
+    };
+}
+
+// MEDIA HEARTBEAT
+function startHeartbeat() {
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+    heartbeatInterval = setInterval(() => {
+        if (audio && !audio.paused && 'mediaSession' in navigator) {
+            updatePositionState(true);
+            // Refresh playback state to keep process alive
+            navigator.mediaSession.playbackState = 'playing';
+        }
+    }, 2000);
+}
+
+// DRAG AND DROP UPLOAD
+async function uploadTrack(file) {
+    if (!token) { showAuth(); return; }
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    showToast(`Uploading ${file.name}...`);
+    try {
+        const r = await fetch('/api/tracks', {
+            method: 'POST',
+            headers: { 'x-auth-token': token },
+            body: formData
+        });
+        if (r.ok) {
+            showToast(`Uploaded ${file.name} successfully!`);
+            loadTracks(); // Refresh list
+        } else {
+            const err = await r.json();
+            showToast(`Upload failed: ${err.error || 'Unknown error'}`);
+        }
+    } catch (e) {
+        console.error('Upload error:', e);
+        showToast('Upload failed. Check console.');
+    }
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    if (dropZone) dropZone.classList.remove('active');
+    
+    const files = Array.from(e.dataTransfer.files).filter(f => 
+        f.type.startsWith('audio/') || 
+        f.name.endsWith('.mp3') || f.name.endsWith('.flac') || 
+        f.name.endsWith('.m4a') || f.name.endsWith('.ogg') ||
+        f.name.endsWith('.wav') || f.name.endsWith('.opus')
+    );
+    
+    if (files.length > 0) {
+        files.forEach(uploadTrack);
+    }
+}
+
+window.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (dropZone && !document.body.classList.contains('menu-open')) dropZone.classList.add('active');
+});
+window.addEventListener('dragleave', e => {
+    if (e.relatedTarget === null) {
+        if (dropZone) dropZone.classList.remove('active');
+    }
+});
+window.addEventListener('drop', handleDrop);
+
 async function init() {
     // Cleanup any existing listeners before initializing
     cleanup();
+
+    if (searchEl && !searchListener) {
+        searchListener = debounce(applyFilter, 120);
+        searchEl.addEventListener('input', searchListener);
+    }
 
     if (token) {
         document.cookie = `music_token=${encodeURIComponent(token)}; path=/; max-age=31536000; SameSite=Lax; Secure`;

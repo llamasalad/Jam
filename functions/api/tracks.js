@@ -143,3 +143,44 @@ export async function onRequestGet({ env }) {
     });
   }
 }
+
+export async function onRequestPost({ request, env }) {
+  if (!env.MUSIC_BUCKET) {
+    return new Response(JSON.stringify({ error: "MUSIC_BUCKET binding not found." }), {
+      status: 500, headers: { "Content-Type": "application/json" }
+    });
+  }
+
+  const token = request.headers.get("x-auth-token");
+  if (!token) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+
+  try {
+    const formData = await request.formData();
+    const file = formData.get("file");
+    if (!file || typeof file === 'string') {
+      return new Response(JSON.stringify({ error: "No file provided" }), { status: 400 });
+    }
+
+    // Default structure: Uploads/Unknown/Unknown/filename
+    // The GET handler looks for parts[parts.length-3] as artist
+    const key = `Uploads/Unknown/Unknown/${file.name}`;
+    
+    // Check if file already exists
+    const existing = await env.MUSIC_BUCKET.head(key);
+    if (existing) {
+      return new Response(JSON.stringify({ error: "File already exists" }), { status: 409 });
+    }
+
+    await env.MUSIC_BUCKET.put(key, file.stream(), {
+      httpMetadata: { contentType: file.type }
+    });
+
+    return new Response(JSON.stringify({ success: true, key }), {
+      headers: { "Content-Type": "application/json" }
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500, headers: { "Content-Type": "application/json" }
+    });
+  }
+}
