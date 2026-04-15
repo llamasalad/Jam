@@ -44,11 +44,21 @@ function setTokenCookie(t) {
 }
 
 function saveQueueState() {
-    saveQueueState();
+    localStorage.setItem('music_queue', JSON.stringify(queue.map(x => x.id)));
+    localStorage.setItem('music_qidx', qIdx);
 }
 
 function updatePlayerMetadata(t) {
-    updatePlayerMetadata(t);
+    const plTitle = document.getElementById('player-title');
+    const plArtist = document.getElementById('player-artist');
+    const mobTitle = document.querySelector('#player-meta-mobile .title');
+    const mobArtist = document.querySelector('#player-meta-mobile .artist');
+    const fullTitle = t.title || 'Unknown';
+    const fullArtist = [t.artist, t.album].filter(Boolean).join(' \u00B7 ') || '\u2014';
+    if (plTitle) plTitle.textContent = fullTitle;
+    if (plArtist) plArtist.textContent = fullArtist;
+    if (mobTitle) mobTitle.textContent = fullTitle;
+    if (mobArtist) mobArtist.textContent = fullArtist;
 }
 
 function setLyricsMessage(msg, curMsg) {
@@ -1759,24 +1769,6 @@ bindLyricsFontChange('lyrics-font-up', 1);
 bindLyricsFontChange('lyrics-font-down', -1);
 bindLyricsFontChange('lyrics-font-up-desktop', 1);
 bindLyricsFontChange('lyrics-font-down-desktop', -1);
-const lyricsFontUpDesktop = document.getElementById('lyrics-font-up-desktop');
-if (lyricsFontUpDesktop) {
-    lyricsFontUpDesktop.onclick = e => {
-        e.stopPropagation();
-        lyricsFontSize = Math.min(22, lyricsFontSize + 1);
-        localStorage.setItem('lyrics_font', lyricsFontSize);
-        applyLyricsFontSize();
-    };
-}
-const lyricsFontDownDesktop = document.getElementById('lyrics-font-down-desktop');
-if (lyricsFontDownDesktop) {
-    lyricsFontDownDesktop.onclick = e => {
-        e.stopPropagation();
-        lyricsFontSize = Math.max(10, lyricsFontSize - 1);
-        localStorage.setItem('lyrics_font', lyricsFontSize);
-        applyLyricsFontSize();
-    };
-}
 
 updateLyricsOffsetUI();
 
@@ -2340,6 +2332,12 @@ document.addEventListener('visibilitychange', () => {
         });
     }
 });
+
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => console.error('SW registration failed:', err));
+    });
+}
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
