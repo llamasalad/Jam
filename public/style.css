@@ -834,16 +834,24 @@ body {
   width: 100%;
 }
 #progress-row input {
-  height: 4px;
+  height: 20px;
   -webkit-appearance: none;
   appearance: none;
-  border-radius: 2px;
-  background: var(--surface3);
+  background: transparent;
   outline: none;
   cursor: pointer;
   flex: 1;
 }
-#progress-row input::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; }
+#progress-row input::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface3);
+}
+#progress-row input::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface3);
+}
 #progress-row input::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 12px;
@@ -852,6 +860,15 @@ body {
   background: var(--accent);
   cursor: pointer;
   margin-top: -4px;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+}
+#progress-row input::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
 }
 .time-label {
@@ -1043,15 +1060,23 @@ body {
 #exp-progress-wrap .time-label { font-size: 12px; min-width: 40px; }
 #exp-progress {
   flex: 1;
-  height: 4px;
+  height: 28px;
   -webkit-appearance: none;
   appearance: none;
-  border-radius: 2px;
-  background: var(--accent);
+  background: transparent;
   outline: none;
   cursor: pointer;
 }
-#exp-progress::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; }
+#exp-progress::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+#exp-progress::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent);
+}
 #exp-progress::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 14px;
@@ -1403,7 +1428,7 @@ body.is-dragging { user-select: none; -webkit-user-select: none; }
     margin-top: -6px !important;
     box-shadow: 0 2px 8px rgba(0,0,0,.5) !important;
   }
-  #progress-row input { height: 4px; touch-action: none; }
+  #progress-row input { height: 28px !important; touch-action: none; }
 
   #player-meta-mobile { display: none !important; }
   #player-left { flex: 0 0 auto; min-width: 44px; order: 2 !important; }
@@ -1437,6 +1462,7 @@ body.is-dragging { user-select: none; -webkit-user-select: none; }
     will-change: transform;
     visibility: hidden;
     padding: 0;
+    touch-action: pan-y;
   }
   #expanded-player.open {
     transform: translateY(0);
@@ -1525,7 +1551,7 @@ body.is-dragging { user-select: none; -webkit-user-select: none; }
   #exp-controls .ctrl-btn svg { width: 28px !important; height: 28px !important; }
   #exp-controls .ctrl-btn.main svg { width: 34px !important; height: 34px !important; }
   #exp-progress::-webkit-slider-thumb { width: 20px !important; height: 20px !important; margin-top: -8px !important; }
-  #exp-progress { height: 4px; touch-action: none; }
+  #exp-progress { height: 36px !important; touch-action: none; }
 
   /* Mobile lyrics card */
   #exp-lyrics-card {
