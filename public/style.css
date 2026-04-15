@@ -117,10 +117,10 @@ html,body{
 #search{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:6px 10px 6px 28px;width:160px;outline:none;transition:border-color .2s,width .2s}
 #search:focus{border-color:var(--border2);width:200px}
 #search-icon{position:absolute;left:9px;color:var(--muted);pointer-events:none;font-size:13px}
-#theme-toggle{background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 9px;font-size:11px;cursor:pointer;font-family:'SF Pro Display',-apple-system,sans-serif;white-space:nowrap;transition:color .15s}
-#theme-toggle:hover{color:var(--text)}
-#sort-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 9px;font-size:11px;cursor:pointer;font-family:'SF Pro Display',-apple-system,sans-serif;white-space:nowrap;transition:color .15s}
-#sort-btn:hover{color:var(--text)}
+#theme-toggle{background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:6px 9px;font-size:11px;cursor:pointer;font-family:'SF Pro Display',-apple-system,sans-serif;white-space:nowrap;transition:color .15s, border-color .15s}
+#theme-toggle:hover{color:var(--accent);border-color:var(--accent)}
+#sort-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:6px 9px;font-size:11px;cursor:pointer;font-family:'SF Pro Display',-apple-system,sans-serif;white-space:nowrap;transition:color .15s, border-color .15s}
+#sort-btn:hover{color:var(--accent);border-color:var(--accent)}
 #tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
 .tab{flex:1;padding:10px;font-size:13px;text-align:center;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
@@ -252,12 +252,8 @@ html,body{
 .theme-preview{font-size:11px;padding:4px 8px;border-radius:4px;font-weight:500;min-width:80px;text-align:center}
 #playlists-header{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 8px}
 #playlists-header h2{font-size:15px;font-weight:500}
-#new-playlist-btn{background: var(--surface);color: var(--muted);border-radius: 6px;padding:6px 12px;font-size: 10px;font-family:inherit;font-weight:500;cursor:pointer;transition:background .15s}
-
-button#new-playlist-btn {
-    border: 1px solid var(--border);
-}
-#new-playlist-btn:hover{background:var(--accent2)}
+#new-playlist-btn{background: none;color: var(--muted);border: 1px solid var(--border);border-radius: 6px;padding:6px 12px;font-size: 10px;font-family:inherit;font-weight:500;cursor:pointer;transition:color .15s, border-color .15s}
+#new-playlist-btn:hover{color:var(--accent);border-color:var(--accent)}
 .playlist-card{display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s}
 .playlist-card:hover{background:var(--surface)}
 .playlist-icon{width:40px;height:40px;border-radius:8px;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
@@ -273,8 +269,20 @@ button#new-playlist-btn {
 #playlist-back:hover{color:var(--text)}
 #playlist-detail-name{padding:12px 16px 4px;font-size:18px;font-weight:500}
 #playlist-detail-count{padding:0 16px 12px;font-size:12px;color:var(--muted)}
-#playlist-play-btn{margin:0 16px 12px;background:var(--accent);color:#000;border:none;border-radius:8px;padding:8px 16px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:background .15s}
-#playlist-play-btn:hover{background:var(--accent2)}
+#playlist-play-btn{
+  margin:0 16px 12px;
+  background:none;
+  color:var(--muted);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:8px 16px;
+  font-family:inherit;
+  font-size:13px;
+  font-weight:500;
+  cursor:pointer;
+  transition:color .15s, border-color .15s
+}
+#playlist-play-btn:hover{color:var(--accent);border-color:var(--accent)}
 #playlist-tracks{border-top:1px solid var(--border)}
 
 /* -- Desktop player -- */
@@ -1007,12 +1015,18 @@ body.menu-open input:not(#ctx-menu input) {
   pointer-events: none !important;
 }
 
+@media (max-width: 768px) {
+  body.menu-open #menu-backdrop {
+    display: block;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+}
+
 #menu-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,.55);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
   z-index: 500;
   pointer-events: auto !important;
   touch-action: none;
