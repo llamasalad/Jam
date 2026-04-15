@@ -65,9 +65,10 @@ function setLyricsMessage(msg, curMsg) {
     const scrollEl = document.getElementById('lyrics-scroll');
     const cardScroll = document.getElementById('exp-lyrics-card-scroll');
     const desktopScroll = document.getElementById('exp-desktop-lyrics-scroll');
-    if (scrollEl) scrollEl.innerHTML = `<div style="padding:24px 14px;text-align:center;color:var(--muted);font-size:12px">${msg}</div>`;
-    if (desktopScroll) desktopScroll.innerHTML = `<div style="padding:24px 14px;text-align:center;color:var(--muted);font-size:12px">${msg}</div>`;
-    if (cardScroll) cardScroll.innerHTML = `<div style="padding:20px 14px;text-align:center;color:var(--muted);font-size:12px">${msg}</div>`;
+    const msgHtml = `<div style="height:100%;display:flex;align-items:center;justify-content:center;padding:24px 14px;text-align:center;color:var(--muted);font-size:12px">${msg}</div>`;
+    if (scrollEl) scrollEl.innerHTML = msgHtml;
+    if (desktopScroll) desktopScroll.innerHTML = msgHtml;
+    if (cardScroll) cardScroll.innerHTML = msgHtml;
     if (curMsg !== undefined) {
         if (expLyricCur) expLyricCur.textContent = curMsg;
         if (expLyricNext) expLyricNext.textContent = '';
@@ -117,6 +118,7 @@ const expTitle = document.getElementById('exp-title');
 const expArtist = document.getElementById('exp-artist');
 const expLyricCur = document.getElementById('exp-lyric-current');
 const expLyricNext = document.getElementById('exp-lyric-next');
+const expLyricsWrap = document.getElementById('exp-lyrics-wrap');
 const expPlay = document.getElementById('exp-play');
 const expPrev = document.getElementById('exp-prev');
 const expNext = document.getElementById('exp-next');
@@ -444,10 +446,10 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
     let startX = null, startY = 0, startTime = 0;
     let isRowSwiping = false, isRowScrolling = false;
     let deltaX = 0;
-    const ACTION_THRESHOLD = 70;
+    const ACTION_THRESHOLD = 80;
 
     const resetVisual = () => {
-        content.style.transition = 'transform 0.22s cubic-bezier(0.22, 0.61, 0.36, 1)';
+        content.style.transition = 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)';
         content.style.transform = 'translate3d(0,0,0)';
         setTimeout(() => {
             bgElement.className = 'track-actions';
@@ -456,7 +458,7 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
             container.dataset.hapticRight = '';
             container.dataset.hapticLeft = '';
             container.classList.remove('swiping');
-        }, 220);
+        }, 260);
     };
 
     container.addEventListener('touchstart', e => {
@@ -473,17 +475,18 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
     }, { passive: true });
 
     container.addEventListener('touchmove', e => {
-        if (startX === null) return;
+        if (startX === null || isRowScrolling) return;
         const currentX = e.touches[0].clientX;
         const currentY = e.touches[0].clientY;
         deltaX = currentX - startX;
         const deltaY = currentY - startY;
 
-        if (!isRowSwiping && !isRowScrolling) {
-            if (Math.abs(deltaY) > 8 && Math.abs(deltaY) > Math.abs(deltaX)) {
-                isRowScrolling = true; return;
+        if (!isRowSwiping) {
+            if (Math.abs(deltaY) > 12 && Math.abs(deltaY) > Math.abs(deltaX)) {
+                isRowScrolling = true;
+                return;
             }
-            if (Math.abs(deltaX) > 8) {
+            if (Math.abs(deltaX) > 15) {
                 isRowSwiping = true;
                 container.classList.add('swiping');
                 if (deltaX > 0 && handlers.right) {
@@ -496,48 +499,53 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
             }
         }
 
-        if (!isRowSwiping) return;
-        if (e.cancelable) e.preventDefault();
-        e.stopPropagation();
+        if (isRowSwiping) {
+            if (e.cancelable) e.preventDefault();
+            e.stopPropagation();
 
-        let effectiveX = deltaX;
-        if (effectiveX > 0 && !handlers.right) effectiveX *= 0.2;
-        if (effectiveX < 0 && !handlers.left) effectiveX *= 0.2;
-        if (effectiveX > ACTION_THRESHOLD) effectiveX = ACTION_THRESHOLD + (effectiveX - ACTION_THRESHOLD) * 0.25;
-        else if (effectiveX < -ACTION_THRESHOLD) effectiveX = -ACTION_THRESHOLD + (effectiveX + ACTION_THRESHOLD) * 0.25;
-
-        content.style.transform = `translate3d(${effectiveX}px, 0, 0)`;
-
-        if (deltaX > ACTION_THRESHOLD && handlers.right) {
-            bgElement.classList.add('locked');
-            if (!container.dataset.hapticRight) {
-                if (navigator.vibrate) navigator.vibrate(10);
-                container.dataset.hapticRight = 'true';
+            let efX = deltaX;
+            if (efX > 0 && !handlers.right) efX *= 0.15;
+            if (efX < 0 && !handlers.left) efX *= 0.15;
+            if (Math.abs(efX) > ACTION_THRESHOLD) {
+                const lim = ACTION_THRESHOLD;
+                efX = efX > 0 ? lim + (efX - lim) * 0.25 : -lim + (efX + lim) * 0.25;
             }
-        } else if (deltaX < -ACTION_THRESHOLD && handlers.left) {
-            bgElement.classList.add('locked');
-            if (!container.dataset.hapticLeft) {
-                if (navigator.vibrate) navigator.vibrate(10);
-                container.dataset.hapticLeft = 'true';
+
+            content.style.transform = `translate3d(${efX}px, 0, 0)`;
+
+            if (deltaX > ACTION_THRESHOLD && handlers.right) {
+                bgElement.classList.add('locked');
+                if (!container.dataset.hapticRight) {
+                    if (navigator.vibrate) navigator.vibrate(8);
+                    container.dataset.hapticRight = 'true';
+                }
+            } else if (deltaX < -ACTION_THRESHOLD && handlers.left) {
+                bgElement.classList.add('locked');
+                if (!container.dataset.hapticLeft) {
+                    if (navigator.vibrate) navigator.vibrate(8);
+                    container.dataset.hapticLeft = 'true';
+                }
+            } else {
+                bgElement.classList.remove('locked');
+                container.dataset.hapticRight = '';
+                container.dataset.hapticLeft = '';
             }
-        } else {
-            bgElement.classList.remove('locked');
-            container.dataset.hapticRight = '';
-            container.dataset.hapticLeft = '';
         }
     }, { passive: false });
 
     container.addEventListener('touchend', e => {
         if (startX === null) return;
-        const duration = Date.now() - startTime;
-        const velocity = Math.abs(deltaX) / Math.max(duration, 1);
+        const dur = Date.now() - startTime;
+        const vel = Math.abs(deltaX) / Math.max(dur, 1);
         startX = null;
-        if (!isRowSwiping) { container.classList.remove('swiping'); return; }
+        if (!isRowSwiping) {
+            container.classList.remove('swiping');
+            return;
+        }
         e.stopPropagation();
-        const isFlick = velocity > 0.5;
-        const isPastThreshold = Math.abs(deltaX) >= ACTION_THRESHOLD;
-        if ((isFlick || isPastThreshold) && deltaX > 0 && handlers.right) handlers.right.action();
-        else if ((isFlick || isPastThreshold) && deltaX < 0 && handlers.left) handlers.left.action();
+        const past = Math.abs(deltaX) >= ACTION_THRESHOLD || vel > 0.45;
+        if (past && deltaX > 0 && handlers.right) handlers.right.action();
+        else if (past && deltaX < 0 && handlers.left) handlers.left.action();
         resetVisual();
     });
 
@@ -1518,6 +1526,42 @@ if (handle) {
 
 const queuePanel = document.getElementById('queue-panel');
 const queueBtn = document.getElementById('queue-btn');
+const queueResizer = document.getElementById('queue-resizer');
+
+let isQueueResizing = false;
+let queueH = parseInt(localStorage.getItem('queue_h') || '220');
+
+if (queueResizer) {
+    queueResizer.onmousedown = e => {
+        if (!isMobile()) {
+            isQueueResizing = true;
+            document.body.classList.add('is-resizing');
+            document.addEventListener('mousemove', onQueueResize);
+            document.addEventListener('mouseup', endQueueResize);
+        }
+    };
+}
+
+function onQueueResize(e) {
+    if (!isQueueResizing || !queuePanel) return;
+    const playerStyle = window.getComputedStyle(document.getElementById('player'));
+    const playerHeight = parseInt(playerStyle.height) || 0;
+    const newH = window.innerHeight - e.clientY - playerHeight;
+    queueH = Math.min(window.innerHeight * 0.7, Math.max(100, newH));
+    queuePanel.style.height = queueH + 'px';
+}
+
+function endQueueResize() {
+    isQueueResizing = false;
+    document.body.classList.remove('is-resizing');
+    localStorage.setItem('queue_h', queueH);
+    document.removeEventListener('mousemove', onQueueResize);
+    document.removeEventListener('mouseup', endQueueResize);
+}
+
+if (queuePanel) {
+    queuePanel.style.height = isMobile() ? '' : queueH + 'px';
+}
 
 if (queueBtn) {
     queueBtn.onclick = () => {
@@ -1899,6 +1943,10 @@ async function loadLyrics(t) {
     invalidateLyricScrollCache();
 
     setLyricsMessage("Loading lyrics\u2026", "\u2026");
+    if (expLyricsWrap) {
+        expLyricsWrap.style.display = 'flex';
+        expLyricsWrap.style.flex = '1';
+    }
 
     try {
         const cleanTitle = (t.title || '').replace(/^\d{1,3}[\s.\-_]+/, '').trim();
@@ -1928,7 +1976,11 @@ async function loadLyrics(t) {
             if (cardTitle) cardTitle.textContent = titleText;
             if (desktopTitle) desktopTitle.textContent = titleText;
         } else {
-            setLyricsMessage("No lyrics found", "\u2014");
+            if (expLyricsWrap) {
+                expLyricsWrap.style.display = 'none';
+                expLyricsWrap.style.flex = '0';
+            }
+            setLyricsMessage("No lyrics found", "");
             if (plTitle) plTitle.textContent = 'Lyrics';
             if (cardTitle) cardTitle.textContent = 'Lyrics';
             if (desktopTitle) desktopTitle.textContent = 'Lyrics';
@@ -1936,7 +1988,11 @@ async function loadLyrics(t) {
     } catch (_) {
         if (requestSeq !== lyricsRequestSeq || lyricsTrackId !== t.id) return;
         lyricsFailed.add(t.id);
-        setLyricsMessage("No lyrics found", "-");
+        if (expLyricsWrap) {
+            expLyricsWrap.style.display = 'none';
+            expLyricsWrap.style.flex = '0';
+        }
+        setLyricsMessage("No lyrics found", "");
     }
 }
 
@@ -2250,6 +2306,7 @@ async function init() {
         searchEl.addEventListener('input', searchListener);
     }
     setTokenCookie(token);
+    if (queuePanel && !isMobile()) queuePanel.style.height = queueH + 'px';
     if (btnShuffle) btnShuffle.style.color = shuffle ? 'var(--accent)' : 'var(--muted)';
     if (expShuffle) expShuffle.style.color = shuffle ? 'var(--accent)' : 'var(--muted)';
     applyRepeat();
