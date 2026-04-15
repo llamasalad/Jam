@@ -1211,14 +1211,12 @@ function applyRepeat() {
         btnRepeat.innerHTML = repeatIcons[repeatMode];
         btnRepeat.title = 'Repeat: ' + repeatMode.charAt(0).toUpperCase() + repeatMode.slice(1);
         btnRepeat.classList.toggle('active', repeatMode !== 'off');
-        btnRepeat.classList.toggle('data-mode-one', repeatMode === 'one');
         btnRepeat.style.color = repeatMode !== 'off' ? 'var(--accent)' : 'var(--muted)';
     }
     if (expRepeat) {
         expRepeat.dataset.mode = repeatMode;
         expRepeat.innerHTML = repeatIcons[repeatMode];
         expRepeat.classList.toggle('active', repeatMode !== 'off');
-        expRepeat.classList.toggle('data-mode-one', repeatMode === 'one');
         expRepeat.style.color = repeatMode !== 'off' ? 'var(--accent)' : 'var(--muted)';
     }
 }
