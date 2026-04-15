@@ -445,7 +445,7 @@ button#new-playlist-btn {
   background:none;
   border:1px solid var(--border);
   color:var(--muted);
-  border-radius:20px;
+  border-radius:6px;
   padding:6px 14px;
   font-size:12px;
   font-family:'SF Pro Display',-apple-system,sans-serif;
