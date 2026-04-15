@@ -117,6 +117,16 @@ if (menuBackdrop) {
         const qm = document.getElementById('quick-playlist-menu');
         if (qm) qm.remove();
     };
+    
+    // ADD THIS — block touches from passing through on mobile
+    menuBackdrop.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        closeCtxMenu();
+        hideThemeMenu();
+        const qm = document.getElementById('quick-playlist-menu');
+        if (qm) qm.remove();
+    }, { passive: false });
 }
 
 // SVG Icons for Swipe Actions

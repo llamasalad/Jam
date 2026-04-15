@@ -650,12 +650,24 @@ body.menu-open .queue-remove {
   z-index: 500;
   display: none;
   pointer-events: none;
-  touch-action: auto;
+  touch-action: none;
 }
+
 body.menu-open #menu-backdrop {
   display: block;
+  pointer-events: auto !important;
+  touch-action: none;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+}
+
+body.theme-menu-open #menu-backdrop {
+  display: block;
+  pointer-events: auto !important;
+  touch-action: none;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 #ctx-menu,
