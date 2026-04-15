@@ -464,7 +464,7 @@ html,body{
   justify-content: center;
   padding: 40px 24px;
   overflow-y: auto;
-  transform: translateY(100%);
+  transform: translateY(calc(100vh + 10px));
   transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
   visibility: hidden;
   will-change: transform;
@@ -1082,6 +1082,8 @@ body.menu-open .queue-remove {
 /* Remove the @media (max-width: 768px) wrapper — apply everywhere */
 body.menu-open #menu-backdrop {
   display: block;
+  pointer-events: auto;
+  touch-action: auto;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
@@ -1092,10 +1094,14 @@ body.menu-open #menu-backdrop {
   background: rgba(0,0,0,.55);
   z-index: 500;
   pointer-events: none;
-  touch-action: none;
+  touch-action: auto;
   display: none;
 }
-body.menu-open #menu-backdrop { display: block; }
+body.menu-open #menu-backdrop {
+  display: block;
+  pointer-events: auto;
+  touch-action: auto;
+}
 
 #ctx-menu,
 #theme-menu,
