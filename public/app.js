@@ -286,14 +286,28 @@ function applyTheme() {
     else if (currentTheme === 'purple') document.body.classList.add('purple-theme');
     else if (currentTheme === 'pink') document.body.classList.add('pink-theme');
     else if (currentTheme === 'purple-light') document.body.classList.add('purple-light-theme');
-    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-    if (metaThemeColor) {
-        const themeColors = { 'default': '#0d0d0f', 'purple': '#0f0f0f', 'pink': '#0f0d0e', 'light': '#f8f9fa', 'purple-light': '#f0f0ff' };
-        metaThemeColor.setAttribute('content', themeColors[currentTheme]);
-    }
+    updateStatusBar();
     document.querySelectorAll('.theme-option').forEach(option => {
         option.classList.toggle('active', option.dataset.theme === currentTheme);
     });
+}
+
+function updateStatusBar(overrideColor) {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) return;
+
+    if (overrideColor) {
+        meta.setAttribute('content', overrideColor);
+        return;
+    }
+
+    if (playerExpanded && adaptiveMode && expCover && expCover.style.display !== 'none') {
+        // updateAdaptiveBackground will handle this via its own call to updateStatusBar(color)
+        return;
+    }
+
+    const themeColors = { 'default': '#0d0d0f', 'purple': '#0f0f0f', 'pink': '#0f0d0e', 'light': '#f8f9fa', 'purple-light': '#f0f0ff' };
+    meta.setAttribute('content', themeColors[currentTheme] || '#0d0d0f');
 }
 
 function showThemeMenu() {
@@ -1354,9 +1368,7 @@ function closeExpandedPlayer() {
     }
     closeLyricsCard();
     setDesktopExpandedLyricsOpen(false);
-    const themeColors = { 'default': '#0d0d0f', 'purple': '#0f0f0f', 'pink': '#0f0d0e', 'light': '#f8f9fa', 'purple-light': '#f0f0ff' };
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', themeColors[currentTheme] || '#0d0d0f');
+    updateStatusBar();
 }
 
 if (expCollapse) expCollapse.onclick = closeExpandedPlayer;
@@ -2243,6 +2255,7 @@ async function updateAdaptiveBackground() {
             expPlayer.classList.remove('adaptive');
             expPlayer.style.background = '';  // clear inline override
         }
+        updateStatusBar();
         return;
     }
 
@@ -2255,8 +2268,7 @@ async function updateAdaptiveBackground() {
             expPlayer.style.setProperty('--adaptive-color', color);
             expPlayer.style.background = `linear-gradient(${color} 0%, var(--bg) 80%)`;
             expPlayer.classList.add('adaptive');
-            const meta = document.querySelector('meta[name="theme-color"]');
-            if (meta) meta.setAttribute('content', color);
+            updateStatusBar(color);
         } catch (e) { /* tainted canvas, skip */ }
     };
 
