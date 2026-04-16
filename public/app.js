@@ -1347,7 +1347,10 @@ function openExpandedPlayer(options = {}) {
 
 function closeExpandedPlayer() {
     playerExpanded = false;
-    if (expPlayer) expPlayer.classList.remove('open');
+    if (expPlayer) {
+        expPlayer.classList.remove('open');
+        expPlayer.style.background = '';
+    }
     closeLyricsCard();
     setDesktopExpandedLyricsOpen(false);
     const themeColors = { 'default': '#0d0d0f', 'purple': '#0f0f0f', 'pink': '#0f0d0e', 'light': '#f8f9fa', 'purple-light': '#f0f0ff' };
@@ -2220,11 +2223,13 @@ function getDominantColor(img) {
 
 async function updateAdaptiveBackground() {
     if (!adaptiveMode || !playerExpanded || !expCover || expCover.style.display === 'none') {
-        if (expPlayer) expPlayer.classList.remove('adaptive');
+        if (expPlayer) {
+            expPlayer.classList.remove('adaptive');
+            expPlayer.style.background = '';  // clear inline override
+        }
         return;
     }
 
-    // Resolve the actual <img> whether expCover IS an img or contains one
     const imgEl = expCover.tagName === 'IMG' ? expCover : expCover.querySelector('img');
     if (!imgEl) return;
 
@@ -2232,12 +2237,11 @@ async function updateAdaptiveBackground() {
         try {
             const color = getDominantColor(imgEl);
             document.documentElement.style.setProperty('--adaptive-color', color);
+            expPlayer.style.background = `linear-gradient(${color} 0%, var(--bg) 100%)`;
             expPlayer.classList.add('adaptive');
             const meta = document.querySelector('meta[name="theme-color"]');
             if (meta) meta.setAttribute('content', color);
-        } catch (e) {
-            // Canvas taint or other error — silently skip
-        }
+        } catch (e) { /* tainted canvas, skip */ }
     };
 
     if (imgEl.complete && imgEl.naturalWidth !== 0) {
