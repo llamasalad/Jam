@@ -193,12 +193,6 @@ body {
   transition: transform 0.1s cubic-bezier(0, 0, 0.2, 1) !important;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .track:active:not(:has(.track-menu-btn:hover)) .track-content {
-    transform: scale(0.96) !important;
-    transition: transform 0.1s cubic-bezier(0, 0, 0.2, 1) !important;
-  }
-}
 
 @media (hover: none),
 (pointer: coarse) {
