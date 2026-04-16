@@ -38,6 +38,7 @@ let isSelecting = false;
 let toggleMode = true;
 let lastSavedSec = -1;
 let lyricsOffset = 0;
+let lyricUpdateTimers = { cur: null, next: null };
 
 function setTokenCookie(t) {
     if (t) document.cookie = `music_token=${encodeURIComponent(t)}; path=/; max-age=31536000; SameSite=Lax; Secure`;
@@ -2053,8 +2054,16 @@ let lastExpLyricIdx = -1;
 function updateSyncedLyricsState(force = false) {
     if (!audio) return;
     if (!syncedLyrics.length) {
-        if (expLyricCur) { expLyricCur.style.opacity = '0'; setTimeout(() => { expLyricCur.textContent = '—'; expLyricCur.style.opacity = '1' }, 120) }
-        if (expLyricNext) { expLyricNext.style.opacity = '0'; setTimeout(() => { expLyricNext.textContent = ''; expLyricNext.style.opacity = '1' }, 120) }
+        if (expLyricCur) {
+            clearTimeout(lyricUpdateTimers.cur);
+            expLyricCur.style.opacity = '0';
+            lyricUpdateTimers.cur = setTimeout(() => { expLyricCur.textContent = '—'; expLyricCur.style.opacity = '1' }, 120);
+        }
+        if (expLyricNext) {
+            clearTimeout(lyricUpdateTimers.next);
+            expLyricNext.style.opacity = '0';
+            lyricUpdateTimers.next = setTimeout(() => { expLyricNext.textContent = ''; expLyricNext.style.opacity = '1' }, 120);
+        }
         return;
     }
     const t = audio.currentTime + lyricsOffset;
@@ -2066,21 +2075,28 @@ function updateSyncedLyricsState(force = false) {
     const nextText = idx >= 0 && syncedLyrics[idx + 1] ? (syncedLyrics[idx + 1].text || '·') : '';
 
     if (expLyricCur) {
+        clearTimeout(lyricUpdateTimers.cur);
         expLyricCur.style.opacity = '0'; expLyricCur.style.transform = 'translateY(6px)';
-        setTimeout(() => { expLyricCur.textContent = curText; expLyricCur.style.opacity = '1'; expLyricCur.style.transform = 'translateY(0)' }, 120)
+        lyricUpdateTimers.cur = setTimeout(() => { expLyricCur.textContent = curText; expLyricCur.style.opacity = '1'; expLyricCur.style.transform = 'translateY(0)' }, 120);
     }
     if (expLyricNext) {
+        clearTimeout(lyricUpdateTimers.next);
         expLyricNext.style.opacity = '0'; expLyricNext.style.transform = 'translateY(6px)';
-        setTimeout(() => { expLyricNext.textContent = nextText; expLyricNext.style.opacity = '1'; expLyricNext.style.transform = 'translateY(0)' }, 120)
+        lyricUpdateTimers.next = setTimeout(() => { expLyricNext.textContent = nextText; expLyricNext.style.opacity = '1'; expLyricNext.style.transform = 'translateY(0)' }, 120);
     }
 
     getLyricScrollEls().forEach(scroll => {
-        scroll.querySelectorAll('.lyric-line').forEach((el, i) => el.classList.toggle('active', i === idx));
+        // Direct update instead of O(N) loop
+        const oldActive = scroll.querySelector('.lyric-line.active');
+        if (oldActive) oldActive.classList.remove('active');
+
         if (idx >= 0) {
             const el = scroll.querySelector(`[data-idx="${idx}"]`);
             if (el) {
+                el.classList.add('active');
                 const top = el.offsetTop - scroll.clientHeight / 2 + el.offsetHeight / 2;
-                scroll.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+                // 'auto' is much more reliable for media sync than 'smooth'
+                scroll.scrollTo({ top: Math.max(0, top), behavior: force ? 'auto' : 'smooth' });
             }
         }
     });
@@ -2236,8 +2252,8 @@ async function updateAdaptiveBackground() {
     const apply = () => {
         try {
             const color = getDominantColor(imgEl);
-            document.documentElement.style.setProperty('--adaptive-color', color);
-            expPlayer.style.background = `linear-gradient(${color} 0%, var(--bg) 100%)`;
+            expPlayer.style.setProperty('--adaptive-color', color);
+            expPlayer.style.background = `linear-gradient(${color} 0%, var(--bg) 80%)`;
             expPlayer.classList.add('adaptive');
             const meta = document.querySelector('meta[name="theme-color"]');
             if (meta) meta.setAttribute('content', color);
