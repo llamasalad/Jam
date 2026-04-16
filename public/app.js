@@ -280,14 +280,15 @@ if (sortBtn) {
 
 let currentTheme = localStorage.getItem('music_theme') || 'default';
 function applyTheme() {
-    document.body.classList.remove('light-theme', 'purple-theme', 'purple-light-theme');
+    document.body.classList.remove('light-theme', 'purple-theme', 'pink-theme', 'purple-light-theme');
     if (currentTheme === 'light') document.body.classList.add('light-theme');
     else if (currentTheme === 'purple') document.body.classList.add('purple-theme');
+    else if (currentTheme === 'pink') document.body.classList.add('pink-theme');
     else if (currentTheme === 'purple-light') document.body.classList.add('purple-light-theme');
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
-        const themeColors = { 'default': '#0d0d0f', 'purple': '#0f0f0f', 'light': '#f8f9fa', 'purple-light': '#f0f0ff' };
-        metaThemeColor.setAttribute('content', themeColors[currentTheme] || '#0d0d0f');
+        const themeColors = { 'default': '#0d0d0f', 'purple': '#0f0f0f', 'pink': '#0f0d0e', 'light': '#f8f9fa', 'purple-light': '#f0f0ff' };
+        metaThemeColor.setAttribute('content', themeColors[currentTheme]);
     }
     document.querySelectorAll('.theme-option').forEach(option => {
         option.classList.toggle('active', option.dataset.theme === currentTheme);
@@ -1349,6 +1350,9 @@ function closeExpandedPlayer() {
     if (expPlayer) expPlayer.classList.remove('open');
     closeLyricsCard();
     setDesktopExpandedLyricsOpen(false);
+    const themeColors = { 'default': '#0d0d0f', 'purple': '#0f0f0f', 'pink': '#0f0d0e', 'light': '#f8f9fa', 'purple-light': '#f0f0ff' };
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', themeColors[currentTheme] || '#0d0d0f');
 }
 
 if (expCollapse) expCollapse.onclick = closeExpandedPlayer;
@@ -2223,11 +2227,15 @@ async function updateAdaptiveBackground() {
         const color = getDominantColor(expCover);
         document.documentElement.style.setProperty('--adaptive-color', color);
         expPlayer.classList.add('adaptive');
+        const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+        if (metaThemeColor) metaThemeColor.setAttribute('content', color);
     } else {
         expCover.onload = () => {
             const color = getDominantColor(expCover);
             document.documentElement.style.setProperty('--adaptive-color', color);
             expPlayer.classList.add('adaptive');
+            const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+            if (metaThemeColor) metaThemeColor.setAttribute('content', color);
         };
     }
 }
