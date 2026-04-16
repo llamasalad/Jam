@@ -1055,6 +1055,10 @@ function loadCover(id, el) {
 function setCover(el, url) {
     if (el.tagName === 'IMG') {
         el.src = url;
+        el.onerror = () => {
+            el.src = FALLBACK;
+            el.onerror = null;
+        };
     } else {
         el.innerHTML = '';
         const img = new Image();
@@ -1063,6 +1067,10 @@ function setCover(el, url) {
         img.style.width = '100%';
         img.style.height = '100%';
         img.style.objectFit = el.classList.contains('thumb') ? 'cover' : 'contain';
+        img.onerror = () => {
+            img.src = FALLBACK;
+            img.onerror = null;
+        };
         el.appendChild(img);
     }
 }
