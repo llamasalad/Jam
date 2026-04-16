@@ -2223,20 +2223,27 @@ async function updateAdaptiveBackground() {
         if (expPlayer) expPlayer.classList.remove('adaptive');
         return;
     }
-    if (expCover.complete && expCover.naturalWidth !== 0) {
-        const color = getDominantColor(expCover);
-        document.documentElement.style.setProperty('--adaptive-color', color);
-        expPlayer.classList.add('adaptive');
-        const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-        if (metaThemeColor) metaThemeColor.setAttribute('content', color);
-    } else {
-        expCover.onload = () => {
-            const color = getDominantColor(expCover);
+
+    // Resolve the actual <img> whether expCover IS an img or contains one
+    const imgEl = expCover.tagName === 'IMG' ? expCover : expCover.querySelector('img');
+    if (!imgEl) return;
+
+    const apply = () => {
+        try {
+            const color = getDominantColor(imgEl);
             document.documentElement.style.setProperty('--adaptive-color', color);
             expPlayer.classList.add('adaptive');
-            const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-            if (metaThemeColor) metaThemeColor.setAttribute('content', color);
-        };
+            const meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute('content', color);
+        } catch (e) {
+            // Canvas taint or other error — silently skip
+        }
+    };
+
+    if (imgEl.complete && imgEl.naturalWidth !== 0) {
+        apply();
+    } else {
+        imgEl.onload = apply;
     }
 }
 
