@@ -39,6 +39,8 @@ let toggleMode = true;
 let lastSavedSec = -1;
 let lyricsOffset = 0;
 let lyricUpdateTimers = { cur: null, next: null };
+let playerExpanded = false;
+let desktopExpandedLyricsOpen = false;
 
 function setTokenCookie(t) {
     if (t) document.cookie = `music_token=${encodeURIComponent(t)}; path=/; max-age=31536000; SameSite=Lax; Secure`;
@@ -1321,8 +1323,7 @@ if (expPrev) expPrev.onclick = () => { if (audio && audio.currentTime > 3) audio
 if (expNext) expNext.onclick = () => nextTrack();
 if (expShuffle) expShuffle.onclick = () => btnShuffle && btnShuffle.onclick();
 
-let playerExpanded = false;
-let desktopExpandedLyricsOpen = false;
+
 
 function scrollExpandedPlayerTo(top, behavior = 'smooth') {
     if (!expPlayer) return;
