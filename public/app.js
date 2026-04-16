@@ -303,10 +303,7 @@ function updateStatusBar(overrideColor) {
         return;
     }
 
-    if (playerExpanded && adaptiveMode && expCover && expCover.style.display !== 'none') {
-        // updateAdaptiveBackground will handle this via its own call to updateStatusBar(color)
-        return;
-    }
+
 
     const themeColors = { 'default': '#0d0d0f', 'purple': '#0f0f0f', 'pink': '#0f0d0e', 'light': '#f8f9fa', 'purple-light': '#f0f0ff' };
     meta.setAttribute('content', themeColors[currentTheme] || '#0d0d0f');
@@ -1099,6 +1096,7 @@ function playTrack(t, list) {
 
 function play(t) {
     lyricsOffset = 0;
+    updateStatusBar();
     updateLyricsOffsetUI();
     if (audio) {
         audio.src = '/api/stream/' + t.id;
