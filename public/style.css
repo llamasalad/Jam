@@ -187,10 +187,9 @@ body {
 
 @media (hover: none),
 (pointer: coarse) {
-  .track:active .track-content {
+  .track:active:not(.swiping) .track-content {
     background: var(--surface2) !important;
     opacity: 0.96;
-    transform: none !important;
   }
 }
 
@@ -2414,7 +2413,7 @@ body.is-dragging {
 
   .lyrics-timing.mobile .lyrics-timing-btn {
     min-height: 36px;
-    padding: 7px 12px;
+    padding: 6px 10px;
   }
 
   .lyrics-timing.mobile .lyrics-offset-display {
