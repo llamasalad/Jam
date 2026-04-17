@@ -432,7 +432,7 @@ function closeDetailView() {
     
     searchEl.value = '';
     filtered = [...tracks];
-    renderList();
+    sort();
 }
 
 if (sortBtn) {
