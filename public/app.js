@@ -313,12 +313,7 @@ function renderLibraryCards() {
         label.textContent = artist;
         card.appendChild(label);
         card.onclick = () => {
-            searchEl.value = '';
-            filtered = tracks.filter(t => t.artist === artist);
-            sortMode = 'title';
-            sortModeIdx = 0;
-            if (sortBtn) sortBtn.textContent = sortLabels[sortModeIdx];
-            sort();
+            openArtistDetail(artist);
         };
         artistsContainer.appendChild(card);
     });
@@ -335,12 +330,7 @@ function renderLibraryCards() {
         label.textContent = album;
         card.appendChild(label);
         card.onclick = () => {
-            searchEl.value = '';
-            filtered = tracks.filter(t => t.album === album);
-            sortMode = 'title';
-            sortModeIdx = 0;
-            if (sortBtn) sortBtn.textContent = sortLabels[sortModeIdx];
-            sort();
+            openAlbumDetail(album);
         };
         albumsContainer.appendChild(card);
     });
@@ -349,6 +339,98 @@ function renderLibraryCards() {
 const sortModes = ['title', 'artist', 'album'];
 const sortLabels = ['A->Z', 'ARTIST', 'ALBUM'];
 let sortModeIdx = 0;
+let currentDetailView = null;
+
+function openArtistDetail(artist) {
+    currentDetailView = { type: 'artist', name: artist };
+    const viewLibrary = document.getElementById('view-library');
+    const libraryCards = document.getElementById('library-cards');
+    const trackList = document.getElementById('track-list');
+    const headerTitle = document.getElementById('header-title');
+    const libraryBack = document.getElementById('library-back');
+    const searchWrap = document.getElementById('search-wrap');
+    const sortBtn = document.getElementById('sort-btn');
+    
+    if (viewLibrary) viewLibrary.classList.add('active');
+    if (libraryCards) libraryCards.classList.remove('show');
+    if (trackList) trackList.style.display = 'block';
+    if (headerTitle) headerTitle.textContent = artist;
+    if (libraryBack) libraryBack.style.display = '';
+    if (searchWrap) searchWrap.style.display = 'none';
+    if (sortBtn) sortBtn.style.display = 'none';
+    
+    const artistsSection = document.getElementById('artists-section');
+    const albumsSection = document.getElementById('albums-section');
+    if (artistsSection) artistsSection.style.display = 'none';
+    if (albumsSection) albumsSection.style.display = 'none';
+    
+    searchEl.value = '';
+    filtered = tracks.filter(t => t.artist === artist);
+    renderList();
+}
+
+function openAlbumDetail(album) {
+    currentDetailView = { type: 'album', name: album };
+    const viewLibrary = document.getElementById('view-library');
+    const libraryCards = document.getElementById('library-cards');
+    const trackList = document.getElementById('track-list');
+    const headerTitle = document.getElementById('header-title');
+    const libraryBack = document.getElementById('library-back');
+    const searchWrap = document.getElementById('search-wrap');
+    const sortBtn = document.getElementById('sort-btn');
+    
+    if (viewLibrary) viewLibrary.classList.add('active');
+    if (libraryCards) libraryCards.classList.remove('show');
+    if (trackList) trackList.style.display = 'block';
+    if (headerTitle) headerTitle.textContent = album;
+    if (libraryBack) libraryBack.style.display = '';
+    if (searchWrap) searchWrap.style.display = 'none';
+    if (sortBtn) sortBtn.style.display = 'none';
+    
+    const artistsSection = document.getElementById('artists-section');
+    const albumsSection = document.getElementById('albums-section');
+    if (artistsSection) artistsSection.style.display = 'none';
+    if (albumsSection) albumsSection.style.display = 'none';
+    
+    searchEl.value = '';
+    filtered = tracks.filter(t => t.album === album);
+    renderList();
+}
+
+function closeDetailView() {
+    currentDetailView = null;
+    const libraryCards = document.getElementById('library-cards');
+    const trackList = document.getElementById('track-list');
+    const artistsSection = document.getElementById('artists-section');
+    const albumsSection = document.getElementById('albums-section');
+    const headerTitle = document.getElementById('header-title');
+    const libraryBack = document.getElementById('library-back');
+    const searchWrap = document.getElementById('search-wrap');
+    const sortBtn = document.getElementById('sort-btn');
+    
+    if (headerTitle) headerTitle.textContent = 'Jam!';
+    if (libraryBack) libraryBack.style.display = 'none';
+    if (searchWrap) searchWrap.style.display = '';
+    if (sortBtn) sortBtn.style.display = '';
+    
+    if (sortMode === 'artist') {
+        if (libraryCards) libraryCards.classList.add('show');
+        if (artistsSection) artistsSection.style.display = 'block';
+        if (trackList) trackList.style.display = 'none';
+    } else if (sortMode === 'album') {
+        if (libraryCards) libraryCards.classList.add('show');
+        if (albumsSection) albumsSection.style.display = 'block';
+        if (trackList) trackList.style.display = 'none';
+    } else {
+        if (libraryCards) libraryCards.classList.remove('show');
+        if (trackList) trackList.style.display = 'block';
+    }
+    
+    searchEl.value = '';
+    filtered = [...tracks];
+    renderList();
+}
+
 if (sortBtn) {
     sortBtn.onclick = () => {
         sortModeIdx = (sortModeIdx + 1) % 3;
@@ -1043,6 +1125,13 @@ if (plBack) {
         if (playlistDetail) playlistDetail.classList.remove('active');
         if (playlistsListView) playlistsListView.style.display = '';
         currentPlaylist = null;
+    };
+}
+
+const libraryBack = document.getElementById('library-back');
+if (libraryBack) {
+    libraryBack.onclick = () => {
+        closeDetailView();
     };
 }
 
