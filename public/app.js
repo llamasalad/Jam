@@ -258,6 +258,7 @@ async function loadTracks() {
         }
         renderLibraryCards();
         applyFilter();
+        sort();
     } catch (e) {
         if (loading) loading.style.display = 'none';
         if (empty) empty.style.display = 'flex';
@@ -333,7 +334,6 @@ function renderLibraryCards() {
         };
         albumsContainer.appendChild(card);
     });
-    sort();
 }
 
 const sortModes = ['title', 'artist', 'album'];
@@ -2461,6 +2461,7 @@ async function init() {
     }
     setTokenCookie(token);
     if (queuePanel && !isMobile()) queuePanel.style.height = queueH + 'px';
+    if (queuePanel) queuePanel.classList.remove('open');
     if (btnShuffle) btnShuffle.style.color = shuffle ? 'var(--accent)' : 'var(--muted)';
     if (expShuffle) expShuffle.style.color = shuffle ? 'var(--accent)' : 'var(--muted)';
     applyRepeat();
