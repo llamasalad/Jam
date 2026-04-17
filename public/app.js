@@ -283,8 +283,8 @@ function renderLibraryCards() {
                 artists.set(t.artist, { count: 0, artwork: null });
             }
             artists.get(t.artist).count++;
-            if (!artists.get(t.artist).artwork && t.artwork) {
-                artists.get(t.artist).artwork = t.artwork;
+            if (!artists.get(t.artist).artwork && t.id) {
+                artists.get(t.artist).artwork = t.id;
             }
         }
         if (t.album) {
@@ -292,8 +292,8 @@ function renderLibraryCards() {
                 albums.set(t.album, { count: 0, artist: t.artist, artwork: null });
             }
             albums.get(t.album).count++;
-            if (!albums.get(t.album).artwork && t.artwork) {
-                albums.get(t.album).artwork = t.artwork;
+            if (!albums.get(t.album).artwork && t.id) {
+                albums.get(t.album).artwork = t.id;
             }
         }
     });
@@ -304,33 +304,43 @@ function renderLibraryCards() {
     sortedArtists.forEach(([artist, data]) => {
         const card = document.createElement('div');
         card.className = 'artist-card';
-        card.setAttribute('data-name', artist);
         if (data.artwork) {
-            card.style.backgroundImage = `url(${data.artwork})`;
+            card.style.backgroundImage = `url(/api/cover/${data.artwork})`;
         }
-        const inner = document.createElement('div');
-        card.appendChild(inner);
+        const overlay = document.createElement('div');
+        card.appendChild(overlay);
+        const label = document.createElement('span');
+        label.textContent = artist;
+        card.appendChild(label);
         card.onclick = () => {
             searchEl.value = '';
             filtered = tracks.filter(t => t.artist === artist);
-            renderList();
+            sortMode = 'title';
+            sortModeIdx = 0;
+            if (sortBtn) sortBtn.textContent = sortLabels[sortModeIdx];
+            sort();
         };
         artistsContainer.appendChild(card);
     });
-    
+
     sortedAlbums.forEach(([album, data]) => {
         const card = document.createElement('div');
         card.className = 'album-card';
-        card.setAttribute('data-name', album);
         if (data.artwork) {
-            card.style.backgroundImage = `url(${data.artwork})`;
+            card.style.backgroundImage = `url(/api/cover/${data.artwork})`;
         }
-        const inner = document.createElement('div');
-        card.appendChild(inner);
+        const overlay = document.createElement('div');
+        card.appendChild(overlay);
+        const label = document.createElement('span');
+        label.textContent = album;
+        card.appendChild(label);
         card.onclick = () => {
             searchEl.value = '';
             filtered = tracks.filter(t => t.album === album);
-            renderList();
+            sortMode = 'title';
+            sortModeIdx = 0;
+            if (sortBtn) sortBtn.textContent = sortLabels[sortModeIdx];
+            sort();
         };
         albumsContainer.appendChild(card);
     });
@@ -344,6 +354,9 @@ if (sortBtn) {
         sortModeIdx = (sortModeIdx + 1) % 3;
         sortMode = sortModes[sortModeIdx];
         sortBtn.textContent = sortLabels[sortModeIdx];
+        if (sortMode === 'title') {
+            filtered = [...tracks];
+        }
         sort();
     };
 }
