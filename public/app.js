@@ -445,16 +445,16 @@ function sort() {
             libraryCards.classList.remove('show');
             if (artistsSection) artistsSection.style.display = 'none';
             if (albumsSection) albumsSection.style.display = 'none';
-            if (trackList) trackList.style.display = '';
+            if (trackList) trackList.style.display = 'block';
         } else if (sortMode === 'artist') {
             libraryCards.classList.add('show');
-            if (artistsSection) artistsSection.style.display = '';
+            if (artistsSection) artistsSection.style.display = 'block';
             if (albumsSection) albumsSection.style.display = 'none';
             if (trackList) trackList.style.display = 'none';
         } else if (sortMode === 'album') {
             libraryCards.classList.add('show');
             if (artistsSection) artistsSection.style.display = 'none';
-            if (albumsSection) albumsSection.style.display = '';
+            if (albumsSection) albumsSection.style.display = 'block';
             if (trackList) trackList.style.display = 'none';
         }
     }
