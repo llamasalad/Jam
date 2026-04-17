@@ -239,6 +239,7 @@ document.querySelectorAll('.tab').forEach(tab => {
         currentPlaylist = null;
         if (playlistDetail) playlistDetail.classList.remove('active');
         if (playlistsListView) playlistsListView.style.display = '';
+        closeDetailView();
         if (name === 'playlists') loadPlaylists();
     };
 });
@@ -1726,6 +1727,112 @@ document.addEventListener('touchcancel', () => {
     }
     swipeTarget = null;
 }, { passive: true });
+
+// Swipe to go back on detail views
+let backSwipeStartX = null;
+let backSwipeStartY = null;
+let backSwipeDeltaX = 0;
+let isBackSwiping = false;
+
+if (playlistDetail) {
+    playlistDetail.addEventListener('touchstart', e => {
+        if (!isMobile()) return;
+        backSwipeStartX = e.touches[0].clientX;
+        backSwipeStartY = e.touches[0].clientY;
+        backSwipeDeltaX = 0;
+        isBackSwiping = false;
+    }, { passive: true });
+
+    playlistDetail.addEventListener('touchmove', e => {
+        if (backSwipeStartX === null) return;
+        backSwipeDeltaX = e.touches[0].clientX - backSwipeStartX;
+        const deltaY = e.touches[0].clientY - backSwipeStartY;
+
+        if (!isBackSwiping) {
+            if (Math.abs(deltaY) > 15 && Math.abs(deltaY) > Math.abs(backSwipeDeltaX)) {
+                backSwipeStartX = null;
+                return;
+            }
+            if (backSwipeDeltaX > 15) {
+                isBackSwiping = true;
+                playlistDetail.style.transform = `translateX(${backSwipeDeltaX}px)`;
+                playlistDetail.style.transition = 'none';
+            }
+        } else {
+            if (backSwipeDeltaX > 0) {
+                playlistDetail.style.transform = `translateX(${backSwipeDeltaX}px)`;
+            }
+        }
+    }, { passive: true });
+
+    playlistDetail.addEventListener('touchend', () => {
+        if (!isBackSwiping) return;
+        isBackSwiping = false;
+        playlistDetail.style.transition = 'transform 0.3s ease';
+        
+        if (backSwipeDeltaX > 100) {
+            playlistDetail.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                playlistDetail.classList.remove('active');
+                playlistsListView.style.display = '';
+                currentPlaylist = null;
+                playlistDetail.style.transform = '';
+            }, 300);
+        } else {
+            playlistDetail.style.transform = '';
+        }
+        backSwipeStartX = null;
+    }, { passive: true });
+}
+
+if (trackList) {
+    trackList.addEventListener('touchstart', e => {
+        if (!isMobile() || !currentDetailView) return;
+        backSwipeStartX = e.touches[0].clientX;
+        backSwipeStartY = e.touches[0].clientY;
+        backSwipeDeltaX = 0;
+        isBackSwiping = false;
+    }, { passive: true });
+
+    trackList.addEventListener('touchmove', e => {
+        if (backSwipeStartX === null || !currentDetailView) return;
+        backSwipeDeltaX = e.touches[0].clientX - backSwipeStartX;
+        const deltaY = e.touches[0].clientY - backSwipeStartY;
+
+        if (!isBackSwiping) {
+            if (Math.abs(deltaY) > 15 && Math.abs(deltaY) > Math.abs(backSwipeDeltaX)) {
+                backSwipeStartX = null;
+                return;
+            }
+            if (backSwipeDeltaX > 15) {
+                isBackSwiping = true;
+                trackList.style.transform = `translateX(${backSwipeDeltaX}px)`;
+                trackList.style.transition = 'none';
+            }
+        } else {
+            if (backSwipeDeltaX > 0) {
+                trackList.style.transform = `translateX(${backSwipeDeltaX}px)`;
+            }
+        }
+    }, { passive: true });
+
+    trackList.addEventListener('touchend', () => {
+        if (!isBackSwiping) return;
+        isBackSwiping = false;
+        trackList.style.transition = 'transform 0.3s ease';
+        
+        if (backSwipeDeltaX > 100) {
+            trackList.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                closeDetailView();
+                trackList.style.transform = '';
+            }, 300);
+        } else {
+            trackList.style.transform = '';
+        }
+        backSwipeStartX = null;
+    }, { passive: true });
+}
 
 function closeQueuePanel() {
     queueOpen = false;
