@@ -1411,7 +1411,6 @@ body {
 }
 
 #exp-lyrics-toggle,
-#exp-adaptive-btn,
 #exp-queue-btn {
   background: none;
   border: 1px solid var(--border);
@@ -1424,10 +1423,94 @@ body {
   transition: color .15s, border-color .15s, background .15s;
 }
 
+#exp-adaptive-btn {
+  position: relative;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: bold;
+  font-family: 'SF Pro Display', -apple-system, sans-serif;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 50px;
+  overflow: hidden;
+  transition: transform 0.2s ease;
+}
+
+#exp-adaptive-btn:hover {
+  transform: scale(1.03);
+}
+
+#exp-adaptive-btn::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    from 0deg,
+    #ff6b6b,
+    #4ecdc4,
+    #45b7d1,
+    #96ceb4,
+    #feca57,
+    #ff9ff3,
+    #ff6b6b
+  );
+  z-index: -2;
+  filter: blur(10px);
+  transform: rotate(0deg);
+  transition: transform 1.5s ease-in-out;
+}
+
+#exp-adaptive-btn:hover::before {
+  transform: rotate(180deg);
+}
+
+#exp-adaptive-btn::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  background: var(--bg);
+  border-radius: 47px;
+  z-index: -1;
+  filter: blur(5px);
+}
+
+#exp-adaptive-btn span {
+  color: transparent;
+  background: conic-gradient(
+    from 0deg,
+    #ff6b6b,
+    #4ecdc4,
+    #45b7d1,
+    #96ceb4,
+    #feca57,
+    #ff9ff3,
+    #ff6b6b
+  );
+  background-clip: text;
+  filter: hue-rotate(0deg);
+}
+
+#exp-adaptive-btn:hover span {
+  animation: hue-rotating 2s linear infinite;
+}
+
+#exp-adaptive-btn:active {
+  transform: scale(0.99);
+}
+
+@keyframes hue-rotating {
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+
 @media (hover: hover) {
 
   #exp-lyrics-toggle:hover,
-  #exp-adaptive-btn:hover,
   #exp-queue-btn:hover {
     background: var(--surface3);
     color: var(--accent);
@@ -1435,10 +1518,13 @@ body {
 }
 
 #exp-lyrics-toggle.active,
-#exp-adaptive-btn.active,
 #exp-queue-btn.active {
   color: var(--accent);
   border-color: var(--accent);
+}
+
+#exp-adaptive-btn.active {
+  opacity: 1;
 }
 
 #exp-controls .ctrl-btn {
