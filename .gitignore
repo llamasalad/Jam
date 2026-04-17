@@ -2,6 +2,9 @@ node_modules/
 .env
 .wrangler/
 wrangler.toml
+dont open/
+/.vscode/
+
 
 # Deployment scripts
 *.bat
