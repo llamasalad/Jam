@@ -282,7 +282,8 @@ body {
 #new-playlist-btn,
 #playlist-play-btn,
 #queue-btn,
-#lyrics-btn {
+#lyrics-btn,
+#library-back {
   background: none !important;
   border: 1px solid var(--border) !important;
   color: var(--muted) !important;
@@ -303,7 +304,8 @@ body {
   #new-playlist-btn:hover,
   #playlist-play-btn:hover,
   #queue-btn:hover,
-  #lyrics-btn:hover {
+  #lyrics-btn:hover,
+  #library-back:hover {
     color: var(--text);
     background: var(--surface2);
   }
@@ -405,7 +407,10 @@ body {
   border-bottom: 1px solid var(--surface);
 }
 
-/* Track rows */
+body.detail-view .group-header {
+  display: none;
+}
+
 .track {
   padding: 0 !important;
   background: var(--surface) !important;

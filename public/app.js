@@ -343,6 +343,7 @@ let currentDetailView = null;
 
 function openArtistDetail(artist) {
     currentDetailView = { type: 'artist', name: artist };
+    document.body.classList.add('detail-view');
     const viewLibrary = document.getElementById('view-library');
     const libraryCards = document.getElementById('library-cards');
     const trackList = document.getElementById('track-list');
@@ -371,6 +372,7 @@ function openArtistDetail(artist) {
 
 function openAlbumDetail(album) {
     currentDetailView = { type: 'album', name: album };
+    document.body.classList.add('detail-view');
     const viewLibrary = document.getElementById('view-library');
     const libraryCards = document.getElementById('library-cards');
     const trackList = document.getElementById('track-list');
@@ -399,6 +401,7 @@ function openAlbumDetail(album) {
 
 function closeDetailView() {
     currentDetailView = null;
+    document.body.classList.remove('detail-view');
     const libraryCards = document.getElementById('library-cards');
     const trackList = document.getElementById('track-list');
     const artistsSection = document.getElementById('artists-section');
