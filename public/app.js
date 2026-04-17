@@ -257,6 +257,7 @@ async function loadTracks() {
             return;
         }
         renderLibraryCards();
+        applyFilter();
     } catch (e) {
         if (loading) loading.style.display = 'none';
         if (empty) empty.style.display = 'flex';
@@ -442,6 +443,8 @@ function sort() {
     if (libraryCards) {
         if (sortMode === 'title') {
             libraryCards.classList.remove('show');
+            if (artistsSection) artistsSection.style.display = 'none';
+            if (albumsSection) albumsSection.style.display = 'none';
             if (trackList) trackList.style.display = '';
         } else if (sortMode === 'artist') {
             libraryCards.classList.add('show');
