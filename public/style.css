@@ -2923,3 +2923,11 @@ button:active,
   z-index: 2;
   letter-spacing: 0.1em;
 }
+
+@media (max-width: 768px) {
+  .artist-card,
+  .album-card {
+    width: 110px;
+    height: 130px;
+  }
+}
