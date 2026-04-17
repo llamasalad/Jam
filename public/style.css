@@ -1427,12 +1427,11 @@ body {
   position: relative;
   padding: 6px 14px;
   font-size: 12px;
-  font-weight: bold;
   font-family: 'SF Pro Display', -apple-system, sans-serif;
   background: transparent;
   border: none;
   cursor: pointer;
-  border-radius: 50px;
+  border-radius: 6px;
   overflow: hidden;
   transition: transform 0.2s ease;
 }
