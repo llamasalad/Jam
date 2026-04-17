@@ -256,11 +256,90 @@ async function loadTracks() {
             if (empty) empty.style.display = 'flex';
             return;
         }
+        renderLibraryCards();
         applyFilter();
     } catch (e) {
         if (loading) loading.style.display = 'none';
         if (empty) empty.style.display = 'flex';
     }
+}
+
+function renderLibraryCards() {
+    const artistsContainer = document.getElementById('artists-container');
+    const albumsContainer = document.getElementById('albums-container');
+    const libraryCards = document.getElementById('library-cards');
+    
+    if (!artistsContainer || !albumsContainer) return;
+    
+    artistsContainer.innerHTML = '';
+    albumsContainer.innerHTML = '';
+    
+    const artists = new Map();
+    const albums = new Map();
+    
+    tracks.forEach(t => {
+        if (t.artist) {
+            if (!artists.has(t.artist)) {
+                artists.set(t.artist, { count: 0, artwork: null });
+            }
+            artists.get(t.artist).count++;
+            if (!artists.get(t.artist).artwork && t.artwork) {
+                artists.get(t.artist).artwork = t.artwork;
+            }
+        }
+        if (t.album) {
+            if (!albums.has(t.album)) {
+                albums.set(t.album, { count: 0, artist: t.artist, artwork: null });
+            }
+            albums.get(t.album).count++;
+            if (!albums.get(t.album).artwork && t.artwork) {
+                albums.get(t.album).artwork = t.artwork;
+            }
+        }
+    });
+    
+    const sortedArtists = Array.from(artists.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    const sortedAlbums = Array.from(albums.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    
+    sortedArtists.forEach(([artist, data]) => {
+        const card = document.createElement('div');
+        card.className = 'artist-card';
+        card.setAttribute('data-name', artist);
+        if (data.artwork) {
+            card.style.backgroundImage = `url(${data.artwork})`;
+        }
+        const inner = document.createElement('div');
+        card.appendChild(inner);
+        card.onclick = () => filterByArtist(artist);
+        artistsContainer.appendChild(card);
+    });
+    
+    sortedAlbums.forEach(([album, data]) => {
+        const card = document.createElement('div');
+        card.className = 'album-card';
+        card.setAttribute('data-name', album);
+        if (data.artwork) {
+            card.style.backgroundImage = `url(${data.artwork})`;
+        }
+        const inner = document.createElement('div');
+        card.appendChild(inner);
+        card.onclick = () => filterByAlbum(album);
+        albumsContainer.appendChild(card);
+    });
+    
+    if (libraryCards) libraryCards.classList.add('show');
+}
+
+function filterByArtist(artist) {
+    searchEl.value = '';
+    filtered = tracks.filter(t => t.artist === artist);
+    sort();
+}
+
+function filterByAlbum(album) {
+    searchEl.value = '';
+    filtered = tracks.filter(t => t.album === album);
+    sort();
 }
 
 function applyFilter() {
