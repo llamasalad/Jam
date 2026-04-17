@@ -425,6 +425,12 @@ document.addEventListener('click', (e) => {
 
 applyTheme();
 
+function applyFilter() {
+    const q = searchEl ? searchEl.value.toLowerCase() : '';
+    filtered = q ? tracks.filter(t => (t.title || '').toLowerCase().includes(q) || (t.artist || '').toLowerCase().includes(q) || (t.album || '').toLowerCase().includes(q)) : [...tracks];
+    sort();
+}
+
 function sort() {
     filtered.sort((a, b) => { const ka = (a[sortMode] || '').toLowerCase(), kb = (b[sortMode] || '').toLowerCase(); return ka < kb ? -1 : ka > kb ? 1 : 0 });
     
