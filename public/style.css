@@ -526,13 +526,27 @@ body.detail-view .group-header {
 }
 
 @keyframes action-pop-right {
-  0% { transform: translateX(-30px) scale(0.5); opacity: 0; }
-  100% { transform: translateX(0) scale(0.8); opacity: 0.8; }
+  0% {
+    transform: translateX(-30px) scale(0.5);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(0) scale(0.8);
+    opacity: 0.8;
+  }
 }
 
 @keyframes action-pop-left {
-  0% { transform: translateX(30px) scale(0.5); opacity: 0; }
-  100% { transform: translateX(0) scale(0.8); opacity: 0.8; }
+  0% {
+    transform: translateX(30px) scale(0.5);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(0) scale(0.8);
+    opacity: 0.8;
+  }
 }
 
 .track-actions.right-active .action-icon {
@@ -1431,7 +1445,7 @@ body.detail-view .group-header {
 
 #exp-adaptive-btn {
   position: relative;
-  padding: 6px 14px;
+  padding: 3px;
   font-size: 12px;
   font-family: 'SF Pro Display', -apple-system, sans-serif;
   background: transparent;
@@ -1440,6 +1454,7 @@ body.detail-view .group-header {
   border-radius: 6px;
   overflow: hidden;
   transition: transform 0.2s ease;
+  isolation: isolate;
 }
 
 #exp-adaptive-btn:hover {
@@ -1449,57 +1464,56 @@ body.detail-view .group-header {
 #exp-adaptive-btn::before {
   content: "";
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: conic-gradient(
-    from 0deg,
-    #ff6b6b,
-    #4ecdc4,
-    #45b7d1,
-    #96ceb4,
-    #feca57,
-    #ff9ff3,
-    #ff6b6b
-  );
+  top: 0;
+  left: 0;
+  width: 400%;
+  height: 100%;
+  background: linear-gradient(115deg, #4fcf70, #fad648, #a767e5, #12bcfe, #44ce7b);
+  background-size: 25% 100%;
+  animation: border-slide .75s linear infinite;
+  animation-play-state: paused;
+  translate: -5% 0%;
+  transition: translate 0.25s ease-out;
   z-index: -2;
-  filter: blur(10px);
-  transform: rotate(0deg);
-  transition: transform 1.5s ease-in-out;
 }
 
-#exp-adaptive-btn:hover::before {
-  transform: rotate(180deg);
+#exp-adaptive-btn:hover::before,
+#exp-adaptive-btn:active::before,
+#exp-adaptive-btn.active::before {
+  animation-play-state: running;
+  transition-duration: 0.75s;
+  translate: 0% 0%;
 }
 
-#exp-adaptive-btn::after {
-  content: "";
-  position: absolute;
-  inset: 3px;
-  background: var(--bg);
-  border-radius: 47px;
-  z-index: -1;
-  filter: blur(5px);
+@keyframes border-slide {
+  to {
+    transform: translateX(-25%);
+  }
 }
 
 #exp-adaptive-btn span {
+  position: relative;
+  display: block;
+  padding: 4px 12px;
+  background: var(--bg);
+  border-radius: 4px;
+  height: 100%;
   color: transparent;
-  background: conic-gradient(
-    from 0deg,
-    #ff6b6b,
-    #4ecdc4,
-    #45b7d1,
-    #96ceb4,
-    #feca57,
-    #ff9ff3,
-    #ff6b6b
-  );
+  background: conic-gradient(from 0deg,
+      #ff6b6b,
+      #4ecdc4,
+      #45b7d1,
+      #96ceb4,
+      #feca57,
+      #ff9ff3,
+      #ff6b6b);
   background-clip: text;
   filter: hue-rotate(0deg);
 }
 
-#exp-adaptive-btn:hover span {
+#exp-adaptive-btn:hover span,
+#exp-adaptive-btn:active span,
+#exp-adaptive-btn.active span {
   animation: hue-rotating 2s linear infinite;
 }
 
@@ -2903,13 +2917,13 @@ button:active,
 
 .artist-card div,
 .album-card div {
-    width: 100%;
-    height: 100%;
-    cursor: pointer;
-    z-index: 1;
-    background: linear-gradient(to top, rgba(0, 0, 0, 10) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0) 100%);
-    border-bottom: 1px solid var(--accent);
-    border-radius: 5px 5px 0 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  z-index: 1;
+  background: linear-gradient(to top, rgba(0, 0, 0, 10) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0) 100%);
+  border-bottom: 1px solid var(--accent);
+  border-radius: 5px 5px 0 0;
 }
 
 .artist-card span,
@@ -2925,6 +2939,7 @@ button:active,
 }
 
 @media (max-width: 768px) {
+
   .artist-card,
   .album-card {
     width: 110px;
