@@ -2769,7 +2769,7 @@ document.addEventListener('visibilitychange', () => {
         audio.play().catch(e => console.error('Resume after visibility change failed:', e));
     }
     wasPlayingBeforeHidden = false;
-    
+
     if (audio && !audio.paused) startHeartbeat();
 
     const ep = document.getElementById('expanded-player');
@@ -2796,6 +2796,14 @@ document.addEventListener('resume', () => {
         audio.play().catch(e => console.error('Resume after freeze failed:', e));
     }
     wasPlayingBeforeHidden = false;
+    if (audio && !audio.paused) startHeartbeat();
+});
+
+window.addEventListener('pageshow', (e) => {
+    if (!e.persisted) return; // only care about BFCache restores
+    if (wasPlayingBeforeHidden && audio && audio.paused && audio.src) {
+        audio.play().catch(e => console.error('Resume after BFCache restore failed:', e));
+    }
     if (audio && !audio.paused) startHeartbeat();
 });
 
