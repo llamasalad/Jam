@@ -1743,8 +1743,8 @@ if (playlistDetail) {
         isBackSwiping = false;
     }, { passive: true });
 
-    playlistDetail.addEventListener('touchmove', e => {
-        if (backSwipeStartX === null) return;
+    trackList.addEventListener('touchmove', e => {
+        if (backSwipeStartX === null || !currentDetailView) return;
         backSwipeDeltaX = e.touches[0].clientX - backSwipeStartX;
         const deltaY = e.touches[0].clientY - backSwipeStartY;
 
@@ -1755,13 +1755,14 @@ if (playlistDetail) {
             }
             if (backSwipeDeltaX > 15) {
                 isBackSwiping = true;
-                playlistDetail.style.transition = 'none';
+                trackList.style.transition = 'none';
             }
         }
         if (isBackSwiping && backSwipeDeltaX > 0) {
-            playlistDetail.style.transform = `translateX(${backSwipeDeltaX}px)`;
+            if (e.cancelable) e.preventDefault();
+            trackList.style.transform = `translateX(${backSwipeDeltaX}px)`;
         }
-    }, { passive: true });
+    }, { passive: false });
 
     playlistDetail.addEventListener('touchend', () => {
         if (!isBackSwiping) { backSwipeStartX = null; return; }
@@ -1799,7 +1800,7 @@ if (trackList) {
 
     trackList.addEventListener('touchstart', e => {
         if (!isMobile() || !currentDetailView) return;
-        if (e.target.closest('.track')) return; // don't compete with row swipe handlers
+        if (e.target.closest('.track')) return;
         backSwipeStartX = e.touches[0].clientX;
         backSwipeStartY = e.touches[0].clientY;
         backSwipeDeltaX = 0;
@@ -1822,9 +1823,10 @@ if (trackList) {
             }
         }
         if (isBackSwiping && backSwipeDeltaX > 0) {
+            if (e.cancelable) e.preventDefault();
             trackList.style.transform = `translateX(${backSwipeDeltaX}px)`;
         }
-    }, { passive: true });
+    }, { passive: false });
 
     trackList.addEventListener('touchend', () => {
         if (!isBackSwiping) { backSwipeStartX = null; return; }
@@ -2511,16 +2513,10 @@ if ('mediaSession' in navigator) {
     navigator.mediaSession.setActionHandler('nexttrack', () => {
         try { nextTrack(); } catch (e) { console.error('Next track action failed:', e); }
     });
-    navigator.mediaSession.setActionHandler('seekbackward', (d) => {
-        if (audio && audio.duration) {
-            try { audio.currentTime = Math.max(0, audio.currentTime - (d.seekOffset || 10)); updatePositionState(true); } catch (e) { console.error('Seek backward failed:', e); }
-        }
-    });
-    navigator.mediaSession.setActionHandler('seekforward', (d) => {
-        if (audio && audio.duration) {
-            try { audio.currentTime = Math.min(audio.duration, audio.currentTime + (d.seekOffset || 10)); updatePositionState(true); } catch (e) { console.error('Seek forward failed:', e); }
-        }
-    });
+    navigator.mediaSession.setActionHandler('seekbackward', null);
+
+    navigator.mediaSession.setActionHandler('seekforward', null);
+
     navigator.mediaSession.setActionHandler('seekto', (d) => {
         if (audio && audio.duration && d.seekTime !== undefined) {
             try {
