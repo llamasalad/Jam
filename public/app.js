@@ -245,6 +245,7 @@ document.querySelectorAll('.tab').forEach(tab => {
 });
 
 async function loadTracks() {
+    libraryCardsBuilt = false;
     if (loading) loading.style.display = 'flex';
     if (empty) empty.style.display = 'none';
     if (trackList) trackList.innerHTML = '';
@@ -266,75 +267,84 @@ async function loadTracks() {
     }
 }
 
+let libraryCardsBuilt = false;
 function renderLibraryCards() {
+    if (libraryCardsBuilt) return;
+    libraryCardsBuilt = true;
     const artistsContainer = document.getElementById('artists-container');
     const albumsContainer = document.getElementById('albums-container');
-    
     if (!artistsContainer || !albumsContainer) return;
-    
+
     artistsContainer.innerHTML = '';
     albumsContainer.innerHTML = '';
-    
+
     const artists = new Map();
     const albums = new Map();
-    
+
     tracks.forEach(t => {
         if (t.artist) {
-            if (!artists.has(t.artist)) {
-                artists.set(t.artist, { count: 0, artwork: null });
-            }
+            if (!artists.has(t.artist)) artists.set(t.artist, { count: 0, artwork: null });
             artists.get(t.artist).count++;
-            if (!artists.get(t.artist).artwork && t.id) {
-                artists.get(t.artist).artwork = t.id;
-            }
+            if (!artists.get(t.artist).artwork && t.id) artists.get(t.artist).artwork = t.id;
         }
         if (t.album) {
-            if (!albums.has(t.album)) {
-                albums.set(t.album, { count: 0, artist: t.artist, artwork: null });
-            }
+            if (!albums.has(t.album)) albums.set(t.album, { count: 0, artist: t.artist, artwork: null });
             albums.get(t.album).count++;
-            if (!albums.get(t.album).artwork && t.id) {
-                albums.get(t.album).artwork = t.id;
-            }
+            if (!albums.get(t.album).artwork && t.id) albums.get(t.album).artwork = t.id;
         }
-    });
-    
-    const sortedArtists = Array.from(artists.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-    const sortedAlbums = Array.from(albums.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-    
-    sortedArtists.forEach(([artist, data]) => {
-        const card = document.createElement('div');
-        card.className = 'artist-card';
-        if (data.artwork) {
-            card.style.backgroundImage = `url(/api/cover/${data.artwork})`;
-        }
-        const overlay = document.createElement('div');
-        card.appendChild(overlay);
-        const label = document.createElement('span');
-        label.textContent = artist;
-        card.appendChild(label);
-        card.onclick = () => {
-            openArtistDetail(artist);
-        };
-        artistsContainer.appendChild(card);
     });
 
-    sortedAlbums.forEach(([album, data]) => {
-        const card = document.createElement('div');
-        card.className = 'album-card';
-        if (data.artwork) {
-            card.style.backgroundImage = `url(/api/cover/${data.artwork})`;
-        }
-        const overlay = document.createElement('div');
-        card.appendChild(overlay);
-        const label = document.createElement('span');
-        label.textContent = album;
-        card.appendChild(label);
-        card.onclick = () => {
-            openAlbumDetail(album);
-        };
-        albumsContainer.appendChild(card);
-    });
+    const coverObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const card = entry.target;
+            const id = card.dataset.artworkId;
+            if (id) {
+                if (id in coverCache && coverCache[id]) {
+                    card.style.backgroundImage = `url(${coverCache[id]})`;
+                } else {
+                    ensureCoverUrl(id).then(url => {
+                        if (url) card.style.backgroundImage = `url(${url})`;
+                    });
+                }
+            }
+            coverObserver.unobserve(card);
+        });
+    }, { rootMargin: '200px' }); // load covers 200px before they enter view
+
+    const fragA = document.createDocumentFragment();
+    Array.from(artists.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .forEach(([artist, data]) => {
+            const card = document.createElement('div');
+            card.className = 'artist-card';
+            if (data.artwork) card.dataset.artworkId = data.artwork;
+            const overlay = document.createElement('div');
+            const label = document.createElement('span');
+            label.textContent = artist;
+            card.append(overlay, label);
+            card.onclick = () => openArtistDetail(artist);
+            fragA.appendChild(card);
+            if (data.artwork) coverObserver.observe(card);
+        });
+    artistsContainer.appendChild(fragA);
+
+    const fragB = document.createDocumentFragment();
+    Array.from(albums.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .forEach(([album, data]) => {
+            const card = document.createElement('div');
+            card.className = 'album-card';
+            if (data.artwork) card.dataset.artworkId = data.artwork;
+            const overlay = document.createElement('div');
+            const label = document.createElement('span');
+            label.textContent = album;
+            card.append(overlay, label);
+            card.onclick = () => openAlbumDetail(album);
+            fragB.appendChild(card);
+            if (data.artwork) coverObserver.observe(card);
+        });
+    albumsContainer.appendChild(fragB);
 }
 
 const sortModes = ['title', 'artist', 'album'];

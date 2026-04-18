@@ -2913,6 +2913,8 @@ button:active,
 .album-card {
   width: 200px;
   height: 230px;
+  contain: layout style;
+  will-change: transform;
   box-shadow: 0 10px 10px rgba(0, 0, 0, 0.212);
   border-radius: 6px 6px 0 0;
   justify-content: center;
