@@ -98,7 +98,6 @@ const progress = document.getElementById('progress');
 const timeCur = document.getElementById('time-cur');
 const timeTot = document.getElementById('time-tot');
 const volumeSlider = document.getElementById('volume');
-const expVolumeSlider = document.getElementById('exp-volume');
 const volumeIcon = document.getElementById('volume-icon');
 const authOverlay = document.getElementById('auth-overlay');
 const authInput = document.getElementById('auth-input');
@@ -1411,19 +1410,6 @@ if (volumeSlider) {
         if (v > 0) lastVol = parseInt(volumeSlider.value);
         if (volumeIcon) volumeIcon.innerHTML = v === 0 ? volIcons.muted : v < 0.5 ? volIcons.low : volIcons.high;
         localStorage.setItem('music_vol', volumeSlider.value);
-        if (expVolumeSlider) expVolumeSlider.value = volumeSlider.value;
-    });
-}
-
-if (expVolumeSlider) {
-    expVolumeSlider.addEventListener('input', () => {
-        const v = expVolumeSlider.value / 100;
-        if (audio) audio.volume = Math.pow(v, 3);
-        muted = v === 0;
-        if (v > 0) lastVol = parseInt(expVolumeSlider.value);
-        if (volumeIcon) volumeIcon.innerHTML = v === 0 ? volIcons.muted : v < 0.5 ? volIcons.low : volIcons.high;
-        localStorage.setItem('music_vol', expVolumeSlider.value);
-        if (volumeSlider) volumeSlider.value = expVolumeSlider.value;
     });
 }
 
@@ -1433,14 +1419,12 @@ if (volumeIcon) {
             const sv = lastVol / 100;
             if (audio) audio.volume = Math.pow(sv, 3);
             if (volumeSlider) volumeSlider.value = lastVol;
-            if (expVolumeSlider) expVolumeSlider.value = lastVol;
             muted = false;
             volumeIcon.innerHTML = sv < 0.5 ? volIcons.low : volIcons.high;
         } else {
             lastVol = parseInt(volumeSlider ? volumeSlider.value : '80');
             if (audio) audio.volume = 0;
             if (volumeSlider) volumeSlider.value = 0;
-            if (expVolumeSlider) expVolumeSlider.value = 0;
             muted = true;
             volumeIcon.innerHTML = volIcons.muted;
         }
@@ -2694,7 +2678,6 @@ async function init() {
     if (expShuffle) expShuffle.style.color = shuffle ? 'var(--accent)' : 'var(--muted)';
     applyRepeat();
     if (volumeSlider) volumeSlider.value = SAVED_VOL;
-    if (expVolumeSlider) expVolumeSlider.value = SAVED_VOL;
     const sv = SAVED_VOL / 100;
     if (audio) audio.volume = Math.pow(sv, 3);
     if (volumeIcon) volumeIcon.innerHTML = sv === 0 ? volIcons.muted : sv < 0.5 ? volIcons.low : volIcons.high;
