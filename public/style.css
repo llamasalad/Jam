@@ -2182,6 +2182,7 @@ body.is-dragging {
     touch-action: pan-y !important;
   }
 
+
   button,
   .tab,
   .track,
@@ -2664,6 +2665,84 @@ body.is-dragging {
 
   .queue-remove {
     display: none;
+  }
+
+  #header {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 0 !important;
+    border-bottom: none !important;
+    gap: 0 !important;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    background: color-mix(in srgb, var(--bg) 85%, transparent) !important;
+  }
+
+  #header-title {
+    font-size: 28px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    padding: 14px 16px 4px !important;
+    flex: unset !important;
+    width: 100%;
+    transition: font-size 0.25s ease, padding 0.25s ease, font-weight 0.25s ease, letter-spacing 0.25s ease;
+  }
+
+  #header-title.collapsed {
+    font-size: 17px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0 !important;
+    padding: 12px 16px !important;
+  }
+
+  #library-back {
+    border: none !important;
+    background: none !important;
+    color: var(--accent) !important;
+    font-size: 14px !important;
+    padding: 12px 16px 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+
+  #sort-btn {
+    position: absolute !important;
+    top: 14px !important;
+    right: 16px !important;
+  }
+
+  #search-wrap,
+  #theme-toggle {
+    display: none !important;
+  }
+
+  #tabs {
+    border-bottom: none !important;
+    padding: 6px 12px 10px !important;
+    gap: 6px !important;
+    justify-content: flex-start !important;
+  }
+
+  .tab {
+    flex: unset !important;
+    padding: 6px 16px !important;
+    border-bottom: none !important;
+    border-radius: 20px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: var(--muted) !important;
+    background: var(--surface) !important;
+    transition: background 0.15s, color 0.15s !important;
+  }
+
+  .tab.active {
+    background: var(--accent) !important;
+    color: var(--bg) !important;
+    border-bottom-color: transparent !important;
   }
 }
 

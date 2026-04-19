@@ -2758,11 +2758,20 @@ async function init() {
         searchEl.addEventListener('input', searchListener);
     }
     const sidebarSearchEl = document.getElementById('sidebar-search');
-    if (sidebarSearchEl) {
+    if (sidebarSearchEl && !searchListener) {
         sidebarSearchEl.addEventListener('input', debounce(() => {
             if (searchEl) searchEl.value = sidebarSearchEl.value;
             applyFilter();
         }, 120));
+    }
+    if (isMobile()) {
+        const mainEl = document.getElementById('main');
+        const headerTitle = document.getElementById('header-title');
+        if (mainEl && headerTitle) {
+            mainEl.addEventListener('scroll', () => {
+                headerTitle.classList.toggle('collapsed', mainEl.scrollTop > 10);
+            }, { passive: true });
+        }
     }
     setTokenCookie(token);
     if (queuePanel && !isMobile()) queuePanel.style.height = queueH + 'px';
