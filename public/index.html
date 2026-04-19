@@ -166,15 +166,16 @@
     </nav>
     <div id="header">
       <div id="header-top-row">
-        <button id="library-back" style="display:none">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-          Back
-        </button>
+        <button id="library-back" style="display:none">← Back</button>
         <h1 id="header-title">Jam!</h1>
-        <button id="sort-btn">A→Z</button>
+        <div id="header-top-actions">
+          <button id="sort-btn">A→Z</button>
+          <button id="theme-toggle" title="Theme">🎨</button>
+        </div>
       </div>
-      <div id="search-wrap"><span id="search-icon">⌕</span><input id="search" type="search" placeholder="Search..." autocomplete="off" /></div>
-      <button id="theme-toggle" title="Theme selector" style="display:none">🎨</button>
+      <div id="search-wrap">
+        <input id="search" type="search" placeholder="Search..." autocomplete="off" />
+      </div>
       <div id="tabs">
         <div class="tab active" data-tab="library">Library</div>
         <div class="tab" data-tab="playlists">Playlists</div>
@@ -231,9 +232,9 @@
       </div>
       <div id="lyrics-timing-row" class="lyrics-timing">
         <div class="lyrics-timing-actions"><button class="lyrics-timing-btn"
-            data-offset-action="earlier">Earlier</button><span class="lyrics-offset-display">In sync</span><button
-            class="lyrics-timing-btn" data-offset-action="later">Later</button><button class="lyrics-timing-btn reset"
-            data-offset-action="reset">Reset</button></div>
+            data-offset-action="earlier">earlier</button><span class="lyrics-offset-display">synced</span><button
+            class="lyrics-timing-btn" data-offset-action="later">later</button><button class="lyrics-timing-btn reset"
+            data-offset-action="reset">reset</button></div>
       </div>
       <div id="lyrics-scroll">
         <div id="lyrics-empty">No lyrics available</div>

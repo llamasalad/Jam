@@ -2767,12 +2767,16 @@ async function init() {
     if (isMobile()) {
         const mainEl = document.getElementById('main');
         const headerTitle = document.getElementById('header-title');
+        const searchWrap = document.getElementById('search-wrap');
         if (mainEl && headerTitle) {
             mainEl.addEventListener('scroll', () => {
-                headerTitle.classList.toggle('collapsed', mainEl.scrollTop > 10);
+                const scrolled = mainEl.scrollTop > 40;
+                headerTitle.classList.toggle('collapsed', scrolled);
+                if (searchWrap) searchWrap.classList.toggle('hidden', scrolled);
             }, { passive: true });
         }
     }
+    
     setTokenCookie(token);
     if (queuePanel && !isMobile()) queuePanel.style.height = queueH + 'px';
     if (queuePanel) queuePanel.classList.remove('open');
