@@ -374,7 +374,7 @@ function openArtistDetail(artist) {
     if (libraryCards) libraryCards.classList.remove('show');
     if (trackList) trackList.style.display = 'block';
     if (headerTitle) headerTitle.textContent = artist;
-    if (libraryBack) libraryBack.style.display = '';
+    if (libraryBack) libraryBack.style.display = 'flex';
     if (searchWrap) searchWrap.style.display = 'none';
     if (sortBtn) sortBtn.style.display = 'none';
     
@@ -403,7 +403,7 @@ function openAlbumDetail(album) {
     if (libraryCards) libraryCards.classList.remove('show');
     if (trackList) trackList.style.display = 'block';
     if (headerTitle) headerTitle.textContent = album;
-    if (libraryBack) libraryBack.style.display = '';
+    if (libraryBack) libraryBack.style.display = 'flex';
     if (searchWrap) searchWrap.style.display = 'none';
     if (sortBtn) sortBtn.style.display = 'none';
     
