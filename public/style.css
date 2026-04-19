@@ -2685,7 +2685,6 @@ body.is-dragging {
     display: flex;
     align-items: center;
     padding: 14px 16px 4px;
-    position: relative;
     min-height: 44px;
   }
 
@@ -2718,8 +2717,10 @@ body.is-dragging {
 
   #sort-btn {
     position: static !important;
+    top: unset !important;
+    right: unset !important;
     margin-left: auto !important;
-    flex-shrink: 0;
+    flex-shrink: 0 !important;
   }
   
   #header-title {
