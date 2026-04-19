@@ -221,27 +221,34 @@ if (authInput && !authKeydownListener) {
     authInput.addEventListener('keydown', authKeydownListener);
 }
 
+function switchTab(name) {
+    const viewLibrary = document.getElementById('view-library');
+    const viewPlaylists = document.getElementById('view-playlists');
+    const searchWrap = document.getElementById('search-wrap');
+    const sortBtn = document.getElementById('sort-btn');
+    const themeToggle = document.getElementById('theme-toggle');
+
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    document.querySelectorAll('.sidebar-item[data-tab]').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+
+    if (viewLibrary) viewLibrary.classList.toggle('active', name === 'library');
+    if (viewPlaylists) viewPlaylists.classList.toggle('active', name === 'playlists');
+    if (searchWrap) searchWrap.style.display = name === 'library' ? '' : 'none';
+    if (sortBtn) sortBtn.style.display = name === 'library' ? '' : 'none';
+    if (themeToggle) themeToggle.style.display = '';
+    currentPlaylist = null;
+    if (playlistDetail) playlistDetail.classList.remove('active');
+    if (playlistsListView) playlistsListView.style.display = '';
+    closeDetailView();
+    if (name === 'playlists') loadPlaylists();
+}
+
 document.querySelectorAll('.tab').forEach(tab => {
-    tab.onclick = () => {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        const name = tab.dataset.tab;
-        const viewLibrary = document.getElementById('view-library');
-        const viewPlaylists = document.getElementById('view-playlists');
-        const searchWrap = document.getElementById('search-wrap');
-        const sortBtn = document.getElementById('sort-btn');
-        const themeToggle = document.getElementById('theme-toggle');
-        if (viewLibrary) viewLibrary.classList.toggle('active', name === 'library');
-        if (viewPlaylists) viewPlaylists.classList.toggle('active', name === 'playlists');
-        if (searchWrap) searchWrap.style.display = name === 'library' ? '' : 'none';
-        if (sortBtn) sortBtn.style.display = name === 'library' ? '' : 'none';
-        if (themeToggle) themeToggle.style.display = '';
-        currentPlaylist = null;
-        if (playlistDetail) playlistDetail.classList.remove('active');
-        if (playlistsListView) playlistsListView.style.display = '';
-        closeDetailView();
-        if (name === 'playlists') loadPlaylists();
-    };
+    tab.onclick = () => switchTab(tab.dataset.tab);
+});
+
+document.querySelectorAll('.sidebar-item[data-tab]').forEach(item => {
+    item.onclick = () => switchTab(item.dataset.tab);
 });
 
 async function loadTracks() {
@@ -454,6 +461,7 @@ if (sortBtn) {
             filtered = [...tracks];
         }
         sort();
+        updateSidebarSortLabel();
     };
 }
 
@@ -467,6 +475,9 @@ function applyTheme() {
     updateStatusBar();
     document.querySelectorAll('.theme-option').forEach(option => {
         option.classList.toggle('active', option.dataset.theme === currentTheme);
+    });
+    document.querySelectorAll('.sidebar-theme-option').forEach(o => {
+        o.classList.toggle('active', o.dataset.theme === currentTheme);
     });
 }
 
@@ -534,6 +545,58 @@ document.addEventListener('click', (e) => {
 });
 
 applyTheme();
+
+const sidebarSortItem = document.getElementById('sidebar-sort-item');
+const sidebarSortLabel = document.getElementById('sidebar-sort-label');
+const sidebarSortTrack = document.getElementById('sidebar-sort-marquee-track');
+
+const sortMarqueeLabels = ['A→Z', 'Artist', 'Album'];
+
+function updateSidebarSortLabel() {
+    const label = sortMarqueeLabels[sortModeIdx];
+    if (sidebarSortLabel) sidebarSortLabel.textContent = label;
+    if (sidebarSortTrack) {
+        const repeated = Array(12).fill(label).join(' \u00A0·\u00A0 ') + ' \u00A0·\u00A0 ';
+        sidebarSortTrack.textContent = repeated;
+    }
+}
+
+if (sidebarSortItem) {
+    sidebarSortItem.onclick = () => {
+        sortModeIdx = (sortModeIdx + 1) % 3;
+        sortMode = sortModes[sortModeIdx];
+        // keep existing sort button in sync for mobile
+        const sortBtn = document.getElementById('sort-btn');
+        if (sortBtn) sortBtn.textContent = sortLabels[sortModeIdx];
+        if (sortMode === 'title') filtered = [...tracks];
+        sort();
+        updateSidebarSortLabel();
+    };
+}
+
+updateSidebarSortLabel();
+
+const sidebarThemeItem = document.getElementById('sidebar-theme-item');
+const sidebarThemeDropdown = document.getElementById('sidebar-theme-dropdown');
+
+if (sidebarThemeItem) {
+    sidebarThemeItem.onclick = () => {
+        sidebarThemeDropdown.classList.toggle('open');
+    };
+}
+
+document.querySelectorAll('.sidebar-theme-option').forEach(opt => {
+    opt.classList.toggle('active', opt.dataset.theme === currentTheme);
+    opt.onclick = () => {
+        currentTheme = opt.dataset.theme;
+        localStorage.setItem('music_theme', currentTheme);
+        applyTheme();
+        document.querySelectorAll('.sidebar-theme-option').forEach(o => {
+            o.classList.toggle('active', o.dataset.theme === currentTheme);
+        });
+        sidebarThemeDropdown.classList.remove('open');
+    };
+});
 
 function applyFilter() {
     const q = searchEl ? searchEl.value.toLowerCase() : '';
@@ -2693,6 +2756,13 @@ async function init() {
     if (searchEl && !searchListener) {
         searchListener = debounce(applyFilter, 120);
         searchEl.addEventListener('input', searchListener);
+    }
+    const sidebarSearchEl = document.getElementById('sidebar-search');
+    if (sidebarSearchEl) {
+        sidebarSearchEl.addEventListener('input', debounce(() => {
+            if (searchEl) searchEl.value = sidebarSearchEl.value;
+            applyFilter();
+        }, 120));
     }
     setTokenCookie(token);
     if (queuePanel && !isMobile()) queuePanel.style.height = queueH + 'px';

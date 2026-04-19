@@ -2959,3 +2959,201 @@ button:active,
     height: 130px;
   }
 }
+
+/* ── Sidebar (desktop only) ── */
+@media (min-width: 769px) {
+  #app {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    grid-template-rows: auto 1fr auto;
+  }
+
+  #header {
+    display: none;
+  }
+
+  #sidebar-search {
+    background: none !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text) !important;
+    border-radius: var(--radius-s) !important;
+    font-family: inherit !important;
+    font-size: 13px !important;
+    padding: 6px 10px 6px 8px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    outline: none !important;
+    -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+    box-shadow: 0 0 0 30px transparent inset !important;
+    -webkit-text-fill-color: var(--text) !important;
+  }
+
+  #sidebar-search:focus {
+    border-color: var(--accent) !important;
+  }
+
+  #search-wrap {
+    display: none !important;
+  }
+
+  .sidebar-spacer {
+    flex: 1;
+  }
+
+  .sidebar-search-wrap {
+    position: relative;
+    padding: 12px 14px 16px;
+    margin-bottom: 120px;
+  }
+
+  .sidebar-search-wrap #search {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  #sidebar {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 0 0;
+    overflow: hidden;
+  }
+
+
+  #tabs {
+    display: none; /* replaced by sidebar nav */
+  }
+
+  #main {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  #player {
+    grid-column: 2;
+    grid-row: 3;
+  }
+
+  .sidebar-logo {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 0 20px 28px;
+    color: var(--text);
+  }
+
+  .sidebar-nav {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .sidebar-theme-dropdown {
+    list-style: none;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .sidebar-theme-dropdown.open {
+    max-height: 200px;
+  }
+
+  .sidebar-theme-option {
+    padding: 8px 28px;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+
+  .sidebar-theme-option:hover {
+    color: var(--text);
+  }
+
+  .sidebar-theme-option.active {
+    color: var(--accent);
+  }
+
+  .sidebar-item {
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  .sidebar-label {
+    position: relative;
+    z-index: 2;
+    padding: 0 20px;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    transition: color 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .sidebar-item.active .sidebar-label {
+    color: var(--accent);
+  }
+
+  /* marquee strip — hidden until hover */
+  .sidebar-marquee {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(100%);
+    transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    background: var(--surface2);
+  }
+
+  .sidebar-item:hover .sidebar-marquee,
+  .sidebar-item.active .sidebar-marquee {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .sidebar-item:hover .sidebar-label,
+  .sidebar-item.active .sidebar-label {
+    color: var(--accent);
+  }
+
+  .sidebar-marquee-track {
+    display: flex;
+    white-space: nowrap;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    opacity: 0.5;
+    animation: sidebar-marquee 7s linear infinite;
+    will-change: transform;
+  }
+
+  .sidebar-item.active .sidebar-marquee-track {
+    opacity: 0.7;
+  }
+
+  @keyframes sidebar-marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+}
+
+/* hide sidebar on mobile */
+@media (max-width: 768px) {
+  #sidebar {
+    display: none;
+  }
+}

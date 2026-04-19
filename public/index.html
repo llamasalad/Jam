@@ -112,8 +112,58 @@
       <div class="theme-preview" style="background:#f0f0ff;color:#1a1a2e">Purple Light</div>
     </div>
   </div>
-
   <div id="app">
+    <nav id="sidebar">
+      <div class="sidebar-logo">Jam!</div>
+      <ul class="sidebar-nav">
+        <li class="sidebar-item active" data-tab="library">
+          <span class="sidebar-label">Library</span>
+          <div class="sidebar-marquee">
+            <div class="sidebar-marquee-track">
+              Library &nbsp;·&nbsp; Library &nbsp;·&nbsp; Library &nbsp;·&nbsp; Library &nbsp;·&nbsp; Library &nbsp;·&nbsp; Library &nbsp;·&nbsp; Library &nbsp;·&nbsp; Library &nbsp;·&nbsp; Library &nbsp;·&nbsp; Library &nbsp;·&nbsp; Library &nbsp;·&nbsp; Library &nbsp;·&nbsp;
+            </div>
+          </div>
+        </li>
+        <li class="sidebar-item" data-tab="playlists">
+          <span class="sidebar-label">Playlists</span>
+          <div class="sidebar-marquee">
+            <div class="sidebar-marquee-track">
+              Playlists &nbsp;·&nbsp; Playlists &nbsp;·&nbsp; Playlists &nbsp;·&nbsp; Playlists &nbsp;·&nbsp; Playlists &nbsp;·&nbsp; Playlists &nbsp;·&nbsp; Playlists &nbsp;·&nbsp; Playlists &nbsp;·&nbsp; Playlists &nbsp;·&nbsp; Playlists &nbsp;·&nbsp;
+            </div>
+          </div>
+        </li>
+        <li class="sidebar-item" id="sidebar-sort-item">
+          <span class="sidebar-label" id="sidebar-sort-label">A→Z</span>
+          <div class="sidebar-marquee">
+            <div class="sidebar-marquee-track" id="sidebar-sort-marquee-track">
+              A→Z &nbsp;·&nbsp; A→Z &nbsp;·&nbsp; A→Z &nbsp;·&nbsp; A→Z &nbsp;·&nbsp; A→Z &nbsp;·&nbsp; A→Z &nbsp;·&nbsp; A→Z &nbsp;·&nbsp; A→Z &nbsp;·&nbsp; A→Z &nbsp;·&nbsp; A→Z &nbsp;·&nbsp; A→Z &nbsp;·&nbsp; A→Z &nbsp;·&nbsp;
+            </div>
+          </div>
+        </li>
+        <li class="sidebar-item sidebar-theme" id="sidebar-theme-item">
+          <span class="sidebar-label">Theme</span>
+          <div class="sidebar-marquee">
+            <div class="sidebar-marquee-track">
+              Theme &nbsp;·&nbsp; Theme &nbsp;·&nbsp; Theme &nbsp;·&nbsp; Theme &nbsp;·&nbsp; Theme &nbsp;·&nbsp; Theme &nbsp;·&nbsp; Theme &nbsp;·&nbsp; Theme &nbsp;·&nbsp; Theme &nbsp;·&nbsp; Theme &nbsp;·&nbsp; Theme &nbsp;·&nbsp; Theme &nbsp;·&nbsp;
+            </div>
+          </div>
+        </li>
+        <ul class="sidebar-theme-dropdown" id="sidebar-theme-dropdown">
+          <li class="sidebar-theme-option" data-theme="default">Gold</li>
+          <li class="sidebar-theme-option" data-theme="purple">Midnight</li>
+          <li class="sidebar-theme-option" data-theme="pink">Pink</li>
+          <li class="sidebar-theme-option" data-theme="light">White Gold</li>
+          <li class="sidebar-theme-option" data-theme="purple-light">Purple</li>
+        </ul>
+      </ul>
+
+      <div class="sidebar-spacer"></div>
+
+      <div class="sidebar-search-wrap">
+        <span class="sidebar-search-icon">🔍</span>
+        <input type="text" id="sidebar-search" placeholder="Search..." autocomplete="off" spellcheck="false" />
+      </div>
+    </nav>
     <div id="header">
       <button id="library-back" style="display:none">← Back</button>
       <h1 id="header-title">Jam!</h1>
