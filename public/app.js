@@ -1809,7 +1809,7 @@ if (playlistDetail) {
 
     playlistDetail.addEventListener('touchstart', e => {
         if (!isMobile()) return;
-        if (e.target.closest('.track')) return; // don't compete with row swipe handlers
+        if (e.touches[0].clientX > 30) return;
         backSwipeStartX = e.touches[0].clientX;
         backSwipeStartY = e.touches[0].clientY;
         backSwipeDeltaX = 0;
@@ -1873,7 +1873,7 @@ if (trackList) {
 
     trackList.addEventListener('touchstart', e => {
         if (!isMobile() || !currentDetailView) return;
-        if (e.target.closest('.track')) return;
+        if (e.touches[0].clientX > 30) return;
         backSwipeStartX = e.touches[0].clientX;
         backSwipeStartY = e.touches[0].clientY;
         backSwipeDeltaX = 0;

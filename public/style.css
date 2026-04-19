@@ -2681,6 +2681,47 @@ body.is-dragging {
     background: color-mix(in srgb, var(--bg) 85%, transparent) !important;
   }
 
+  #header-top-row {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px 4px;
+    position: relative;
+    min-height: 44px;
+  }
+
+  #header-title {
+    font-size: 28px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    padding: 0 !important;
+    flex: 1 !important;
+    width: auto !important;
+    transition: font-size 0.25s ease, font-weight 0.25s ease, letter-spacing 0.25s ease;
+  }
+
+  #header-title.collapsed {
+    font-size: 17px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0 !important;
+  }
+
+  #library-back {
+    border: none !important;
+    background: none !important;
+    color: var(--accent) !important;
+    font-size: 14px !important;
+    padding: 0 12px 0 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+
+  #sort-btn {
+    position: static !important;
+    margin-left: auto !important;
+    flex-shrink: 0;
+  }
+  
   #header-title {
     font-size: 28px !important;
     font-weight: 700 !important;
