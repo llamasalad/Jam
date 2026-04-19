@@ -2710,7 +2710,6 @@ body.is-dragging {
     color: var(--accent) !important;
     font-size: 14px !important;
     padding: 0 12px 0 0 !important;
-    display: flex !important;
     align-items: center !important;
     gap: 4px !important;
   }
