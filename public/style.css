@@ -2944,7 +2944,6 @@ button:active,
   font-size: 0.7em;
   font-weight: 800;
   z-index: 2;
-  letter-spacing: 0.1em;
 }
 
 @media (max-width: 768px) {
