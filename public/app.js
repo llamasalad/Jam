@@ -637,7 +637,7 @@ function sort() {
 }
 
 function formatLyricsOffsetLabel() {
-    if (Math.abs(lyricsOffset) < 0.001) return 'In sync';
+    if (Math.abs(lyricsOffset) < 0.001) return 'synced';
     const amount = Math.abs(lyricsOffset).toFixed(1) + 's';
     return lyricsOffset > 0 ? `${amount} early` : `${amount} late`;
 }
