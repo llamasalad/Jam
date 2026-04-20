@@ -3198,13 +3198,14 @@ button:active,
     align-items: center !important;
     gap: 8px !important;
     flex-shrink: 0 !important;
+    text-transform: lowercase;
   }
 
   #header-top-actions #sort-btn,
   #header-top-actions #theme-toggle {
     all: unset !important;
     cursor: pointer !important;
-    font-size: 11px !important;
+    font-size: 14px !important;
     color: var(--muted) !important;
     border: 1px solid var(--border) !important;
     border-radius: 6px !important;
@@ -3237,11 +3238,12 @@ button:active,
 
   #search-wrap {
     display: flex !important;
-    padding: 4px 16px 10px !important;
+    padding: 0 3px 0 0 !important;
     overflow: hidden !important;
     max-height: 60px; 
     opacity: 1;
     transition: max-height 0.2s ease, opacity 0.2s ease, padding 0.2s ease;
+    width: 100%;
   }
 
   #search-wrap.hidden {

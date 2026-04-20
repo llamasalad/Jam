@@ -357,7 +357,7 @@ function renderLibraryCards() {
 }
 
 const sortModes = ['title', 'artist', 'album'];
-const sortLabels = ['A->Z', 'ARTIST', 'ALBUM'];
+const sortLabels = ['VIEWS', 'ARTIST', 'ALBUM'];
 let sortModeIdx = 0;
 let currentDetailView = null;
 
