@@ -177,15 +177,6 @@ body {
   flex: 1;
 }
 
-@media (max-width: 768px) {
-  #header h1 {
-    flex: none;
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-  }
-}
-
 #expanded-player.adaptive {
   background: linear-gradient(180deg, var(--adaptive-color) 0%, var(--bg) 80%) !important;
 }
@@ -3193,6 +3184,7 @@ button:active,
   #header h1,
   #header-title {
     all: unset !important;
+    display: block !important;
     font-size: 22px !important;
     font-weight: 700 !important;
     letter-spacing: -0.02em !important;
@@ -3232,7 +3224,6 @@ button:active,
     cursor: pointer !important;
     color: var(--accent) !important;
     font-size: 14px !important;
-    display: flex !important;
     align-items: center !important;
     gap: 4px !important;
     margin-right: 8px !important;

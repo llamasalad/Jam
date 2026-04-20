@@ -1816,8 +1816,8 @@ if (playlistDetail) {
         isBackSwiping = false;
     }, { passive: true });
 
-    trackList.addEventListener('touchmove', e => {
-        if (backSwipeStartX === null || !currentDetailView) return;
+    playlistDetail.addEventListener('touchmove', e => {
+        if (backSwipeStartX === null) return;
         backSwipeDeltaX = e.touches[0].clientX - backSwipeStartX;
         const deltaY = e.touches[0].clientY - backSwipeStartY;
 
@@ -1828,12 +1828,12 @@ if (playlistDetail) {
             }
             if (backSwipeDeltaX > 15) {
                 isBackSwiping = true;
-                trackList.style.transition = 'none';
+                playlistDetail.style.transition = 'none';
             }
         }
         if (isBackSwiping && backSwipeDeltaX > 0) {
             if (e.cancelable) e.preventDefault();
-            trackList.style.transform = `translateX(${backSwipeDeltaX}px)`;
+            playlistDetail.style.transform = `translateX(${backSwipeDeltaX}px)`;
         }
     }, { passive: false });
 
@@ -2758,12 +2758,14 @@ async function init() {
         searchEl.addEventListener('input', searchListener);
     }
     const sidebarSearchEl = document.getElementById('sidebar-search');
-    if (sidebarSearchEl && !searchListener) {
+    if (sidebarSearchEl && !sidebarSearchEl._listenerAttached) {
+        sidebarSearchEl._listenerAttached = true;
         sidebarSearchEl.addEventListener('input', debounce(() => {
             if (searchEl) searchEl.value = sidebarSearchEl.value;
             applyFilter();
         }, 120));
     }
+    
     if (isMobile()) {
         const mainEl = document.getElementById('main');
         const headerTitle = document.getElementById('header-title');
