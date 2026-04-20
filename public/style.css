@@ -2932,7 +2932,7 @@ button:active,
   height: 100%;
   cursor: pointer;
   z-index: 1;
-  background: linear-gradient(to top, rgba(0, 0, 0, 10) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0) 100%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 10) 0%, rgba(0, 0, 0, 0) 150%, rgba(0, 0, 0, 0) 100%);
 }
 
 .artist-card span,
