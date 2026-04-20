@@ -247,13 +247,13 @@ body {
   border-radius: var(--radius-s) !important;
   font-family: inherit !important;
   font-size: 13px !important;
-  padding: 6px 10px 6px 28px !important;
+  padding: 6px 10px 6px 10px !important;
   width: 160px !important;
   outline: none !important;
   transition: border-color .2s, width .2s !important;
   -webkit-box-shadow: 0 0 0 30px transparent inset !important;
   box-shadow: 0 0 0 30px transparent inset !important;
-  -webkit-text-fill-color: var(--text) !important;
+  -webkit-text-fill-color: var(--muted) !important;
 }
 
 #search:focus {
@@ -3161,16 +3161,11 @@ button:active,
     z-index: 100;
     display: flex !important;
     flex-direction: column !important;
-    padding-top: 8px !important; /* Initial padding */
     border-bottom: none !important;
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     background: color-mix(in srgb, var(--bg) 85%, transparent) !important;
     transition: padding 0.25s ease;
-  }
-
-  #header:has(#header-title.collapsed) {
-    padding-top: 4px !important;
   }
 
   #header-top-row {
@@ -3179,7 +3174,7 @@ button:active,
     align-items: center !important;
     justify-content: flex-start !important;
     padding: 12px 16px 6px !important;
-    width: 100%;
+    width: 110%;
     min-height: 44px !important;
   }
 
@@ -3188,16 +3183,16 @@ button:active,
     all: unset !important;
     display: block !important;
     font-size: 20px !important;
-    font-weight: 700 !important;
+    font-weight: 600 !important;
     letter-spacing: -0.02em !important;
     color: var(--text) !important;
     transition: font-size 0.2s ease, transform 0.2s ease;
     flex-shrink: 1 !important;
-    margin-right: auto !important
+    margin-right: auto !important;
   }
 
   #header-title.collapsed {
-    font-size: 18px !important;
+    font-size: 20px !important;
     font-weight: 600 !important;
   }
 
@@ -3224,9 +3219,9 @@ button:active,
   #library-back {
     display: none !important;
     cursor: pointer !important;
-    color: var(--accent) !important;
-    font-size: 16px !important;
-    font-weight: 500 !important;
+    color: var(--muted) !important;
+    font-size: 11px !important;
+    font-weight: 100 !important;
     flex-shrink: 0 !important;
   }
   
@@ -3242,7 +3237,6 @@ button:active,
   body.detail-view #header-top-row {
     justify-content: flex-start !important;
     gap: 8px !important;
-    padding-top: 16px !important;
   }
 
   #search-wrap {
@@ -3266,7 +3260,7 @@ button:active,
     width: 100% !important;
     background: var(--surface) !important;
     border-color: transparent !important;
-    border-radius: 8px !important;
+    border-radius: 6px !important;
   }
 
   #theme-toggle {
