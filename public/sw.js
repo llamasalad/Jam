@@ -1,6 +1,6 @@
 // IMPORTANT: Bump CACHE version when deploying any changes to these files
 // CHANGE THIS: v2 → v3 → v4 etc. when you update index.html, style.css, app.js
-const CACHE = 'jam-v4';
+const CACHE = 'jam-v5';
 const ASSETS = ['/', '/index.html', '/style.css', '/app.js', '/manifest.json'];
 
 self.addEventListener('install', e => {
