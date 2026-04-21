@@ -1,0 +1,51 @@
+async function fetchDeezerArtist(name) {
+  try {
+    const q = new URLSearchParams({ q: name || '', limit: '10' });
+    const r = await fetch(`https://api.deezer.com/search/artist?${q}`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    if (d.data && d.data.length > 0) {
+      // Sort by actual fan count (highest first), prefer exact name match
+      const normalizedQuery = name.toLowerCase().trim();
+      const sorted = d.data.sort((a, b) => (b.nb_fan || 0) - (a.nb_fan || 0));
+      const exactMatch = sorted.find(a => a.name.toLowerCase().trim() === normalizedQuery);
+      const match = exactMatch || sorted[0];
+      return {
+        id: match.id,
+        name: match.name,
+        picture: match.picture_big || match.picture_medium || match.picture
+      };
+    }
+  } catch (_) {}
+  return null;
+}
+
+function jsonResponse(body, init = {}) {
+  const headers = new Headers(init.headers || {});
+  headers.set('Content-Type', 'application/json');
+  return new Response(JSON.stringify(body), { ...init, headers });
+}
+
+export async function onRequestGet({ request }) {
+  const url = new URL(request.url);
+  const name = url.searchParams.get('name') || '';
+
+  if (!name) {
+    return jsonResponse({ error: 'name required' }, { status: 400 });
+  }
+
+  const result = await fetchDeezerArtist(name);
+
+  if (result && result.picture) {
+    return jsonResponse(result, {
+      headers: { 'Cache-Control': 'public, max-age=86400, s-maxage=604800' }
+    });
+  }
+
+  return jsonResponse(
+    { id: null, name: null, picture: null },
+    { headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=86400' } }
+  );
+}

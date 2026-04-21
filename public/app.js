@@ -309,8 +309,8 @@ function renderLibraryCards() {
             const card = entry.target;
             const id = card.dataset.artworkId;
             if (id) {
-                if (id in coverCache && coverCache[id]) {
-                    card.style.backgroundImage = `url(${coverCache[id]})`;
+                if (coverCacheHas(id) && coverCacheGet(id)) {
+                    card.style.backgroundImage = `url(${coverCacheGet(id)})`;
                 } else {
                     ensureCoverUrl(id).then(url => {
                         if (url) card.style.backgroundImage = `url(${url})`;
@@ -321,6 +321,16 @@ function renderLibraryCards() {
         });
     }, { rootMargin: '200px' }); // load covers 200px before they enter view
 
+    const artistImgObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const img = entry.target;
+            const name = img.dataset.artistName;
+            if (name) loadArtistImage(name, img);
+            artistImgObserver.unobserve(img);
+        });
+    }, { rootMargin: '200px' });
+
     const fragA = document.createDocumentFragment();
     Array.from(artists.entries())
         .sort((a, b) => a[0].localeCompare(b[0]))
@@ -328,13 +338,23 @@ function renderLibraryCards() {
             const card = document.createElement('div');
             card.className = 'artist-card';
             if (data.artwork) card.dataset.artworkId = data.artwork;
+
+            const artistImg = document.createElement('img');
+            artistImg.className = 'artist-portrait';
+            artistImg.dataset.artistName = artist;
+            artistImg.alt = artist;
+            artistImg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0';
+            artistImg.onerror = () => { artistImg.style.visibility = 'hidden'; };
+
             const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:absolute;inset:0;z-index:1';
             const label = document.createElement('span');
             label.textContent = artist;
-            card.append(overlay, label);
+            card.append(artistImg, overlay, label);
             card.onclick = () => openArtistDetail(artist);
             fragA.appendChild(card);
             if (data.artwork) coverObserver.observe(card);
+            artistImgObserver.observe(artistImg);
         });
     artistsContainer.appendChild(fragA);
 
@@ -1268,29 +1288,81 @@ function showToast(msg) {
     t._t = setTimeout(() => t.style.opacity = '0', 2000);
 }
 
+const MAX_COVER_CACHE = 200;
+const coverCacheOrder = [];
 const coverCache = {};
 const coverRequests = {};
 
+function coverCacheGet(id) {
+    if (!(id in coverCache)) return undefined;
+    const idx = coverCacheOrder.indexOf(id);
+    if (idx !== -1) { coverCacheOrder.splice(idx, 1); coverCacheOrder.push(id); }
+    return coverCache[id];
+}
+
+function coverCacheSet(id, url) {
+    if (id in coverCache) {
+        if (coverCache[id]) URL.revokeObjectURL(coverCache[id]);
+        const idx = coverCacheOrder.indexOf(id);
+        if (idx !== -1) coverCacheOrder.splice(idx, 1);
+    }
+    coverCache[id] = url;
+    coverCacheOrder.push(id);
+    while (coverCacheOrder.length > MAX_COVER_CACHE) {
+        const evictId = coverCacheOrder.shift();
+        if (coverCache[evictId]) URL.revokeObjectURL(coverCache[evictId]);
+        delete coverCache[evictId];
+    }
+}
+
+function coverCacheHas(id) { return id in coverCache; }
+
 async function ensureCoverUrl(id) {
-    if (id in coverCache) return coverCache[id];
+    if (coverCacheHas(id)) return coverCacheGet(id);
     if (coverRequests[id]) return coverRequests[id];
     coverRequests[id] = fetch('/api/cover/' + id, { headers: hget() }).then(async r => {
         if (!r.ok) return null;
         const blob = await r.blob();
-        if (coverCache[id]) URL.revokeObjectURL(coverCache[id]);
         const objectUrl = URL.createObjectURL(blob);
-        coverCache[id] = objectUrl;
+        coverCacheSet(id, objectUrl);
         return objectUrl;
     }).catch(() => {
-        coverCache[id] = null;
+        coverCacheSet(id, null);
         return null;
     }).finally(() => { delete coverRequests[id]; });
     return coverRequests[id];
 }
 
 function loadCover(id, el) {
-    if (id in coverCache) { if (coverCache[id]) setCover(el, coverCache[id]); return; }
+    if (coverCacheHas(id)) { const url = coverCacheGet(id); if (url) setCover(el, url); return; }
     ensureCoverUrl(id).then(url => { if (url) setCover(el, url); });
+}
+
+const MAX_ARTIST_IMAGE_CACHE = 100;
+const artistImageCache = {}; // { name: { url, expires } }
+
+function clearArtistImageCache() {
+    Object.keys(artistImageCache).forEach(k => delete artistImageCache[k]);
+    console.log('Artist image cache cleared');
+}
+
+async function loadArtistImage(name, imgEl) {
+    const cached = artistImageCache[name];
+    if (cached && cached.expires > Date.now()) {
+        imgEl.src = cached.url;
+        imgEl.style.visibility = 'visible';
+        return;
+    }
+    try {
+        const r = await fetch('/api/artist-image?name=' + encodeURIComponent(name), { headers: hget() });
+        if (!r.ok) return;
+        const d = await r.json();
+        if (d.picture) {
+            artistImageCache[name] = { url: d.picture, expires: Date.now() + 86400000 };
+            imgEl.src = d.picture;
+            imgEl.style.visibility = 'visible';
+        }
+    } catch (_) {}
 }
 
 function setCover(el, url) {
@@ -2539,6 +2611,8 @@ function openEditMetadataModal(t) {
             });
             t.title = title; t.artist = artist; t.album = album;
             renderList();
+            libraryCardsBuilt = false;
+            renderLibraryCards();
             modal.remove();
             showToast('Metadata updated!');
         } catch (e) {
