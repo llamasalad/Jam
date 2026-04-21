@@ -73,7 +73,13 @@ function setLyricsMessage(msg, curMsg) {
     if (desktopScroll) desktopScroll.innerHTML = msgHtml;
     if (cardScroll) cardScroll.innerHTML = msgHtml;
     if (curMsg !== undefined) {
-        if (expLyricCur) expLyricCur.textContent = curMsg;
+        if (expLyricCur) {
+            if (curMsg === '\u2026') {
+                expLyricCur.innerHTML = '<span class="loading-ring"></span>';
+            } else {
+                expLyricCur.textContent = curMsg;
+            }
+        }
         if (expLyricNext) expLyricNext.textContent = '';
     }
 }
@@ -2475,7 +2481,9 @@ let lastExpLyricIdx = -1;
 function updateSyncedLyricsState(force = false) {
     if (!audio) return;
     if (!syncedLyrics.length) {
-        if (expLyricCur) {
+        // Don't overwrite loading indicator if lyrics are still being fetched
+        const isLoading = expLyricCur && expLyricCur.querySelector('.loading-ring');
+        if (expLyricCur && !isLoading) {
             clearTimeout(lyricUpdateTimers.cur);
             expLyricCur.style.opacity = '0';
             lyricUpdateTimers.cur = setTimeout(() => { expLyricCur.textContent = '—'; expLyricCur.style.opacity = '1' }, 120);
