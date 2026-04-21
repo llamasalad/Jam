@@ -1,5 +1,5 @@
-// IMPORTANT: Bump CACHE version when deploying any changes to these filess
-// CHANGE THIS: v2 → v3 → v4 etc. when you update index.html, style.css, app.js!
+// IMPORTANT: Bump CACHE version when deploying any changes to these files
+// CHANGE THIS: v2 → v3 → v4 etc. when you update index.html, style.css, app.js
 const CACHE = 'jam-v8';
 const ASSETS = ['/', '/index.html', '/style.css', '/app.js', '/manifest.json'];
 
