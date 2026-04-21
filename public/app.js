@@ -2896,7 +2896,7 @@ window.addEventListener('pageshow', (e) => {
 });
 
 // Service Worker registration with deferred updates
-const APP_VERSION = '2025.01.21-4'; // Bump this when deploying to verify update worked
+const APP_VERSION = '2025.01.21-5'; // Bump this when deploying to verify update worked
 let swRegistration = null;
 
 console.log('[App] Version:', APP_VERSION);
