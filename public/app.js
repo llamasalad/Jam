@@ -2675,6 +2675,7 @@ async function updateAdaptiveBackground() {
     if (!imgEl) return;
 
     const apply = () => {
+        if (!adaptiveMode) return;
         try {
             const color = getDominantColor(imgEl);
             expPlayer.style.setProperty('--adaptive-color', color);

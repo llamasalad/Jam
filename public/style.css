@@ -2432,6 +2432,13 @@ body.is-dragging {
     visibility: visible !important;
   }
 
+  .light-theme #expanded-player.adaptive #exp-title,
+  .light-theme #expanded-player.adaptive #exp-lyric-current,
+  .purple-light-theme #expanded-player.adaptive #exp-title,
+  .purple-light-theme #expanded-player.adaptive #exp-lyric-current {
+    color: var(--adaptive-color) !important;
+  }
+
   #exp-lyric-next {
     display: block !important;
     font-size: 15px !important;
