@@ -2896,30 +2896,54 @@ window.addEventListener('pageshow', (e) => {
 });
 
 // Service Worker registration with deferred updates
+const APP_VERSION = '2025.01.21-1'; // Bump this when deploying to verify update worked
 let swRegistration = null;
 
+console.log('[App] Version:', APP_VERSION);
+
 function activateUpdate() {
-    if (!swRegistration?.waiting) return;
+    if (!swRegistration?.waiting) {
+        console.log('[SW] No update waiting');
+        return;
+    }
+    console.log('[SW] Activating update...');
     swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
 }
+
+window.getSWStatus = function() {
+    if (!swRegistration) return { error: 'No SW registration' };
+    return {
+        appVersion: APP_VERSION,
+        swScope: swRegistration.scope,
+        installing: swRegistration.installing ? true : false,
+        waiting: swRegistration.waiting ? true : false,
+        active: swRegistration.active ? true : false,
+        updatePending: !!swRegistration.waiting
+    };
+};
 
 function showUpdateUI() {
     // Desktop: show in sidebar
     const sidebarUpdate = document.getElementById('sidebar-update');
     if (sidebarUpdate) sidebarUpdate.style.display = 'flex';
 
-    // Mobile: toast notification
+    // Mobile: persistent toast notification
     if (isMobile()) {
-        showToast('Update available ↻');
-        // Add click handler to toast for immediate update
-        const toast = document.getElementById('toast');
-        if (toast) {
-            toast.style.cursor = 'pointer';
-            toast.onclick = () => {
-                activateUpdate();
-                toast.onclick = null;
-            };
+        let t = document.getElementById('toast');
+        if (!t) {
+            t = document.createElement('div');
+            t.id = 'toast';
+            t.style.cssText = 'position:fixed;bottom:calc(var(--player-h) + 16px);left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:8px 16px;border-radius:8px;font-size:13px;z-index:500;transition:opacity .3s;max-width:calc(100vw - 32px);cursor:pointer';
+            document.body.appendChild(t);
         }
+        t.textContent = 'Update available — tap to refresh ↻';
+        t.style.opacity = '1';
+        t.onclick = () => {
+            activateUpdate();
+            t.onclick = null;
+        };
+        // Don't auto-hide this toast — stays until clicked or page reload
+        clearTimeout(t._t);
     }
 }
 
@@ -2943,29 +2967,38 @@ if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').then(reg => {
             swRegistration = reg;
+            console.log('[SW] Registered, scope:', reg.scope);
+            console.log('[SW] Status:', window.getSWStatus());
 
-            // Poll for updates every 60s (important for Safaris)
-            setInterval(() => reg.update(), 60000);
+            // Poll for updates every 60s (important for Safari)
+            setInterval(() => {
+                console.log('[SW] Checking for updates...');
+                reg.update();
+            }, 60000);
 
             // New SW found
             reg.addEventListener('updatefound', () => {
                 const newWorker = reg.installing;
+                console.log('[SW] Update found, installing...');
                 newWorker.addEventListener('statechange', () => {
+                    console.log('[SW] Worker state:', newWorker.state);
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        // New version ready and waiting
+                        console.log('[SW] Update ready — showing UI');
                         showUpdateUI();
                     }
                 });
             });
 
-            // SW was already waiting when page loadded
+            // SW was already waiting when page loaded
             if (reg.waiting && navigator.serviceWorker.controller) {
+                console.log('[SW] Update was already waiting');
                 showUpdateUI();
             }
-        }).catch(err => console.error('SW registration failed:', err));
+        }).catch(err => console.error('[SW] Registration failed:', err));
 
-        // Reload when new SW takes controls
+        // Reload when new SW takes control
         navigator.serviceWorker.addEventListener('controllerchange', () => {
+            console.log('[SW] New controller, reloading...');
             window.location.reload();
         });
     });
