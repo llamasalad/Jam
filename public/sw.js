@@ -1,12 +1,23 @@
-const CACHE = 'jam-v2';
+// IMPORTANT: Bump CACHE version when deploying any changes to these files
+// CHANGE THIS: v2 → v3 → v4 etc. when you update index.html, style.css, app.js
+const CACHE = 'jam-v3';
 const ASSETS = ['/', '/index.html', '/style.css', '/app.js', '/manifest.json'];
+
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
-  self.skipWaiting();
+  // Don't skipWaiting here — wait for app to tell us
 });
+
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
   self.clients.claim();
+});
+
+// Listen for app telling us to activate
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);

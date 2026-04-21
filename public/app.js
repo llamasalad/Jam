@@ -577,6 +577,18 @@ document.querySelectorAll('.sidebar-theme-option').forEach(opt => {
     };
 });
 
+// Sidebar update button handler
+const sidebarUpdate = document.getElementById('sidebar-update');
+if (sidebarUpdate) {
+    sidebarUpdate.onclick = () => {
+        if (swRegistration?.waiting) {
+            activateUpdate();
+        } else {
+            checkForUpdate();
+        }
+    };
+}
+
 function applyFilter() {
     const q = searchEl ? searchEl.value.toLowerCase() : '';
     filtered = q ? tracks.filter(t => (t.title || '').toLowerCase().includes(q) || (t.artist || '').toLowerCase().includes(q) || (t.album || '').toLowerCase().includes(q)) : [...tracks];
@@ -2883,15 +2895,79 @@ window.addEventListener('pageshow', (e) => {
     if (audio && !audio.paused) startHeartbeat();
 });
 
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(err => console.error('SW registration failed:', err));
-    });
+// Service Worker registration with deferred updates
+let swRegistration = null;
+
+function activateUpdate() {
+    if (!swRegistration?.waiting) return;
+    swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+}
+
+function showUpdateUI() {
+    // Desktop: show in sidebar
+    const sidebarUpdate = document.getElementById('sidebar-update');
+    if (sidebarUpdate) sidebarUpdate.style.display = 'flex';
+
+    // Mobile: toast notification
+    if (isMobile()) {
+        showToast('Update available ↻');
+        // Add click handler to toast for immediate update
+        const toast = document.getElementById('toast');
+        if (toast) {
+            toast.style.cursor = 'pointer';
+            toast.onclick = () => {
+                activateUpdate();
+                toast.onclick = null;
+            };
+        }
+    }
+}
+
+function hideUpdateUI() {
+    const sidebarUpdate = document.getElementById('sidebar-update');
+    if (sidebarUpdate) sidebarUpdate.style.display = 'none';
+}
+
+async function checkForUpdate() {
+    if (!swRegistration) return;
+    await swRegistration.update();
+
+    if (swRegistration.waiting) {
+        showUpdateUI();
+    } else {
+        showToast('No updates available');
+    }
 }
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(err => console.error('SW registration failed:', err));
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+            swRegistration = reg;
+
+            // Poll for updates every 60s (important for Safaris)
+            setInterval(() => reg.update(), 60000);
+
+            // New SW found
+            reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        // New version ready and waiting
+                        showUpdateUI();
+                    }
+                });
+            });
+
+            // SW was already waiting when page loadded
+            if (reg.waiting && navigator.serviceWorker.controller) {
+                showUpdateUI();
+            }
+        }).catch(err => console.error('SW registration failed:', err));
+
+        // Reload when new SW takes control
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            window.location.reload();
+        });
     });
 }
 
