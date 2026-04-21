@@ -1246,6 +1246,17 @@ async function removeFromPlaylist(playlistId, trackId) {
     } catch (e) { console.error("Failed to remove from playlist", e); }
 }
 
+async function fetchPlaylist(id) {
+    try {
+        const r = await fetch('/api/playlists/' + id, { headers: hget() });
+        if (!r.ok) return null;
+        return await r.json();
+    } catch (e) {
+        console.error("Failed to fetch playlist", e);
+        return null;
+    }
+}
+
 async function deletePlaylist(id) {
     if (!confirm('Delete this playlist?')) return;
     try {
