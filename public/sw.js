@@ -10,7 +10,7 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  if (url.pathname.startsWith('/api/stream/')) return; // never cache audios
+  if (url.pathname.startsWith('/api/stream/')) return; // never cache audio
   if (url.pathname.startsWith('/api/cover/')) {
     e.respondWith(caches.open(CACHE).then(async cache => {
       const cached = await cache.match(e.request);

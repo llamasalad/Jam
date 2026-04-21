@@ -2,7 +2,7 @@ export async function onRequest(context) {
   const { request, env, next } = context;
   const url = new URL(request.url);
 
-  // Handle CORS preflight requests early - allow OPTIONS without auth check
+  // Handle CORS preflight requests early - allow OPTIONS without auth cdheck
   if (request.method === 'OPTIONS') {
     return new Response(null, {
       headers: {
