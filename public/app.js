@@ -2964,7 +2964,7 @@ if ('serviceWorker' in navigator) {
             }
         }).catch(err => console.error('SW registration failed:', err));
 
-        // Reload when new SW takes control
+        // Reload when new SW takes controls
         navigator.serviceWorker.addEventListener('controllerchange', () => {
             window.location.reload();
         });
