@@ -361,51 +361,31 @@ const sortLabels = ['VIEWS', 'ARTIST', 'ALBUM'];
 let sortModeIdx = 0;
 let currentDetailView = null;
 
-function openArtistDetail(artist) {
-    currentDetailView = { type: 'artist', name: artist };
+function openDetail(type, name) {
+    currentDetailView = { type, name };
     document.body.classList.add('detail-view');
     const viewLibrary = document.getElementById('view-library');
     const libraryCards = document.getElementById('library-cards');
     const trackList = document.getElementById('track-list');
     const headerTitle = document.getElementById('header-title');
-    
+
     if (viewLibrary) viewLibrary.classList.add('active');
     if (libraryCards) libraryCards.classList.remove('show');
     if (trackList) trackList.style.display = 'block';
-    if (headerTitle) headerTitle.textContent = artist;
-    
+    if (headerTitle) headerTitle.textContent = name;
+
     const artistsSection = document.getElementById('artists-section');
     const albumsSection = document.getElementById('albums-section');
     if (artistsSection) artistsSection.style.display = 'none';
     if (albumsSection) albumsSection.style.display = 'none';
-    
+
     searchEl.value = '';
-    filtered = tracks.filter(t => t.artist === artist);
+    filtered = tracks.filter(t => t[type] === name);
     renderList();
 }
 
-function openAlbumDetail(album) {
-    currentDetailView = { type: 'album', name: album };
-    document.body.classList.add('detail-view');
-    const viewLibrary = document.getElementById('view-library');
-    const libraryCards = document.getElementById('library-cards');
-    const trackList = document.getElementById('track-list');
-    const headerTitle = document.getElementById('header-title');
-    
-    if (viewLibrary) viewLibrary.classList.add('active');
-    if (libraryCards) libraryCards.classList.remove('show');
-    if (trackList) trackList.style.display = 'block';
-    if (headerTitle) headerTitle.textContent = album;
-    
-    const artistsSection = document.getElementById('artists-section');
-    const albumsSection = document.getElementById('albums-section');
-    if (artistsSection) artistsSection.style.display = 'none';
-    if (albumsSection) albumsSection.style.display = 'none';
-    
-    searchEl.value = '';
-    filtered = tracks.filter(t => t.album === album);
-    renderList();
-}
+function openArtistDetail(artist) { openDetail('artist', artist); }
+function openAlbumDetail(album) { openDetail('album', album); }
 
 function closeDetailView() {
     if (currentDetailView?.type === 'playlist') {
@@ -440,17 +420,17 @@ function closeDetailView() {
     sort();
 }
 
+function cycleSort() {
+    sortModeIdx = (sortModeIdx + 1) % 3;
+    sortMode = sortModes[sortModeIdx];
+    if (sortBtn) sortBtn.textContent = sortLabels[sortModeIdx];
+    if (sortMode === 'title') filtered = [...tracks];
+    sort();
+    updateSidebarSortLabel();
+}
+
 if (sortBtn) {
-    sortBtn.onclick = () => {
-        sortModeIdx = (sortModeIdx + 1) % 3;
-        sortMode = sortModes[sortModeIdx];
-        sortBtn.textContent = sortLabels[sortModeIdx];
-        if (sortMode === 'title') {
-            filtered = [...tracks];
-        }
-        sort();
-        updateSidebarSortLabel();
-    };
+    sortBtn.onclick = cycleSort;
 }
 
 let currentTheme = localStorage.getItem('music_theme') || 'default';
@@ -550,16 +530,7 @@ function updateSidebarSortLabel() {
 }
 
 if (sidebarSortItem) {
-    sidebarSortItem.onclick = () => {
-        sortModeIdx = (sortModeIdx + 1) % 3;
-        sortMode = sortModes[sortModeIdx];
-        // keep existing sort button in sync for mobile
-        const sortBtn = document.getElementById('sort-btn');
-        if (sortBtn) sortBtn.textContent = sortLabels[sortModeIdx];
-        if (sortMode === 'title') filtered = [...tracks];
-        sort();
-        updateSidebarSortLabel();
-    };
+    sidebarSortItem.onclick = cycleSort;
 }
 
 updateSidebarSortLabel();
@@ -922,11 +893,11 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
     return div;
 }
 
-function hideCtxWithBackdrop() {
+function closeCtxMenu() {
     if (ctxMenu) ctxMenu.classList.remove('open');
-    document.querySelectorAll('.track.long-press').forEach(t => t.classList.remove('long-press'));
     document.body.classList.remove('menu-open');
     if (menuBackdrop) menuBackdrop.style.display = 'none';
+    document.querySelectorAll('.track.long-press').forEach(t => t.classList.remove('long-press'));
     ctxTrack = null;
     const quickMenu = document.getElementById('quick-playlist-menu');
     if (quickMenu) quickMenu.remove();
@@ -1003,17 +974,13 @@ async function openQuickPlaylistMenu(trackRow, track) {
 
 document.addEventListener('click', e => {
     if (!e.target.closest('#ctx-menu') && !e.target.closest('#quick-playlist-menu')) {
-        document.body.classList.remove('menu-open');
-        document.querySelectorAll('.track.long-press').forEach(t => t.classList.remove('long-press'));
         closeCtxMenu();
-        const quickMenu = document.getElementById('quick-playlist-menu');
-        if (quickMenu) quickMenu.remove();
     }
 });
 
 document.addEventListener('touchstart', e => {
     if (!e.target.closest('#ctx-menu') && !e.target.closest('.track-menu-btn') && !e.target.closest('#quick-playlist-menu')) {
-        hideCtxWithBackdrop();
+        closeCtxMenu();
     }
 }, { passive: true });
 
@@ -1104,14 +1071,6 @@ function openCtxMenu(e, t) {
         ctxMenu.style.top = Math.min(e.clientY, window.innerHeight - 300) + 'px';
         ctxMenu.classList.add('open');
     }
-}
-
-function closeCtxMenu() {
-    if (ctxMenu) ctxMenu.classList.remove('open');
-    document.body.classList.remove('menu-open');
-    if (menuBackdrop) menuBackdrop.style.display = 'none';
-    document.querySelectorAll('.track.long-press').forEach(t => t.classList.remove('long-press'));
-    ctxTrack = null;
 }
 
 const ctxNewPlaylist = document.getElementById('ctx-new-playlist');
@@ -1300,7 +1259,7 @@ function showToast(msg) {
     if (!t) {
         t = document.createElement('div');
         t.id = 'toast';
-        t.style.cssText = 'position:fixed;bottom:calc(var(--player-h) + 8px);left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:8px 16px;border-radius:8px;font-size:13px;z-index:500;transition:opacity .3s';
+        t.style.cssText = 'position:fixed;bottom:calc(var(--player-h) + 16px);left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:8px 16px;border-radius:8px;font-size:13px;z-index:500;transition:opacity .3s;max-width:calc(100vw - 32px)';
         document.body.appendChild(t);
     }
     t.textContent = msg;
@@ -1426,18 +1385,18 @@ if (audio) {
             updatePositionState(true);
         }
     });
+    function syncPlayPause(playing) {
+        if (iconPlay) iconPlay.style.display = playing ? 'none' : 'block';
+        if (iconPause) iconPause.style.display = playing ? 'block' : 'none';
+        if (expIconPlay) expIconPlay.style.display = playing ? 'none' : 'block';
+        if (expIconPause) expIconPause.style.display = playing ? 'block' : 'none';
+    }
     audio.addEventListener('play', () => {
-        if (iconPlay) iconPlay.style.display = 'none';
-        if (iconPause) iconPause.style.display = 'block';
-        if (expIconPlay) expIconPlay.style.display = 'none';
-        if (expIconPause) expIconPause.style.display = 'block';
+        syncPlayPause(true);
         if ('mediaSession' in navigator) { navigator.mediaSession.playbackState = 'playing'; updatePositionState(true); }
     });
     audio.addEventListener('pause', () => {
-        if (iconPlay) iconPlay.style.display = 'block';
-        if (iconPause) iconPause.style.display = 'none';
-        if (expIconPlay) expIconPlay.style.display = 'block';
-        if (expIconPause) expIconPause.style.display = 'none';
+        syncPlayPause(false);
         if ('mediaSession' in navigator) { navigator.mediaSession.playbackState = 'paused'; updatePositionState(true); }
     });
     audio.addEventListener('ended', () => {
@@ -1549,21 +1508,15 @@ const volIcons = {
 };
 
 function applyRepeat() {
-    if (btnRepeat) {
-        btnRepeat.dataset.mode = repeatMode;
-        btnRepeat.innerHTML = repeatIcons[repeatMode];
-        btnRepeat.title = 'Repeat: ' + repeatMode.charAt(0).toUpperCase() + repeatMode.slice(1);
-        btnRepeat.classList.toggle('active', repeatMode !== 'off');
-        btnRepeat.classList.toggle('data-mode-one', repeatMode === 'one');
-        btnRepeat.style.color = repeatMode !== 'off' ? 'var(--accent)' : 'var(--muted)';
-    }
-    if (expRepeat) {
-        expRepeat.dataset.mode = repeatMode;
-        expRepeat.innerHTML = repeatIcons[repeatMode];
-        expRepeat.classList.toggle('active', repeatMode !== 'off');
-        expRepeat.classList.toggle('data-mode-one', repeatMode === 'one');
-        expRepeat.style.color = repeatMode !== 'off' ? 'var(--accent)' : 'var(--muted)';
-    }
+    [btnRepeat, expRepeat].forEach(btn => {
+        if (!btn) return;
+        btn.dataset.mode = repeatMode;
+        btn.innerHTML = repeatIcons[repeatMode];
+        btn.title = 'Repeat: ' + repeatMode.charAt(0).toUpperCase() + repeatMode.slice(1);
+        btn.classList.toggle('active', repeatMode !== 'off');
+        btn.classList.toggle('data-mode-one', repeatMode === 'one');
+        btn.style.color = repeatMode !== 'off' ? 'var(--accent)' : 'var(--muted)';
+    });
 }
 
 applyRepeat();
@@ -1807,131 +1760,74 @@ document.addEventListener('touchcancel', () => {
     swipeTarget = null;
 }, { passive: true });
 
-if (playlistDetail) {
-    let backSwipeStartX = null;
-    let backSwipeStartY = null;
-    let backSwipeDeltaX = 0;
-    let isBackSwiping = false;
+function bindBackSwipe(el, onBack, shouldStart) {
+    if (!el) return;
+    let startX = null, startY = null, deltaX = 0, active = false;
 
-    playlistDetail.addEventListener('touchstart', e => {
+    el.addEventListener('touchstart', e => {
         if (!isMobile()) return;
+        if (shouldStart && !shouldStart()) return;
         if (e.touches[0].clientX > 30) return;
-        backSwipeStartX = e.touches[0].clientX;
-        backSwipeStartY = e.touches[0].clientY;
-        backSwipeDeltaX = 0;
-        isBackSwiping = false;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        deltaX = 0;
+        active = false;
     }, { passive: true });
 
-    playlistDetail.addEventListener('touchmove', e => {
-        if (backSwipeStartX === null) return;
-        backSwipeDeltaX = e.touches[0].clientX - backSwipeStartX;
-        const deltaY = e.touches[0].clientY - backSwipeStartY;
+    el.addEventListener('touchmove', e => {
+        if (startX === null) return;
+        if (shouldStart && !shouldStart()) { startX = null; return; }
+        deltaX = e.touches[0].clientX - startX;
+        const deltaY = e.touches[0].clientY - startY;
 
-        if (!isBackSwiping) {
-            if (Math.abs(deltaY) > 15 && Math.abs(deltaY) > Math.abs(backSwipeDeltaX)) {
-                backSwipeStartX = null;
+        if (!active) {
+            if (Math.abs(deltaY) > 15 && Math.abs(deltaY) > Math.abs(deltaX)) {
+                startX = null;
                 return;
             }
-            if (backSwipeDeltaX > 15) {
-                isBackSwiping = true;
-                playlistDetail.style.transition = 'none';
+            if (deltaX > 15) {
+                active = true;
+                el.style.transition = 'none';
             }
         }
-        if (isBackSwiping && backSwipeDeltaX > 0) {
+        if (active && deltaX > 0) {
             if (e.cancelable) e.preventDefault();
-            playlistDetail.style.transform = `translateX(${backSwipeDeltaX}px)`;
+            el.style.transform = `translateX(${deltaX}px)`;
         }
     }, { passive: false });
 
-    playlistDetail.addEventListener('touchend', () => {
-        if (!isBackSwiping) { backSwipeStartX = null; return; }
-        isBackSwiping = false;
-        playlistDetail.style.transition = 'transform 0.3s ease';
-        if (backSwipeDeltaX > 100) {
-            playlistDetail.style.transform = 'translateX(100%)';
+    el.addEventListener('touchend', () => {
+        if (!active) { startX = null; return; }
+        active = false;
+        el.style.transition = 'transform 0.3s ease';
+        if (deltaX > 100) {
+            el.style.transform = 'translateX(100%)';
             setTimeout(() => {
-                playlistDetail.classList.remove('active');
-                playlistsListView.style.display = '';
-                currentPlaylist = null;
-                playlistDetail.style.transform = '';
-                playlistDetail.style.transition = '';
+                onBack();
+                el.style.transform = '';
+                el.style.transition = '';
             }, 300);
         } else {
-            playlistDetail.style.transform = '';
-            playlistDetail.style.transition = '';
+            el.style.transform = '';
+            el.style.transition = '';
         }
-        backSwipeStartX = null;
+        startX = null;
     }, { passive: true });
 
-    playlistDetail.addEventListener('touchcancel', () => {
-        isBackSwiping = false;
-        backSwipeStartX = null;
-        playlistDetail.style.transition = '';
-        playlistDetail.style.transform = '';
+    el.addEventListener('touchcancel', () => {
+        active = false;
+        startX = null;
+        el.style.transition = '';
+        el.style.transform = '';
     }, { passive: true });
 }
 
-if (trackList) {
-    let backSwipeStartX = null;
-    let backSwipeStartY = null;
-    let backSwipeDeltaX = 0;
-    let isBackSwiping = false;
-
-    trackList.addEventListener('touchstart', e => {
-        if (!isMobile() || !currentDetailView) return;
-        if (e.touches[0].clientX > 30) return;
-        backSwipeStartX = e.touches[0].clientX;
-        backSwipeStartY = e.touches[0].clientY;
-        backSwipeDeltaX = 0;
-        isBackSwiping = false;
-    }, { passive: true });
-
-    trackList.addEventListener('touchmove', e => {
-        if (backSwipeStartX === null || !currentDetailView) return;
-        backSwipeDeltaX = e.touches[0].clientX - backSwipeStartX;
-        const deltaY = e.touches[0].clientY - backSwipeStartY;
-
-        if (!isBackSwiping) {
-            if (Math.abs(deltaY) > 15 && Math.abs(deltaY) > Math.abs(backSwipeDeltaX)) {
-                backSwipeStartX = null;
-                return;
-            }
-            if (backSwipeDeltaX > 15) {
-                isBackSwiping = true;
-                trackList.style.transition = 'none';
-            }
-        }
-        if (isBackSwiping && backSwipeDeltaX > 0) {
-            if (e.cancelable) e.preventDefault();
-            trackList.style.transform = `translateX(${backSwipeDeltaX}px)`;
-        }
-    }, { passive: false });
-
-    trackList.addEventListener('touchend', () => {
-        if (!isBackSwiping) { backSwipeStartX = null; return; }
-        isBackSwiping = false;
-        trackList.style.transition = 'transform 0.3s ease';
-        if (backSwipeDeltaX > 100) {
-            trackList.style.transform = 'translateX(100%)';
-            setTimeout(() => {
-                closeDetailView();
-                trackList.style.transform = '';
-                trackList.style.transition = '';
-            }, 300);
-        } else {
-            trackList.style.transform = '';
-            trackList.style.transition = '';
-        }
-        backSwipeStartX = null;
-    }, { passive: true });
-
-    trackList.addEventListener('touchcancel', () => {
-        isBackSwiping = false;
-        backSwipeStartX = null;
-        trackList.style.transition = '';
-        trackList.style.transform = '';
-    }, { passive: true });
-}
+bindBackSwipe(playlistDetail, () => {
+    playlistDetail.classList.remove('active');
+    playlistsListView.style.display = '';
+    currentPlaylist = null;
+});
+bindBackSwipe(trackList, closeDetailView, () => !!currentDetailView);
 
 function closeQueuePanel() {
     queueOpen = false;
@@ -2611,15 +2507,17 @@ if ('mediaSession' in navigator) {
     });
 }
 
+function escAttr(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
 function openEditMetadataModal(t) {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
         <div class="modal">
             <h3>Edit Metadata</h3>
-            <input id="edit-title" value="${t.title || ''}" placeholder="Title" />
-            <input id="edit-artist" value="${t.artist || ''}" placeholder="Artist" />
-            <input id="edit-album" value="${t.album || ''}" placeholder="Album" />
+            <input id="edit-title" value="${escAttr(t.title)}" placeholder="Title" />
+            <input id="edit-artist" value="${escAttr(t.artist)}" placeholder="Artist" />
+            <input id="edit-album" value="${escAttr(t.album)}" placeholder="Album" />
             <div class="modal-btns">
                 <button class="btn-cancel">Cancel</button>
                 <button class="btn-confirm">Save</button>
@@ -2653,10 +2551,16 @@ function openEditMetadataModal(t) {
 function getDominantColor(img) {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = 1;
-    canvas.height = 1;
-    ctx.drawImage(img, 0, 0, 1, 1);
-    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+    const size = 4;
+    canvas.width = size;
+    canvas.height = size;
+    ctx.drawImage(img, 0, 0, size, size);
+    const data = ctx.getImageData(0, 0, size, size).data;
+    let r = 0, g = 0, b = 0, count = 0;
+    for (let i = 0; i < data.length; i += 4) {
+        r += data[i]; g += data[i + 1]; b += data[i + 2]; count++;
+    }
+    r = Math.round(r / count); g = Math.round(g / count); b = Math.round(b / count);
     const factor = 0.4;
     return `rgb(${Math.round(r * factor)}, ${Math.round(g * factor)}, ${Math.round(b * factor)})`;
 }
@@ -2688,7 +2592,7 @@ async function updateAdaptiveBackground() {
     if (imgEl.complete && imgEl.naturalWidth !== 0) {
         apply();
     } else {
-        imgEl.onload = apply;
+        imgEl.addEventListener('load', apply, { once: true });
     }
 }
 

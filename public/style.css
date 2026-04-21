@@ -77,9 +77,6 @@ textarea {
   --accent: #c8a86b;
   --accent2: #e8c88b;
   --danger: #ea4335;
-  --radius: 12px;
-  --radius-s: 6px;
-  --player-h: 85px;
   --shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
@@ -95,9 +92,6 @@ textarea {
   --accent: #7c5dfa;
   --accent2: #927efb;
   --danger: #e05252;
-  --radius: 12px;
-  --radius-s: 6px;
-  --player-h: 85px;
   --shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
@@ -113,9 +107,6 @@ textarea {
   --accent: #533ab7;
   --accent2: #6b4bc8;
   --danger: #e05252;
-  --radius: 12px;
-  --radius-s: 6px;
-  --player-h: 85px;
   --shadow: 0 4px 16px rgba(83, 58, 183, 0.1);
 }
 
@@ -131,9 +122,6 @@ textarea {
   --accent: #e04080;
   --accent2: #f060a0;
   --danger: #e05252;
-  --radius: 12px;
-  --radius-s: 6px;
-  --player-h: 85px;
   --shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
@@ -258,6 +246,7 @@ body {
 
 #search:focus {
   border-color: var(--accent) !important;
+  -webkit-text-fill-color: var(--text) !important;
 }
 
 #search:-webkit-autofill,
