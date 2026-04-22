@@ -2922,7 +2922,7 @@ button:active,
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  padding: 0 25px;
+  justify-content: center;
 }
 
 .artist-card,
