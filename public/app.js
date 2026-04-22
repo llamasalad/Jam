@@ -2658,7 +2658,7 @@ function renderSyncedLyrics() {
             div.className = 'lyric-line';
             div.textContent = l.text || '\u00b7';
             div.dataset.idx = j;
-            div.onclick = (function (t) { return function () { if (audio) { audio.currentTime = t; updateSyncedLyricsState(true); } }; })(l.time);
+            div.onclick = (function (t) { return function () { if (audio) { seeking = true; audio.currentTime = t - lyricsOffset; } }; })(l.time);
             scroll.appendChild(div);
         }
     }
@@ -2818,6 +2818,7 @@ if ('mediaSession' in navigator) {
         if (audio && audio.duration && d.seekTime !== undefined) {
             try {
                 const seekTime = Math.max(0, Math.min(d.seekTime, audio.duration));
+                seeking = true;
                 if ('fastSeek' in audio && typeof audio.fastSeek === 'function' && d.fastSeek === true) {
                     audio.fastSeek(seekTime);
                 } else {
