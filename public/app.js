@@ -1437,6 +1437,7 @@ function playTrack(t, list) {
 }
 
 function play(t) {
+    seeking = false;
     lyricsOffset = 0;
     updateStatusBar();
     updateLyricsOffsetUI();
@@ -2221,6 +2222,7 @@ document.querySelectorAll('[data-offset-action]').forEach(btn => {
         else if (action === 'reset') {
             lyricsOffset = 0;
             updateLyricsOffsetUI();
+            updateSyncedLyricsState(true);
         }
     });
 });
@@ -2658,7 +2660,7 @@ function renderSyncedLyrics() {
             div.className = 'lyric-line';
             div.textContent = l.text || '\u00b7';
             div.dataset.idx = j;
-            div.onclick = (function (t) { return function () { if (audio) { seeking = true; audio.currentTime = t - lyricsOffset; } }; })(l.time);
+            div.onclick = (function (t) { return function () { if (audio) { seeking = true; audio.currentTime = t - lyricsOffset; updateSyncedLyricsState(true, t - lyricsOffset); } }; })(l.time);
             scroll.appendChild(div);
         }
     }
@@ -2684,7 +2686,7 @@ function renderPlainLyrics() {
 }
 
 let lastExpLyricIdx = -1;
-function updateSyncedLyricsState(force = false) {
+function updateSyncedLyricsState(force = false, atTime = null) {
     if (!audio) return;
     if (!syncedLyrics.length) {
         // Don't overwrite if plain lyrics are loaded
@@ -2703,7 +2705,7 @@ function updateSyncedLyricsState(force = false) {
         }
         return;
     }
-    const t = audio.currentTime + lyricsOffset;
+    const t = (atTime !== null ? atTime : audio.currentTime) + lyricsOffset;
     const idx = syncedLyrics.findIndex((l, i) => { const n = syncedLyrics[i + 1]; return t >= l.time && (!n || t < n.time) });
     if (!force && idx === lastExpLyricIdx) return;
     lastExpLyricIdx = idx;
@@ -2711,15 +2713,23 @@ function updateSyncedLyricsState(force = false) {
     const curText = idx >= 0 ? (syncedLyrics[idx].text || '<span class="loading-dots"></span>') : '<span class="loading-dots"></span>';
     const nextText = idx >= 0 && syncedLyrics[idx + 1] ? (syncedLyrics[idx + 1].text || '·') : '';
 
-    if (expLyricCur) {
+if (expLyricCur) {
         clearTimeout(lyricUpdateTimers.cur);
-        expLyricCur.style.opacity = '0'; expLyricCur.style.transform = 'translateY(6px)';
-        lyricUpdateTimers.cur = setTimeout(() => { expLyricCur.innerHTML = curText; expLyricCur.style.opacity = '1'; expLyricCur.style.transform = 'translateY(0)' }, 120);
+        if (force) {
+            expLyricCur.innerHTML = curText; expLyricCur.style.opacity = '1'; expLyricCur.style.transform = 'translateY(0)';
+        } else {
+            expLyricCur.style.opacity = '0'; expLyricCur.style.transform = 'translateY(6px)';
+            lyricUpdateTimers.cur = setTimeout(() => { expLyricCur.innerHTML = curText; expLyricCur.style.opacity = '1'; expLyricCur.style.transform = 'translateY(0)' }, 120);
+        }
     }
     if (expLyricNext) {
         clearTimeout(lyricUpdateTimers.next);
-        expLyricNext.style.opacity = '0'; expLyricNext.style.transform = 'translateY(6px)';
-        lyricUpdateTimers.next = setTimeout(() => { expLyricNext.textContent = nextText; expLyricNext.style.opacity = '1'; expLyricNext.style.transform = 'translateY(0)' }, 120);
+        if (force) {
+            expLyricNext.textContent = nextText; expLyricNext.style.opacity = '1'; expLyricNext.style.transform = 'translateY(0)';
+        } else {
+            expLyricNext.style.opacity = '0'; expLyricNext.style.transform = 'translateY(6px)';
+            lyricUpdateTimers.next = setTimeout(() => { expLyricNext.textContent = nextText; expLyricNext.style.opacity = '1'; expLyricNext.style.transform = 'translateY(0)' }, 120);
+        }
     }
 
     getLyricScrollEls().forEach(scroll => {
