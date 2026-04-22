@@ -2381,10 +2381,32 @@ async function loadLyrics(t) {
     }
 
     try {
-        // Check for saved lyrics pick first
+        // Check for curated pick first (server-side, shared across users)
+        const cleanTitle = (t.title || '').replace(/^\d{1,3}[\s.\-_]+/, '').trim();
+        const cq = new URLSearchParams({ title: cleanTitle, artist: t.artist || '' });
+        const cr = await fetch(`/api/lyrics/curated?${cq}`, { headers: token ? { 'x-auth-token': token } : {} });
+        if (cr.ok) {
+            const cData = await cr.json();
+            if (cData.exists && cData.lrclibId) {
+                // Fetch the specific curated pick via search
+                const sq = new URLSearchParams({ title: cleanTitle, artist: t.artist || '' });
+                const sr = await fetch(`/api/lyrics/search?${sq}`, { headers: token ? { 'x-auth-token': token } : {} });
+                if (sr.ok) {
+                    const sItems = await sr.json();
+                    if (requestSeq !== lyricsRequestSeq || lyricsTrackId !== t.id) return;
+                    const match = sItems.find(i => i.id === cData.lrclibId);
+                    if (match) {
+                        applyLyricsPick(match);
+                        return;
+                    }
+                }
+                // If curated pick fetch fails, fall through
+            }
+        }
+
+        // Check for saved lyrics pick (localStorage, per-user)
         const savedPick = getSavedLyricsPick(t.id);
         if (savedPick) {
-            const cleanTitle = (t.title || '').replace(/^\d{1,3}[\s.\-_]+/, '').trim();
             const sq = new URLSearchParams({ title: cleanTitle, artist: t.artist || '' });
             const sr = await fetch(`/api/lyrics/search?${sq}`, { headers: token ? { 'x-auth-token': token } : {} });
             if (sr.ok) {
@@ -2399,7 +2421,6 @@ async function loadLyrics(t) {
             // If saved pick not found, fall through to default fetch
         }
 
-        const cleanTitle = (t.title || '').replace(/^\d{1,3}[\s.\-_]+/, '').trim();
         const q = new URLSearchParams({ title: cleanTitle, artist: t.artist || '', album: t.album || '' });
         const r = await fetch(`/api/lyrics?${q}`, { headers: token ? { 'x-auth-token': token } : {} });
 
@@ -2472,6 +2493,23 @@ function saveLyricsPick(trackId, pick) {
     } catch (_) {}
 }
 
+async function saveCuratedPick(artist, title, lrclibId) {
+    try {
+        console.log('[curated] Saving pick:', { artist, title, lrclibId });
+        const q = new URLSearchParams({ artist, title });
+        const r = await fetch(`/api/lyrics/curated?${q}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...(token ? { 'x-auth-token': token } : {}) },
+            body: JSON.stringify({ lrclibId })
+        });
+        console.log('[curated] Response:', r.status, r.ok);
+        return r.ok;
+    } catch (e) {
+        console.error('[curated] Error:', e);
+        return false;
+    }
+}
+
 function applyLyricsPick(item) {
     if (!audio) return;
     const t = tracks.find(tr => tr.id === lyricsTrackId);
@@ -2500,6 +2538,9 @@ function applyLyricsPick(item) {
     }
 
     saveLyricsPick(lyricsTrackId, { id: item.id, trackName: item.trackName, artistName: item.artistName, albumName: item.albumName });
+
+    // Also save to curated KV (shared across users)
+    saveCuratedPick(t.artist || '', t.title || '', item.id);
 }
 
 function closeLyricsPicker() {
