@@ -1510,7 +1510,7 @@ if (audio) {
         }
         console.error('Audio playback error:', audio.error?.message || 'Unknown error');
     });
-    audio.addEventListener('seeked', () => { seeking = false; updatePositionState(true); });
+    audio.addEventListener('seeked', () => { seeking = false; updatePositionState(true); updateSyncedLyricsState(true); });
 }
 
 function setupSeekBar(el) {
@@ -2658,7 +2658,7 @@ function renderSyncedLyrics() {
             div.className = 'lyric-line';
             div.textContent = l.text || '\u00b7';
             div.dataset.idx = j;
-            div.onclick = (function (t) { return function () { if (audio) audio.currentTime = t; }; })(l.time);
+            div.onclick = (function (t) { return function () { if (audio) { audio.currentTime = t; updateSyncedLyricsState(true); } }; })(l.time);
             scroll.appendChild(div);
         }
     }
