@@ -2510,7 +2510,7 @@ async function saveCuratedPick(artist, title, lrclibId) {
     }
 }
 
-function applyLyricsPick(item) {
+function applyLyricsPick(item, manual = false) {
     if (!audio) return;
     const t = tracks.find(tr => tr.id === lyricsTrackId);
     if (!t) return;
@@ -2539,8 +2539,10 @@ function applyLyricsPick(item) {
 
     saveLyricsPick(lyricsTrackId, { id: item.id, trackName: item.trackName, artistName: item.artistName, albumName: item.albumName });
 
-    // Also save to curated KV (shared across users)
-    saveCuratedPick(t.artist || '', t.title || '', item.id);
+    // Only save to curated KV when user manually picks (not when loading from curated)
+    if (manual) {
+        saveCuratedPick(t.artist || '', t.title || '', item.id);
+    }
 }
 
 function closeLyricsPicker() {
@@ -2604,7 +2606,7 @@ async function openLyricsPicker() {
             el.addEventListener('click', () => {
                 const id = parseInt(el.dataset.pickId);
                 const item = items.find(i => i.id === id);
-                if (item) applyLyricsPick(item);
+                if (item) applyLyricsPick(item, true); // manual pick
                 closeLyricsPicker();
             });
         });
