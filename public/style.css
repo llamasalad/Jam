@@ -431,7 +431,6 @@ body.detail-view .group-header {
   padding: 0 !important;
   background: var(--surface) !important;
   cursor: pointer;
-  border-bottom: 1px solid var(--surface);
   position: relative;
   user-select: none;
   -webkit-user-select: none;
@@ -745,8 +744,15 @@ body.detail-view .group-header {
   -webkit-user-select: none;
 }
 
+#theme-wrap {
+  position: relative;
+}
+
 #theme-menu {
-  position: fixed;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
   background: var(--surface2);
   border: 1px solid var(--border2);
   border-radius: 6px;
@@ -2727,7 +2733,6 @@ body.is-dragging {
   }
 
   #expanded-player.desktop-lyrics-open {
-    justify-content: flex-start;
     align-items: center;
     padding-top: 24px;
   }
@@ -2795,7 +2800,6 @@ body.is-dragging {
     align-items: center;
     justify-content: space-between;
     padding: 14px 16px;
-    border-bottom: 1px solid var(--border);
   }
 
   #exp-desktop-lyrics-title-wrap {
@@ -3089,7 +3093,7 @@ button:active,
   height: 100%;
   cursor: pointer;
   z-index: 1;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 100%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
 }
 
 .artist-card span,
@@ -3206,9 +3210,8 @@ button:active,
   }
 
   .sidebar-logo {
-    font-size: 20px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
+    font-size: 50px;
+    font-weight: 500;
     padding: 0 20px 28px;
     color: var(--text);
   }
@@ -3324,9 +3327,13 @@ button:active,
     font-weight: 700;
   }
 
+  .lyrics-timing-btn {
+    background: transparent;
+  }
+
   .track-title {
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 500;
   }
 
   .track-sub {

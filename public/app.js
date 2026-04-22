@@ -492,12 +492,9 @@ function updateStatusBar(overrideColor) {
 
 function showThemeMenu() {
     if (!themeMenu) return;
-    const rect = themeToggle.getBoundingClientRect();
-    const menuWidth = 160;
-    let left = rect.left;
-    if (left + menuWidth > window.innerWidth) left = window.innerWidth - menuWidth - 10;
-    themeMenu.style.left = Math.max(10, left) + 'px';
-    themeMenu.style.top = (rect.bottom + 5) + 'px';
+    // Clear inline styles - CSS handles positioning now
+    themeMenu.style.left = '';
+    themeMenu.style.top = '';
     themeMenu.classList.add('open');
     document.body.classList.add('theme-menu-open');
 }
@@ -634,7 +631,7 @@ function sort() {
 }
 
 function formatLyricsOffsetLabel() {
-    if (Math.abs(lyricsOffset) < 0.001) return 'synced';
+    if (Math.abs(lyricsOffset) < 0.001) return 'default';
     const amount = Math.abs(lyricsOffset).toFixed(1) + 's';
     return lyricsOffset > 0 ? `${amount} early` : `${amount} late`;
 }

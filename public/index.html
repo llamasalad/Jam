@@ -94,24 +94,6 @@
     </div>
   </div>
 
-  <div id="theme-menu">
-    <div class="ctx-label">Theme</div>
-    <div class="ctx-item theme-option" data-theme="default">
-      <div class="theme-preview" style="background:#0d0d0f;color: #c8a86b;">Aurion</div>
-    </div>
-    <div class="ctx-item theme-option" data-theme="purple">
-      <div class="theme-preview" style="background:#0f0f0f;color:#7c5dfa">Obsidian</div>
-    </div>
-    <div class="ctx-item theme-option" data-theme="pink">
-      <div class="theme-preview" style="background:#0f0d0e;color:#e04080">Rosecore</div>
-    </div>
-    <div class="ctx-item theme-option" data-theme="light">
-      <div class="theme-preview" style="background:#fff;color:#c8a86b">Aurielle</div>
-    </div>
-    <div class="ctx-item theme-option" data-theme="purple-light">
-      <div class="theme-preview" style="background:#fff;color:#533ab7">Lavender</div>
-    </div>
-  </div>
   <div id="app">
     <nav id="sidebar">
       <div class="sidebar-logo">Jam!</div>
@@ -178,7 +160,27 @@
         <h1 id="header-title">Jam!</h1>
         <div id="header-top-actions">
           <button id="sort-btn">views</button>
-          <button id="theme-toggle" title="Theme">THEME</button>
+          <div id="theme-wrap">
+            <button id="theme-toggle" title="Theme">THEME</button>
+            <div id="theme-menu">
+              <div class="ctx-label">Theme</div>
+              <div class="ctx-item theme-option" data-theme="default">
+                <div class="theme-preview" style="background:#0d0d0f;color: #c8a86b;">Aurion</div>
+              </div>
+              <div class="ctx-item theme-option" data-theme="purple">
+                <div class="theme-preview" style="background:#0f0f0f;color:#7c5dfa">Obsidian</div>
+              </div>
+              <div class="ctx-item theme-option" data-theme="pink">
+                <div class="theme-preview" style="background:#0f0d0e;color:#e04080">Rosecore</div>
+              </div>
+              <div class="ctx-item theme-option" data-theme="light">
+                <div class="theme-preview" style="background:#fff;color:#c8a86b">Aurielle</div>
+              </div>
+              <div class="ctx-item theme-option" data-theme="purple-light">
+                <div class="theme-preview" style="background:#fff;color:#533ab7">Lavender</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <div id="tabs">
@@ -293,7 +295,7 @@
             <div id="exp-desktop-lyrics-timing" class="lyrics-timing">
               <div class="lyrics-timing-actions">
                 <button class="lyrics-timing-btn" data-offset-action="earlier">earlier</button>
-                <span class="lyrics-offset-display">synced</span>
+                <span class="lyrics-offset-display">default</span>
                 <button class="lyrics-timing-btn" data-offset-action="later">later</button>
                 <button class="lyrics-timing-btn reset" data-offset-action="reset">reset</button>
               </div>
