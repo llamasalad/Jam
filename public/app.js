@@ -2756,6 +2756,13 @@ if (audio) {
         updatePositionState();
         updateSyncedLyricsState();
     });
+
+    // Fallback interval for mobile - timeupdate is throttled heavily on mobile
+    setInterval(() => {
+        if (audio && !audio.paused && syncedLyrics.length) {
+            updateSyncedLyricsState();
+        }
+    }, 100);
 }
 
 let lastPositionUpdateTime = 0;
