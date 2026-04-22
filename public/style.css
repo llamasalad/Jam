@@ -158,8 +158,8 @@ body {
 }
 
 #header h1 {
-  font-size: 17px;
-  font-weight: 500;
+  font-size: 20px;
+  font-weight: 600;
   letter-spacing: 0.02em;
   flex: 1;
 }
@@ -351,6 +351,7 @@ body {
 #view-library.active,
 #view-playlists.active {
   display: block;
+  padding-top: 20px;
 }
 
 #loading,
@@ -2969,7 +2970,8 @@ button:active,
   bottom: 3.5px;
   left: 3.5px;
   color: #fff;
-  font-size: 0.8em;
+  font-size: 0.7em;
+  font-weight: 700;
   z-index: 2;
 }
 
@@ -2992,6 +2994,23 @@ button:active,
 
   #header {
     display: none;
+  }
+
+  body.detail-view #header-top-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+  }
+
+  body.detail-view #header,
+  body.detail-view #library-back {
+    display: flex !important;
+    padding-top: 20px;
+  }
+  
+  body.detail-view #theme-toggle,
+  body.detail-view #sort-btn {
+    display: none !important;
   }
 
   #sidebar-search {
@@ -3170,6 +3189,11 @@ button:active,
   @keyframes sidebar-marquee {
     from { transform: translateX(0); }
     to   { transform: translateX(-50%); }
+  }
+
+  .artist-card span, .album-card span {
+    font-size: 1em;
+    font-weight: 700;
   }
 
   /* Update available button */
