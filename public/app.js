@@ -2384,6 +2384,24 @@ async function loadLyrics(t) {
     }
 
     try {
+        // Check for saved lyrics pick first
+        const savedPick = getSavedLyricsPick(t.id);
+        if (savedPick) {
+            const cleanTitle = (t.title || '').replace(/^\d{1,3}[\s.\-_]+/, '').trim();
+            const sq = new URLSearchParams({ title: cleanTitle, artist: t.artist || '' });
+            const sr = await fetch(`/api/lyrics/search?${sq}`, { headers: token ? { 'x-auth-token': token } : {} });
+            if (sr.ok) {
+                const sItems = await sr.json();
+                if (requestSeq !== lyricsRequestSeq || lyricsTrackId !== t.id) return;
+                const match = sItems.find(i => i.id === savedPick.id);
+                if (match) {
+                    applyLyricsPick(match);
+                    return;
+                }
+            }
+            // If saved pick not found, fall through to default fetch
+        }
+
         const cleanTitle = (t.title || '').replace(/^\d{1,3}[\s.\-_]+/, '').trim();
         const q = new URLSearchParams({ title: cleanTitle, artist: t.artist || '', album: t.album || '' });
         const r = await fetch(`/api/lyrics?${q}`, { headers: token ? { 'x-auth-token': token } : {} });
@@ -2431,6 +2449,153 @@ async function loadLyrics(t) {
         setLyricsMessage("No lyrics found", "");
     }
 }
+
+// ── Lyrics picker (desktop only) ──
+const LYRICS_PICK_KEY = 'lyrics_pick';
+const lyricsPickerBtn = document.getElementById('lyrics-picker-btn');
+const lyricsPickerDropdown = document.getElementById('lyrics-picker-dropdown');
+let lyricsPickerOpen = false;
+
+function getSavedLyricsPick(trackId) {
+    try {
+        const picks = JSON.parse(localStorage.getItem(LYRICS_PICK_KEY) || '{}');
+        return picks[trackId] || null;
+    } catch (_) { return null; }
+}
+
+function saveLyricsPick(trackId, pick) {
+    try {
+        const picks = JSON.parse(localStorage.getItem(LYRICS_PICK_KEY) || '{}');
+        if (pick) {
+            picks[trackId] = pick;
+        } else {
+            delete picks[trackId];
+        }
+        localStorage.setItem(LYRICS_PICK_KEY, JSON.stringify(picks));
+    } catch (_) {}
+}
+
+function applyLyricsPick(item) {
+    if (!audio) return;
+    const t = tracks.find(tr => tr.id === lyricsTrackId);
+    if (!t) return;
+
+    const plTitle = document.getElementById('lyrics-panel-title');
+    const cardTitle = document.getElementById('exp-lyrics-card-title');
+    const desktopTitle = document.getElementById('exp-desktop-lyrics-title');
+
+    if (item.syncedLyrics) {
+        syncedLyrics = parseLRC(item.syncedLyrics);
+        plainLyrics = item.plainLyrics || '';
+        renderSyncedLyrics();
+        updateSyncedLyricsState(true);
+        if (plTitle) plTitle.textContent = 'Lyrics';
+        if (cardTitle) cardTitle.textContent = 'Lyrics';
+        if (desktopTitle) desktopTitle.textContent = 'Lyrics';
+    } else if (item.plainLyrics) {
+        syncedLyrics = [];
+        plainLyrics = item.plainLyrics;
+        renderPlainLyrics();
+        if (expLyricCur) expLyricCur.innerHTML = '<span style="font-size:12px;font-weight:400;color:var(--muted)">No synced lyrics available</span>';
+        if (plTitle) plTitle.textContent = 'Lyrics';
+        if (cardTitle) cardTitle.textContent = 'Lyrics';
+        if (desktopTitle) desktopTitle.textContent = 'Lyrics';
+    }
+
+    saveLyricsPick(lyricsTrackId, { id: item.id, trackName: item.trackName, artistName: item.artistName, albumName: item.albumName });
+}
+
+function closeLyricsPicker() {
+    lyricsPickerOpen = false;
+    if (lyricsPickerBtn) lyricsPickerBtn.classList.remove('open');
+    if (lyricsPickerDropdown) {
+        lyricsPickerDropdown.classList.remove('open');
+        lyricsPickerDropdown.innerHTML = '';
+    }
+}
+
+async function openLyricsPicker() {
+    if (lyricsPickerOpen) { closeLyricsPicker(); return; }
+    lyricsPickerOpen = true;
+    if (lyricsPickerBtn) lyricsPickerBtn.classList.add('open');
+    if (!lyricsPickerDropdown) return;
+
+    lyricsPickerDropdown.innerHTML = '<div class="lyrics-picker-loading">Searching\u2026</div>';
+    lyricsPickerDropdown.classList.add('open');
+
+    const t = tracks.find(tr => tr.id === lyricsTrackId);
+    if (!t) { closeLyricsPicker(); return; }
+
+    try {
+        const cleanTitle = (t.title || '').replace(/^\d{1,3}[\s.\-_]+/, '').trim();
+        const q = new URLSearchParams({ title: cleanTitle, artist: t.artist || '' });
+        const r = await fetch(`/api/lyrics/search?${q}`, { headers: token ? { 'x-auth-token': token } : {} });
+        if (!r.ok) throw new Error('search failed');
+        const items = await r.json();
+
+        if (!lyricsPickerOpen) return; // closed while fetching
+
+        if (!items.length) {
+            lyricsPickerDropdown.innerHTML = '<div class="lyrics-picker-empty">No results found</div>';
+            return;
+        }
+
+        const savedPick = getSavedLyricsPick(lyricsTrackId);
+        lyricsPickerDropdown.innerHTML = items.map(item => {
+            const badges = [];
+            if (item.hasSynced) badges.push('<span class="lyrics-picker-item-badge synced">synced</span>');
+            else if (item.hasPlain) badges.push('<span class="lyrics-picker-item-badge">plain</span>');
+            else badges.push('<span class="lyrics-picker-item-badge">none</span>');
+            if (item.instrumental) badges.push('<span class="lyrics-picker-item-badge">instr.</span>');
+
+            const duration = item.duration ? `${Math.floor(item.duration / 60)}:${String(Math.floor(item.duration % 60)).padStart(2, '0')}` : '';
+            const isSelected = savedPick && savedPick.id === item.id;
+            const name = `${item.trackName || ''} \u2014 ${item.artistName || 'Unknown'}`;
+
+            return `<div class="lyrics-picker-item${isSelected ? ' selected' : ''}" data-pick-id="${item.id}">
+                <div class="lyrics-picker-item-name">${escHtml(name)}</div>
+                <div class="lyrics-picker-item-meta">
+                    ${item.albumName ? `<span>${escHtml(item.albumName)}</span>` : ''}
+                    ${duration ? `<span>${duration}</span>` : ''}
+                    ${badges.join('')}
+                </div>
+            </div>`;
+        }).join('');
+
+        lyricsPickerDropdown.querySelectorAll('.lyrics-picker-item').forEach(el => {
+            el.addEventListener('click', () => {
+                const id = parseInt(el.dataset.pickId);
+                const item = items.find(i => i.id === id);
+                if (item) applyLyricsPick(item);
+                closeLyricsPicker();
+            });
+        });
+    } catch (_) {
+        if (lyricsPickerOpen) {
+            lyricsPickerDropdown.innerHTML = '<div class="lyrics-picker-empty">Search failed</div>';
+        }
+    }
+}
+
+function escHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+
+if (lyricsPickerBtn) {
+    lyricsPickerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openLyricsPicker();
+    });
+}
+
+// Close picker on outside click
+document.addEventListener('click', (e) => {
+    if (lyricsPickerOpen && !lyricsPickerDropdown?.contains(e.target)) {
+        closeLyricsPicker();
+    }
+});
 
 function parseLRC(lrc) {
     return lrc.split('\n').map(function (line) {

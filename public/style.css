@@ -2798,6 +2798,13 @@ body.is-dragging {
     border-bottom: 1px solid var(--border);
   }
 
+  #exp-desktop-lyrics-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    position: relative;
+  }
+
   #exp-desktop-lyrics-title {
     font-size: 11px;
     letter-spacing: .08em;
@@ -2805,10 +2812,117 @@ body.is-dragging {
     text-transform: uppercase;
   }
 
-  #exp-desktop-lyrics-tools {
+  #lyrics-picker-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    line-height: 1;
+    opacity: .6;
+    transition: opacity .15s;
+  }
+
+  #lyrics-picker-btn:hover,
+  #lyrics-picker-btn:focus-visible {
+    opacity: 1;
+  }
+
+  #lyrics-picker-btn.open {
+    opacity: 1;
+  }
+
+  #lyrics-picker-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    min-width: 240px;
+    max-width: 320px;
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0,0,0,.3);
+  }
+
+  #lyrics-picker-dropdown.open {
+    display: block;
+  }
+
+  #lyrics-picker-dropdown::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  #lyrics-picker-dropdown::-webkit-scrollbar-thumb {
+    background: var(--surface3);
+    border-radius: 3px;
+  }
+
+  .lyrics-picker-item {
     display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background .1s;
+  }
+
+  .lyrics-picker-item:last-child {
+    border-bottom: none;
+  }
+
+  .lyrics-picker-item:hover {
+    background: var(--surface3);
+  }
+
+  .lyrics-picker-item.selected {
+    background: var(--surface3);
+  }
+
+  .lyrics-picker-item-name {
+    font-size: 12px;
+    color: var(--fg);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .lyrics-picker-item-meta {
+    font-size: 10px;
+    color: var(--muted);
+    display: flex;
+    gap: 8px;
     align-items: center;
-    gap: 6px;
+  }
+
+  .lyrics-picker-item-badge {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--surface3);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  .lyrics-picker-item-badge.synced {
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
+    color: var(--accent);
+  }
+
+  .lyrics-picker-loading,
+  .lyrics-picker-empty {
+    padding: 16px 12px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
   }
 
   #exp-desktop-lyrics-body {
