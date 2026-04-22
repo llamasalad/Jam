@@ -871,7 +871,7 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
     if (showMenu && !inPlaylist) {
         const menuBtn = document.createElement('button');
         menuBtn.className = 'track-menu-btn';
-        menuBtn.textContent = '\u2026';
+        menuBtn.textContent = '\u22EF';
         menuBtn.title = 'Options';
         menuBtn.onclick = e => { e.stopPropagation(); openCtxMenu(e, t) };
         right.appendChild(menuBtn);
@@ -1176,7 +1176,7 @@ function renderPlaylistDetail(pl) {
     if (!container) return;
     container.innerHTML = '';
     if (!pl.tracks.length) {
-        container.innerHTML = '<div style="padding:32px 16px;text-align:center;color:var(--muted);font-size:14px">No songs yet \u2014 use \u2026 on any track to add</div>';
+        container.innerHTML = '<div style="padding:32px 16px;text-align:center;color:var(--muted);font-size:14px">No songs yet</div>';
         return;
     }
     const isTouchScreen = window.matchMedia("(pointer: coarse)").matches;
@@ -2406,6 +2406,7 @@ async function loadLyrics(t) {
         } else if (d.type === 'plain' && d.lyrics) {
             plainLyrics = d.lyrics;
             renderPlainLyrics();
+            if (expLyricCur) expLyricCur.innerHTML = '<span style="font-size:12px;font-weight:400;color:var(--muted)">No synced lyrics available</span>';
             const titleText = d.source === 'lrclib' ? 'Lyrics' : `Lyrics \u00b7 ${d.source}`;
             if (plTitle) plTitle.textContent = titleText;
             if (cardTitle) cardTitle.textContent = titleText;
@@ -2481,12 +2482,14 @@ let lastExpLyricIdx = -1;
 function updateSyncedLyricsState(force = false) {
     if (!audio) return;
     if (!syncedLyrics.length) {
+        // Don't overwrite if plain lyrics are loaded
+        if (plainLyrics) return;
         // Don't overwrite loading indicator if lyrics are still being fetched
-        const isLoading = expLyricCur && expLyricCur.querySelector('.loading-ring');
+        const isLoading = expLyricCur && expLyricCur.querySelector('.loading-ring, .loading-dots');
         if (expLyricCur && !isLoading) {
             clearTimeout(lyricUpdateTimers.cur);
             expLyricCur.style.opacity = '0';
-            lyricUpdateTimers.cur = setTimeout(() => { expLyricCur.textContent = '—'; expLyricCur.style.opacity = '1' }, 120);
+            lyricUpdateTimers.cur = setTimeout(() => { expLyricCur.innerHTML = '<span class="loading-dots"></span>'; expLyricCur.style.opacity = '1' }, 120);
         }
         if (expLyricNext) {
             clearTimeout(lyricUpdateTimers.next);
@@ -2500,13 +2503,13 @@ function updateSyncedLyricsState(force = false) {
     if (!force && idx === lastExpLyricIdx) return;
     lastExpLyricIdx = idx;
 
-    const curText = idx >= 0 ? (syncedLyrics[idx].text || '·') : '—';
+    const curText = idx >= 0 ? (syncedLyrics[idx].text || '<span class="loading-dots"></span>') : '<span class="loading-dots"></span>';
     const nextText = idx >= 0 && syncedLyrics[idx + 1] ? (syncedLyrics[idx + 1].text || '·') : '';
 
     if (expLyricCur) {
         clearTimeout(lyricUpdateTimers.cur);
         expLyricCur.style.opacity = '0'; expLyricCur.style.transform = 'translateY(6px)';
-        lyricUpdateTimers.cur = setTimeout(() => { expLyricCur.textContent = curText; expLyricCur.style.opacity = '1'; expLyricCur.style.transform = 'translateY(0)' }, 120);
+        lyricUpdateTimers.cur = setTimeout(() => { expLyricCur.innerHTML = curText; expLyricCur.style.opacity = '1'; expLyricCur.style.transform = 'translateY(0)' }, 120);
     }
     if (expLyricNext) {
         clearTimeout(lyricUpdateTimers.next);
@@ -2955,7 +2958,7 @@ function showUpdateUI() {
             t.style.cssText = 'position:fixed;bottom:calc(var(--player-h) + 16px);left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:8px 16px;border-radius:8px;font-size:13px;z-index:500;transition:opacity .3s;max-width:calc(100vw - 32px);cursor:pointer';
             document.body.appendChild(t);
         }
-        t.textContent = 'Update available — tap to refresh ↻';
+        t.textContent = 'tap to update ↻';
         t.style.opacity = '1';
         t.onclick = () => {
             activateUpdate();
