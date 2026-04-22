@@ -2757,12 +2757,16 @@ if (audio) {
         updateSyncedLyricsState();
     });
 
-    // Fallback interval for mobile - timeupdate is throttled heavily on mobile
-    setInterval(() => {
-        if (audio && !audio.paused && syncedLyrics.length) {
-            updateSyncedLyricsState();
+    // Fallback for mobile - timeupdate is throttled heavily on mobile
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+        function lyricsSyncLoop() {
+            if (audio && !audio.paused && syncedLyrics.length) {
+                updateSyncedLyricsState();
+            }
+            requestAnimationFrame(lyricsSyncLoop);
         }
-    }, 100);
+        requestAnimationFrame(lyricsSyncLoop);
+    }
 }
 
 let lastPositionUpdateTime = 0;
