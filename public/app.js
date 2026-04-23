@@ -105,6 +105,8 @@ const timeCur = document.getElementById('time-cur');
 const timeTot = document.getElementById('time-tot');
 const volumeSlider = document.getElementById('volume');
 const volumeIcon = document.getElementById('volume-icon');
+const expVolumeSlider = document.getElementById('exp-volume');
+const expVolumeIcon = document.getElementById('exp-volume-icon');
 const authOverlay = document.getElementById('auth-overlay');
 const authInput = document.getElementById('auth-input');
 const authSubmit = document.getElementById('auth-submit');
@@ -1539,33 +1541,55 @@ function setupSeekBar(el) {
 setupSeekBar(progress);
 setupSeekBar(expProgress);
 
+function setVolume(value) {
+    const v = value / 100;
+    if (audio) audio.volume = Math.pow(v, 3);
+    muted = v === 0;
+    if (v > 0) lastVol = parseInt(value);
+    const iconHtml = v === 0 ? volIcons.muted : v < 0.5 ? volIcons.low : volIcons.high;
+    if (volumeIcon) volumeIcon.innerHTML = iconHtml;
+    if (expVolumeIcon) expVolumeIcon.innerHTML = iconHtml;
+    if (volumeSlider) volumeSlider.value = value;
+    if (expVolumeSlider) expVolumeSlider.value = value;
+    localStorage.setItem('music_vol', value);
+}
+
+function toggleMute() {
+    if (muted) {
+        setVolume(lastVol);
+    } else {
+        lastVol = parseInt(volumeSlider ? volumeSlider.value : expVolumeSlider ? expVolumeSlider.value : '80');
+        setVolume(0);
+        muted = true;
+    }
+}
+
 if (volumeSlider) {
-    volumeSlider.addEventListener('input', () => {
-        const v = volumeSlider.value / 100;
-        if (audio) audio.volume = Math.pow(v, 3);
-        muted = v === 0;
-        if (v > 0) lastVol = parseInt(volumeSlider.value);
-        if (volumeIcon) volumeIcon.innerHTML = v === 0 ? volIcons.muted : v < 0.5 ? volIcons.low : volIcons.high;
-        localStorage.setItem('music_vol', volumeSlider.value);
+    volumeSlider.addEventListener('input', () => setVolume(volumeSlider.value));
+    volumeSlider.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -5 : 5;
+        const newValue = Math.max(0, Math.min(100, parseInt(volumeSlider.value) + delta));
+        setVolume(newValue);
     });
 }
 
 if (volumeIcon) {
-    volumeIcon.addEventListener('click', () => {
-        if (muted) {
-            const sv = lastVol / 100;
-            if (audio) audio.volume = Math.pow(sv, 3);
-            if (volumeSlider) volumeSlider.value = lastVol;
-            muted = false;
-            volumeIcon.innerHTML = sv < 0.5 ? volIcons.low : volIcons.high;
-        } else {
-            lastVol = parseInt(volumeSlider ? volumeSlider.value : '80');
-            if (audio) audio.volume = 0;
-            if (volumeSlider) volumeSlider.value = 0;
-            muted = true;
-            volumeIcon.innerHTML = volIcons.muted;
-        }
+    volumeIcon.addEventListener('click', toggleMute);
+}
+
+if (expVolumeSlider) {
+    expVolumeSlider.addEventListener('input', () => setVolume(expVolumeSlider.value));
+    expVolumeSlider.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -5 : 5;
+        const newValue = Math.max(0, Math.min(100, parseInt(expVolumeSlider.value) + delta));
+        setVolume(newValue);
     });
+}
+
+if (expVolumeIcon) {
+    expVolumeIcon.addEventListener('click', toggleMute);
 }
 
 if (btnPlay) btnPlay.onclick = () => audio && (audio.paused ? audio.play() : audio.pause());
@@ -3032,9 +3056,11 @@ async function init() {
     if (expShuffle) expShuffle.style.color = shuffle ? 'var(--accent)' : 'var(--muted)';
     applyRepeat();
     if (volumeSlider) volumeSlider.value = SAVED_VOL;
+    if (expVolumeSlider) expVolumeSlider.value = SAVED_VOL;
     const sv = SAVED_VOL / 100;
     if (audio) audio.volume = Math.pow(sv, 3);
     if (volumeIcon) volumeIcon.innerHTML = sv === 0 ? volIcons.muted : sv < 0.5 ? volIcons.low : volIcons.high;
+    if (expVolumeIcon) expVolumeIcon.innerHTML = sv === 0 ? volIcons.muted : sv < 0.5 ? volIcons.low : volIcons.high;
 
     await Promise.all([loadTracks(), loadPlaylists()]);
 

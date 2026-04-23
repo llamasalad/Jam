@@ -1101,7 +1101,7 @@ body.detail-view .group-header {
 
 #volume-icon {
   font-size: 14px;
-  color: var(--muted);
+  color: var(--accent);
   width: 18px;
   cursor: pointer;
   display: flex;
@@ -1457,6 +1457,53 @@ body.detail-view .group-header {
   align-items: center;
   justify-content: center;
   gap: 10px;
+}
+
+#exp-volume-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 120px;
+  min-width: 60px;
+  margin-left: 5px;
+}
+
+#exp-volume-row input {
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 2px;
+  background: var(--surface3);
+  outline: none;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+}
+
+#exp-volume-row input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  margin-top: -2px;
+}
+
+#exp-volume-row input::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: none;
+}
+
+#exp-volume-icon {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  margin-top: 2px;
 }
 
 #exp-lyrics-toggle,
@@ -2174,6 +2221,10 @@ body.is-dragging {
   *::-webkit-scrollbar {
     width: 0 !important;
     height: 0 !important;
+    display: none !important;
+  }
+
+  #exp-volume-row {
     display: none !important;
   }
 
