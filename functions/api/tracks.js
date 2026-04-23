@@ -1,5 +1,7 @@
 function read32be(b, o) { return ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]) >>> 0; }
 
+function read24be(b, o) { return ((b[o] << 16) | (b[o + 1] << 8) | b[o + 2]) >>> 0; }
+
 function parseFlacMetadata(bytes) {
   const sig = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
   if (sig !== 'fLaC') return null;
@@ -11,7 +13,7 @@ function parseFlacMetadata(bytes) {
     const header = bytes[offset];
     const isLast = (header & 0x80) !== 0;
     const blockType = header & 0x7f;
-    const blockSize = read32be(bytes, offset + 1);
+    const blockSize = read24be(bytes, offset + 1); // FLAC uses 24-bit block size
 
     if (blockType === 4) { // VORBIS_COMMENT
       const dataStart = offset + 4;
