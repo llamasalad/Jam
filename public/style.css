@@ -1919,7 +1919,7 @@ body.is-resizing #queue-panel {
 
 .lyric-line.active {
   color: var(--text);
-  font-weight: 500;
+  font-weight: 700;
 }
 
 @media (hover: hover) {
@@ -2629,7 +2629,7 @@ body.is-dragging {
 
   #exp-lyrics-card-scroll .lyric-line.active {
     color: var(--accent) !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     font-size: 17px;
   }
 
