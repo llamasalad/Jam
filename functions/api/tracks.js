@@ -33,8 +33,9 @@ function parseFlacMetadata(bytes) {
         commentListOffset += commentLength;
 
         const lower = comment.toLowerCase();
-        if (lower.startsWith('artist=')) artist = comment.slice(7);
-        if (lower.startsWith('album=')) album = comment.slice(6);
+        // Only take first artist/album found (don't overwrite with featured artists)
+        if (lower.startsWith('artist=') && !artist) artist = comment.slice(7);
+        if (lower.startsWith('album=') && !album) album = comment.slice(6);
       }
       return { artist, album };
     }
