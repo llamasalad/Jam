@@ -2,6 +2,8 @@ function read32be(b, o) { return ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] <<
 
 function read24be(b, o) { return ((b[o] << 16) | (b[o + 1] << 8) | b[o + 2]) >>> 0; }
 
+function read32le(b, o) { return (b[o] | (b[o + 1] << 8) | (b[o + 2] << 16) | (b[o + 3] << 24)) >>> 0; }
+
 function parseFlacMetadata(bytes) {
   const sig = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
   if (sig !== 'fLaC') return null;
@@ -13,18 +15,19 @@ function parseFlacMetadata(bytes) {
     const header = bytes[offset];
     const isLast = (header & 0x80) !== 0;
     const blockType = header & 0x7f;
-    const blockSize = read24be(bytes, offset + 1); // FLAC uses 24-bit block size
+    const blockSize = read24be(bytes, offset + 1); // FLAC uses 24-bit big-endian block size
 
     if (blockType === 4) { // VORBIS_COMMENT
       const dataStart = offset + 4;
-      const vendorLength = read32be(bytes, dataStart);
+      // Vorbis comments use little-endian
+      const vendorLength = read32le(bytes, dataStart);
       let commentListOffset = dataStart + 4 + vendorLength;
-      const commentCount = read32be(bytes, commentListOffset);
+      const commentCount = read32le(bytes, commentListOffset);
       commentListOffset += 4;
 
       let artist = null, album = null;
       for (let i = 0; i < commentCount; i++) {
-        const commentLength = read32be(bytes, commentListOffset);
+        const commentLength = read32le(bytes, commentListOffset);
         commentListOffset += 4;
         const comment = new TextDecoder().decode(bytes.slice(commentListOffset, commentListOffset + commentLength));
         commentListOffset += commentLength;
