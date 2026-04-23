@@ -1,5 +1,45 @@
 function read32be(b, o) { return ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]) >>> 0; }
 
+function parseFlacMetadata(bytes) {
+  const sig = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
+  if (sig !== 'fLaC') return null;
+
+  let offset = 4;
+  const maxOffset = Math.min(bytes.length, 65536); // Only check first 64KB
+
+  while (offset < maxOffset) {
+    const header = bytes[offset];
+    const isLast = (header & 0x80) !== 0;
+    const blockType = header & 0x7f;
+    const blockSize = read32be(bytes, offset + 1);
+
+    if (blockType === 4) { // VORBIS_COMMENT
+      const dataStart = offset + 4;
+      const vendorLength = read32be(bytes, dataStart);
+      let commentListOffset = dataStart + 4 + vendorLength;
+      const commentCount = read32be(bytes, commentListOffset);
+      commentListOffset += 4;
+
+      let artist = null, album = null;
+      for (let i = 0; i < commentCount; i++) {
+        const commentLength = read32be(bytes, commentListOffset);
+        commentListOffset += 4;
+        const comment = new TextDecoder().decode(bytes.slice(commentListOffset, commentListOffset + commentLength));
+        commentListOffset += commentLength;
+
+        const lower = comment.toLowerCase();
+        if (lower.startsWith('artist=')) artist = comment.slice(7);
+        if (lower.startsWith('album=')) album = comment.slice(6);
+      }
+      return { artist, album };
+    }
+
+    offset += 4 + blockSize;
+    if (isLast) break;
+  }
+  return null;
+}
+
 function getDuration(bytes) {
   const sig = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
 
@@ -160,7 +200,17 @@ export async function onRequestPost({ request, env }) {
       return new Response(JSON.stringify({ error: "No file provided" }), { status: 400 });
     }
 
-    const key = `Uploads/Unknown/Unknown/${file.name}`;
+    // Parse FLAC metadata for artist/album
+    let artist = "Unknown", album = "Unknown";
+    const arrayBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    const meta = parseFlacMetadata(bytes);
+    if (meta) {
+      if (meta.artist) artist = meta.artist;
+      if (meta.album) album = meta.album;
+    }
+
+    const key = `Uploads/${artist}/${album}/${file.name}`;
     const existing = await env.MUSIC_BUCKET.head(key);
     if (existing) {
       return new Response(JSON.stringify({ error: "File already exists" }), { status: 409 });
