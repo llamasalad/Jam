@@ -331,7 +331,7 @@ body {
 #main {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: calc(var(--player-h) + env(safe-area-inset-bottom, 0px) + 100px);
+  padding-bottom: calc(var(--player-h) + env(safe-area-inset-bottom, 0px) + 20px);
 }
 
 #main::-webkit-scrollbar {
