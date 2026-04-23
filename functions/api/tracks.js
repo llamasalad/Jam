@@ -204,6 +204,7 @@ export async function onRequestPost({ request, env }) {
     let artist = "Unknown", album = "Unknown";
     const arrayBuffer = await file.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
+    const sig = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
     const meta = parseFlacMetadata(bytes);
     if (meta) {
       if (meta.artist) artist = meta.artist;
@@ -220,7 +221,15 @@ export async function onRequestPost({ request, env }) {
       httpMetadata: { contentType: file.type }
     });
 
-    return new Response(JSON.stringify({ success: true, key, parsed: { artist, album, rawMeta: meta } }), {
+    return new Response(JSON.stringify({
+      success: true,
+      key,
+      debug: {
+        signature: sig,
+        fileSize: bytes.length,
+        parsed: { artist, album, rawMeta: meta }
+      }
+    }), {
       headers: { "Content-Type": "application/json" }
     });
   } catch (err) {
