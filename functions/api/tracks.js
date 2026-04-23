@@ -220,7 +220,7 @@ export async function onRequestPost({ request, env }) {
       httpMetadata: { contentType: file.type }
     });
 
-    return new Response(JSON.stringify({ success: true, key }), {
+    return new Response(JSON.stringify({ success: true, key, parsed: { artist, album, rawMeta: meta } }), {
       headers: { "Content-Type": "application/json" }
     });
   } catch (err) {
