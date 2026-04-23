@@ -1510,7 +1510,7 @@ body.detail-view .group-header {
 #exp-queue-btn {
   background: none;
   border: 1px solid var(--border);
-  color: var(--muted);
+  color: var(--accent);
   border-radius: 6px;
   padding: 6px 14px;
   font-size: 12px;
@@ -1582,8 +1582,8 @@ body.detail-view .group-header {
   display: block;
   padding: 4px 12px;
   height: 100%;
-  color: transparent;
-  background: conic-gradient(
+  color: var(--accent);
+  /*background: conic-gradient(
     from 0deg,
     #ff6b6b,
     #4ecdc4,
@@ -1592,17 +1592,17 @@ body.detail-view .group-header {
     #feca57,
     #ff9ff3,
     #ff6b6b
-  );
+  );*/
   background-clip: text;
   -webkit-background-clip: text;
   filter: hue-rotate(0deg);
 }
 
-#exp-adaptive-btn:hover span,
+/*#exp-adaptive-btn:hover span,
 #exp-adaptive-btn:active span,
 #exp-adaptive-btn.active span {
   animation: hue-rotating 2s linear infinite;
-}
+}*/
 
 #exp-adaptive-btn:active {
   transform: scale(0.99);
