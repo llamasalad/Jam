@@ -147,7 +147,7 @@ export async function onRequestGet({ env }) {
     const tracks = await Promise.all(trackObjects.map(async obj => {
       const key = obj.key;
       // Fetch sidecar metadata if it exists
-      let title, artist, album;
+      let title, artist, album, duration;
       try {
         const meta = await env.MUSIC_BUCKET.get(`${key}.meta.json`);
         if (meta) {
@@ -155,6 +155,7 @@ export async function onRequestGet({ env }) {
           title = data.title;
           artist = data.artist;
           album = data.album;
+          duration = data.duration;
         }
       } catch (_) { }
 
@@ -170,14 +171,16 @@ export async function onRequestGet({ env }) {
 
       const id = encodeURIComponent(key).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16));
 
-      let duration = null;
-      try {
-        const partial = await env.MUSIC_BUCKET.get(key, { range: { offset: 0, length: 65536 } });
-        if (partial) {
-          const buf = await partial.arrayBuffer();
-          duration = getDuration(new Uint8Array(buf));
-        }
-      } catch (_) { }
+      // Only fetch from R2 if duration not cached
+      if (duration === null || duration === undefined) {
+        try {
+          const partial = await env.MUSIC_BUCKET.get(key, { range: { offset: 0, length: 65536 } });
+          if (partial) {
+            const buf = await partial.arrayBuffer();
+            duration = getDuration(new Uint8Array(buf));
+          }
+        } catch (_) { }
+      }
 
       return { id, key, title, artist, album, duration };
     }));
@@ -227,13 +230,19 @@ export async function onRequestPost({ request, env }) {
       httpMetadata: { contentType: file.type }
     });
 
+    // Extract and cache duration in sidecar metadata
+    const duration = getDuration(bytes);
+    const metaKey = `${key}.meta.json`;
+    await env.MUSIC_BUCKET.put(metaKey, JSON.stringify({ title: file.name.replace(/\.[^/.]+$/, ''), artist, album, duration }));
+
     return new Response(JSON.stringify({
       success: true,
       key,
       debug: {
         signature: sig,
         fileSize: bytes.length,
-        parsed: { artist, album, rawMeta: meta }
+        parsed: { artist, album, rawMeta: meta },
+        duration
       }
     }), {
       headers: { "Content-Type": "application/json" }
