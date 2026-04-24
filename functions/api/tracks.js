@@ -136,7 +136,7 @@ export async function onRequestGet({ env }) {
   }
 
   try {
-    const listed = await env.MUSIC_BUCKET.list({ limit: 1000 });
+    const listed = await env.MUSIC_BUCKET.list({ limit: 2000, prefix: 'Uploads/' });
     const SUPPORTED = new Set([".mp3", ".flac", ".ogg", ".m4a", ".wav", ".aac", ".opus"]);
 
     const trackObjects = listed.objects.filter(obj => {
