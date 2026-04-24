@@ -81,12 +81,16 @@ function getDuration(bytes) {
   return null;
 }
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ env, request }) {
   if (!env.MUSIC_BUCKET) {
     return new Response(JSON.stringify({ error: "MUSIC_BUCKET binding not found." }), {
       status: 500, headers: { "Content-Type": "application/json" }
     });
   }
+
+  const url = new URL(request.url);
+  const offset = parseInt(url.searchParams.get('offset') || '0');
+  const limit = parseInt(url.searchParams.get('limit') || '50');
 
   try {
     const listed = await env.MUSIC_BUCKET.list({ limit: 1000 });
@@ -97,11 +101,13 @@ export async function onRequestGet({ env }) {
       return SUPPORTED.has(ext);
     });
 
+    const batch = trackObjects.slice(offset, offset + limit);
+
     let updated = 0;
     let skipped = 0;
     let errors = 0;
 
-    for (const obj of trackObjects) {
+    for (const obj of batch) {
       const key = obj.key;
       const metaKey = `${key}.meta.json`;
 
@@ -146,12 +152,19 @@ export async function onRequestGet({ env }) {
       }
     }
 
+    const nextOffset = offset + limit;
+    const hasMore = nextOffset < trackObjects.length;
+
     return new Response(JSON.stringify({
       success: true,
       total: trackObjects.length,
+      processed: batch.length,
+      offset,
       updated,
       skipped,
-      errors
+      errors,
+      hasMore,
+      nextOffset: hasMore ? nextOffset : null
     }), {
       headers: { "Content-Type": "application/json" }
     });
