@@ -18,6 +18,49 @@ export async function onRequestGet({ params, request, env }) {
     });
   }
 
+  // ── Try music/covers/Uploads/{Artist}/{Album}/{filename}.jpg format ─────────
+  const pathParts = id.split('/');
+  if (pathParts.length >= 4 && pathParts[0] === 'Uploads') {
+    const filename = pathParts[pathParts.length - 1].replace(/\.[^/.]+$/, ''); // remove extension
+    const musicCoverKey = `music/covers/${pathParts.slice(1).join('/')}/${filename}.jpg`;
+    const musicCover = await env.MUSIC_BUCKET.get(musicCoverKey);
+    if (musicCover) {
+      // Cache it in the covers/ folder for future fast access
+      await env.MUSIC_BUCKET.put(cacheKey, musicCover.body, {
+        httpMetadata: { contentType: musicCover.httpMetadata?.contentType || "image/jpeg" }
+      });
+      return new Response(musicCover.body, {
+        headers: {
+          "Content-Type": musicCover.httpMetadata?.contentType || "image/jpeg",
+          "Cache-Control": "public, max-age=31536000",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+          "Access-Control-Cache-Max-Age": "31536000",
+        }
+      });
+    }
+
+    // ── Try music/covers/{Artist}/{Album}/{filename}.jpg format ─────────────
+    const artist = pathParts[1];
+    const album = pathParts[2];
+    const altMusicCoverKey = `music/covers/${artist}/${album}/${filename}.jpg`;
+    const altMusicCover = await env.MUSIC_BUCKET.get(altMusicCoverKey);
+    if (altMusicCover) {
+      await env.MUSIC_BUCKET.put(cacheKey, altMusicCover.body, {
+        httpMetadata: { contentType: altMusicCover.httpMetadata?.contentType || "image/jpeg" }
+      });
+      return new Response(altMusicCover.body, {
+        headers: {
+          "Content-Type": altMusicCover.httpMetadata?.contentType || "image/jpeg",
+          "Cache-Control": "public, max-age=31536000",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+          "Access-Control-Cache-Max-Age": "31536000",
+        }
+      });
+    }
+  }
+
   // ── Extract from audio file ───────────────────────────────────────────────
   const object = await env.MUSIC_BUCKET.get(id);
   if (!object) return new Response("Not found", { status: 404 });
