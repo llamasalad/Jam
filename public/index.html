@@ -12,13 +12,10 @@
   <meta name="theme-color" content="#0f0f0f">
 
 </head>
-
 <body>
-
   <div id="drop-zone">
     <div id="drop-zone-text">Drop tracks to upload</div>
   </div>
-
   <div id="auth-overlay" style="display:none">
     <div id="auth-box">
       <h2>Jam!</h2>
@@ -27,9 +24,7 @@
       <p id="auth-error">Incorrect password - try again.</p><button id="auth-submit">Continue</button>
     </div>
   </div>
-
   <div id="menu-backdrop" style="display:none"></div>
-
   <div id="ctx-menu">
     <div class="ctx-label" id="ctx-track-name">Track Name</div>
     <div class="ctx-item" id="ctx-play-next">
@@ -82,7 +77,6 @@
       New Playlist
     </div>
   </div>
-
   <div id="modal-new" class="modal-overlay" style="display:none">
     <div class="modal">
       <h3>New Playlist</h3>
@@ -93,7 +87,6 @@
       </div>
     </div>
   </div>
-
   <div id="app">
     <nav id="sidebar">
       <div class="sidebar-logo">Jam!</div>
@@ -134,11 +127,15 @@
           <li class="sidebar-theme-option" data-theme="default">Aurion</li>
           <li class="sidebar-theme-option" data-theme="purple">Obsidian</li>
           <li class="sidebar-theme-option" data-theme="pink">Rosecore</li>
+          <li class="sidebar-theme-option" data-theme="ember-theme">Ember</li>
+          <li class="sidebar-theme-option" data-theme="glacier-theme">Glacier</li>
+          <li class="sidebar-theme-option" data-theme="void-theme">Void</li>
+          <li class="sidebar-theme-option" data-theme="cherry-theme">Cherry</li>
+          <li class="sidebar-theme-option" data-theme="abyss-theme">Abyss</li>
           <li class="sidebar-theme-option" data-theme="light">Aurielle</li>
           <li class="sidebar-theme-option" data-theme="purple-light">Lavender</li>
         </ul>
       </ul>
-
       <div class="sidebar-item" id="sidebar-update" style="display:none;">
         <span class="sidebar-label" style="color:var(--accent);">Update ↻</span>
         <div class="sidebar-marquee">
@@ -147,9 +144,7 @@
           </div>
         </div>
       </div>
-
       <div class="sidebar-spacer"></div>
-
       <div class="sidebar-search-wrap">
         <input type="text" id="sidebar-search" placeholder="Search..." autocomplete="off" spellcheck="false" />
       </div>
@@ -171,6 +166,21 @@
               </div>
               <div class="ctx-item theme-option" data-theme="pink">
                 <div class="theme-preview" style="background:#0f0d0e;color:#e04080">Rosecore</div>
+              </div>
+              <div class="ctx-item theme-option" data-theme="ember-theme">
+                <div class="theme-preview" style="background:#0d0d0f;color:#e8702a;">Ember</div>
+              </div>
+              <div class="ctx-item theme-option" data-theme="glacier-theme">
+                <div class="theme-preview" style="background:#0d0d0f;color:#4db8cc;">Glacier</div>
+              </div>
+              <div class="ctx-item theme-option" data-theme="void-theme">
+                <div class="theme-preview" style="background:#0d0d0f;color:#3ddc74;">Void</div>
+              </div>
+              <div class="ctx-item theme-option" data-theme="cherry-theme">
+                <div class="theme-preview" style="background:#0d0d0f;color:#c43c5c;">Cherry</div>
+              </div>
+              <div class="ctx-item theme-option" data-theme="abyss-theme">
+                <div class="theme-preview" style="background:#0d0d0f;color:#6366f1;">Abyss</div>
               </div>
               <div class="ctx-item theme-option" data-theme="light">
                 <div class="theme-preview" style="background:#fff;color:#c8a86b">Aurielle</div>
@@ -316,10 +326,12 @@
           </div>
         </div>
         <div id="exp-lyrics-card-controls" class="lyrics-timing mobile" style="display:none">
-          <div class="lyrics-timing-actions"><button class="lyrics-timing-btn"
-              data-offset-action="earlier">earlier</button><span class="lyrics-offset-display">synced</span><button
-              class="lyrics-timing-btn" data-offset-action="later">later</button><button class="lyrics-timing-btn reset"
-              data-offset-action="reset">reset</button></div>
+          <div class="lyrics-timing-actions">
+            <button class="lyrics-timing-btn" data-offset-action="earlier">earlier</button>
+            <span class="lyrics-offset-display">synced</span>
+            <button class="lyrics-timing-btn" data-offset-action="later">later</button>
+            <button class="lyrics-timing-btn reset" data-offset-action="reset">reset</button>
+          </div>
         </div>
         <div id="exp-lyrics-card-scroll"></div>
       </div>
@@ -390,5 +402,4 @@
   <audio id="audio" crossorigin="use-credentials"></audio>
   <script src="/app.js"></script>
 </body>
-
 </html>

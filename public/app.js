@@ -463,11 +463,16 @@ if (sortBtn) {
 
 let currentTheme = localStorage.getItem('music_theme') || 'default';
 function applyTheme() {
-    document.body.classList.remove('light-theme', 'purple-theme', 'pink-theme', 'purple-light-theme');
+    document.body.classList.remove('light-theme', 'purple-theme', 'pink-theme', 'purple-light-theme', 'ember-theme', 'glacier-theme', 'void-theme', 'cherry-theme', 'abyss-theme');
     if (currentTheme === 'light') document.body.classList.add('light-theme');
     else if (currentTheme === 'purple') document.body.classList.add('purple-theme');
     else if (currentTheme === 'pink') document.body.classList.add('pink-theme');
     else if (currentTheme === 'purple-light') document.body.classList.add('purple-light-theme');
+    else if (currentTheme === 'ember-theme') document.body.classList.add('ember-theme');
+    else if (currentTheme === 'glacier-theme') document.body.classList.add('glacier-theme');
+    else if (currentTheme === 'void-theme') document.body.classList.add('void-theme');
+    else if (currentTheme === 'cherry-theme') document.body.classList.add('cherry-theme');
+    else if (currentTheme === 'abyss-theme') document.body.classList.add('abyss-theme');
     updateStatusBar();
     document.querySelectorAll('.theme-option').forEach(option => {
         option.classList.toggle('active', option.dataset.theme === currentTheme);
@@ -488,7 +493,7 @@ function updateStatusBar(overrideColor) {
 
 
 
-    const themeColors = { 'default': '#0d0d0f', 'purple': '#0f0f0f', 'pink': '#0f0d0e', 'light': '#f8f9fa', 'purple-light': '#f0f0ff' };
+    const themeColors = { 'default': '#0d0d0f', 'purple': '#0f0f0f', 'pink': '#0f0d0e', 'light': '#f8f9fa', 'purple-light': '#f0f0ff', 'ember-theme': '#0e0c0b', 'glacier-theme': '#0a0e10', 'void-theme': '#080c09', 'cherry-theme': '#0f0d0e', 'abyss-theme': '#0d0d0f' };
     meta.setAttribute('content', themeColors[currentTheme] || '#0d0d0f');
 }
 
@@ -3171,7 +3176,7 @@ window.addEventListener('pageshow', (e) => {
 });
 
 // Service Worker registration with deferred updates
-const APP_VERSION = '2025.01.21-6'; // Bump this when deploying to verify update worked
+const APP_VERSION = '2026.04.24'; // Bump this when deploying to verify update worked
 let swRegistration = null;
 
 console.log('[App] Version:', APP_VERSION);

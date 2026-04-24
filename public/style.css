@@ -125,6 +125,81 @@ textarea {
   --shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
+.ember-theme {
+  --bg: #0e0c0b; 
+  --surface: #181412; 
+  --surface2: #221c19; 
+  --surface3: #2e2520; 
+  --border: rgba(255, 140, 60, 0.07);
+  --border2: rgba(255, 140, 60, 0.14);
+  --text: var(--accent);
+  --muted: #8a7060; 
+  --accent: #e8702a; 
+  --accent2: #f08040; 
+  --danger: #e05252;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.glacier-theme {
+  --bg: #0a0e10; 
+  --surface: #111920; 
+  --surface2: #182028; 
+  --surface3: #1e2a34; 
+  --border: rgba(77, 184, 204, 0.07);
+  --border2: rgba(77, 184, 204, 0.14);
+  --text: var(--accent);
+  --muted: #607888; 
+  --accent: #4db8cc; 
+  --accent2: #6dd0e0; 
+  --danger: #e05252;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.void-theme {
+  --bg: #080c09; 
+  --surface: #101a11; 
+  --surface2: #162018; 
+  --surface3: #1c2a1e; 
+  --border: rgba(61, 220, 116, 0.07);
+  --border2: rgba(61, 220, 116, 0.14);
+  --text: var(--accent);
+  --muted: #507060; 
+  --accent: #3ddc74; 
+  --accent2: #5eee8e; 
+  --danger: #e05252;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.cherry-theme {
+  --bg: #0d0a0b; 
+  --surface: #1a1012; 
+  --surface2: #221518; 
+  --surface3: #2c1c1f; 
+  --border: rgba(196, 60, 92, 0.07);
+  --border2: rgba(196, 60, 92, 0.15);
+  --text: var(--accent);
+  --muted: #8a5060; 
+  --accent: #c43c5c; 
+  --accent2: #e05070; 
+  --danger: #e05252;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.abyss-theme {
+  --bg: #09090f; 
+  --surface: #10101e; 
+  --surface2: #16162a; 
+  --surface3: #1e1e38; 
+  --border: rgba(99, 102, 241, 0.08);
+  --border2: rgba(99, 102, 241, 0.16);
+  --text: var(--accent);
+  --muted: #606080; 
+  --accent: #6366f1; 
+  --accent2: #818cf8; 
+  --danger: #e05252;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
 html,
 body {
   height: 100%;
@@ -3282,7 +3357,14 @@ button:active,
   }
 
   .sidebar-theme-dropdown.open {
-    max-height: 200px;
+    max-height: 300px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .sidebar-theme-dropdown.open::-webkit-scrollbar {
+    display: none;
   }
 
   .sidebar-theme-option {
