@@ -8,7 +8,7 @@ function getDuration(bytes) {
   // ── FLAC ──────────────────────────────────────────────────────────────────
   if (sig === 'fLaC') {
     let offset = 4;
-    const maxOffset = Math.min(bytes.length, 65536); // Only check first 64KB
+    const maxOffset = Math.min(bytes.length, 262144); // Check first 256KB
 
     while (offset < maxOffset) {
       const blockHeader = bytes[offset];
