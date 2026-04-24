@@ -2797,7 +2797,7 @@ if (audio) {
     });
 
     // Fallback for mobile - timeupdate is throttled heavily on mobile
-    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+    if (window.matchMedia('(max-width: 768px)').matches) {
         function lyricsSyncLoop() {
             if (audio && !audio.paused && syncedLyrics.length) {
                 updateSyncedLyricsState();

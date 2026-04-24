@@ -1082,6 +1082,7 @@ body.detail-view .group-header {
   font-size: 14px;
   font-weight: 500;
   white-space: nowrap;
+  padding-bottom: 3px; 
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--text);
