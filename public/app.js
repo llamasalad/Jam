@@ -1465,6 +1465,13 @@ function play(t) {
     updateAdaptiveBackground();
     startHeartbeat();
     updateMediaSession(t);
+
+    const nextT = queue[qIdx + 1];
+    if (nextT) {
+        const preloader = new Audio();
+        preloader.preload = 'auto';
+        preloader.src = '/api/stream/' + nextT.id;
+    }
 }
 
 function updateExpandedNowPlaying(t) {

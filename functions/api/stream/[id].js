@@ -51,5 +51,18 @@ export async function onRequestGet({ params, request, env }) {
   }
 
   headers["Content-Length"] = String(object.size);
-  return new Response(object.body, { status: 200, headers });
+
+  const cache = caches.default;
+  const cacheKey = new Request(request.url);
+  const cachedRes = await cache.match(cacheKey);
+  if (cachedRes) return cachedRes;
+
+  const response = new Response(object.body, { status: 200, headers });
+
+  // only cache full requests, not range requests
+  if (!rangeHeader) {
+    await cache.put(cacheKey, response.clone());
+  }
+
+  return response;
 }
