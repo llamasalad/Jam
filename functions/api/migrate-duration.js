@@ -179,6 +179,7 @@ export async function onRequestGet({ env, request }) {
 
     return new Response(JSON.stringify({
       success: true,
+      version: "v2",
       total: trackObjects.length,
       processed: batch.length,
       offset,
