@@ -240,7 +240,7 @@ export async function onRequestPost({ request, env }) {
       return new Response(JSON.stringify({ error: "File already exists" }), { status: 409 });
     }
 
-    await env.MUSIC_BUCKET.put(key, file.stream(), {
+    await env.MUSIC_BUCKET.put(key, new Blob([arrayBuffer]), {
       httpMetadata: { contentType: file.type }
     });
 

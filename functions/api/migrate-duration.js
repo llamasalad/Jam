@@ -131,12 +131,14 @@ export async function onRequestGet({ env, request }) {
       try {
         // Check if metadata already has duration
         const existingMeta = await env.MUSIC_BUCKET.get(metaKey);
+        let metaData = {};
         if (existingMeta) {
           const data = await existingMeta.json();
           if (data.duration !== undefined && data.duration !== null) {
             skipped++;
             continue;
           }
+          metaData = data;
         }
 
         // Extract duration
@@ -159,11 +161,6 @@ export async function onRequestGet({ env, request }) {
         }
 
         // Update metadata
-        let metaData = {};
-        if (existingMeta) {
-          metaData = await existingMeta.json();
-        }
-
         metaData.duration = duration;
         await env.MUSIC_BUCKET.put(metaKey, JSON.stringify(metaData));
         updated++;
