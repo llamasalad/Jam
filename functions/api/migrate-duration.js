@@ -170,7 +170,7 @@ export async function onRequestGet({ env, request }) {
       } catch (e) {
         console.error(`Error processing ${key}:`, e);
         errors++;
-        errorTracks.push(key);
+        errorTracks.push({ key, reason: 'exception', error: e.message });
       }
     }
 
