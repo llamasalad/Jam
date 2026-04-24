@@ -150,6 +150,15 @@ export async function onRequestGet({ env }) {
   }
 
   try {
+    const cached = await env.PLAYLISTS.get('_tracks_cache', 'json');
+    if (cached) {
+      return new Response(JSON.stringify(cached), {
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+      });
+    }
+  } catch (_) {}
+
+  try {
     const SUPPORTED = new Set([".mp3", ".flac", ".ogg", ".m4a", ".wav", ".aac", ".opus"]);
 
     // List with multiple prefixes to avoid listing non-music files
@@ -207,9 +216,14 @@ export async function onRequestGet({ env }) {
       return { id, key, title, artist, album, duration };
     }));
 
+    try {
+      await env.PLAYLISTS.put('_tracks_cache', JSON.stringify(tracks), { expirationTtl: 3600 });
+    } catch (_) {}
+
     return new Response(JSON.stringify(tracks), {
       headers: { "Content-Type": "application/json" }
     });
+    
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500, headers: { "Content-Type": "application/json" }

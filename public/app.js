@@ -85,7 +85,7 @@ function setLyricsMessage(msg, curMsg) {
 }
 
 const audio = document.getElementById('audio');
-if (audio) audio.preload = 'metadata';
+if (audio) audio.preload = 'auto';
 const player = document.getElementById('player');
 const trackList = document.getElementById('track-list');
 const loading = document.getElementById('loading');
@@ -3100,6 +3100,7 @@ async function init() {
             loadLyrics(t);
 
             if (audio) {
+                audio.preload = 'auto';
                 audio.src = '/api/stream/' + t.id;
                 audio.addEventListener('loadedmetadata', () => {
                     if (pos > 0 && pos < audio.duration - 5) audio.currentTime = pos;

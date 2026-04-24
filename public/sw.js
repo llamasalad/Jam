@@ -1,4 +1,4 @@
-const CACHE = 'jam-v46';
+const CACHE = 'jam-v47';
 const ASSETS = ['/', '/index.html', '/style.css', '/app.js', '/manifest.json'];
 
 self.addEventListener('install', e => {
@@ -19,6 +19,16 @@ self.addEventListener('message', event => {
 });
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
+  if (url.pathname.startsWith('/api/font/')) {
+    e.respondWith(caches.open(CACHE).then(async cache => {
+      const cached = await cache.match(e.request);
+      if (cached) return cached;
+      const res = await fetch(e.request);
+      if (res.ok) cache.put(e.request, res.clone());
+      return res;
+    }));
+    return;
+  }
   if (url.pathname.startsWith('/api/stream/')) return; // never cache audio
   if (url.pathname.startsWith('/api/cover/')) {
     e.respondWith(caches.open(CACHE).then(async cache => {
