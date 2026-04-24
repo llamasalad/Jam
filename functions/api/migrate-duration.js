@@ -1,21 +1,37 @@
 function read32be(b, o) { return ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]) >>> 0; }
 
+function read24be(b, o) { return ((b[o] << 16) | (b[o + 1] << 8) | b[o + 2]) >>> 0; }
+
 function getDuration(bytes) {
   const sig = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
 
   // ── FLAC ──────────────────────────────────────────────────────────────────
   if (sig === 'fLaC') {
-    const blockType = bytes[4] & 0x7f;
-    if (blockType !== 0) return null; // must be STREAMINFO
-    const off = 8;
-    const sampleRate = (bytes[off + 10] << 12) | (bytes[off + 11] << 4) | (bytes[off + 12] >> 4);
-    const totalSamples =
-      ((bytes[off + 13] & 0x0F) * 0x100000000) +
-      (bytes[off + 14] * 0x1000000) +
-      (bytes[off + 15] * 0x10000) +
-      (bytes[off + 16] * 0x100) +
-      bytes[off + 17];
-    if (sampleRate > 0 && totalSamples > 0) return Math.round(totalSamples / sampleRate);
+    let offset = 4;
+    const maxOffset = Math.min(bytes.length, 65536); // Only check first 64KB
+
+    while (offset < maxOffset) {
+      const blockHeader = bytes[offset];
+      const isLast = (blockHeader & 0x80) !== 0;
+      const blockType = blockHeader & 0x7f;
+      const blockSize = read24be(bytes, offset + 1);
+
+      if (blockType === 0) { // STREAMINFO
+        const off = offset + 4;
+        const sampleRate = (bytes[off + 10] << 12) | (bytes[off + 11] << 4) | (bytes[off + 12] >> 4);
+        const totalSamples =
+          ((bytes[off + 13] & 0x0F) * 0x100000000) +
+          (bytes[off + 14] * 0x1000000) +
+          (bytes[off + 15] * 0x10000) +
+          (bytes[off + 16] * 0x100) +
+          bytes[off + 17];
+        if (sampleRate > 0 && totalSamples > 0) return Math.round(totalSamples / sampleRate);
+        return null;
+      }
+
+      offset += 4 + blockSize;
+      if (isLast) break;
+    }
     return null;
   }
 
@@ -127,16 +143,18 @@ export async function onRequestGet({ env, request }) {
         const partial = await env.MUSIC_BUCKET.get(key, { range: { offset: 0, length: 65536 } });
         if (!partial) {
           errors++;
-          errorTracks.push(key);
+          errorTracks.push({ key, reason: 'file_not_found' });
           continue;
         }
 
         const buf = await partial.arrayBuffer();
-        const duration = getDuration(new Uint8Array(buf));
+        const bytes = new Uint8Array(buf);
+        const sig = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
+        const duration = getDuration(bytes);
 
         if (duration === null) {
           errors++;
-          errorTracks.push(key);
+          errorTracks.push({ key, reason: 'extraction_failed', signature: sig, size: bytes.length });
           continue;
         }
 
