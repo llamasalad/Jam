@@ -106,6 +106,7 @@ export async function onRequestGet({ env, request }) {
     let updated = 0;
     let skipped = 0;
     let errors = 0;
+    const errorTracks = [];
 
     for (const obj of batch) {
       const key = obj.key;
@@ -126,6 +127,7 @@ export async function onRequestGet({ env, request }) {
         const partial = await env.MUSIC_BUCKET.get(key, { range: { offset: 0, length: 65536 } });
         if (!partial) {
           errors++;
+          errorTracks.push(key);
           continue;
         }
 
@@ -134,6 +136,7 @@ export async function onRequestGet({ env, request }) {
 
         if (duration === null) {
           errors++;
+          errorTracks.push(key);
           continue;
         }
 
@@ -149,6 +152,7 @@ export async function onRequestGet({ env, request }) {
       } catch (e) {
         console.error(`Error processing ${key}:`, e);
         errors++;
+        errorTracks.push(key);
       }
     }
 
@@ -163,6 +167,7 @@ export async function onRequestGet({ env, request }) {
       updated,
       skipped,
       errors,
+      errorTracks,
       hasMore,
       nextOffset: hasMore ? nextOffset : null
     }), {
