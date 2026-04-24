@@ -150,10 +150,18 @@ export async function onRequestGet({ env }) {
   }
 
   try {
-    const listed = await env.MUSIC_BUCKET.list({ limit: 2000 });
     const SUPPORTED = new Set([".mp3", ".flac", ".ogg", ".m4a", ".wav", ".aac", ".opus"]);
 
-    const trackObjects = listed.objects.filter(obj => {
+    // List with multiple prefixes to avoid listing non-music files
+    const prefixes = ['', 'uploads/'];
+    const allObjects = [];
+
+    for (const prefix of prefixes) {
+      const listed = await env.MUSIC_BUCKET.list({ limit: 2000, prefix });
+      allObjects.push(...listed.objects);
+    }
+
+    const trackObjects = allObjects.filter(obj => {
       const ext = obj.key.slice(obj.key.lastIndexOf(".")).toLowerCase();
       return SUPPORTED.has(ext);
     });
