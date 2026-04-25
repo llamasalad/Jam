@@ -24,6 +24,16 @@
   font-display: swap;
 }
 
+html {
+  /* Prevent iOS Safari from auto-inflating text in landscape / when it
+     decides a column is narrow. Without this, lyric font-sizes set in
+     the mobile media query render larger than computed and overflow the
+     container. Chrome's mobile emulator does NOT do this auto-inflation,
+     which is why this bug only reproduced on real iPhones. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 *,
 *::before,
 *::after {
@@ -2505,11 +2515,24 @@ body.is-dragging {
     gap: 0;
     align-items: center !important;
     width: 100% !important;
+    /* min-width:0 lets flex children shrink below their intrinsic content
+       size — without it, iOS Safari refuses to wrap a long lyric line and
+       expands the column past the viewport. */
+    min-width: 0 !important;
+    max-width: 100% !important;
     box-sizing: border-box !important;
+  }
+
+  #exp-main-shell {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
   }
 
   #exp-main-left {
     width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
     align-items: center !important;
   }
 
@@ -2542,6 +2565,9 @@ body.is-dragging {
     margin: 4px 0 16px !important;
     justify-content: flex-start !important;
     padding: 4px 0 0 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
     flex-shrink: 0 !important;
   }
 
@@ -2550,6 +2576,10 @@ body.is-dragging {
     display: block;
     text-align: center;
     padding: 0;
+    /* Allow wrapped multi-line lyrics to be fully visible. The inline
+       style sets flex:1 which combined with the wrap's min-height:140px
+       was clipping any line that wrapped beyond 140px. Sizing to content
+       lets the wrap grow naturally. */
     flex: 0 0 auto !important;
     overflow: visible !important;
     transform: none !important;
@@ -2557,12 +2587,19 @@ body.is-dragging {
 
   #exp-lyric-current {
     display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
     font-size: 20px !important;
     font-weight: 600 !important;
     color: var(--text) !important;
     line-height: 1.35 !important;
+    /* Force wrapping even on long words; pre-wrap preserves the
+       LRC line breaks while overflow-wrap:anywhere is the standard
+       replacement for the old non-standard word-break:break-word. */
     white-space: pre-wrap !important;
-    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
     margin-bottom: 8px !important;
     min-height: 1.3em !important;
     opacity: 1 !important;
@@ -2571,11 +2608,15 @@ body.is-dragging {
 
   #exp-lyric-next {
     display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
     font-size: 15px !important;
     color: var(--muted) !important;
     line-height: 1.35 !important;
     white-space: pre-wrap !important;
-    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
     min-height: 1.3em !important;
     opacity: 0.85 !important;
     visibility: visible !important;
