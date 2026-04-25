@@ -1593,16 +1593,9 @@ function setupSeekBar(el) {
         if (timeCur) timeCur.textContent = fmt(v);
         if (expTimeCur) expTimeCur.textContent = fmt(v);
     };
-
     const doSeek = () => {
         seeking = false;
-        if (audio && audio.duration) {
-            const newTime = audio.duration * el.value / 100;
-            audio.currentTime = newTime;
-            lastKnownTime = newTime;
-            lastKnownAt = performance.now();
-            updateSyncedLyricsState(true);
-        }
+        if (audio && audio.duration) audio.currentTime = audio.duration * el.value / 100;
     };
     el.addEventListener('pointerdown', () => { active = true; seeking = true; });
     el.addEventListener('touchstart', () => { active = true; seeking = true; }, { passive: true });
@@ -2782,14 +2775,6 @@ function renderSyncedLyrics() {
             div.onclick = (function (t) { return function () { if (audio) { seeking = true; audio.currentTime = t - lyricsOffset; updateSyncedLyricsState(true, t - lyricsOffset); } }; })(l.time);
             scroll.appendChild(div);
         }
-
-        (function cachePositions() {
-            var positions = [];
-            scroll.querySelectorAll('.lyric-line').forEach(function (line) {
-                positions.push(line.offsetTop);
-            });
-            scroll._lineTops = positions;
-        })();
     }
     applyLyricsFontSize();
 }
@@ -2813,17 +2798,10 @@ function renderPlainLyrics() {
 }
 
 function getLiveTime() {
-    if (seeking && audio && audio.duration) {
-        const activeSlider = (playerExpanded || isMobile()) ? expProgress : progress;
-        return (activeSlider.value / 100) * audio.duration;
-    }
     if (!audio || audio.paused) return audio?.currentTime ?? 0;
-    const diff = (performance.now() - lastKnownAt) / 1000;
-    if (diff > 0.3) {
-        return audio.currentTime;
-    }
-    return lastKnownTime + diff;
+    return lastKnownTime + (performance.now() - lastKnownAt) / 1000;
 }
+
 
 let lastExpLyricIdx = -1;
 function updateSyncedLyricsState(force = false, atTime = null) {
@@ -2881,16 +2859,9 @@ function updateSyncedLyricsState(force = false, atTime = null) {
             const el = scroll.querySelector(`[data-idx="${idx}"]`);
             if (el) {
                 el.classList.add('active');
-                // Use cached positions to avoid layout thrashing
-                const tops = scroll._lineTops;
-                let top = 0;
-                if (tops && tops[idx] !== undefined) {
-                    top = tops[idx] - scroll.clientHeight / 2 + (tops[idx + 1] ? (tops[idx + 1] - tops[idx]) : el.offsetHeight) / 2;
-                } else {
-                    // Fallback if cache missing (first time)
-                    top = el.offsetTop - scroll.clientHeight / 2 + el.offsetHeight / 2;
-                }
-                scroll.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+                const top = el.offsetTop - scroll.clientHeight / 2 + el.offsetHeight / 2;
+                // 'auto' is much more reliable for media sync than 'smooth'
+                scroll.scrollTo({ top: Math.max(0, top), behavior: force ? 'auto' : 'smooth' });
             }
         }
     });
@@ -2916,24 +2887,16 @@ if (audio) {
         updateSyncedLyricsState();
     });
 
-    audio.addEventListener('seeking', () => {
-        lastKnownTime = audio.currentTime;
-        lastKnownAt = performance.now();
-    });
-
-    audio.addEventListener('seeked', () => {
-        lastKnownTime = audio.currentTime;
-        lastKnownAt = performance.now();
-        updateSyncedLyricsState(true);
-    });
-
-    function lyricsSyncLoop() {
-        if (audio && !audio.paused && audio.readyState >= 3 && syncedLyrics.length) {
-            updateSyncedLyricsState();
+    // Fallback for mobile - timeupdate is throttled heavily on mobile
+    if (window.matchMedia('(max-width: 768px)').matches) {
+        function lyricsSyncLoop() {
+            if (audio && !audio.paused && syncedLyrics.length) {
+                updateSyncedLyricsState();
+            }
+            requestAnimationFrame(lyricsSyncLoop);
         }
         requestAnimationFrame(lyricsSyncLoop);
     }
-    requestAnimationFrame(lyricsSyncLoop);
 }
 
 let lastPositionUpdateTime = 0;
