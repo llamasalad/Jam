@@ -2813,7 +2813,9 @@ function renderPlainLyrics() {
 
 function getLiveTime() {
     if (!audio || audio.paused || buffering) return audio?.currentTime ?? 0;
-    return lastKnownTime + (performance.now() - lastKnownAt) / 1000;
+    const extrapolated = lastKnownTime + (performance.now() - lastKnownAt) / 1000;
+    // Clamp: never extrapolate more than 1s ahead to prevent major drift
+    return Math.min(extrapolated, lastKnownTime + 1.0);
 }
 
 
@@ -2910,10 +2912,14 @@ if (audio) {
     if (window.matchMedia('(max-width: 768px)').matches) {
         function lyricsSyncLoop() {
             if (audio && !audio.paused && !seeking && !buffering && syncedLyrics.length) {
-                // Re-anchor from the real audio position every frame to prevent
-                // getLiveTime() extrapolation drift caused by mobile micro-stutters
-                lastKnownTime = audio.currentTime;
-                lastKnownAt = performance.now();
+                const currentTime = audio.currentTime;
+                // Only re-anchor when audio.currentTime has actually updated.
+                // On mobile, the getter can stay stale for 200ms+; in that
+                // gap, getLiveTime() extrapolation gives smoother results.
+                if (currentTime !== lastKnownTime) {
+                    lastKnownTime = currentTime;
+                    lastKnownAt = performance.now();
+                }
                 updateSyncedLyricsState();
             }
             requestAnimationFrame(lyricsSyncLoop);
