@@ -29,7 +29,7 @@ const TOKEN_KEY = 'music_token';
 let token = localStorage.getItem(TOKEN_KEY) || '';
 setTokenCookie(token);
 let tracks = [], filtered = [], queue = [], qIdx = -1, sortMode = 'title';
-let shuffle = localStorage.getItem('music_shuffle') === 'true', seeking = false, buffering = false, muted = false;
+let shuffle = localStorage.getItem('music_shuffle') === 'true', seeking = false, buffering = false, switchingTrack = false, muted = false;
 const SAVED_VOL = parseInt(localStorage.getItem('music_vol') || '80');
 let lastVol = SAVED_VOL;
 let playlists = [], currentPlaylist = null, ctxTrack = null, pendingPlaylistTrack = null;
@@ -1493,6 +1493,7 @@ function play(t) {
     updateStatusBar();
     updateLyricsOffsetUI();
     if (audio) {
+        switchingTrack = true;
         audio.src = '/api/stream/' + t.id;
         audio.play().catch(e => console.error("Playback failed", e));
     }
@@ -1552,6 +1553,7 @@ if (audio) {
         if (expIconPause) expIconPause.style.display = playing ? 'block' : 'none';
     }
     audio.addEventListener('play', () => {
+        switchingTrack = false;
         syncPlayPause(true);
         // Reset extrapolation anchors immediately so getLiveTime() can't return a
         // stale value during the gap before the first 'timeupdate' fires after resume
@@ -1571,8 +1573,8 @@ if (audio) {
         updateSyncedLyricsState(true);
     });
     audio.addEventListener('pause', () => {
-        syncPlayPause(false);
-        if ('mediaSession' in navigator) { navigator.mediaSession.playbackState = 'paused'; updatePositionState(true); }
+        if (!switchingTrack) syncPlayPause(false);
+        if ('mediaSession' in navigator && !switchingTrack) { navigator.mediaSession.playbackState = 'paused'; updatePositionState(true); }
     });
     audio.addEventListener('ended', () => {
         if ('mediaSession' in navigator) {
@@ -2963,12 +2965,8 @@ if ('mediaSession' in navigator) {
     navigator.mediaSession.setActionHandler('nexttrack', () => {
         try { nextTrack(); } catch (e) { console.error('Next track action failed:', e); }
     });
-    navigator.mediaSession.setActionHandler('seekbackward', () => {
-        try { prevTrack(); } catch (e) { console.error('Seek backward action failed:', e); }
-    });
-    navigator.mediaSession.setActionHandler('seekforward', () => {
-        try { nextTrack(); } catch (e) { console.error('Seek forward action failed:', e); }
-    });
+    // Don't register seekbackward/seekforward — iOS shows 10s seek icons
+    // when those are registered, overriding the ⏮/⏭ previoustrack/nexttrack icons.
     navigator.mediaSession.setActionHandler('seekto', null);
 }
 
@@ -3225,12 +3223,21 @@ async function init() {
             if (audio) {
                 audio.preload = 'auto';
                 audio.src = '/api/stream/' + t.id;
-                audio.addEventListener('loadedmetadata', () => {
+
+                let restored = false;
+                const tryRestore = () => {
+                    if (restored) return;
+                    if (!audio.duration || !isFinite(audio.duration)) return;
                     if (pos > 0 && pos < audio.duration - 5) {
+                        restored = true;
                         seeking = true;
                         audio.currentTime = pos;
+                        // Safety: if seeked never fires, clear the flag after 3s
+                        setTimeout(() => { seeking = false; }, 3000);
                     }
-                }, { once: true });
+                };
+                audio.addEventListener('loadedmetadata', tryRestore, { once: true });
+                audio.addEventListener('canplaythrough', tryRestore, { once: true });
             }
         }
     } catch (_) { }
