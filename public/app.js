@@ -731,137 +731,156 @@ function bindTapActivation(el, handler, options = {}) {
 }
 
 function attachSwipeHandlers(container, content, bgElement, handlers) {
-    let startX = null, startY = 0, startTime = 0;
-    let isRowSwiping = false, isRowScrolling = false;
+    const THRESHOLD = 72;
+    const DECIDE_DISTANCE = 14;
+
+    let state = 'idle'; // idle | deciding | swiping | scrolling
+    let originX = 0, originY = 0;
     let deltaX = 0;
-    const ACTION_THRESHOLD = 72;
-    const DEAD_ZONE = 10;
+    let samples = []; // recent touch positions for velocity
+    let animating = false;
 
-    const resetVisual = (triggered, direction) => {
-        if (triggered) {
-            const slideX = direction > 0 ? window.innerWidth : -window.innerWidth;
-            content.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 1, 1)';
-            content.style.transform = `translate3d(${slideX}px, 0, 0)`;
-            setTimeout(() => {
-                content.style.transition = 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)';
-                content.style.transform = 'translate3d(0,0,0)';
-                setTimeout(() => {
-                    bgElement.className = 'track-actions';
-                    bgElement.innerHTML = '';
-                    bgElement.classList.remove('locked');
-                    container.dataset.hapticRight = '';
-                    container.dataset.hapticLeft = '';
-                    container.classList.remove('swiping');
-                }, 360);
-            }, 200);
-        } else {
-            content.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1)';
-            content.style.transform = 'translate3d(0,0,0)';
-            setTimeout(() => {
-                bgElement.className = 'track-actions';
-                bgElement.innerHTML = '';
-                bgElement.classList.remove('locked');
-                container.dataset.hapticRight = '';
-                container.dataset.hapticLeft = '';
-                container.classList.remove('swiping');
-            }, 420);
-        }
-    };
+    function rubberBand(x, limit) {
+        // iOS-style: diminishing returns past limit
+        if (Math.abs(x) <= limit) return x;
+        const sign = x > 0 ? 1 : -1;
+        const over = Math.abs(x) - limit;
+        return sign * (limit + over / (1 + over / (limit * 0.7)));
+    }
 
-    container.addEventListener('touchstart', e => {
-        if (e.target.closest('button') || e.target.closest('.queue-handle')) return;
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-        startTime = Date.now();
-        isRowSwiping = false;
-        isRowScrolling = false;
-        deltaX = 0;
-        content.style.transition = 'none';
+    function velocity() {
+        if (samples.length < 2) return 0;
+        const recent = samples.slice(-4);
+        const dt = recent[recent.length - 1].t - recent[0].t;
+        const dx = recent[recent.length - 1].x - recent[0].x;
+        return dt > 0 ? dx / dt : 0;
+    }
+
+    function showAction(dir) {
+        const h = dir > 0 ? handlers.right : handlers.left;
+        if (!h) return;
+        bgElement.className = `track-actions ${dir > 0 ? 'right' : 'left'}-active`;
+        bgElement.innerHTML = `<div class="action-icon">${h.icon}</div>`;
+    }
+
+    function cleanup() {
         bgElement.className = 'track-actions';
         bgElement.innerHTML = '';
+        bgElement.classList.remove('locked');
+        container.classList.remove('swiping');
+        animating = false;
+    }
+
+    function release(fired, dir) {
+        state = 'idle';
+        animating = true;
+        if (fired) {
+            // Slide off, then return
+            const offX = dir > 0 ? container.offsetWidth : -container.offsetWidth;
+            content.style.transition = 'transform 0.25s cubic-bezier(0.4, 0, 1, 1)';
+            content.style.transform = `translate3d(${offX}px,0,0)`;
+            content.addEventListener('transitionend', function onOff() {
+                content.removeEventListener('transitionend', onOff);
+                content.style.transition = 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)';
+                content.style.transform = 'translate3d(0,0,0)';
+                content.addEventListener('transitionend', function onBack() {
+                    content.removeEventListener('transitionend', onBack);
+                    cleanup();
+                }, { once: true });
+            }, { once: true });
+        } else {
+            // Spring back with slight overshoot
+            content.style.transition = 'transform 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.075)';
+            content.style.transform = 'translate3d(0,0,0)';
+            content.addEventListener('transitionend', function onSnap() {
+                content.removeEventListener('transitionend', onSnap);
+                cleanup();
+            }, { once: true });
+        }
+    }
+
+    container.addEventListener('touchstart', e => {
+        if (animating) return;
+        if (e.target.closest('button, .queue-handle')) return;
+        // Give priority to the global back-swipe if touching the left edge
+        if (e.touches[0].clientX < 30) return;
+
+        originX = e.touches[0].clientX;
+        originY = e.touches[0].clientY;
+        deltaX = 0;
+        samples = [{ x: originX, t: Date.now() }];
+        state = 'deciding';
+        content.style.transition = 'none';
     }, { passive: true });
 
     container.addEventListener('touchmove', e => {
-        if (startX === null || isRowScrolling) return;
-        const currentX = e.touches[0].clientX;
-        const currentY = e.touches[0].clientY;
-        deltaX = currentX - startX;
-        const deltaY = currentY - startY;
+        if (state === 'idle' || state === 'scrolling') return;
+        const x = e.touches[0].clientX;
+        const y = e.touches[0].clientY;
+        deltaX = x - originX;
+        const deltaY = y - originY;
+        const absX = Math.abs(deltaX);
+        const absY = Math.abs(deltaY);
+        samples.push({ x, t: Date.now() });
+        if (samples.length > 6) samples.shift();
 
-        if (!isRowSwiping) {
-            if (Math.abs(deltaY) > 12 && Math.abs(deltaY) > Math.abs(deltaX)) {
-                isRowScrolling = true;
+        if (state === 'deciding') {
+            if (absX < DECIDE_DISTANCE && absY < DECIDE_DISTANCE) return;
+            // Strongly favor scroll: only swipe if horizontal is clearly dominant
+            if (absY >= absX * 0.7) {
+                state = 'scrolling';
                 return;
             }
-            if (Math.abs(deltaX) > DEAD_ZONE) {
-                isRowSwiping = true;
-                container.classList.add('swiping');
-                if (deltaX > 0 && handlers.right) {
-                    bgElement.className = 'track-actions right-active';
-                    bgElement.innerHTML = `<div class="action-icon">${handlers.right.icon}</div>`;
-                } else if (deltaX < 0 && handlers.left) {
-                    bgElement.className = 'track-actions left-active';
-                    bgElement.innerHTML = `<div class="action-icon">${handlers.left.icon}</div>`;
-                }
-            }
+            state = 'swiping';
+            container.classList.add('swiping');
+            showAction(deltaX > 0 ? 1 : -1);
         }
 
-        if (isRowSwiping) {
+        if (state === 'swiping') {
             if (e.cancelable) e.preventDefault();
             e.stopPropagation();
 
             let efX = deltaX;
-            if (efX > 0 && !handlers.right) efX *= 0.12;
-            if (efX < 0 && !handlers.left) efX *= 0.12;
-            if (Math.abs(efX) > ACTION_THRESHOLD) {
-                const over = Math.abs(efX) - ACTION_THRESHOLD;
-                const damped = ACTION_THRESHOLD + over * 0.45 / (1 + over * 0.006);
-                efX = efX > 0 ? damped : -damped;
+            // Strong resistance if no handler in this direction
+            if ((efX > 0 && !handlers.right) || (efX < 0 && !handlers.left)) {
+                efX = rubberBand(efX, 20);
+            } else {
+                efX = rubberBand(efX, THRESHOLD * 2.5);
             }
 
-            content.style.transform = `translate3d(${efX}px, 0, 0)`;
+            content.style.transform = `translate3d(${efX}px,0,0)`;
 
-            if (deltaX > ACTION_THRESHOLD && handlers.right) {
-                bgElement.classList.add('locked');
-                if (!container.dataset.hapticRight) {
+            // Lock state + haptic
+            const pastThreshold = Math.abs(deltaX) > THRESHOLD;
+            const hasHandler = (deltaX > 0 && handlers.right) || (deltaX < 0 && handlers.left);
+            if (pastThreshold && hasHandler) {
+                if (!bgElement.classList.contains('locked')) {
+                    bgElement.classList.add('locked');
                     if (navigator.vibrate) navigator.vibrate(8);
-                    container.dataset.hapticRight = 'true';
-                }
-            } else if (deltaX < -ACTION_THRESHOLD && handlers.left) {
-                bgElement.classList.add('locked');
-                if (!container.dataset.hapticLeft) {
-                    if (navigator.vibrate) navigator.vibrate(8);
-                    container.dataset.hapticLeft = 'true';
                 }
             } else {
                 bgElement.classList.remove('locked');
-                container.dataset.hapticRight = '';
-                container.dataset.hapticLeft = '';
             }
         }
     }, { passive: false });
 
     container.addEventListener('touchend', e => {
-        if (startX === null) return;
-        const dur = Date.now() - startTime;
-        const vel = Math.abs(deltaX) / Math.max(dur, 1);
-        startX = null;
-        if (!isRowSwiping) {
-            container.classList.remove('swiping');
+        if (state !== 'swiping') {
+            if (state === 'deciding') state = 'idle';
             return;
         }
         e.stopPropagation();
-        const triggered = Math.abs(deltaX) >= ACTION_THRESHOLD || vel > 0.4;
-        const direction = deltaX > 0 ? 1 : -1;
-        if (triggered && deltaX > 0 && handlers.right) handlers.right.action();
-        else if (triggered && deltaX < 0 && handlers.left) handlers.left.action();
-        resetVisual(triggered && ((direction > 0 && handlers.right) || (direction < 0 && handlers.left)), direction);
+        const vel = velocity(); // px/ms
+        const dir = deltaX > 0 ? 1 : -1;
+        const handler = dir > 0 ? handlers.right : handlers.left;
+        const fired = handler && (Math.abs(deltaX) >= THRESHOLD || Math.abs(vel) > 0.5);
+        if (fired) handler.action();
+        release(fired, dir);
     });
 
     container.addEventListener('touchcancel', () => {
-        if (startX === null) return;
-        startX = null;
-        resetVisual(false, 0);
+        if (state === 'swiping') release(false, 0);
+        state = 'idle';
     });
 }
 
@@ -1919,62 +1938,86 @@ document.addEventListener('touchcancel', () => {
 function bindBackSwipe(el, onBack, shouldStart) {
     if (!el) return;
     let startX = null, startY = null, deltaX = 0, active = false;
+    let samples = [];
+
+    function velocity() {
+        if (samples.length < 2) return 0;
+        const recent = samples.slice(-4);
+        const dt = recent[recent.length - 1].t - recent[0].t;
+        const dx = recent[recent.length - 1].x - recent[0].x;
+        return dt > 0 ? dx / dt : 0;
+    }
 
     el.addEventListener('touchstart', e => {
         if (!isMobile()) return;
         if (shouldStart && !shouldStart()) return;
-        if (e.touches[0].clientX > 30) return;
+        if (e.touches[0].clientX > 30) return; // Edge swipe only
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
         deltaX = 0;
         active = false;
+        samples = [{ x: startX, t: Date.now() }];
     }, { passive: true });
 
     el.addEventListener('touchmove', e => {
         if (startX === null) return;
         if (shouldStart && !shouldStart()) { startX = null; return; }
-        deltaX = e.touches[0].clientX - startX;
-        const deltaY = e.touches[0].clientY - startY;
+        const currentX = e.touches[0].clientX;
+        const currentY = e.touches[0].clientY;
+        deltaX = currentX - startX;
+        const deltaY = currentY - startY;
+
+        samples.push({ x: currentX, t: Date.now() });
+        if (samples.length > 6) samples.shift();
 
         if (!active) {
             if (Math.abs(deltaY) > 15 && Math.abs(deltaY) > Math.abs(deltaX)) {
                 startX = null;
                 return;
             }
-            if (deltaX > 15) {
+            if (deltaX > 10) {
                 active = true;
                 el.style.transition = 'none';
             }
         }
         if (active && deltaX > 0) {
             if (e.cancelable) e.preventDefault();
-            el.style.transform = `translateX(${deltaX}px)`;
+            el.style.transform = `translate3d(${deltaX}px,0,0)`;
         }
     }, { passive: false });
 
     el.addEventListener('touchend', () => {
         if (!active) { startX = null; return; }
         active = false;
-        el.style.transition = 'transform 0.3s ease';
-        if (deltaX > 100) {
-            el.style.transform = 'translateX(100%)';
+        const vel = velocity();
+        // Trigger if pulled more than 90px OR fast flick > 0.4px/ms
+        if (deltaX > 90 || vel > 0.4) {
+            el.style.transition = 'transform 0.25s cubic-bezier(0.4, 0, 1, 1)';
+            el.style.transform = 'translate3d(100vw,0,0)';
             setTimeout(() => {
                 onBack();
                 el.style.transform = '';
                 el.style.transition = '';
-            }, 300);
+            }, 260);
         } else {
-            el.style.transform = '';
-            el.style.transition = '';
+            el.style.transition = 'transform 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.075)';
+            el.style.transform = 'translate3d(0,0,0)';
+            setTimeout(() => {
+                el.style.transition = '';
+                el.style.transform = '';
+            }, 400);
         }
         startX = null;
     }, { passive: true });
 
     el.addEventListener('touchcancel', () => {
+        if (active) {
+            el.style.transition = 'transform 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.075)';
+            el.style.transform = 'translate3d(0,0,0)';
+            setTimeout(() => { el.style.transform = ''; el.style.transition = ''; }, 400);
+        }
         active = false;
         startX = null;
-        el.style.transition = '';
-        el.style.transform = '';
     }, { passive: true });
 }
 

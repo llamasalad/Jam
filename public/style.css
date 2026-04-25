@@ -204,7 +204,7 @@ body {
   color: var(--text);
   font-family: 'SF Pro Display', -apple-system, sans-serif;
   overscroll-behavior: none;
-  overflow-x: hidden;
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
