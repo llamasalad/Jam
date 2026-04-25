@@ -142,21 +142,26 @@ function getDuration(bytes) {
   return null;
 }
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ request, env }) {
   if (!env.MUSIC_BUCKET) {
     return new Response(JSON.stringify({ error: "MUSIC_BUCKET binding not found." }), {
       status: 500, headers: { "Content-Type": "application/json" }
     });
   }
 
-  try {
-    const cached = await env.PLAYLISTS.get('_tracks_cache', 'json');
-    if (cached) {
-      return new Response(JSON.stringify(cached), {
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-      });
-    }
-  } catch (_) { }
+  const url = new URL(request.url);
+  const refresh = url.searchParams.has('refresh');
+
+  if (!refresh) {
+    try {
+      const cached = await env.PLAYLISTS.get('_tracks_cache', 'json');
+      if (cached) {
+        return new Response(JSON.stringify(cached), {
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+        });
+      }
+    } catch (_) { }
+  }
 
   try {
     const SUPPORTED = new Set([".mp3", ".flac", ".ogg", ".m4a", ".wav", ".aac", ".opus"]);
