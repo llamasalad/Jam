@@ -34,8 +34,6 @@ const SAVED_VOL = parseInt(localStorage.getItem('music_vol') || '80');
 let lastVol = SAVED_VOL;
 let playlists = [], currentPlaylist = null, ctxTrack = null, pendingPlaylistTrack = null;
 let queueOpen = false, lyricsTrackId = null, lyricsOpen = false;
-const IS_MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-const MOBILE_LATENCY = 0.18; // Seconds to compensate for mobile audio buffer lag
 let isSelecting = false;
 let toggleMode = true;
 let lastSavedSec = -1;
@@ -1568,12 +1566,7 @@ if (audio) {
         }
         console.error('Audio playback error:', audio.error?.message || 'Unknown error');
     });
-    audio.addEventListener('seeked', () => {
-        updatePositionState(true);
-        updateSyncedLyricsState(true);
-        // Safety delay to let the mobile audio clock settle
-        setTimeout(() => { seeking = false; }, 80);
-    });
+    audio.addEventListener('seeked', () => { seeking = false; updatePositionState(true); updateSyncedLyricsState(true); });
 }
 
 function setupSeekBar(el) {
@@ -2809,8 +2802,7 @@ function updateSyncedLyricsState(force = false, atTime = null) {
         }
         return;
     }
-    let t = (atTime !== null ? atTime : audio.currentTime) + lyricsOffset;
-    if (IS_MOBILE && atTime === null) t -= MOBILE_LATENCY;
+    const t = (atTime !== null ? atTime : audio.currentTime) + lyricsOffset;
     const idx = syncedLyrics.findIndex((l, i) => { const n = syncedLyrics[i + 1]; return t >= l.time && (!n || t < n.time) });
     if (!force && idx === lastExpLyricIdx) return;
     lastExpLyricIdx = idx;
@@ -2867,15 +2859,15 @@ if (audio) {
             if (expProgress) expProgress.value = pct;
             if (timeCur) timeCur.textContent = fmt(audio.currentTime);
             if (expTimeCur) expTimeCur.textContent = fmt(audio.currentTime);
-            updatePositionState();
-            updateSyncedLyricsState();
         }
+        updatePositionState();
+        updateSyncedLyricsState();
     });
 
-    // Fallback for mobile/throttled environments
-    if (IS_MOBILE || window.matchMedia('(max-width: 768px)').matches) {
+    // Fallback for mobile - timeupdate is throttled heavily on mobile
+    if (window.matchMedia('(max-width: 768px)').matches) {
         function lyricsSyncLoop() {
-            if (audio && !audio.paused && !seeking && syncedLyrics.length) {
+            if (audio && !audio.paused && syncedLyrics.length) {
                 updateSyncedLyricsState();
             }
             requestAnimationFrame(lyricsSyncLoop);
