@@ -2859,15 +2859,15 @@ if (audio) {
             if (expProgress) expProgress.value = pct;
             if (timeCur) timeCur.textContent = fmt(audio.currentTime);
             if (expTimeCur) expTimeCur.textContent = fmt(audio.currentTime);
+            updatePositionState();
+            updateSyncedLyricsState();
         }
-        updatePositionState();
-        updateSyncedLyricsState();
     });
 
     // Fallback for mobile - timeupdate is throttled heavily on mobile
     if (window.matchMedia('(max-width: 768px)').matches) {
         function lyricsSyncLoop() {
-            if (audio && !audio.paused && syncedLyrics.length) {
+            if (audio && !audio.paused && !seeking && syncedLyrics.length) {
                 updateSyncedLyricsState();
             }
             requestAnimationFrame(lyricsSyncLoop);
