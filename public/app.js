@@ -957,9 +957,10 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
         } else {
             rowHandlers.right = {
                 action: () => {
-                    queue.push(t);
-                    showToast(`Added "${t.title}" to queue`);
+                    queue.splice(qIdx + 1, 0, t);
+                    showToast(`Added "${t.title}" to play next`);
                     saveQueueState();
+                    if (queueOpen) renderQueue();
                 },
                 icon: SWIPE_ICONS.queue
             };
@@ -1095,6 +1096,7 @@ function openCtxMenu(e, t) {
         ctxPlayNext.onclick = () => {
             queue.splice(qIdx + 1, 0, ...targetTracks);
             showToast(`Playing ${targetTracks.length} track(s) next`);
+            saveQueueState();
             if (queueOpen) renderQueue();
             closeCtxMenu();
         };
@@ -1103,8 +1105,9 @@ function openCtxMenu(e, t) {
     const ctxAddQueue = document.getElementById('ctx-add-queue');
     if (ctxAddQueue) {
         ctxAddQueue.onclick = () => {
-            queue.push(...targetTracks);
-            showToast(`Added ${targetTracks.length} track(s) to queue`);
+            queue.splice(qIdx + 1, 0, ...targetTracks);
+            showToast(`Added ${targetTracks.length} track(s) to play next`);
+            saveQueueState();
             if (queueOpen) renderQueue();
             closeCtxMenu();
         };
