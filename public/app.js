@@ -1516,6 +1516,9 @@ function play(t) {
         preloader.preload = 'auto';
         preloader.src = '/api/stream/' + nextT.id;
     }
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'playing';
+    }
 }
 
 function updateExpandedNowPlaying(t) {
@@ -1590,14 +1593,16 @@ function setupSeekBar(el) {
         if (timeCur) timeCur.textContent = fmt(v);
         if (expTimeCur) expTimeCur.textContent = fmt(v);
     };
-    el.addEventListener('pointerdown', () => { active = true; seeking = true; });
-    el.addEventListener('input', syncDisplay);
-    el.addEventListener('pointerup', () => {
-        if (!active) return;
-        active = false;
+    const doSeek = () => {
         seeking = false;
         if (audio && audio.duration) audio.currentTime = audio.duration * el.value / 100;
-    });
+    };
+    el.addEventListener('pointerdown', () => { active = true; seeking = true; });
+    el.addEventListener('touchstart', () => { active = true; seeking = true; }, { passive: true });
+    el.addEventListener('input', syncDisplay);
+    el.addEventListener('pointerup', () => { if (!active) return; active = false; doSeek(); });
+    el.addEventListener('touchend', () => { if (!active) return; active = false; doSeek(); }, { passive: true });
+    el.addEventListener('change', doSeek);
     el.addEventListener('pointercancel', () => { active = false; seeking = false; });
 }
 
@@ -2935,24 +2940,9 @@ if ('mediaSession' in navigator) {
     navigator.mediaSession.setActionHandler('nexttrack', () => {
         try { nextTrack(); } catch (e) { console.error('Next track action failed:', e); }
     });
-    navigator.mediaSession.setActionHandler('seekbackward', () => prevTrack());
-
-    navigator.mediaSession.setActionHandler('seekforward', () => nextTrack());
-
-    navigator.mediaSession.setActionHandler('seekto', (d) => {
-        if (audio && audio.duration && d.seekTime !== undefined) {
-            try {
-                const seekTime = Math.max(0, Math.min(d.seekTime, audio.duration));
-                seeking = true;
-                if ('fastSeek' in audio && typeof audio.fastSeek === 'function' && d.fastSeek === true) {
-                    audio.fastSeek(seekTime);
-                } else {
-                    audio.currentTime = seekTime;
-                }
-                updatePositionState(true);
-            } catch (e) { console.error('Seek to failed:', e); }
-        }
-    });
+    navigator.mediaSession.setActionHandler('seekbackward', null);
+    navigator.mediaSession.setActionHandler('seekforward', null);
+    navigator.mediaSession.setActionHandler('seekto', null);
 }
 
 function escAttr(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
