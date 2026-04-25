@@ -204,6 +204,7 @@ body {
   color: var(--text);
   font-family: 'SF Pro Display', -apple-system, sans-serif;
   overscroll-behavior: none;
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -2288,6 +2289,10 @@ body.is-dragging {
 
   *::-webkit-scrollbar {
     width: 6px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    border: 1px solid transparent;
   }
 
   * {

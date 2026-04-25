@@ -240,16 +240,16 @@ function switchTab(name) {
 
     if (viewLibrary) viewLibrary.classList.toggle('active', name === 'library');
     if (viewPlaylists) viewPlaylists.classList.toggle('active', name === 'playlists');
-    
+
     if (sortBtn) sortBtn.style.display = name === 'library' ? '' : 'none';
     if (themeToggle) themeToggle.style.display = '';
 
-    closeDetailView(); 
-    
+    closeDetailView();
+
     currentPlaylist = null;
     if (playlistDetail) playlistDetail.classList.remove('active');
     if (playlistsListView) playlistsListView.style.display = '';
-    
+
     if (name === 'playlists') loadPlaylists();
 }
 
@@ -427,9 +427,9 @@ function closeDetailView() {
     const artistsSection = document.getElementById('artists-section');
     const albumsSection = document.getElementById('albums-section');
     const headerTitle = document.getElementById('header-title');
-    
+
     if (headerTitle) headerTitle.textContent = 'Jam!';
-    
+
     if (sortMode === 'artist') {
         if (libraryCards) libraryCards.classList.add('show');
         if (artistsSection) artistsSection.style.display = 'block';
@@ -442,7 +442,7 @@ function closeDetailView() {
         if (libraryCards) libraryCards.classList.remove('show');
         if (trackList) trackList.style.display = 'block';
     }
-    
+
     searchEl.value = '';
     filtered = [...tracks];
     sort();
@@ -607,12 +607,12 @@ function applyFilter() {
 
 function sort() {
     filtered.sort((a, b) => { const ka = (a[sortMode] || '').toLowerCase(), kb = (b[sortMode] || '').toLowerCase(); return ka < kb ? -1 : ka > kb ? 1 : 0 });
-    
+
     const libraryCards = document.getElementById('library-cards');
     const trackList = document.getElementById('track-list');
     const artistsSection = document.getElementById('artists-section');
     const albumsSection = document.getElementById('albums-section');
-    
+
     if (libraryCards) {
         if (sortMode === 'title') {
             libraryCards.classList.remove('show');
@@ -631,7 +631,7 @@ function sort() {
             if (trackList) trackList.style.display = 'none';
         }
     }
-    
+
     if (sortMode === 'title') {
         renderList();
     }
@@ -734,19 +734,38 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
     let startX = null, startY = 0, startTime = 0;
     let isRowSwiping = false, isRowScrolling = false;
     let deltaX = 0;
-    const ACTION_THRESHOLD = 80;
+    const ACTION_THRESHOLD = 72;
+    const DEAD_ZONE = 10;
 
-    const resetVisual = () => {
-        content.style.transition = 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)';
-        content.style.transform = 'translate3d(0,0,0)';
-        setTimeout(() => {
-            bgElement.className = 'track-actions';
-            bgElement.innerHTML = '';
-            bgElement.classList.remove('locked');
-            container.dataset.hapticRight = '';
-            container.dataset.hapticLeft = '';
-            container.classList.remove('swiping');
-        }, 260);
+    const resetVisual = (triggered, direction) => {
+        if (triggered) {
+            const slideX = direction > 0 ? window.innerWidth : -window.innerWidth;
+            content.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 1, 1)';
+            content.style.transform = `translate3d(${slideX}px, 0, 0)`;
+            setTimeout(() => {
+                content.style.transition = 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)';
+                content.style.transform = 'translate3d(0,0,0)';
+                setTimeout(() => {
+                    bgElement.className = 'track-actions';
+                    bgElement.innerHTML = '';
+                    bgElement.classList.remove('locked');
+                    container.dataset.hapticRight = '';
+                    container.dataset.hapticLeft = '';
+                    container.classList.remove('swiping');
+                }, 360);
+            }, 200);
+        } else {
+            content.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1)';
+            content.style.transform = 'translate3d(0,0,0)';
+            setTimeout(() => {
+                bgElement.className = 'track-actions';
+                bgElement.innerHTML = '';
+                bgElement.classList.remove('locked');
+                container.dataset.hapticRight = '';
+                container.dataset.hapticLeft = '';
+                container.classList.remove('swiping');
+            }, 420);
+        }
     };
 
     container.addEventListener('touchstart', e => {
@@ -774,7 +793,7 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
                 isRowScrolling = true;
                 return;
             }
-            if (Math.abs(deltaX) > 15) {
+            if (Math.abs(deltaX) > DEAD_ZONE) {
                 isRowSwiping = true;
                 container.classList.add('swiping');
                 if (deltaX > 0 && handlers.right) {
@@ -792,11 +811,12 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
             e.stopPropagation();
 
             let efX = deltaX;
-            if (efX > 0 && !handlers.right) efX *= 0.15;
-            if (efX < 0 && !handlers.left) efX *= 0.15;
+            if (efX > 0 && !handlers.right) efX *= 0.12;
+            if (efX < 0 && !handlers.left) efX *= 0.12;
             if (Math.abs(efX) > ACTION_THRESHOLD) {
-                const lim = ACTION_THRESHOLD;
-                efX = efX > 0 ? lim + (efX - lim) * 0.25 : -lim + (efX + lim) * 0.25;
+                const over = Math.abs(efX) - ACTION_THRESHOLD;
+                const damped = ACTION_THRESHOLD + over * 0.45 / (1 + over * 0.006);
+                efX = efX > 0 ? damped : -damped;
             }
 
             content.style.transform = `translate3d(${efX}px, 0, 0)`;
@@ -831,16 +851,17 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
             return;
         }
         e.stopPropagation();
-        const past = Math.abs(deltaX) >= ACTION_THRESHOLD || vel > 0.45;
-        if (past && deltaX > 0 && handlers.right) handlers.right.action();
-        else if (past && deltaX < 0 && handlers.left) handlers.left.action();
-        resetVisual();
+        const triggered = Math.abs(deltaX) >= ACTION_THRESHOLD || vel > 0.4;
+        const direction = deltaX > 0 ? 1 : -1;
+        if (triggered && deltaX > 0 && handlers.right) handlers.right.action();
+        else if (triggered && deltaX < 0 && handlers.left) handlers.left.action();
+        resetVisual(triggered && ((direction > 0 && handlers.right) || (direction < 0 && handlers.left)), direction);
     });
 
     container.addEventListener('touchcancel', () => {
         if (startX === null) return;
         startX = null;
-        resetVisual();
+        resetVisual(false, 0);
     });
 }
 
@@ -1395,7 +1416,7 @@ async function loadArtistImage(name, imgEl) {
             imgEl.src = d.picture;
             imgEl.style.visibility = 'visible';
         }
-    } catch (_) {}
+    } catch (_) { }
 }
 
 function setCover(el, url) {
@@ -2528,7 +2549,7 @@ function saveLyricsPick(trackId, pick) {
             delete picks[trackId];
         }
         localStorage.setItem(LYRICS_PICK_KEY, JSON.stringify(picks));
-    } catch (_) {}
+    } catch (_) { }
 }
 
 async function saveCuratedPick(artist, title, lrclibId) {
@@ -2749,7 +2770,7 @@ function updateSyncedLyricsState(force = false, atTime = null) {
     const curText = idx >= 0 ? (syncedLyrics[idx].text || '<span class="loading-dots"></span>') : '<span class="loading-dots"></span>';
     const nextText = idx >= 0 && syncedLyrics[idx + 1] ? (syncedLyrics[idx + 1].text || '·') : '';
 
-if (expLyricCur) {
+    if (expLyricCur) {
         clearTimeout(lyricUpdateTimers.cur);
         if (force) {
             expLyricCur.innerHTML = curText; expLyricCur.style.opacity = '1'; expLyricCur.style.transform = 'translateY(0)';
@@ -3047,7 +3068,7 @@ async function init() {
             applyFilter();
         }, 120));
     }
-    
+
     if (isMobile()) {
         const mainEl = document.getElementById('main');
         const headerTitle = document.getElementById('header-title');
@@ -3060,7 +3081,7 @@ async function init() {
             }, { passive: true });
         }
     }
-    
+
     setTokenCookie(token);
     if (queuePanel && !isMobile()) queuePanel.style.height = queueH + 'px';
     if (queuePanel) queuePanel.classList.remove('open');
@@ -3198,7 +3219,7 @@ function activateUpdate() {
     swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
 }
 
-window.getSWStatus = function() {
+window.getSWStatus = function () {
     if (!swRegistration) return { error: 'No SW registration' };
     return {
         appVersion: APP_VERSION,
