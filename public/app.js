@@ -1593,9 +1593,16 @@ function setupSeekBar(el) {
         if (timeCur) timeCur.textContent = fmt(v);
         if (expTimeCur) expTimeCur.textContent = fmt(v);
     };
+
     const doSeek = () => {
         seeking = false;
-        if (audio && audio.duration) audio.currentTime = audio.duration * el.value / 100;
+        if (audio && audio.duration) {
+            const newTime = audio.duration * el.value / 100;
+            audio.currentTime = newTime;
+            lastKnownTime = newTime;
+            lastKnownAt = performance.now();
+            updateSyncedLyricsState(true);
+        }
     };
     el.addEventListener('pointerdown', () => { active = true; seeking = true; });
     el.addEventListener('touchstart', () => { active = true; seeking = true; }, { passive: true });
@@ -2798,9 +2805,11 @@ function renderPlainLyrics() {
 }
 
 function getLiveTime() {
-    if (!audio || audio.paused || audio.readyState < 3) {
-        return audio?.currentTime ?? 0;
+    if (seeking && audio && audio.duration) {
+        const activeSlider = (playerExpanded || isMobile()) ? expProgress : progress;
+        return (activeSlider.value / 100) * audio.duration;
     }
+    if (!audio || audio.paused) return audio?.currentTime ?? 0;
     const diff = (performance.now() - lastKnownAt) / 1000;
     if (diff > 0.3) {
         return audio.currentTime;
@@ -2890,6 +2899,17 @@ if (audio) {
         }
         updatePositionState();
         updateSyncedLyricsState();
+    });
+
+    audio.addEventListener('seeking', () => {
+        lastKnownTime = audio.currentTime;
+        lastKnownAt = performance.now();
+    });
+
+    audio.addEventListener('seeked', () => {
+        lastKnownTime = audio.currentTime;
+        lastKnownAt = performance.now();
+        updateSyncedLyricsState(true);
     });
 
     function lyricsSyncLoop() {
