@@ -4,11 +4,6 @@ let authKeydownListener = null;
 let globalClickListener = null;
 
 function cleanup() {
-
-    if (mobileLyricsRAF) {
-        cancelAnimationFrame(mobileLyricsRAF);
-        mobileLyricsRAF = 0;
-    }
     if (resizeObserver) {
         resizeObserver.disconnect();
         resizeObserver = null;
@@ -1495,42 +1490,19 @@ function playTrack(t, list) {
 function play(t) {
     seeking = false;
     lyricsOffset = 0;
-
-    // Reset lyric timing state for the new track
-    lastKnownTime = 0;
-    lastKnownAt = performance.now();
-    lastExpLyricIdx = -1;
-    lastScrolledLyricIdx = -1;
-
     updateStatusBar();
     updateLyricsOffsetUI();
-
     if (audio) {
         audio.src = '/api/stream/' + t.id;
-        audio.currentTime = 0;
         audio.play().catch(e => console.error("Playback failed", e));
     }
-
     if (player) { player.classList.remove('hidden'); updatePlayerHeight(); }
     updatePlayerMetadata(t);
-
     const pt = document.getElementById('player-thumb');
-    if (pt) {
-        pt.src = FALLBACK;
-        loadCover(t.id, pt);
-    }
-
-    document.title = (t.title || '?') + ' — ' + (t.artist || '?');
-
+    if (pt) { pt.src = FALLBACK; loadCover(t.id, pt); }
+    document.title = (t.title || '?') + ' \u2014 ' + (t.artist || '?');
     if (timeTot) timeTot.textContent = '-';
-
-    localStorage.setItem('music_last', JSON.stringify({
-        id: t.id,
-        title: t.title,
-        artist: t.artist,
-        album: t.album
-    }));
-
+    localStorage.setItem('music_last', JSON.stringify({ id: t.id, title: t.title, artist: t.artist, album: t.album }));
     saveQueueState();
     loadLyrics(t);
     updateExpandedNowPlaying(t);
@@ -1544,7 +1516,6 @@ function play(t) {
         preloader.preload = 'auto';
         preloader.src = '/api/stream/' + nextT.id;
     }
-
     if ('mediaSession' in navigator) {
         navigator.mediaSession.playbackState = 'playing';
     }
@@ -1584,12 +1555,6 @@ if (audio) {
         syncPlayPause(true);
         if ('mediaSession' in navigator) { navigator.mediaSession.playbackState = 'playing'; updatePositionState(true); }
     });
-
-    audio.addEventListener('playing', () => {
-        lastKnownTime = audio.currentTime || 0;
-        lastKnownAt = performance.now();
-    });
-
     audio.addEventListener('pause', () => {
         syncPlayPause(false);
         if ('mediaSession' in navigator) { navigator.mediaSession.playbackState = 'paused'; updatePositionState(true); }
@@ -2833,115 +2798,60 @@ function renderPlainLyrics() {
 }
 
 function getLiveTime() {
-    if (!audio) return 0;
-    return Math.max(0, audio.currentTime || 0);
+    if (!audio || audio.paused) return audio?.currentTime ?? 0;
+    return lastKnownTime + (performance.now() - lastKnownAt) / 1000;
 }
 
-function findLyricIdxAtTime(t) {
-    let lo = 0;
-    let hi = syncedLyrics.length - 1;
-    let ans = -1;
-
-    while (lo <= hi) {
-        const mid = Math.floor((lo + hi) / 2);
-
-        if (syncedLyrics[mid].time <= t) {
-            ans = mid;
-            lo = mid + 1;
-        } else {
-            hi = mid - 1;
-        }
-    }
-
-    return ans;
-}
 
 let lastExpLyricIdx = -1;
-let lastScrolledLyricIdx = -1;
-let mobileLyricsRAF = 0;
-let lastLyricsFrameTs = 0;
 function updateSyncedLyricsState(force = false, atTime = null) {
     if (!audio) return;
-
     if (!syncedLyrics.length) {
         // Don't overwrite if plain lyrics are loaded
         if (plainLyrics) return;
-
         // Don't overwrite loading indicator if lyrics are still being fetched
         const isLoading = expLyricCur && expLyricCur.querySelector('.loading-ring, .loading-dots');
-
         if (expLyricCur && !isLoading) {
             clearTimeout(lyricUpdateTimers.cur);
             expLyricCur.style.opacity = '0';
-            lyricUpdateTimers.cur = setTimeout(() => {
-                expLyricCur.innerHTML = '<span class="loading-dots"></span>';
-                expLyricCur.style.opacity = '1';
-            }, 120);
+            lyricUpdateTimers.cur = setTimeout(() => { expLyricCur.innerHTML = '<span class="loading-dots"></span>'; expLyricCur.style.opacity = '1' }, 120);
         }
-
         if (expLyricNext) {
             clearTimeout(lyricUpdateTimers.next);
             expLyricNext.style.opacity = '0';
-            lyricUpdateTimers.next = setTimeout(() => {
-                expLyricNext.textContent = '';
-                expLyricNext.style.opacity = '1';
-            }, 120);
+            lyricUpdateTimers.next = setTimeout(() => { expLyricNext.textContent = ''; expLyricNext.style.opacity = '1' }, 120);
         }
-
         return;
     }
-
     const t = (atTime !== null ? atTime : getLiveTime()) + lyricsOffset;
-    const idx = findLyricIdxAtTime(t);
-
+    const idx = syncedLyrics.findIndex((l, i) => { const n = syncedLyrics[i + 1]; return t >= l.time && (!n || t < n.time) });
     if (!force && idx === lastExpLyricIdx) return;
     lastExpLyricIdx = idx;
 
-    const curText = idx >= 0
-        ? (syncedLyrics[idx].text || '<span class="loading-dots"></span>')
-        : '<span class="loading-dots"></span>';
-
-    const nextText = (idx >= 0 && syncedLyrics[idx + 1])
-        ? (syncedLyrics[idx + 1].text || '·')
-        : '';
+    const curText = idx >= 0 ? (syncedLyrics[idx].text || '<span class="loading-dots"></span>') : '<span class="loading-dots"></span>';
+    const nextText = idx >= 0 && syncedLyrics[idx + 1] ? (syncedLyrics[idx + 1].text || '·') : '';
 
     if (expLyricCur) {
         clearTimeout(lyricUpdateTimers.cur);
-
-        if (force || isMobile()) {
-            expLyricCur.innerHTML = curText;
-            expLyricCur.style.opacity = '1';
-            expLyricCur.style.transform = 'translateY(0)';
+        if (force) {
+            expLyricCur.innerHTML = curText; expLyricCur.style.opacity = '1'; expLyricCur.style.transform = 'translateY(0)';
         } else {
-            expLyricCur.style.opacity = '0';
-            expLyricCur.style.transform = 'translateY(6px)';
-            lyricUpdateTimers.cur = setTimeout(() => {
-                expLyricCur.innerHTML = curText;
-                expLyricCur.style.opacity = '1';
-                expLyricCur.style.transform = 'translateY(0)';
-            }, 120);
+            expLyricCur.style.opacity = '0'; expLyricCur.style.transform = 'translateY(6px)';
+            lyricUpdateTimers.cur = setTimeout(() => { expLyricCur.innerHTML = curText; expLyricCur.style.opacity = '1'; expLyricCur.style.transform = 'translateY(0)' }, 120);
         }
     }
-
     if (expLyricNext) {
         clearTimeout(lyricUpdateTimers.next);
-
-        if (force || isMobile()) {
-            expLyricNext.textContent = nextText;
-            expLyricNext.style.opacity = '1';
-            expLyricNext.style.transform = 'translateY(0)';
+        if (force) {
+            expLyricNext.textContent = nextText; expLyricNext.style.opacity = '1'; expLyricNext.style.transform = 'translateY(0)';
         } else {
-            expLyricNext.style.opacity = '0';
-            expLyricNext.style.transform = 'translateY(6px)';
-            lyricUpdateTimers.next = setTimeout(() => {
-                expLyricNext.textContent = nextText;
-                expLyricNext.style.opacity = '1';
-                expLyricNext.style.transform = 'translateY(0)';
-            }, 120);
+            expLyricNext.style.opacity = '0'; expLyricNext.style.transform = 'translateY(6px)';
+            lyricUpdateTimers.next = setTimeout(() => { expLyricNext.textContent = nextText; expLyricNext.style.opacity = '1'; expLyricNext.style.transform = 'translateY(0)' }, 120);
         }
     }
 
     getLyricScrollEls().forEach(scroll => {
+        // Direct update instead of O(N) loop
         const oldActive = scroll.querySelector('.lyric-line.active');
         if (oldActive) oldActive.classList.remove('active');
 
@@ -2949,19 +2859,12 @@ function updateSyncedLyricsState(force = false, atTime = null) {
             const el = scroll.querySelector(`[data-idx="${idx}"]`);
             if (el) {
                 el.classList.add('active');
-
-                if (force || idx !== lastScrolledLyricIdx) {
-                    const top = el.offsetTop - scroll.clientHeight / 2 + el.offsetHeight / 2;
-                    scroll.scrollTo({
-                        top: Math.max(0, top),
-                        behavior: isMobile() ? 'auto' : (force ? 'auto' : 'smooth')
-                    });
-                }
+                const top = el.offsetTop - scroll.clientHeight / 2 + el.offsetHeight / 2;
+                // 'auto' is much more reliable for media sync than 'smooth'
+                scroll.scrollTo({ top: Math.max(0, top), behavior: force ? 'auto' : 'smooth' });
             }
         }
     });
-
-    lastScrolledLyricIdx = idx;
 }
 
 if (audio) {
@@ -2984,30 +2887,16 @@ if (audio) {
         updateSyncedLyricsState();
     });
 
-    function startMobileLyricsLoop() {
-        if (!isMobile()) return;
-
-        if (mobileLyricsRAF) {
-            cancelAnimationFrame(mobileLyricsRAF);
-            mobileLyricsRAF = 0;
-        }
-
-        lastLyricsFrameTs = 0;
-
-        function loop(ts) {
+    // Fallback for mobile - timeupdate is throttled heavily on mobile
+    if (window.matchMedia('(max-width: 768px)').matches) {
+        function lyricsSyncLoop() {
             if (audio && !audio.paused && syncedLyrics.length) {
-                if (!lastLyricsFrameTs || ts - lastLyricsFrameTs >= 33) { // ~30fps
-                    updateSyncedLyricsState();
-                    lastLyricsFrameTs = ts;
-                }
+                updateSyncedLyricsState();
             }
-            mobileLyricsRAF = requestAnimationFrame(loop);
+            requestAnimationFrame(lyricsSyncLoop);
         }
-
-        mobileLyricsRAF = requestAnimationFrame(loop);
+        requestAnimationFrame(lyricsSyncLoop);
     }
-
-    startMobileLyricsLoop();
 }
 
 let lastPositionUpdateTime = 0;
