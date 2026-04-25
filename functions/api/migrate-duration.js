@@ -109,10 +109,17 @@ export async function onRequestGet({ env, request }) {
   const limit = parseInt(url.searchParams.get('limit') || '50');
 
   try {
-    const listed = await env.MUSIC_BUCKET.list({ limit: 1000 });
     const SUPPORTED = new Set([".mp3", ".flac", ".ogg", ".m4a", ".wav", ".aac", ".opus"]);
 
-    const trackObjects = listed.objects.filter(obj => {
+    let allObjects = [];
+    let cursor = undefined;
+    do {
+      const listed = await env.MUSIC_BUCKET.list({ limit: 1000, cursor });
+      allObjects.push(...listed.objects);
+      cursor = listed.truncated ? listed.cursor : undefined;
+    } while (cursor);
+
+    const trackObjects = allObjects.filter(obj => {
       const ext = obj.key.slice(obj.key.lastIndexOf(".")).toLowerCase();
       return SUPPORTED.has(ext);
     });
