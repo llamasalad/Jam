@@ -161,14 +161,13 @@ export async function onRequestGet({ env }) {
   try {
     const SUPPORTED = new Set([".mp3", ".flac", ".ogg", ".m4a", ".wav", ".aac", ".opus"]);
 
-    // List all objects in the bucket with pagination to ensure all tracks are found
+    // List with multiple prefixes to avoid listing non-music files
+    const prefixes = ['', 'uploads/'];
     const allObjects = [];
-    let cursor = undefined;
-    while (true) {
-      const listed = await env.MUSIC_BUCKET.list({ limit: 1000, cursor });
+
+    for (const prefix of prefixes) {
+      const listed = await env.MUSIC_BUCKET.list({ limit: 2000, prefix });
       allObjects.push(...listed.objects);
-      if (!listed.truncated) break;
-      cursor = listed.cursor;
     }
 
     const trackObjects = allObjects.filter(obj => {
@@ -272,11 +271,6 @@ export async function onRequestPost({ request, env }) {
     const metaKey = `${key}.meta.json`;
     await env.MUSIC_BUCKET.put(metaKey, JSON.stringify({ title: file.name.replace(/\.[^/.]+$/, ''), artist, album, duration }));
 
-    // Invalidate tracks cache
-    try {
-      await env.PLAYLISTS.delete('_tracks_cache');
-    } catch (_) { }
-
     return new Response(JSON.stringify({
       success: true,
       key,
@@ -302,11 +296,6 @@ export async function onRequestPut({ request, env }) {
     const { key, title, artist, album } = await request.json();
     const metaKey = `${key}.meta.json`;
     await env.MUSIC_BUCKET.put(metaKey, JSON.stringify({ title, artist, album }));
-
-    // Invalidate tracks cache
-    try {
-      await env.PLAYLISTS.delete('_tracks_cache');
-    } catch (_) { }
 
     return new Response(JSON.stringify({ success: true }));
   } catch (err) {
