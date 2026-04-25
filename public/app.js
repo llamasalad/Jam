@@ -861,7 +861,10 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
 
     container.addEventListener('touchend', e => {
         if (state !== 'swiping') {
-            if (state === 'deciding') state = 'idle';
+            if (state === 'deciding' || state === 'scrolling') {
+                state = 'idle';
+                content.style.removeProperty('transition');
+            }
             return;
         }
         e.stopPropagation();
@@ -2016,11 +2019,7 @@ function bindBackSwipe(el, onBack, shouldStart) {
     }, { passive: true });
 }
 
-bindBackSwipe(playlistDetail, () => {
-    playlistDetail.classList.remove('active');
-    playlistsListView.style.display = '';
-    currentPlaylist = null;
-});
+bindBackSwipe(playlistDetail, closePlaylistDetail, () => !!currentPlaylist);
 bindBackSwipe(trackList, closeDetailView, () => !!currentDetailView);
 
 function closeQueuePanel() {

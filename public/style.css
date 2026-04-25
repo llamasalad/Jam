@@ -405,6 +405,8 @@ body {
   flex: 1;
   overflow-y: auto;
   padding-bottom: calc(var(--player-h) + env(safe-area-inset-bottom, 0px) + 20px);
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 #main::-webkit-scrollbar {
@@ -3614,4 +3616,9 @@ button:active,
     background: var(--accent) !important;
     color: #fff !important;
   }
+}
+
+#track-list,
+#playlist-detail {
+  min-height: 100vh;
 }
