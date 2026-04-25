@@ -327,7 +327,7 @@ function renderLibraryCards() {
             }
             coverObserver.unobserve(card);
         });
-    }, { rootMargin: '200px' }); // load covers 200px before they enter view
+    }, { rootMargin: '1500px' }); // load covers early to prevent pop-in
 
     const artistImgObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -337,7 +337,7 @@ function renderLibraryCards() {
             if (name) loadArtistImage(name, img);
             artistImgObserver.unobserve(img);
         });
-    }, { rootMargin: '200px' });
+    }, { rootMargin: '1500px' });
 
     const fragA = document.createDocumentFragment();
     Array.from(artists.entries())
@@ -350,8 +350,8 @@ function renderLibraryCards() {
             const artistImg = document.createElement('img');
             artistImg.className = 'artist-portrait';
             artistImg.dataset.artistName = artist;
-            artistImg.alt = artist;
-            artistImg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0';
+            artistImg.alt = '';
+            artistImg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;visibility:hidden;';
             artistImg.onerror = () => { artistImg.style.visibility = 'hidden'; };
 
             const overlay = document.createElement('div');

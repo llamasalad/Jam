@@ -517,6 +517,8 @@ body.detail-view .group-header {
   user-select: none;
   -webkit-user-select: none;
   overflow: hidden;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 56px;
 }
 
 .track-content {
@@ -1858,6 +1860,8 @@ body.is-resizing #queue-panel {
   overflow: hidden;
   flex-shrink: 0;
   transition: opacity .15s, transform .15s;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 44px;
 }
 
 .queue-item-content {
