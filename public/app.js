@@ -1604,7 +1604,6 @@ function setupSeekBar(el) {
         if (expTimeCur) expTimeCur.textContent = fmt(v);
     };
     const doSeek = () => {
-        seeking = false;
         if (audio && audio.duration) audio.currentTime = audio.duration * el.value / 100;
     };
     el.addEventListener('pointerdown', () => { active = true; seeking = true; });
@@ -2905,7 +2904,11 @@ if (audio) {
     // Fallback for mobile - timeupdate is throttled heavily on mobile
     if (window.matchMedia('(max-width: 768px)').matches) {
         function lyricsSyncLoop() {
-            if (audio && !audio.paused && syncedLyrics.length) {
+            if (audio && !audio.paused && !seeking && syncedLyrics.length) {
+                // Re-anchor from the real audio position every frame to prevent
+                // getLiveTime() extrapolation drift caused by mobile micro-stutters
+                lastKnownTime = audio.currentTime;
+                lastKnownAt = performance.now();
                 updateSyncedLyricsState();
             }
             requestAnimationFrame(lyricsSyncLoop);
