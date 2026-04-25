@@ -2963,8 +2963,12 @@ if ('mediaSession' in navigator) {
     navigator.mediaSession.setActionHandler('nexttrack', () => {
         try { nextTrack(); } catch (e) { console.error('Next track action failed:', e); }
     });
-    navigator.mediaSession.setActionHandler('seekbackward', null);
-    navigator.mediaSession.setActionHandler('seekforward', null);
+    navigator.mediaSession.setActionHandler('seekbackward', () => {
+        try { prevTrack(); } catch (e) { console.error('Seek backward action failed:', e); }
+    });
+    navigator.mediaSession.setActionHandler('seekforward', () => {
+        try { nextTrack(); } catch (e) { console.error('Seek forward action failed:', e); }
+    });
     navigator.mediaSession.setActionHandler('seekto', null);
 }
 
@@ -3222,7 +3226,10 @@ async function init() {
                 audio.preload = 'auto';
                 audio.src = '/api/stream/' + t.id;
                 audio.addEventListener('loadedmetadata', () => {
-                    if (pos > 0 && pos < audio.duration - 5) audio.currentTime = pos;
+                    if (pos > 0 && pos < audio.duration - 5) {
+                        seeking = true;
+                        audio.currentTime = pos;
+                    }
                 }, { once: true });
             }
         }
