@@ -768,6 +768,8 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
         bgElement.innerHTML = '';
         bgElement.classList.remove('locked');
         container.classList.remove('swiping');
+        content.style.removeProperty('transition');
+        content.style.transform = '';
         animating = false;
     }
 
@@ -777,25 +779,18 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
         if (fired) {
             // Slide off, then return
             const offX = dir > 0 ? container.offsetWidth : -container.offsetWidth;
-            content.style.transition = 'transform 0.25s cubic-bezier(0.4, 0, 1, 1)';
+            content.style.setProperty('transition', 'transform 0.25s cubic-bezier(0.4, 0, 1, 1)', 'important');
             content.style.transform = `translate3d(${offX}px,0,0)`;
-            content.addEventListener('transitionend', function onOff() {
-                content.removeEventListener('transitionend', onOff);
-                content.style.transition = 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)';
+            setTimeout(() => {
+                content.style.setProperty('transition', 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)', 'important');
                 content.style.transform = 'translate3d(0,0,0)';
-                content.addEventListener('transitionend', function onBack() {
-                    content.removeEventListener('transitionend', onBack);
-                    cleanup();
-                }, { once: true });
-            }, { once: true });
+                setTimeout(cleanup, 320);
+            }, 260);
         } else {
             // Spring back with slight overshoot
-            content.style.transition = 'transform 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.075)';
+            content.style.setProperty('transition', 'transform 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.075)', 'important');
             content.style.transform = 'translate3d(0,0,0)';
-            content.addEventListener('transitionend', function onSnap() {
-                content.removeEventListener('transitionend', onSnap);
-                cleanup();
-            }, { once: true });
+            setTimeout(cleanup, 400);
         }
     }
 
@@ -810,7 +805,7 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
         deltaX = 0;
         samples = [{ x: originX, t: Date.now() }];
         state = 'deciding';
-        content.style.transition = 'none';
+        content.style.setProperty('transition', 'none', 'important');
     }, { passive: true });
 
     container.addEventListener('touchmove', e => {
