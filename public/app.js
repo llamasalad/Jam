@@ -29,7 +29,7 @@ const TOKEN_KEY = 'music_token';
 let token = localStorage.getItem(TOKEN_KEY) || '';
 setTokenCookie(token);
 let tracks = [], filtered = [], queue = [], qIdx = -1, sortMode = 'title';
-let shuffle = localStorage.getItem('music_shuffle') === 'true', seeking = false, muted = false;
+let shuffle = localStorage.getItem('music_shuffle') === 'true', seeking = false, buffering = false, muted = false;
 const SAVED_VOL = parseInt(localStorage.getItem('music_vol') || '80');
 let lastVol = SAVED_VOL;
 let playlists = [], currentPlaylist = null, ctxTrack = null, pendingPlaylistTrack = null;
@@ -1561,9 +1561,14 @@ if (audio) {
         updateSyncedLyricsState(true);
         if ('mediaSession' in navigator) { navigator.mediaSession.playbackState = 'playing'; updatePositionState(true); }
     });
+    audio.addEventListener('waiting', () => {
+        buffering = true;
+    });
     audio.addEventListener('playing', () => {
+        buffering = false;
         lastKnownTime = audio.currentTime;
         lastKnownAt = performance.now();
+        updateSyncedLyricsState(true);
     });
     audio.addEventListener('pause', () => {
         syncPlayPause(false);
@@ -2807,7 +2812,7 @@ function renderPlainLyrics() {
 }
 
 function getLiveTime() {
-    if (!audio || audio.paused) return audio?.currentTime ?? 0;
+    if (!audio || audio.paused || buffering) return audio?.currentTime ?? 0;
     return lastKnownTime + (performance.now() - lastKnownAt) / 1000;
 }
 
@@ -2904,7 +2909,7 @@ if (audio) {
     // Fallback for mobile - timeupdate is throttled heavily on mobile
     if (window.matchMedia('(max-width: 768px)').matches) {
         function lyricsSyncLoop() {
-            if (audio && !audio.paused && !seeking && syncedLyrics.length) {
+            if (audio && !audio.paused && !seeking && !buffering && syncedLyrics.length) {
                 // Re-anchor from the real audio position every frame to prevent
                 // getLiveTime() extrapolation drift caused by mobile micro-stutters
                 lastKnownTime = audio.currentTime;
