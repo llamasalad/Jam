@@ -1553,7 +1553,17 @@ if (audio) {
     }
     audio.addEventListener('play', () => {
         syncPlayPause(true);
+        // Reset extrapolation anchors immediately so getLiveTime() can't return a
+        // stale value during the gap before the first 'timeupdate' fires after resume
+        // (mobile throttles timeupdate to ~4Hz, which previously caused a big jump).
+        lastKnownTime = audio.currentTime;
+        lastKnownAt = performance.now();
+        updateSyncedLyricsState(true);
         if ('mediaSession' in navigator) { navigator.mediaSession.playbackState = 'playing'; updatePositionState(true); }
+    });
+    audio.addEventListener('playing', () => {
+        lastKnownTime = audio.currentTime;
+        lastKnownAt = performance.now();
     });
     audio.addEventListener('pause', () => {
         syncPlayPause(false);
@@ -2823,7 +2833,12 @@ function updateSyncedLyricsState(force = false, atTime = null) {
         }
         return;
     }
-    const t = (atTime !== null ? atTime : getLiveTime()) + lyricsOffset;
+    // The non-forced render path fades out, waits 120ms, then fades in. Look
+    // 120ms into the future when picking the active line so the new text is
+    // on screen at the moment it should be heard, not 120ms after.
+    const FADE_LOOKAHEAD = force ? 0 : 0.12;
+    const baseTime = atTime !== null ? atTime : getLiveTime();
+    const t = baseTime + FADE_LOOKAHEAD + lyricsOffset;
     const idx = syncedLyrics.findIndex((l, i) => { const n = syncedLyrics[i + 1]; return t >= l.time && (!n || t < n.time) });
     if (!force && idx === lastExpLyricIdx) return;
     lastExpLyricIdx = idx;
