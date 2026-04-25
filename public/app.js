@@ -2798,10 +2798,15 @@ function renderPlainLyrics() {
 }
 
 function getLiveTime() {
-    if (!audio || audio.paused) return audio?.currentTime ?? 0;
-    return lastKnownTime + (performance.now() - lastKnownAt) / 1000;
+    if (!audio || audio.paused || audio.readyState < 3) {
+        return audio?.currentTime ?? 0;
+    }
+    const diff = (performance.now() - lastKnownAt) / 1000;
+    if (diff > 0.3) {
+        return audio.currentTime;
+    }
+    return lastKnownTime + diff;
 }
-
 
 let lastExpLyricIdx = -1;
 function updateSyncedLyricsState(force = false, atTime = null) {
@@ -2887,16 +2892,13 @@ if (audio) {
         updateSyncedLyricsState();
     });
 
-    // Fallback for mobile - timeupdate is throttled heavily on mobile
-    if (window.matchMedia('(max-width: 768px)').matches) {
-        function lyricsSyncLoop() {
-            if (audio && !audio.paused && syncedLyrics.length) {
-                updateSyncedLyricsState();
-            }
-            requestAnimationFrame(lyricsSyncLoop);
+    function lyricsSyncLoop() {
+        if (audio && !audio.paused && audio.readyState >= 3 && syncedLyrics.length) {
+            updateSyncedLyricsState();
         }
         requestAnimationFrame(lyricsSyncLoop);
     }
+    requestAnimationFrame(lyricsSyncLoop);
 }
 
 let lastPositionUpdateTime = 0;
