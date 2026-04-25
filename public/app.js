@@ -2898,7 +2898,7 @@ if (audio) {
             if (expTimeCur) expTimeCur.textContent = fmt(audio.currentTime);
         }
         updatePositionState();
-        updateSyncedLyricsState();
+        if (!seeking) updateSyncedLyricsState();
     });
 
     // Fallback for mobile - timeupdate is throttled heavily on mobile
