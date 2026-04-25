@@ -42,6 +42,7 @@ let lyricUpdateTimers = { cur: null, next: null };
 let lastKnownTime = 0;
 let lastKnownAt = 0;
 let lastHeartbeatPos = 0;
+let pendingRestorePos = null;
 let playerExpanded = false;
 let desktopExpandedLyricsOpen = false;
 
@@ -1492,8 +1493,11 @@ function play(t) {
     lyricsOffset = 0;
     updateStatusBar();
     updateLyricsOffsetUI();
+    pendingRestorePos = null;
     if (audio) {
         switchingTrack = true;
+        // Safety: clear the flag after 2s in case the play event never fires
+        setTimeout(() => { switchingTrack = false; }, 2000);
         audio.src = '/api/stream/' + t.id;
         audio.play().catch(e => console.error("Playback failed", e));
     }
@@ -1555,6 +1559,14 @@ if (audio) {
     audio.addEventListener('play', () => {
         switchingTrack = false;
         syncPlayPause(true);
+        // If we have a pending restore position (from reload), apply it now
+        if (pendingRestorePos !== null) {
+            const pos = pendingRestorePos;
+            pendingRestorePos = null;
+            if (audio.duration && isFinite(audio.duration) && pos > 0 && pos < audio.duration - 5) {
+                audio.currentTime = pos;
+            }
+        }
         // Reset extrapolation anchors immediately so getLiveTime() can't return a
         // stale value during the gap before the first 'timeupdate' fires after resume
         // (mobile throttles timeupdate to ~4Hz, which previously caused a big jump).
@@ -1571,6 +1583,7 @@ if (audio) {
         lastKnownTime = audio.currentTime;
         lastKnownAt = performance.now();
         updateSyncedLyricsState(true);
+        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
     });
     audio.addEventListener('pause', () => {
         if (!switchingTrack) syncPlayPause(false);
@@ -2951,9 +2964,10 @@ function updatePositionState(force = false) {
 }
 
 if ('mediaSession' in navigator) {
-    navigator.mediaSession.setActionHandler('play', async () => {
+    navigator.mediaSession.setActionHandler('play', () => {
         if (audio && audio.paused) {
-            try { await audio.play(); updatePositionState(true); } catch (e) { console.error('Play action failed:', e); }
+            audio.play().catch(e => console.error('Play action failed:', e));
+            updatePositionState(true);
         }
     });
     navigator.mediaSession.setActionHandler('pause', () => {
@@ -3095,8 +3109,10 @@ function startHeartbeat() {
         }
 
         if (!('mediaSession' in navigator)) return;
-        navigator.mediaSession.playbackState = 'playing';
-        updatePositionState(true);
+        if (!audio.paused) {
+            navigator.mediaSession.playbackState = 'playing';
+            updatePositionState(true);
+        }
     }, 750);
 }
 
@@ -3224,20 +3240,24 @@ async function init() {
                 audio.preload = 'auto';
                 audio.src = '/api/stream/' + t.id;
 
-                let restored = false;
-                const tryRestore = () => {
-                    if (restored) return;
-                    if (!audio.duration || !isFinite(audio.duration)) return;
-                    if (pos > 0 && pos < audio.duration - 5) {
-                        restored = true;
-                        seeking = true;
-                        audio.currentTime = pos;
-                        // Safety: if seeked never fires, clear the flag after 3s
-                        setTimeout(() => { seeking = false; }, 3000);
+                // Store the position to restore — if loadedmetadata fires
+                // before user presses play, seek immediately. Otherwise,
+                // the play event handler will pick it up.
+                if (pos > 0) pendingRestorePos = pos;
+
+                audio.addEventListener('loadedmetadata', () => {
+                    if (pendingRestorePos !== null && audio.duration && isFinite(audio.duration)) {
+                        if (pendingRestorePos < audio.duration - 5) {
+                            audio.currentTime = pendingRestorePos;
+                            pendingRestorePos = null;
+                        }
                     }
-                };
-                audio.addEventListener('loadedmetadata', tryRestore, { once: true });
-                audio.addEventListener('canplaythrough', tryRestore, { once: true });
+                    // Update time display
+                    if (audio.duration && isFinite(audio.duration)) {
+                        if (timeTot) timeTot.textContent = fmt(audio.duration);
+                        if (expTimeTot) expTimeTot.textContent = fmt(audio.duration);
+                    }
+                }, { once: true });
             }
         }
     } catch (_) { }
