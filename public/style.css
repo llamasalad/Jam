@@ -2550,7 +2550,9 @@ body.is-dragging {
     display: block;
     text-align: center;
     padding: 0;
-    overflow: hidden !important;
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+    transform: none !important;
   }
 
   #exp-lyric-current {
