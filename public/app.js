@@ -39,6 +39,9 @@ let toggleMode = true;
 let lastSavedSec = -1;
 let lyricsOffset = 0;
 let lyricUpdateTimers = { cur: null, next: null };
+let lastKnownTime = 0;
+let lastKnownAt = 0;
+let lastHeartbeatPos = 0;
 let playerExpanded = false;
 let desktopExpandedLyricsOpen = false;
 
@@ -1566,7 +1569,13 @@ if (audio) {
         }
         console.error('Audio playback error:', audio.error?.message || 'Unknown error');
     });
-    audio.addEventListener('seeked', () => { seeking = false; updatePositionState(true); updateSyncedLyricsState(true); });
+    audio.addEventListener('seeked', () => {
+        seeking = false;
+        lastKnownTime = audio.currentTime;
+        lastKnownAt = performance.now();
+        updatePositionState(true);
+        updateSyncedLyricsState(true);
+    });
 }
 
 function setupSeekBar(el) {
@@ -1586,6 +1595,7 @@ function setupSeekBar(el) {
     el.addEventListener('pointerup', () => {
         if (!active) return;
         active = false;
+        seeking = false;
         if (audio && audio.duration) audio.currentTime = audio.duration * el.value / 100;
     });
     el.addEventListener('pointercancel', () => { active = false; seeking = false; });
@@ -2782,6 +2792,12 @@ function renderPlainLyrics() {
     applyLyricsFontSize();
 }
 
+function getLiveTime() {
+    if (!audio || audio.paused) return audio?.currentTime ?? 0;
+    return lastKnownTime + (performance.now() - lastKnownAt) / 1000;
+}
+
+
 let lastExpLyricIdx = -1;
 function updateSyncedLyricsState(force = false, atTime = null) {
     if (!audio) return;
@@ -2802,7 +2818,7 @@ function updateSyncedLyricsState(force = false, atTime = null) {
         }
         return;
     }
-    const t = (atTime !== null ? atTime : audio.currentTime) + lyricsOffset;
+    const t = (atTime !== null ? atTime : getLiveTime()) + lyricsOffset;
     const idx = syncedLyrics.findIndex((l, i) => { const n = syncedLyrics[i + 1]; return t >= l.time && (!n || t < n.time) });
     if (!force && idx === lastExpLyricIdx) return;
     lastExpLyricIdx = idx;
@@ -2848,6 +2864,8 @@ function updateSyncedLyricsState(force = false, atTime = null) {
 
 if (audio) {
     audio.addEventListener('timeupdate', () => {
+        lastKnownTime = audio.currentTime;
+        lastKnownAt = performance.now();
         const sec = Math.floor(audio.currentTime);
         if (sec > 0 && sec % 5 === 0 && sec !== lastSavedSec) {
             lastSavedSec = sec;
@@ -2917,9 +2935,9 @@ if ('mediaSession' in navigator) {
     navigator.mediaSession.setActionHandler('nexttrack', () => {
         try { nextTrack(); } catch (e) { console.error('Next track action failed:', e); }
     });
-    navigator.mediaSession.setActionHandler('seekbackward', null);
+    navigator.mediaSession.setActionHandler('seekbackward', () => prevTrack());
 
-    navigator.mediaSession.setActionHandler('seekforward', null);
+    navigator.mediaSession.setActionHandler('seekforward', () => nextTrack());
 
     navigator.mediaSession.setActionHandler('seekto', (d) => {
         if (audio && audio.duration && d.seekTime !== undefined) {
@@ -3041,7 +3059,27 @@ if (expAdaptiveBtn) {
 function startHeartbeat() {
     if (heartbeatInterval) clearInterval(heartbeatInterval);
     heartbeatInterval = setInterval(() => {
-        if (!audio || audio.paused || !('mediaSession' in navigator)) return;
+        if (!audio) return;
+
+        // iOS background fix: manually detect track end
+        if (audio.duration && audio.currentTime > 0 && !audio.paused) {
+            const remaining = audio.duration - audio.currentTime;
+            if (remaining < 0.5) {
+                nextTrack();
+                return;
+            }
+        }
+
+        // iOS background fix: detect stalled playback and resume
+        if (!audio.paused && audio.readyState >= 3) {
+            const liveTime = getLiveTime();
+            if (liveTime > 0 && Math.abs(liveTime - lastHeartbeatPos) < 0.05) {
+                audio.play().catch(() => { });
+            }
+            lastHeartbeatPos = liveTime;
+        }
+
+        if (!('mediaSession' in navigator)) return;
         navigator.mediaSession.playbackState = 'playing';
         updatePositionState(true);
     }, 750);
