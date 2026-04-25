@@ -3620,6 +3620,11 @@ button:active,
     background: var(--accent) !important;
     color: #fff !important;
   }
+
+  #exp-lyric-current,
+  #exp-lyric-next {
+    will-change: opacity, transform;
+  }
 }
 
 #track-list,

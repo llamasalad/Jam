@@ -2782,6 +2782,14 @@ function renderSyncedLyrics() {
             div.onclick = (function (t) { return function () { if (audio) { seeking = true; audio.currentTime = t - lyricsOffset; updateSyncedLyricsState(true, t - lyricsOffset); } }; })(l.time);
             scroll.appendChild(div);
         }
+
+        (function cachePositions() {
+            var positions = [];
+            scroll.querySelectorAll('.lyric-line').forEach(function (line) {
+                positions.push(line.offsetTop);
+            });
+            scroll._lineTops = positions;
+        })();
     }
     applyLyricsFontSize();
 }
@@ -2873,9 +2881,16 @@ function updateSyncedLyricsState(force = false, atTime = null) {
             const el = scroll.querySelector(`[data-idx="${idx}"]`);
             if (el) {
                 el.classList.add('active');
-                const top = el.offsetTop - scroll.clientHeight / 2 + el.offsetHeight / 2;
-                // 'auto' is much more reliable for media sync than 'smooth'
-                scroll.scrollTo({ top: Math.max(0, top), behavior: force ? 'auto' : 'smooth' });
+                // Use cached positions to avoid layout thrashing
+                const tops = scroll._lineTops;
+                let top = 0;
+                if (tops && tops[idx] !== undefined) {
+                    top = tops[idx] - scroll.clientHeight / 2 + (tops[idx + 1] ? (tops[idx + 1] - tops[idx]) : el.offsetHeight) / 2;
+                } else {
+                    // Fallback if cache missing (first time)
+                    top = el.offsetTop - scroll.clientHeight / 2 + el.offsetHeight / 2;
+                }
+                scroll.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
             }
         }
     });
