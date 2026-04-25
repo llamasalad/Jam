@@ -156,18 +156,19 @@ export async function onRequestGet({ env }) {
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
       });
     }
-  } catch (_) {}
+  } catch (_) { }
 
   try {
     const SUPPORTED = new Set([".mp3", ".flac", ".ogg", ".m4a", ".wav", ".aac", ".opus"]);
 
-    // List with multiple prefixes to avoid listing non-music files
-    const prefixes = ['', 'uploads/'];
+    // List all objects in the bucket with pagination to ensure all tracks are found
     const allObjects = [];
-
-    for (const prefix of prefixes) {
-      const listed = await env.MUSIC_BUCKET.list({ limit: 2000, prefix });
+    let cursor = undefined;
+    while (true) {
+      const listed = await env.MUSIC_BUCKET.list({ limit: 1000, cursor });
       allObjects.push(...listed.objects);
+      if (!listed.truncated) break;
+      cursor = listed.cursor;
     }
 
     const trackObjects = allObjects.filter(obj => {
@@ -218,12 +219,12 @@ export async function onRequestGet({ env }) {
 
     try {
       await env.PLAYLISTS.put('_tracks_cache', JSON.stringify(tracks), { expirationTtl: 3600 });
-    } catch (_) {}
+    } catch (_) { }
 
     return new Response(JSON.stringify(tracks), {
       headers: { "Content-Type": "application/json" }
     });
-    
+
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500, headers: { "Content-Type": "application/json" }
@@ -271,6 +272,11 @@ export async function onRequestPost({ request, env }) {
     const metaKey = `${key}.meta.json`;
     await env.MUSIC_BUCKET.put(metaKey, JSON.stringify({ title: file.name.replace(/\.[^/.]+$/, ''), artist, album, duration }));
 
+    // Invalidate tracks cache
+    try {
+      await env.PLAYLISTS.delete('_tracks_cache');
+    } catch (_) { }
+
     return new Response(JSON.stringify({
       success: true,
       key,
@@ -296,6 +302,11 @@ export async function onRequestPut({ request, env }) {
     const { key, title, artist, album } = await request.json();
     const metaKey = `${key}.meta.json`;
     await env.MUSIC_BUCKET.put(metaKey, JSON.stringify({ title, artist, album }));
+
+    // Invalidate tracks cache
+    try {
+      await env.PLAYLISTS.delete('_tracks_cache');
+    } catch (_) { }
 
     return new Response(JSON.stringify({ success: true }));
   } catch (err) {
