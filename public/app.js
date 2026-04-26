@@ -458,16 +458,6 @@ function cycleSort() {
     if (sortMode === 'title') filtered = [...tracks];
     sort();
     updateSidebarSortLabel();
-
-    const main = document.getElementById('main');
-    if (main) {
-        main.classList.remove('sorting-active');
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                main.classList.add('sorting-active');
-            });
-        });
-    }
 }
 
 if (sortBtn) {

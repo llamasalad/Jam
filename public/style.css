@@ -442,10 +442,18 @@ body {
   display: none;
 }
 
+#view-library.active:has(#library-cards.show) {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 100% !important;
+  justify-content: center !important;
+  padding-top: 0;
+}
+
 #view-library.active,
 #view-playlists.active {
-  padding-top: 20px;
   display: block;
+  padding-top: 20px;
 }
 
 #loading,
@@ -3203,11 +3211,12 @@ button:active,
 
 #artists-container,
 #albums-container {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, 110px);
+  justify-content: center;
   gap: 16px;
-  justify-content: flex-start;
-  padding-left: 20px;
+  padding: 20px;
+  width: 100%;
 }
 
 .artist-card,
@@ -3610,12 +3619,12 @@ button:active,
   }
 
   body.detail-view #tabs,
-  #view-playlists.active~#header #tabs {
+  body.detail-view #search-wrap,
+  body:has(#view-playlists.active) #search-wrap {
     display: none !important;
   }
 
-  body.detail-view #search-wrap,
-  #view-playlists.active #header #search-wrap {
+  body:has(#library-cards.show) #search-wrap {
     display: none !important;
   }
 
@@ -3631,6 +3640,18 @@ button:active,
   body.detail-view #header #header-title {
     font-size: 20px !important;
     transform: none !important;
+  }
+
+  #expanded-player::-webkit-scrollbar,
+  #lyrics-panel::-webkit-scrollbar,
+  #exp-lyrics::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  #expanded-player,
+  #lyrics-panel,
+  #exp-lyrics {
+    scrollbar-width: none !important;
   }
 
   body.detail-view #header-top-actions,
@@ -3686,24 +3707,6 @@ button:active,
   .tab.active {
     background: var(--accent) !important;
     color: #fff !important;
-  }
-
-  @keyframes slideFromSide {
-    from {
-      opacity: 0;
-      transform: translateX(20px);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  #main.sorting-active #view-library,
-  #main.sorting-active #view-playlists {
-    animation: slideFromSide 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    will-change: transform, opacity;
   }
 
 }
