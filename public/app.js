@@ -1535,12 +1535,13 @@ function updateExpandedNowPlaying(t) {
 
 if (audio) {
     audio.addEventListener('loadedmetadata', () => {
-        if (audio.duration) {
-            if (timeTot) timeTot.textContent = fmt(audio.duration);
-            if (expTimeTot) expTimeTot.textContent = fmt(audio.duration);
+        const d = getRealDuration();
+        if (d) {
+            if (timeTot) timeTot.textContent = fmt(d);
+            if (expTimeTot) expTimeTot.textContent = fmt(d);
             if (qIdx >= 0) {
                 const dur = document.querySelector('.track-dur[data-id="' + queue[qIdx]?.id + '"]');
-                if (dur) dur.textContent = fmt(audio.duration);
+                if (dur) dur.textContent = fmt(d);
             }
             updatePositionState(true);
         }
@@ -1591,13 +1592,20 @@ if (audio) {
     });
 }
 
+function getRealDuration() {
+    if (audio && audio.duration && isFinite(audio.duration)) return audio.duration;
+    const t = queue && queue[qIdx];
+    return (t && t.duration) ? t.duration : 0;
+}
+
 function setupSeekBar(el) {
     if (!el) return;
     let active = false;
     const syncDisplay = () => {
-        if (!audio || !audio.duration) return;
+        const d = getRealDuration();
+        if (!d) return;
         const pct = el.value;
-        const v = audio.duration * pct / 100;
+        const v = d * pct / 100;
         if (progress) progress.value = pct;
         if (expProgress) expProgress.value = pct;
         if (timeCur) timeCur.textContent = fmt(v);
@@ -1605,7 +1613,8 @@ function setupSeekBar(el) {
     };
     const doSeek = () => {
         seeking = false;
-        if (audio && audio.duration) audio.currentTime = audio.duration * el.value / 100;
+        const d = getRealDuration();
+        if (audio && d) audio.currentTime = d * el.value / 100;
     };
     el.addEventListener('pointerdown', () => { active = true; seeking = true; });
     el.addEventListener('touchstart', () => { active = true; seeking = true; }, { passive: true });
@@ -2891,8 +2900,9 @@ if (audio) {
             lastSavedSec = sec;
             localStorage.setItem('music_pos', audio.currentTime);
         }
-        if (!seeking && audio.duration) {
-            const pct = (audio.currentTime / audio.duration) * 100;
+        const d = getRealDuration();
+        if (!seeking && d) {
+            const pct = (audio.currentTime / d) * 100;
             if (progress) progress.value = pct;
             if (expProgress) expProgress.value = pct;
             if (timeCur) timeCur.textContent = fmt(audio.currentTime);
@@ -2919,7 +2929,8 @@ let lastPositionValue = -1;
 
 function updatePositionState(force = false) {
     if (!('mediaSession' in navigator) || !audio) return;
-    if (!audio.duration || isNaN(audio.duration) || !isFinite(audio.duration)) return;
+    const d = getRealDuration();
+    if (!d) return;
     const now = Date.now();
     const currentPos = audio.currentTime;
     if (!force) {
@@ -2931,7 +2942,7 @@ function updatePositionState(force = false) {
     lastPositionValue = currentPos;
     try {
         navigator.mediaSession.setPositionState({
-            duration: audio.duration,
+            duration: d,
             playbackRate: audio.playbackRate || 1,
             position: currentPos
         });
@@ -3213,9 +3224,18 @@ async function init() {
             if (audio) {
                 audio.preload = 'auto';
                 audio.src = '/api/stream/' + t.id;
-                audio.addEventListener('loadedmetadata', () => {
-                    if (pos > 0 && pos < audio.duration - 5) audio.currentTime = pos;
-                }, { once: true });
+
+                let restored = false;
+                const restorePos = () => {
+                    if (restored) return;
+                    const d = (audio.duration && isFinite(audio.duration)) ? audio.duration : (t.duration || 0);
+                    if (pos > 0 && d && pos < d - 5) {
+                        audio.currentTime = pos;
+                        restored = true;
+                    }
+                };
+                audio.addEventListener('loadedmetadata', restorePos, { once: true });
+                audio.addEventListener('play', restorePos, { once: true });
             }
         }
     } catch (_) { }

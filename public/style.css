@@ -2594,12 +2594,12 @@ body.is-dragging {
     font-weight: 600 !important;
     color: var(--text) !important;
     line-height: 1.35 !important;
-    /* Force wrapping even on long words; pre-wrap preserves the
-       LRC line breaks while overflow-wrap:anywhere is the standard
-       replacement for the old non-standard word-break:break-word. */
-    white-space: pre-wrap !important;
-    overflow-wrap: anywhere !important;
-    word-break: normal !important;
+    /* Force wrapping even on long words and preserve LRC line breaks.
+       Use pre-line to collapse accidental trailing spaces that cause off-center clipping,
+       and break-word to ensure text wrapping works consistently on all mobile browsers. */
+    white-space: pre-line !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
     margin-bottom: 8px !important;
     min-height: 1.3em !important;
     opacity: 1 !important;
@@ -2614,9 +2614,9 @@ body.is-dragging {
     font-size: 15px !important;
     color: var(--muted) !important;
     line-height: 1.35 !important;
-    white-space: pre-wrap !important;
-    overflow-wrap: anywhere !important;
-    word-break: normal !important;
+    white-space: pre-line !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
     min-height: 1.3em !important;
     opacity: 0.85 !important;
     visibility: visible !important;
