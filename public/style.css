@@ -852,7 +852,10 @@ body.detail-view .group-header {
   border-radius: 6px;
   padding: 6px;
   z-index: 600;
-  display: none;
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
   user-select: none;
   -webkit-user-select: none;
@@ -861,7 +864,9 @@ body.detail-view .group-header {
 }
 
 #theme-menu.open {
-  display: block;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
 .theme-option {
@@ -2106,7 +2111,6 @@ body.theme-menu-open #menu-backdrop {
 #theme-menu,
 #quick-playlist-menu {
   z-index: 600 !important;
-  pointer-events: auto !important;
 }
 
 body.menu-open #app,
@@ -3324,7 +3328,6 @@ button:active,
   .sidebar-search-wrap {
     position: relative;
     padding: 12px 14px 16px;
-    margin-bottom: 120px;
   }
 
   .sidebar-search-wrap #search {
@@ -3562,7 +3565,7 @@ button:active,
     all: unset !important;
     display: block !important;
     font-size: 30px !important;
-    font-weight: 500 !important;
+    font-weight: 700 !important;
     line-height: 36px !important;
     letter-spacing: -0.02em !important;
     color: var(--text) !important;
