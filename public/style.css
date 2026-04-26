@@ -1264,7 +1264,6 @@ body.detail-view .group-header {
   font-family: 'SF Pro Display', -apple-system, sans-serif;
   font-size: 11px;
   color: var(--muted);
-  min-width: 32px;
 }
 
 /* Lyrics timing */
@@ -1735,7 +1734,6 @@ body.detail-view .group-header {
 
 #exp-progress-wrap .time-label {
   font-size: 12px;
-  min-width: 40px;
 }
 
 #exp-progress {
