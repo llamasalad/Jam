@@ -3227,15 +3227,17 @@ async function init() {
 
                 let restored = false;
                 const restorePos = () => {
-                    if (restored) return;
+                    if (restored || audio.readyState === 0) return;
                     const d = (audio.duration && isFinite(audio.duration)) ? audio.duration : (t.duration || 0);
                     if (pos > 0 && d && pos < d - 5) {
-                        audio.currentTime = pos;
-                        restored = true;
+                        try {
+                            audio.currentTime = pos;
+                            restored = true;
+                        } catch (e) { }
                     }
                 };
-                audio.addEventListener('loadedmetadata', restorePos, { once: true });
-                audio.addEventListener('play', restorePos, { once: true });
+                audio.addEventListener('loadedmetadata', restorePos);
+                audio.addEventListener('play', restorePos);
             }
         }
     } catch (_) { }

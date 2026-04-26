@@ -9,11 +9,21 @@ export async function onRequestGet({ params, request, env }) {
   if (rangeHeader) {
     const match = rangeHeader.match(/bytes=(\d*)-(\d*)/);
     if (match) {
-      const start = match[1] ? parseInt(match[1]) : undefined;
-      const end = match[2] ? parseInt(match[2]) : undefined;
-      object = await env.MUSIC_BUCKET.get(key, {
-        range: { offset: start, length: end !== undefined && start !== undefined ? end - start + 1 : undefined }
-      });
+      const start = match[1] !== "" ? parseInt(match[1]) : undefined;
+      const end = match[2] !== "" ? parseInt(match[2]) : undefined;
+
+      let rangeObj;
+      if (start !== undefined && end !== undefined) {
+        rangeObj = { offset: start, length: end - start + 1 };
+      } else if (start !== undefined) {
+        rangeObj = { offset: start };
+      } else if (end !== undefined) {
+        rangeObj = { suffix: end };
+      }
+
+      object = await env.MUSIC_BUCKET.get(key, rangeObj ? { range: rangeObj } : undefined);
+    } else {
+      object = await env.MUSIC_BUCKET.get(key);
     }
   } else {
     object = await env.MUSIC_BUCKET.get(key);
@@ -38,7 +48,7 @@ export async function onRequestGet({ params, request, env }) {
   const headers = {
     "Content-Type": mime,
     "Accept-Ranges": "bytes",
-    "Cache-Control": "public, max-age=86400",
+    "Cache-Control": "public, max-age=86400, no-transform",
   };
 
   if (object.range) {
