@@ -29,7 +29,7 @@ const TOKEN_KEY = 'music_token';
 let token = localStorage.getItem(TOKEN_KEY) || '';
 setTokenCookie(token);
 let tracks = [], filtered = [], queue = [], qIdx = -1, sortMode = 'title';
-let shuffle = localStorage.getItem('music_shuffle') === 'true', seeking = false, buffering = false, switchingTrack = false, muted = false;
+let shuffle = localStorage.getItem('music_shuffle') === 'true', seeking = false, muted = false;
 const SAVED_VOL = parseInt(localStorage.getItem('music_vol') || '80');
 let lastVol = SAVED_VOL;
 let playlists = [], currentPlaylist = null, ctxTrack = null, pendingPlaylistTrack = null;
@@ -42,7 +42,6 @@ let lyricUpdateTimers = { cur: null, next: null };
 let lastKnownTime = 0;
 let lastKnownAt = 0;
 let lastHeartbeatPos = 0;
-let pendingRestorePos = null;
 let playerExpanded = false;
 let desktopExpandedLyricsOpen = false;
 
@@ -1493,11 +1492,7 @@ function play(t) {
     lyricsOffset = 0;
     updateStatusBar();
     updateLyricsOffsetUI();
-    pendingRestorePos = null;
     if (audio) {
-        switchingTrack = true;
-        // Safety: clear the flag after 2s in case the play event never fires
-        setTimeout(() => { switchingTrack = false; }, 2000);
         audio.src = '/api/stream/' + t.id;
         audio.play().catch(e => console.error("Playback failed", e));
     }
@@ -1557,16 +1552,7 @@ if (audio) {
         if (expIconPause) expIconPause.style.display = playing ? 'block' : 'none';
     }
     audio.addEventListener('play', () => {
-        switchingTrack = false;
         syncPlayPause(true);
-        // If we have a pending restore position (from reload), apply it now
-        if (pendingRestorePos !== null) {
-            const pos = pendingRestorePos;
-            pendingRestorePos = null;
-            if (audio.duration && isFinite(audio.duration) && pos > 0 && pos < audio.duration - 5) {
-                audio.currentTime = pos;
-            }
-        }
         // Reset extrapolation anchors immediately so getLiveTime() can't return a
         // stale value during the gap before the first 'timeupdate' fires after resume
         // (mobile throttles timeupdate to ~4Hz, which previously caused a big jump).
@@ -1575,19 +1561,13 @@ if (audio) {
         updateSyncedLyricsState(true);
         if ('mediaSession' in navigator) { navigator.mediaSession.playbackState = 'playing'; updatePositionState(true); }
     });
-    audio.addEventListener('waiting', () => {
-        buffering = true;
-    });
     audio.addEventListener('playing', () => {
-        buffering = false;
         lastKnownTime = audio.currentTime;
         lastKnownAt = performance.now();
-        updateSyncedLyricsState(true);
-        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
     });
     audio.addEventListener('pause', () => {
-        if (!switchingTrack) syncPlayPause(false);
-        if ('mediaSession' in navigator && !switchingTrack) { navigator.mediaSession.playbackState = 'paused'; updatePositionState(true); }
+        syncPlayPause(false);
+        if ('mediaSession' in navigator) { navigator.mediaSession.playbackState = 'paused'; updatePositionState(true); }
     });
     audio.addEventListener('ended', () => {
         if ('mediaSession' in navigator) {
@@ -1624,6 +1604,7 @@ function setupSeekBar(el) {
         if (expTimeCur) expTimeCur.textContent = fmt(v);
     };
     const doSeek = () => {
+        seeking = false;
         if (audio && audio.duration) audio.currentTime = audio.duration * el.value / 100;
     };
     el.addEventListener('pointerdown', () => { active = true; seeking = true; });
@@ -2827,7 +2808,7 @@ function renderPlainLyrics() {
 }
 
 function getLiveTime() {
-    if (!audio || audio.paused || buffering) return audio?.currentTime ?? 0;
+    if (!audio || audio.paused) return audio?.currentTime ?? 0;
     return lastKnownTime + (performance.now() - lastKnownAt) / 1000;
 }
 
@@ -2918,17 +2899,13 @@ if (audio) {
             if (expTimeCur) expTimeCur.textContent = fmt(audio.currentTime);
         }
         updatePositionState();
-        if (!seeking) updateSyncedLyricsState();
+        updateSyncedLyricsState();
     });
 
     // Fallback for mobile - timeupdate is throttled heavily on mobile
     if (window.matchMedia('(max-width: 768px)').matches) {
         function lyricsSyncLoop() {
-            if (audio && !audio.paused && !seeking && !buffering && syncedLyrics.length) {
-                // Re-anchor from the real audio position every frame to prevent
-                // getLiveTime() extrapolation drift caused by mobile micro-stutters
-                lastKnownTime = audio.currentTime;
-                lastKnownAt = performance.now();
+            if (audio && !audio.paused && syncedLyrics.length) {
                 updateSyncedLyricsState();
             }
             requestAnimationFrame(lyricsSyncLoop);
@@ -2964,10 +2941,9 @@ function updatePositionState(force = false) {
 }
 
 if ('mediaSession' in navigator) {
-    navigator.mediaSession.setActionHandler('play', () => {
+    navigator.mediaSession.setActionHandler('play', async () => {
         if (audio && audio.paused) {
-            audio.play().catch(e => console.error('Play action failed:', e));
-            updatePositionState(true);
+            try { await audio.play(); updatePositionState(true); } catch (e) { console.error('Play action failed:', e); }
         }
     });
     navigator.mediaSession.setActionHandler('pause', () => {
@@ -2979,8 +2955,8 @@ if ('mediaSession' in navigator) {
     navigator.mediaSession.setActionHandler('nexttrack', () => {
         try { nextTrack(); } catch (e) { console.error('Next track action failed:', e); }
     });
-    // Don't register seekbackward/seekforward — iOS shows 10s seek icons
-    // when those are registered, overriding the ⏮/⏭ previoustrack/nexttrack icons.
+    navigator.mediaSession.setActionHandler('seekbackward', null);
+    navigator.mediaSession.setActionHandler('seekforward', null);
     navigator.mediaSession.setActionHandler('seekto', null);
 }
 
@@ -3109,10 +3085,8 @@ function startHeartbeat() {
         }
 
         if (!('mediaSession' in navigator)) return;
-        if (!audio.paused) {
-            navigator.mediaSession.playbackState = 'playing';
-            updatePositionState(true);
-        }
+        navigator.mediaSession.playbackState = 'playing';
+        updatePositionState(true);
     }, 750);
 }
 
@@ -3239,24 +3213,8 @@ async function init() {
             if (audio) {
                 audio.preload = 'auto';
                 audio.src = '/api/stream/' + t.id;
-
-                // Store the position to restore — if loadedmetadata fires
-                // before user presses play, seek immediately. Otherwise,
-                // the play event handler will pick it up.
-                if (pos > 0) pendingRestorePos = pos;
-
                 audio.addEventListener('loadedmetadata', () => {
-                    if (pendingRestorePos !== null && audio.duration && isFinite(audio.duration)) {
-                        if (pendingRestorePos < audio.duration - 5) {
-                            audio.currentTime = pendingRestorePos;
-                            pendingRestorePos = null;
-                        }
-                    }
-                    // Update time display
-                    if (audio.duration && isFinite(audio.duration)) {
-                        if (timeTot) timeTot.textContent = fmt(audio.duration);
-                        if (expTimeTot) expTimeTot.textContent = fmt(audio.duration);
-                    }
+                    if (pos > 0 && pos < audio.duration - 5) audio.currentTime = pos;
                 }, { once: true });
             }
         }
