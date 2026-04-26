@@ -3200,7 +3200,8 @@ button:active,
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-left: 20px;
 }
 
 .artist-card,
@@ -3662,9 +3663,4 @@ button:active,
     color: #fff !important;
   }
 
-}
-
-#track-list,
-#playlist-detail {
-  min-height: 100vh;
 }
