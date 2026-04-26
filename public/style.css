@@ -3664,10 +3664,6 @@ button:active,
     color: #fff !important;
   }
 
-  #exp-lyric-current,
-  #exp-lyric-next {
-    will-change: opacity, transform;
-  }
 }
 
 #track-list,
