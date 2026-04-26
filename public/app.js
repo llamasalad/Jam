@@ -458,6 +458,16 @@ function cycleSort() {
     if (sortMode === 'title') filtered = [...tracks];
     sort();
     updateSidebarSortLabel();
+
+    const main = document.getElementById('main');
+    if (main) {
+        main.classList.remove('sorting-active');
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                main.classList.add('sorting-active');
+            });
+        });
+    }
 }
 
 if (sortBtn) {
@@ -3171,6 +3181,8 @@ async function init() {
             mainEl.addEventListener('scroll', () => {
                 const scrolled = mainEl.scrollTop > 40;
                 headerTitle.classList.toggle('collapsed', scrolled);
+                const headerEl = document.getElementById('header');
+                if (headerEl) headerEl.classList.toggle('collapsed', scrolled);
                 if (searchWrap) searchWrap.classList.toggle('hidden', scrolled);
             }, { passive: true });
         }
