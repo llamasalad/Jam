@@ -166,9 +166,13 @@ export async function onRequestGet({ request, env }) {
   try {
     const SUPPORTED = new Set([".mp3", ".flac", ".ogg", ".m4a", ".wav", ".aac", ".opus"]);
 
-    // List all objects recursively from the root
-    const listed = await env.MUSIC_BUCKET.list({ limit: 2000 });
-    const allObjects = listed.objects;
+    let allObjects = [];
+    let cursor = undefined;
+    do {
+      const listed = await env.MUSIC_BUCKET.list({ limit: 1000, cursor });
+      allObjects.push(...listed.objects);
+      cursor = listed.truncated ? listed.cursor : undefined;
+    } while (cursor);
 
     const trackObjects = allObjects.filter(obj => {
       const ext = obj.key.slice(obj.key.lastIndexOf(".")).toLowerCase();
