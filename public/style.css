@@ -228,6 +228,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100dvh;
+  padding-bottom: calc(var(--player-h) + env(safe-area-inset-bottom, 0px));
 }
 
 #header {
