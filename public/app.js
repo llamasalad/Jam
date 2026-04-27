@@ -1500,7 +1500,7 @@ function play(t) {
     updatePlayerMetadata(t);
     const pt = document.getElementById('player-thumb');
     if (pt) { pt.src = FALLBACK; loadCover(t.id, pt); }
-    document.title = (t.title || '?') + ' \u2014 ' + (t.artist || '?');
+    document.title = (t.title || '?') + ' \u00B7 ' + (t.artist || '?');
     if (timeTot) timeTot.textContent = '-';
     localStorage.setItem('music_last', JSON.stringify({ id: t.id, title: t.title, artist: t.artist, album: t.album }));
     saveQueueState();
@@ -2723,7 +2723,7 @@ async function openLyricsPicker() {
 
             const duration = item.duration ? `${Math.floor(item.duration / 60)}:${String(Math.floor(item.duration % 60)).padStart(2, '0')}` : '';
             const isSelected = savedPick && savedPick.id === item.id;
-            const name = `${item.trackName || ''} \u2014 ${item.artistName || 'Unknown'}`;
+            const name = `${item.trackName || ''} \u00B7 ${item.artistName || 'Unknown'}`;
 
             return `<div class="lyrics-picker-item${isSelected ? ' selected' : ''}" data-pick-id="${item.id}">
                 <div class="lyrics-picker-item-name">${escHtml(name)}</div>
@@ -3214,7 +3214,7 @@ async function init() {
 
             const pt = document.getElementById('player-thumb');
             if (pt) { pt.src = FALLBACK; loadCover(t.id, pt); }
-            document.title = (t.title || '?') + ' \u2014 ' + (t.artist || '?');
+            document.title = (t.title || '?') + ' \u00B7 ' + (t.artist || '?');
 
             updateExpandedNowPlaying(t);
             updateMediaSession(t);
