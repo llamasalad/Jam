@@ -3208,15 +3208,14 @@ button:active,
   display: none;
 }
 
-
 #artists-container,
 #albums-container {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fit, 110px);
-  justify-content: center;
+  display: flex;
   gap: 16px;
   padding: 20px;
   width: 100%;
+  flex-direction: row;
+  flex-wrap: wrap;
 }
 
 .artist-card,
@@ -3336,7 +3335,7 @@ button:active,
 
   .sidebar-search-wrap {
     position: relative;
-    padding: 12px 14px 16px;
+    padding: 12px 14px 25px;
   }
 
   .sidebar-search-wrap #search {
@@ -3403,8 +3402,8 @@ button:active,
   }
 
   .sidebar-theme-option {
-    padding: 8px 28px;
-    font-size: 12px;
+    padding: 8px 22px;
+    font-size: 11px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--muted);
@@ -3431,9 +3430,8 @@ button:active,
 
   .sidebar-label {
     position: relative;
-    z-index: 2;
     padding: 0 20px;
-    font-size: 13px;
+    font-size: 15px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--muted);
@@ -3472,7 +3470,7 @@ button:active,
   .sidebar-marquee-track {
     display: flex;
     white-space: nowrap;
-    font-size: 12px;
+    font-size: 15px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--accent);
@@ -3482,7 +3480,7 @@ button:active,
   }
 
   .sidebar-item.active .sidebar-marquee-track {
-    opacity: 0.7;
+    opacity: 0.5;
   }
 
   @keyframes sidebar-marquee {
