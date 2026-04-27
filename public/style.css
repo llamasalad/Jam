@@ -3273,7 +3273,7 @@ button:active,
 
   body.detail-view #header,
   body.detail-view #library-back {
-    display: grid;
+    display: grid !important;
     grid-column: 2;
     padding-left: 15px;
   }
