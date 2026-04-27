@@ -2368,7 +2368,7 @@ function bindLyricsFontChange(btnId, delta) {
     if (!btn) return;
     btn.onclick = e => {
         e.stopPropagation();
-        lyricsFontSize = delta > 0 ? Math.min(22, lyricsFontSize + delta) : Math.max(10, lyricsFontSize + delta);
+        lyricsFontSize = delta > 0 ? Math.min(30, lyricsFontSize + delta) : Math.max(10, lyricsFontSize + delta);
         localStorage.setItem('lyrics_font', lyricsFontSize);
         applyLyricsFontSize();
     };

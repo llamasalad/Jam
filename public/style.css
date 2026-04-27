@@ -714,10 +714,11 @@ body.detail-view .group-header {
 }
 
 .track-title {
-  font-size: 13px;
+  font-size: 14px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-weight: 600;
 }
 
 .track-sub {
@@ -1106,7 +1107,7 @@ body.detail-view .group-header {
 
 #player-title {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
   padding-bottom: 3px;
   overflow: hidden;
@@ -1115,7 +1116,7 @@ body.detail-view .group-header {
 }
 
 #player-artist {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
@@ -1491,7 +1492,7 @@ body.detail-view .group-header {
 #exp-title {
   width: 100%;
   font-size: 26px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text);
   margin-bottom: 4px;
   overflow: hidden;
@@ -1618,7 +1619,7 @@ body.detail-view .group-header {
 #exp-queue-btn {
   background: none;
   border: 1px solid var(--border);
-  color: var(--accent);
+  color: var(--muted);
   border-radius: 6px;
   padding: 6px 14px;
   font-size: 12px;
@@ -1690,7 +1691,7 @@ body.detail-view .group-header {
   display: block;
   padding: 4px 12px;
   height: 100%;
-  color: var(--accent);
+  color: var(--muted);
   background-clip: text;
   -webkit-background-clip: text;
   filter: hue-rotate(0deg);
@@ -1717,7 +1718,7 @@ body.detail-view .group-header {
 
 #exp-lyrics-toggle.active,
 #exp-queue-btn.active {
-  color: var(--accent);
+  color: var(--muted);
   border-color: var(--accent);
 }
 
@@ -2528,9 +2529,6 @@ body.is-dragging {
     gap: 0;
     align-items: center !important;
     width: 100% !important;
-    /* min-width:0 lets flex children shrink below their intrinsic content
-       size — without it, iOS Safari refuses to wrap a long lyric line and
-       expands the column past the viewport. */
     min-width: 0 !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
@@ -2563,14 +2561,6 @@ body.is-dragging {
     padding-bottom: 0 !important;
   }
 
-  #exp-title {
-    font-size: 22px;
-  }
-
-  #exp-artist {
-    font-size: 15px;
-  }
-
   #exp-lyrics-wrap {
     height: auto !important;
     min-height: 140px !important;
@@ -2589,10 +2579,6 @@ body.is-dragging {
     display: block;
     text-align: center;
     padding: 0;
-    /* Allow wrapped multi-line lyrics to be fully visible. The inline
-       style sets flex:1 which combined with the wrap's min-height:140px
-       was clipping any line that wrapped beyond 140px. Sizing to content
-       lets the wrap grow naturally. */
     flex: 0 0 auto !important;
     overflow: visible !important;
     transform: none !important;
@@ -2607,9 +2593,6 @@ body.is-dragging {
     font-weight: 600 !important;
     color: var(--text) !important;
     line-height: 1.35 !important;
-    /* Force wrapping even on long words and preserve LRC line breaks.
-       Use pre-line to collapse accidental trailing spaces that cause off-center clipping,
-       and break-word to ensure text wrapping works consistently on all mobile browsers. */
     white-space: pre-line !important;
     overflow-wrap: break-word !important;
     word-break: break-word !important;
@@ -3211,12 +3194,11 @@ button:active,
 
 #artists-container,
 #albums-container {
-  display: flex;
-  gap: 16px;
-  padding: 20px;
-  width: 100%;
-  flex-direction: row;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 200px);
+  gap: 1rem;
+  justify-content: center;
+  align-content: flex-start;
 }
 
 .artist-card,
@@ -3505,12 +3487,12 @@ button:active,
   }
 
   .track-title {
-    font-size: 15px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 600;
   }
 
   .track-sub {
-    font-size: 14px;
+    font-size: 13px;
     margin-top: 2px;
   }
 
@@ -3707,6 +3689,15 @@ button:active,
   .tab.active {
     background: var(--accent) !important;
     color: #fff !important;
+  }
+
+  #artists-container,
+  #albums-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 120px);
+    gap: 1rem;
+    justify-content: center;
+    align-content: flex-start;
   }
 
 }
