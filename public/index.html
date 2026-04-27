@@ -30,14 +30,6 @@
   <div id="menu-backdrop" style="display:none"></div>
   <div id="ctx-menu">
     <div class="ctx-label" id="ctx-track-name">Track Name</div>
-    <div class="ctx-item" id="ctx-play-next">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-        stroke-linecap="round" stroke-linejoin="round">
-        <path d="m5 12 7-7 7 7" />
-        <path d="M12 19V5" />
-      </svg>
-      Play Next
-    </div>
     <div class="ctx-item" id="ctx-add-queue">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
         stroke-linecap="round" stroke-linejoin="round">
@@ -115,22 +107,24 @@
           </div>
         </li>
         <li class="sidebar-item" id="sidebar-sort-item">
-          <span class="sidebar-label" id="sidebar-sort-label">A→Z</span>
+          <span class="sidebar-label" id="sidebar-sort-label">Views</span>
           <div class="sidebar-marquee">
             <div class="sidebar-marquee-track" id="sidebar-sort-marquee-track">
-              A→Z &nbsp;·&nbsp; A→Z &nbsp;·&nbsp; A→Z &nbsp;·&nbsp; A→Z &nbsp;·&nbsp; A→Z &nbsp;·&nbsp; A→Z
-              &nbsp;·&nbsp; A→Z &nbsp;·&nbsp; A→Z &nbsp;·&nbsp; A→Z &nbsp;·&nbsp; A→Z &nbsp;·&nbsp; A→Z &nbsp;·&nbsp;
-              A→Z &nbsp;·&nbsp;
+              Views &nbsp;·&nbsp; Views &nbsp;·&nbsp; Views &nbsp;·&nbsp; Views &nbsp;·&nbsp; Views &nbsp;·&nbsp; Views
+              &nbsp;·&nbsp; Views &nbsp;·&nbsp; Views &nbsp;·&nbsp; Views &nbsp;·&nbsp; Views &nbsp;·&nbsp; Views
+              &nbsp;·&nbsp;
+              Views &nbsp;·&nbsp;
             </div>
           </div>
         </li>
         <li class="sidebar-item sidebar-theme" id="sidebar-theme-item">
-          <span class="sidebar-label">Theme</span>
+          <span class="sidebar-label">Themes</span>
           <div class="sidebar-marquee">
             <div class="sidebar-marquee-track">
-              Theme &nbsp;·&nbsp; Theme &nbsp;·&nbsp; Theme &nbsp;·&nbsp; Theme &nbsp;·&nbsp; Theme &nbsp;·&nbsp; Theme
-              &nbsp;·&nbsp; Theme &nbsp;·&nbsp; Theme &nbsp;·&nbsp; Theme &nbsp;·&nbsp; Theme &nbsp;·&nbsp; Theme
-              &nbsp;·&nbsp; Theme &nbsp;·&nbsp;
+              Themes &nbsp;·&nbsp; Themes &nbsp;·&nbsp; Themes &nbsp;·&nbsp; Themes &nbsp;·&nbsp; Themes &nbsp;·&nbsp;
+              Themes
+              &nbsp;·&nbsp; Themes &nbsp;·&nbsp; Themes &nbsp;·&nbsp; Themes &nbsp;·&nbsp; Themes &nbsp;·&nbsp; Themes
+              &nbsp;·&nbsp; Themes &nbsp;·&nbsp;
             </div>
           </div>
         </li>
@@ -156,9 +150,8 @@
           </div>
         </div>
       </div>
-      <div class="sidebar-spacer"></div>
       <div class="sidebar-search-wrap">
-        <input type="text" id="sidebar-search" placeholder="Search..." autocomplete="off" spellcheck="false" />
+        <input type="text" id="sidebar-search" placeholder="search..." autocomplete="off" spellcheck="false" />
       </div>
     </nav>
     <div id="header">
@@ -168,7 +161,7 @@
         <div id="header-top-actions">
           <button id="sort-btn">views</button>
           <div id="theme-wrap">
-            <button id="theme-toggle" title="Theme">THEME</button>
+            <button id="theme-toggle" title="Theme">themes</button>
             <div id="theme-menu">
               <div class="ctx-item theme-option" data-theme="default">
                 <div class="theme-preview" style="background:#0d0d0f;color: #c8a86b;">Aurion</div>
@@ -329,7 +322,6 @@
           </div>
         </div>
       </div>
-      <!-- Mobile-only lyrics card, hidden on desktop via CSS -->
       <div id="exp-lyrics-card">
         <div id="exp-lyrics-card-header">
           <span id="exp-lyrics-card-title">Lyrics</span>
@@ -395,20 +387,19 @@
         </div>
       </div>
       <div id="player-right">
-        <div id="player-meta-mobile">
-          <div class="title">-</div>
-          <div class="artist">-</div>
-        </div>
-        <div id="volume-row">
-          <span id="volume-icon"></span>
-          <input id="volume" type="range" min="0" max="100" step="1" />
-        </div>
-        <div id="player-utils">
-          <button id="queue-btn">queue</button>
-          <button id="lyrics-btn">lyrics</button>
-        </div>
+        <div class="title">-</div>
+        <div class="artist">-</div>
+      </div>
+      <div id="volume-row">
+        <span id="volume-icon"></span>
+        <input id="volume" type="range" min="0" max="100" step="1" />
+      </div>
+      <div id="player-utils">
+        <button id="queue-btn">queue</button>
+        <button id="lyrics-btn">lyrics</button>
       </div>
     </div>
+  </div>
   </div>
   </div>
   <audio id="audio" crossorigin="use-credentials"></audio>
