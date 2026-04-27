@@ -984,7 +984,7 @@ body {
   color: var(--muted);
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   border-radius: 8px;
 }
 
@@ -2349,7 +2349,6 @@ body.menu-open .queue-remove {
 @media (hover: hover) {
   .ctrl-btn:hover {
     background: var(--surface3);
-    color: var(--text);
   }
 
   .ctrl-btn.main:hover {
@@ -2378,7 +2377,7 @@ body.menu-open .queue-remove {
   #exp-lyrics-toggle:hover,
   #exp-queue-btn:hover {
     background: var(--surface3);
-    color: var(--accent);
+    color: var(--text);
   }
 }
 
@@ -2745,7 +2744,7 @@ body.menu-open .queue-remove {
     outline: none !important;
     -webkit-box-shadow: 0 0 0 30px transparent inset !important;
     box-shadow: 0 0 0 30px transparent inset !important;
-    -webkit-text-fill-color: var(--text) !important;
+    -webkit-text-fill-color: var(--muted) !important;
   }
 
   #sidebar-search:focus {
@@ -2799,7 +2798,7 @@ body.menu-open .queue-remove {
   .sidebar-logo {
     font-size: 50px;
     font-weight: 500;
-    padding: 0 20px 28px;
+    padding: 20px 20px 28px;
     color: var(--text);
   }
 
@@ -3082,7 +3081,6 @@ body.menu-open .queue-remove {
   #player-main {
     order: 3 !important;
     width: 100% !important;
-    padding: 0 4px !important;
     gap: 12px !important;
     justify-content: space-between !important;
   }
@@ -3642,9 +3640,7 @@ body.menu-open .queue-remove {
   #albums-container {
     display: grid;
     grid-template-columns: repeat(auto-fill, 120px);
-    gap: 1rem;
-    justify-content: center;
-    align-content: flex-start;
+    gap: 0.4rem;
   }
 
   #main {
