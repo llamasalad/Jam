@@ -551,7 +551,7 @@ const sidebarSortItem = document.getElementById('sidebar-sort-item');
 const sidebarSortLabel = document.getElementById('sidebar-sort-label');
 const sidebarSortTrack = document.getElementById('sidebar-sort-marquee-track');
 
-const sortMarqueeLabels = ['A→Z', 'Artist', 'Album'];
+const sortMarqueeLabels = ['Views', 'Artist', 'Album'];
 
 function updateSidebarSortLabel() {
     const label = sortMarqueeLabels[sortModeIdx];
