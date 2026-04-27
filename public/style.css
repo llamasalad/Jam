@@ -1081,7 +1081,7 @@ body.detail-view .group-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex: 1;
+  /* flex: 1; */
   min-width: 0;
   cursor: pointer;
 }
@@ -1213,7 +1213,6 @@ body.detail-view .group-header {
   display: flex;
   align-items: center;
   justify-content: center;
-  transform: translateY(-1px);
 }
 
 #player-utils {
@@ -3702,5 +3701,9 @@ button:active,
   #main {
     padding-bottom: calc(var(--player-h) + env(safe-area-inset-bottom, 0px));
     background: var(--bg);
+  }
+
+  #player-utils {
+    display: none !important
   }
 }
