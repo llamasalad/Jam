@@ -2311,6 +2311,18 @@ function updateMediaSession(t) {
         navigator.mediaSession.setActionHandler('pause', () => { if (audio) audio.pause(); });
         navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack());
         navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack());
+
+        const dur = t.duration || 0;
+        if (dur > 0 && navigator.mediaSession.setPositionState) {
+            try {
+                const pos = (audio && isFinite(audio.currentTime)) ? Math.min(audio.currentTime, dur) : 0;
+                navigator.mediaSession.setPositionState({
+                    duration: dur,
+                    playbackRate: audio ? audio.playbackRate : 1,
+                    position: pos
+                });
+            } catch (e) { }
+        }
     } catch (e) {
         console.error('Failed to update MediaSession:', e);
     }
@@ -3318,43 +3330,12 @@ async function checkForUpdate() {
 }
 
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(reg => {
-            swRegistration = reg;
-            console.log('[SW] Registered, scope:', reg.scope);
-            console.log('[SW] Status:', window.getSWStatus());
-
-            // Poll for updates every 60s (important for Safari)
-            setInterval(() => {
-                console.log('[SW] Checking for updates...');
-                reg.update();
-            }, 60000);
-
-            // New SW found
-            reg.addEventListener('updatefound', () => {
-                const newWorker = reg.installing;
-                console.log('[SW] Update found, installing...');
-                newWorker.addEventListener('statechange', () => {
-                    console.log('[SW] Worker state:', newWorker.state);
-                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        console.log('[SW] Update ready — showing UI');
-                        showUpdateUI();
-                    }
-                });
+    navigator.serviceWorker.getRegistrations().then(regs => {
+        for (let reg of regs) {
+            reg.unregister().then(() => {
+                console.log('[SW] Unregistered successfully');
             });
-
-            // SW was already waiting when page loaded
-            if (reg.waiting && navigator.serviceWorker.controller) {
-                console.log('[SW] Update was already waiting');
-                showUpdateUI();
-            }
-        }).catch(err => console.error('[SW] Registration failed:', err));
-
-        // Reload when new SW takes control
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-            console.log('[SW] New controller, reloading...');
-            window.location.reload();
-        });
+        }
     });
 }
 
