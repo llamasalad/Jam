@@ -20,7 +20,6 @@ function cleanup() {
         document.removeEventListener('click', globalClickListener);
         globalClickListener = null;
     }
-    _mediaSessionHandlersRegistered = false;
 }
 
 const mobileQuery = window.matchMedia('(max-width:768px)');
@@ -1560,45 +1559,29 @@ if (audio) {
         lastKnownTime = audio.currentTime;
         lastKnownAt = performance.now();
         updateSyncedLyricsState(true);
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.playbackState = 'playing';
-            updatePositionState(true);
-        }
     });
     audio.addEventListener('playing', () => {
         lastKnownTime = audio.currentTime;
         lastKnownAt = performance.now();
         _trackTransition = false;
-        registerMediaSessionHandlers();
     });
     audio.addEventListener('pause', () => {
         if (!_trackTransition) {
             syncPlayPause(false);
         }
-        if ('mediaSession' in navigator && !_trackTransition) {
-            navigator.mediaSession.playbackState = 'paused';
-            updatePositionState(true);
-        }
     });
     audio.addEventListener('ended', () => {
         if (_trackTransition) return;
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.playbackState = 'paused';
-        }
         nextTrack();
     });
     audio.addEventListener('error', () => {
         _trackTransition = false;
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.playbackState = 'paused';
-        }
         console.error('Audio playback error:', audio.error?.message || 'Unknown error');
     });
     audio.addEventListener('seeked', () => {
         seeking = false;
         lastKnownTime = audio.currentTime;
         lastKnownAt = performance.now();
-        updatePositionState(true);
         updateSyncedLyricsState(true);
     });
 }
@@ -2320,11 +2303,13 @@ function updateMediaSession(t) {
                 { src: coverUrl, sizes: '512x512', type: 'image/jpeg' }
             ]
         });
+
+        navigator.mediaSession.setActionHandler('play', () => { if (audio) audio.play().catch(() => { }); });
+        navigator.mediaSession.setActionHandler('pause', () => { if (audio) audio.pause(); });
+        navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack());
+        navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack());
     } catch (e) {
-        console.error('Failed to update MediaSession metadata:', e);
-        try {
-            navigator.mediaSession.metadata = null;
-        } catch (_) { }
+        console.error('Failed to update MediaSession:', e);
     }
 }
 
@@ -2929,64 +2914,7 @@ if (audio) {
     }
 }
 
-let lastPositionUpdateTime = 0;
-let lastPositionValue = -1;
 
-function updatePositionState(force = false) {
-    if (!('mediaSession' in navigator) || !audio) return;
-    const d = getRealDuration();
-    if (!d) return;
-    const now = Date.now();
-    const currentPos = audio.currentTime;
-    if (!force) {
-        const timeSinceLastUpdate = now - lastPositionUpdateTime;
-        const positionChanged = Math.abs(currentPos - lastPositionValue) >= 1;
-        if (timeSinceLastUpdate < 200 || !positionChanged) return;
-    }
-    lastPositionUpdateTime = now;
-    lastPositionValue = currentPos;
-    try {
-        navigator.mediaSession.setPositionState({
-            duration: d,
-            playbackRate: audio.playbackRate || 1,
-            position: Math.min(currentPos, d)
-        });
-    } catch (e) {
-        console.warn('Failed to update MediaSession position state:', e);
-    }
-}
-
-let _mediaSessionHandlersRegistered = false;
-function registerMediaSessionHandlers() {
-    if (_mediaSessionHandlersRegistered || !('mediaSession' in navigator)) return;
-    _mediaSessionHandlersRegistered = true;
-
-    navigator.mediaSession.setActionHandler('play', () => {
-        if (audio) audio.play().catch(() => { });
-    });
-    navigator.mediaSession.setActionHandler('pause', () => {
-        if (audio) audio.pause();
-    });
-    navigator.mediaSession.setActionHandler('previoustrack', () => {
-        if (audio && audio.currentTime > 3) {
-            audio.currentTime = 0;
-            updatePositionState(true);
-        } else {
-            prevTrack();
-        }
-    });
-    navigator.mediaSession.setActionHandler('nexttrack', () => {
-        nextTrack();
-    });
-    try {
-        navigator.mediaSession.setActionHandler('seekto', (d) => {
-            if (audio && d.seekTime != null) {
-                audio.currentTime = d.seekTime;
-                updatePositionState(true);
-            }
-        });
-    } catch (_) { }
-}
 
 function escAttr(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
@@ -3024,6 +2952,7 @@ function openEditMetadataModal(t) {
             renderLibraryCards();
             modal.remove();
             showToast('Metadata updated!');
+            if (queue[qIdx]?.id === t.id) updateMediaSession(t);
         } catch (e) {
             console.error('Update error:', e);
             showToast('Save failed');
@@ -3108,13 +3037,6 @@ function startHeartbeat() {
                 audio.play().catch(() => { });
             }
             lastHeartbeatPos = currentTime;
-        }
-
-        if ('mediaSession' in navigator && !audio.paused) {
-            const now = Date.now();
-            if (now - lastPositionUpdateTime >= 2000) {
-                updatePositionState(true);
-            }
         }
     }, 750);
 }
@@ -3236,9 +3158,6 @@ async function init() {
 
             updateExpandedNowPlaying(t);
             updateMediaSession(t);
-            if ('mediaSession' in navigator) {
-                navigator.mediaSession.playbackState = 'paused';
-            }
             loadLyrics(t);
 
             if (audio) {
@@ -3293,11 +3212,6 @@ document.addEventListener('visibilitychange', () => {
     wasPlayingBeforeHidden = false;
 
     if (audio && !audio.paused) startHeartbeat();
-
-    if ('mediaSession' in navigator && audio) {
-        navigator.mediaSession.playbackState = audio.paused ? 'paused' : 'playing';
-        updatePositionState(true);
-    }
 
     const ep = document.getElementById('expanded-player');
     if (ep && !ep.classList.contains('open')) {
