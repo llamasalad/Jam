@@ -1494,7 +1494,7 @@ function play(t) {
     updateMediaSession(t);
     if (audio) {
         _trackTransition = true;
-        audio.src = '/api/stream/' + t.id + '?_sw_bypass=1';
+        audio.src = '/api/stream/' + t.id;
         audio.load();
         audio.play().catch(e => console.error("Playback failed", e));
     }
@@ -1578,7 +1578,7 @@ if (audio) {
     });
     audio.addEventListener('seeked', () => {
         seeking = false;
-        updateSyncedLyricsState(true);
+        updateSyncedLyricsState(true, audio.currentTime);
     });
 }
 
@@ -1607,17 +1607,21 @@ function setupSeekBar(el) {
             const target = d * el.value / 100;
             const wasPaused = audio.paused;
 
-            // Log it for verification
-            console.log(`[Safari Seek Fix] Target: ${target.toFixed(2)}s | Hardware Dur: ${d.toFixed(2)}s`);
+            // On-screen debug for iPhone
+            showToast(`Seeking to ${fmt(target)} (of ${fmt(d)})`);
 
-            audio.currentTime = target;
+            if (audio.fastSeek) {
+                audio.fastSeek(target);
+            } else {
+                audio.currentTime = target;
+                // Safari double-jump workaround
+                setTimeout(() => { audio.currentTime = target; }, 10);
+            }
 
-            // Force a resync of the internal Safari buffer
             if (!wasPaused) {
                 audio.play().catch(() => { });
             }
 
-            // Update OS lockscreen position immediately
             const t = queue && queue[qIdx];
             if (t) updateMediaSession(t);
         }
@@ -3175,7 +3179,7 @@ async function init() {
 
             if (audio) {
                 audio.preload = 'auto';
-                audio.src = '/api/stream/' + t.id + '?_sw_bypass=1';
+                audio.src = '/api/stream/' + t.id;
                 audio.load();
 
                 // Set media session after audio.src so iOS has a valid audio context
