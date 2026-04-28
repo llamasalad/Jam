@@ -1557,15 +1557,15 @@ if (audio) {
         if (iconPause) iconPause.style.display = playing ? 'block' : 'none';
         if (expIconPlay) expIconPlay.style.display = playing ? 'none' : 'block';
         if (expIconPause) expIconPause.style.display = playing ? 'block' : 'none';
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
+        }
     }
     audio.addEventListener('play', () => {
         syncPlayPause(true);
         lastKnownTime = audio.currentTime;
         lastKnownAt = performance.now();
         updateSyncedLyricsState(true);
-        if (queue && queue[qIdx]) {
-            updateMediaSession(queue[qIdx]);
-        }
     });
     audio.addEventListener('playing', () => {
         lastKnownTime = audio.currentTime;
@@ -2316,12 +2316,14 @@ function updateMediaSession(t) {
         navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack());
         navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack());
 
-        if (t.duration && t.duration > 0) {
+        const dur = getRealDuration() || (t.duration > 0 ? t.duration : 0);
+        if (dur > 0) {
             try {
+                const pos = (audio && isFinite(audio.currentTime)) ? Math.min(audio.currentTime, dur) : 0;
                 navigator.mediaSession.setPositionState({
-                    duration: t.duration,
+                    duration: dur,
                     playbackRate: audio ? audio.playbackRate : 1,
-                    position: audio ? audio.currentTime : 0
+                    position: pos
                 });
             } catch (e) { }
         }
@@ -3172,13 +3174,29 @@ async function init() {
             if (pt) { pt.src = FALLBACK; loadCover(t.id, pt); }
             document.title = (t.title || '?') + ' \u00B7 ' + (t.artist || '?');
 
+            // Immediately populate duration/scrubber UI from saved data
+            const savedDur = t.duration || 0;
+            if (savedDur > 0) {
+                if (timeTot) timeTot.textContent = fmt(savedDur);
+                if (expTimeTot) expTimeTot.textContent = fmt(savedDur);
+                if (pos > 0 && pos < savedDur) {
+                    const pct = (pos / savedDur) * 100;
+                    if (progress) progress.value = pct;
+                    if (expProgress) expProgress.value = pct;
+                    if (timeCur) timeCur.textContent = fmt(pos);
+                    if (expTimeCur) expTimeCur.textContent = fmt(pos);
+                }
+            }
+
             updateExpandedNowPlaying(t);
-            updateMediaSession(t);
             loadLyrics(t);
 
             if (audio) {
                 audio.preload = 'auto';
                 audio.src = '/api/stream/' + t.id;
+
+                // Set media session after audio.src so iOS has a valid audio context
+                updateMediaSession(t);
 
                 let restored = false;
                 const restorePos = () => {
@@ -3198,6 +3216,8 @@ async function init() {
                 };
                 audio.addEventListener('loadedmetadata', restorePos);
                 audio.addEventListener('play', restorePos);
+            } else {
+                updateMediaSession(t);
             }
         }
     } catch (_) { }
