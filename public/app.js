@@ -1487,12 +1487,17 @@ function playTrack(t, list) {
     if (queueOpen) renderQueue();
 }
 
+let _trackTransition = false;
+
 function play(t) {
     seeking = false;
     lyricsOffset = 0;
     updateStatusBar();
     updateLyricsOffsetUI();
     if (audio) {
+        // Flag: suppress the 'pause' event from audio.src change
+        // (changing src triggers a fake pause event that would set playbackState='paused')
+        _trackTransition = true;
         audio.src = '/api/stream/' + t.id;
         audio.play().catch(e => console.error("Playback failed", e));
     }
@@ -1509,11 +1514,6 @@ function play(t) {
     updateAdaptiveBackground();
     startHeartbeat();
     updateMediaSession(t);
-    // iOS: always declare 'playing' here — audio.paused is unreliable during
-    // track transitions (src change makes it temporarily true while loading).
-    if ('mediaSession' in navigator) {
-        navigator.mediaSession.playbackState = 'playing';
-    }
 
     const nextT = queue[qIdx + 1];
     if (nextT) {
@@ -1556,30 +1556,33 @@ if (audio) {
     }
     audio.addEventListener('play', () => {
         syncPlayPause(true);
-        // Reset extrapolation anchors immediately so getLiveTime() can't return a
-        // stale value during the gap before the first 'timeupdate' fires after resume
-        // (mobile throttles timeupdate to ~4Hz, which previously caused a big jump).
         lastKnownTime = audio.currentTime;
         lastKnownAt = performance.now();
         updateSyncedLyricsState(true);
-        if ('mediaSession' in navigator) { navigator.mediaSession.playbackState = 'playing'; updatePositionState(true); }
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = 'playing';
+            updatePositionState(true);
+        }
     });
     audio.addEventListener('playing', () => {
         lastKnownTime = audio.currentTime;
         lastKnownAt = performance.now();
-        // iOS: register handlers on first 'playing' event — this is the
-        // earliest point iOS will accept them. The guard flag inside
-        // registerMediaSessionHandlers prevents re-entrancy and re-registration.
+        _trackTransition = false; // track has started — pause events are real again
         registerMediaSessionHandlers();
     });
     audio.addEventListener('pause', () => {
         syncPlayPause(false);
-        if ('mediaSession' in navigator) { navigator.mediaSession.playbackState = 'paused'; updatePositionState(true); }
+        // Don't update playbackState during track transitions —
+        // changing audio.src fires a fake 'pause' that would
+        // incorrectly show the play icon on iOS Control Center.
+        if ('mediaSession' in navigator && !_trackTransition) {
+            navigator.mediaSession.playbackState = 'paused';
+            updatePositionState(true);
+        }
     });
     audio.addEventListener('ended', () => {
         if ('mediaSession' in navigator) {
             navigator.mediaSession.playbackState = 'paused';
-            try { navigator.mediaSession.setPositionState(); } catch (_) { }
         }
         nextTrack();
     });
@@ -2960,63 +2963,35 @@ function updatePositionState(force = false) {
     }
 }
 
-// ── iOS Media Session Fix ──
-// iOS Safari requires action handlers registered AFTER the first 'playing'
-// event. Handlers must be SYNCHRONOUS (no async/await) — iOS considers async
-// handlers "done" immediately and the later continuation corrupts the session.
-// Handlers must be registered ONCE — re-registering from within a handler
-// callback (via play→playing event chain) causes re-entrancy that kills the
-// session on iOS. The guard flag prevents this.
+// ── Media Session Handlers ──
+// Registered once, on first 'playing' event. Kept as simple as possible.
 let _mediaSessionHandlersRegistered = false;
 function registerMediaSessionHandlers() {
-    if (_mediaSessionHandlersRegistered) return;
-    if (!('mediaSession' in navigator)) return;
+    if (_mediaSessionHandlersRegistered || !('mediaSession' in navigator)) return;
     _mediaSessionHandlersRegistered = true;
 
-    // CRITICAL for iOS: handlers must set playbackState SYNCHRONOUSLY as the
-    // very first action. iOS needs immediate confirmation that the command
-    // was handled. If the state doesn't change, iOS considers the session
-    // unresponsive and disconnects all controls.
-    // All handler bodies are wrapped in try/catch — any uncaught exception
-    // kills the iOS media session permanently until the app is foregrounded.
     navigator.mediaSession.setActionHandler('play', () => {
-        try {
-            navigator.mediaSession.playbackState = 'playing';
-            if (!audio) return;
-            if (audio.error || audio.readyState === 0) {
-                const t = queue && queue[qIdx];
-                if (t) audio.src = '/api/stream/' + t.id;
-            }
-            audio.play().catch(() => { });
-        } catch (_) { /* prevent session death */ }
+        if (audio) audio.play();
     });
     navigator.mediaSession.setActionHandler('pause', () => {
-        try {
-            navigator.mediaSession.playbackState = 'paused';
-            if (audio) audio.pause();
-        } catch (_) { /* prevent session death */ }
+        if (audio) audio.pause();
     });
     navigator.mediaSession.setActionHandler('previoustrack', () => {
-        try {
-            if (audio && audio.currentTime > 3) audio.currentTime = 0;
-            else prevTrack();
-        } catch (_) { /* prevent session death */ }
+        if (audio && audio.currentTime > 3) audio.currentTime = 0;
+        else prevTrack();
     });
     navigator.mediaSession.setActionHandler('nexttrack', () => {
-        try { nextTrack(); } catch (_) { /* prevent session death */ }
+        nextTrack();
     });
     try {
-        navigator.mediaSession.setActionHandler('seekto', (details) => {
-            try {
-                if (audio && details.seekTime != null) {
-                    audio.currentTime = details.seekTime;
-                    updatePositionState(true);
-                }
-            } catch (_) { /* prevent session death */ }
+        navigator.mediaSession.setActionHandler('seekto', (d) => {
+            if (audio && d.seekTime != null) {
+                audio.currentTime = d.seekTime;
+                updatePositionState(true);
+            }
         });
-    } catch (_) { /* unsupported */ }
+    } catch (_) { }
 }
-// Handlers are registered from the audio 'playing' event (first fire only).
 
 function escAttr(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
@@ -3142,11 +3117,9 @@ function startHeartbeat() {
             lastHeartbeatPos = liveTime;
         }
 
-        // Sync media session position — but only override playbackState if audio
-        // is genuinely playing. Previously this unconditionally set 'playing',
-        // which fought the user's lock-screen pause on iOS.
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.playbackState = audio.paused ? 'paused' : 'playing';
+        // Only update position state, don't touch playbackState —
+        // it fights the lock screen controls on iOS.
+        if ('mediaSession' in navigator && !audio.paused) {
             updatePositionState(true);
         }
     }, 750);
