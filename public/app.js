@@ -24,6 +24,7 @@ function cleanup() {
 
 const mobileQuery = window.matchMedia('(max-width:768px)');
 const isMobile = () => mobileQuery.matches;
+
 const TOKEN_KEY = 'music_token';
 let token = localStorage.getItem(TOKEN_KEY) || '';
 setTokenCookie(token);
@@ -1407,20 +1408,10 @@ async function ensureCoverUrl(id) {
     return coverRequests[id];
 }
 
-function loadCover(id, el) {
-    if (coverCacheHas(id)) { const url = coverCacheGet(id); if (url) setCover(el, url); return; }
-    ensureCoverUrl(id).then(url => { if (url) setCover(el, url); });
-}
-
-function loadCoverOnce(id, ...elements) {
-    fetch('/api/cover/' + id)
-        .then(r => r.ok ? r.blob() : null)
-        .then(blob => {
-            if (!blob) return;
-            const url = URL.createObjectURL(blob);
-            elements.forEach(el => { if (el) el.src = url; });
-        })
-        .catch(() => { });
+async function loadCover(id, el) {
+    if (!el) return;
+    const url = await ensureCoverUrl(id);
+    if (url) el.src = url;
 }
 
 const MAX_ARTIST_IMAGE_CACHE = 100;
@@ -1511,8 +1502,7 @@ function play(t) {
     if (player) { player.classList.remove('hidden'); updatePlayerHeight(); }
     updatePlayerMetadata(t);
     const pt = document.getElementById('player-thumb');
-    if (pt) pt.src = FALLBACK;
-    loadCoverOnce(t.id, pt, expCover);
+    if (pt) { pt.src = FALLBACK; loadCover(t.id, pt); }
     document.title = (t.title || '?') + ' \u00B7 ' + (t.artist || '?');
     if (timeTot) timeTot.textContent = '-';
     localStorage.setItem('music_last', JSON.stringify({ id: t.id, title: t.title, artist: t.artist, album: t.album, duration: t.duration }));
@@ -1531,6 +1521,7 @@ function updateExpandedNowPlaying(t) {
     if (expCover) expCover.style.display = 'block';
     if (expCoverIcon) expCoverIcon.style.display = 'none';
     if (expCover) {
+        loadCover(t.id, expCover);
         expCover.onerror = () => { expCover.style.display = 'none'; if (expCoverIcon) expCoverIcon.style.display = 'block'; };
     }
 }
