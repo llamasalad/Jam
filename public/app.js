@@ -1542,8 +1542,14 @@ if (audio) {
             if (qIdx >= 0) {
                 const dur = document.querySelector('.track-dur[data-id="' + queue[qIdx]?.id + '"]');
                 if (dur) dur.textContent = fmt(d);
+                try {
+                    const last = JSON.parse(localStorage.getItem('music_last') || '{}');
+                    if (last && last.id === queue[qIdx].id) {
+                        last.duration = d;
+                        localStorage.setItem('music_last', JSON.stringify(last));
+                    }
+                } catch (e) { }
             }
-            updatePositionState(true);
         }
     });
     function syncPlayPause(playing) {
@@ -2909,7 +2915,6 @@ if (audio) {
             if (timeCur) timeCur.textContent = fmt(audio.currentTime);
             if (expTimeCur) expTimeCur.textContent = fmt(audio.currentTime);
         }
-        updatePositionState();
         updateSyncedLyricsState();
     });
 
