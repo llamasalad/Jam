@@ -1509,6 +1509,11 @@ function play(t) {
     updateAdaptiveBackground();
     startHeartbeat();
     updateMediaSession(t);
+    // iOS: always declare 'playing' here — audio.paused is unreliable during
+    // track transitions (src change makes it temporarily true while loading).
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'playing';
+    }
 
     const nextT = queue[qIdx + 1];
     if (nextT) {
@@ -1574,13 +1579,13 @@ if (audio) {
     audio.addEventListener('ended', () => {
         if ('mediaSession' in navigator) {
             navigator.mediaSession.playbackState = 'paused';
-            try { navigator.mediaSession.setPositionState(null); } catch (_) { }
+            try { navigator.mediaSession.setPositionState(); } catch (_) { }
         }
         nextTrack();
     });
     audio.addEventListener('error', () => {
         if ('mediaSession' in navigator) {
-            try { navigator.mediaSession.playbackState = 'paused'; navigator.mediaSession.setPositionState(null); } catch (_) { }
+            try { navigator.mediaSession.playbackState = 'paused'; navigator.mediaSession.setPositionState(); } catch (_) { }
         }
         console.error('Audio playback error:', audio.error?.message || 'Unknown error');
     });
@@ -2315,11 +2320,9 @@ function updateMediaSession(t) {
                 { src: coverUrl, sizes: '512x512', type: 'image/jpeg' }
             ]
         });
-        // iOS: setting new MediaMetadata can reset playbackState.
-        // Re-sync it from the actual audio state immediately.
-        if (audio) {
-            navigator.mediaSession.playbackState = audio.paused ? 'paused' : 'playing';
-        }
+        // iOS: don't try to sync playbackState from audio.paused here.
+        // During track transitions audio.paused is temporarily true (loading),
+        // which would incorrectly set 'paused'. The play() function handles this.
     } catch (e) {
         console.error('Failed to update MediaSession metadata:', e);
         // Clear metadata on error to prevent stale data
@@ -2970,37 +2973,46 @@ function registerMediaSessionHandlers() {
     if (!('mediaSession' in navigator)) return;
     _mediaSessionHandlersRegistered = true;
 
-    // All handlers are synchronous and minimal — no async, no state management.
-    // playbackState is managed exclusively by the audio element's event listeners
-    // (play, pause, ended, error) to avoid conflicts with iOS's internal state.
+    // CRITICAL for iOS: handlers must set playbackState SYNCHRONOUSLY as the
+    // very first action. iOS needs immediate confirmation that the command
+    // was handled. If the state doesn't change, iOS considers the session
+    // unresponsive and disconnects all controls.
+    // All handler bodies are wrapped in try/catch — any uncaught exception
+    // kills the iOS media session permanently until the app is foregrounded.
     navigator.mediaSession.setActionHandler('play', () => {
-        if (!audio) return;
-        // iOS may need the source refreshed if the session was interrupted
-        if (audio.error || audio.readyState === 0) {
-            const t = queue && queue[qIdx];
-            if (t) audio.src = '/api/stream/' + t.id;
-        }
-        // Fire-and-forget — do NOT await. The audio 'play' event will set playbackState.
-        audio.play().catch(() => { });
+        try {
+            navigator.mediaSession.playbackState = 'playing';
+            if (!audio) return;
+            if (audio.error || audio.readyState === 0) {
+                const t = queue && queue[qIdx];
+                if (t) audio.src = '/api/stream/' + t.id;
+            }
+            audio.play().catch(() => { });
+        } catch (_) { /* prevent session death */ }
     });
     navigator.mediaSession.setActionHandler('pause', () => {
-        if (audio) audio.pause();
-        // The audio 'pause' event will set playbackState.
+        try {
+            navigator.mediaSession.playbackState = 'paused';
+            if (audio) audio.pause();
+        } catch (_) { /* prevent session death */ }
     });
     navigator.mediaSession.setActionHandler('previoustrack', () => {
-        if (audio && audio.currentTime > 3) audio.currentTime = 0;
-        else prevTrack();
+        try {
+            if (audio && audio.currentTime > 3) audio.currentTime = 0;
+            else prevTrack();
+        } catch (_) { /* prevent session death */ }
     });
     navigator.mediaSession.setActionHandler('nexttrack', () => {
-        nextTrack();
+        try { nextTrack(); } catch (_) { /* prevent session death */ }
     });
-    // seekto: support lock screen progress bar scrubbing
     try {
         navigator.mediaSession.setActionHandler('seekto', (details) => {
-            if (audio && details.seekTime != null) {
-                audio.currentTime = details.seekTime;
-                updatePositionState(true);
-            }
+            try {
+                if (audio && details.seekTime != null) {
+                    audio.currentTime = details.seekTime;
+                    updatePositionState(true);
+                }
+            } catch (_) { /* prevent session death */ }
         });
     } catch (_) { /* unsupported */ }
 }
