@@ -39,8 +39,6 @@ let toggleMode = true;
 let lastSavedSec = -1;
 let lyricsOffset = 0;
 let lyricUpdateTimers = { cur: null, next: null };
-let lastKnownTime = 0;
-let lastKnownAt = 0;
 let lastHeartbeatPos = 0;
 let playerExpanded = false;
 let desktopExpandedLyricsOpen = false;
@@ -1488,7 +1486,6 @@ function playTrack(t, list) {
 }
 
 let _trackTransition = false;
-let _mediaSessionTrackId = null;
 function play(t) {
     seeking = false;
     lyricsOffset = 0;
@@ -1512,7 +1509,6 @@ function play(t) {
     updateExpandedNowPlaying(t);
     updateAdaptiveBackground();
     startHeartbeat();
-    _mediaSessionTrackId = t.id;
 
     const nextT = queue[qIdx + 1];
     if (nextT) {
@@ -1558,28 +1554,15 @@ if (audio) {
         if (iconPause) iconPause.style.display = playing ? 'block' : 'none';
         if (expIconPlay) expIconPlay.style.display = playing ? 'none' : 'block';
         if (expIconPause) expIconPause.style.display = playing ? 'block' : 'none';
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
-        }
     }
     audio.addEventListener('play', () => {
         syncPlayPause(true);
-        lastKnownTime = audio.currentTime;
-        lastKnownAt = performance.now();
         updateSyncedLyricsState(true);
         const ct = queue && queue[qIdx];
-        if (ct && _mediaSessionTrackId !== ct.id) {
-            updateMediaSession(ct);
-            _mediaSessionTrackId = ct.id;
-        }
+        if (ct) updateMediaSession(ct);
     });
     audio.addEventListener('playing', () => {
-        lastKnownTime = audio.currentTime;
-        lastKnownAt = performance.now();
         _trackTransition = false;
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.playbackState = 'playing';
-        }
     });
     audio.addEventListener('pause', () => {
         if (!_trackTransition) {
@@ -1596,8 +1579,6 @@ if (audio) {
     });
     audio.addEventListener('seeked', () => {
         seeking = false;
-        lastKnownTime = audio.currentTime;
-        lastKnownAt = performance.now();
         updateSyncedLyricsState(true);
     });
 }
@@ -2324,18 +2305,6 @@ function updateMediaSession(t) {
         navigator.mediaSession.setActionHandler('pause', () => { if (audio) audio.pause(); });
         navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack());
         navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack());
-
-        const dur = t.duration || 0;
-        if (dur > 0) {
-            try {
-                const pos = (audio && isFinite(audio.currentTime)) ? Math.min(audio.currentTime, dur) : 0;
-                navigator.mediaSession.setPositionState({
-                    duration: dur,
-                    playbackRate: audio ? audio.playbackRate : 1,
-                    position: pos
-                });
-            } catch (e) { }
-        }
     } catch (e) {
         console.error('Failed to update MediaSession:', e);
     }
@@ -2834,12 +2803,6 @@ function renderPlainLyrics() {
     applyLyricsFontSize();
 }
 
-function getLiveTime() {
-    if (!audio || audio.paused) return audio?.currentTime ?? 0;
-    return lastKnownTime + (performance.now() - lastKnownAt) / 1000;
-}
-
-
 let lastExpLyricIdx = -1;
 function updateSyncedLyricsState(force = false, atTime = null) {
     if (!audio) return;
@@ -2860,11 +2823,9 @@ function updateSyncedLyricsState(force = false, atTime = null) {
         }
         return;
     }
-    // The non-forced render path fades out, waits 120ms, then fades in. Look
-    // 120ms into the future when picking the active line so the new text is
-    // on screen at the moment it should be heard, not 120ms after.
+
     const FADE_LOOKAHEAD = force ? 0 : 0.12;
-    const baseTime = atTime !== null ? atTime : getLiveTime();
+    const baseTime = atTime !== null ? atTime : (audio?.currentTime || 0);
     const t = baseTime + FADE_LOOKAHEAD + lyricsOffset;
     const idx = syncedLyrics.findIndex((l, i) => { const n = syncedLyrics[i + 1]; return t >= l.time && (!n || t < n.time) });
     if (!force && idx === lastExpLyricIdx) return;
@@ -2893,7 +2854,6 @@ function updateSyncedLyricsState(force = false, atTime = null) {
     }
 
     getLyricScrollEls().forEach(scroll => {
-        // Direct update instead of O(N) loop
         const oldActive = scroll.querySelector('.lyric-line.active');
         if (oldActive) oldActive.classList.remove('active');
 
@@ -2902,7 +2862,6 @@ function updateSyncedLyricsState(force = false, atTime = null) {
             if (el) {
                 el.classList.add('active');
                 const top = el.offsetTop - scroll.clientHeight / 2 + el.offsetHeight / 2;
-                // 'auto' is much more reliable for media sync than 'smooth'
                 scroll.scrollTo({ top: Math.max(0, top), behavior: force ? 'auto' : 'smooth' });
             }
         }
@@ -2911,8 +2870,6 @@ function updateSyncedLyricsState(force = false, atTime = null) {
 
 if (audio) {
     audio.addEventListener('timeupdate', () => {
-        lastKnownTime = audio.currentTime;
-        lastKnownAt = performance.now();
         const sec = Math.floor(audio.currentTime);
         if (sec > 0 && sec % 5 === 0 && sec !== lastSavedSec) {
             lastSavedSec = sec;
@@ -2928,20 +2885,7 @@ if (audio) {
         }
         updateSyncedLyricsState();
     });
-
-    // Fallback for mobile - timeupdate is throttled heavily on mobile
-    if (window.matchMedia('(max-width: 768px)').matches) {
-        function lyricsSyncLoop() {
-            if (audio && !audio.paused && syncedLyrics.length) {
-                updateSyncedLyricsState();
-            }
-            requestAnimationFrame(lyricsSyncLoop);
-        }
-        requestAnimationFrame(lyricsSyncLoop);
-    }
 }
-
-
 
 function escAttr(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
