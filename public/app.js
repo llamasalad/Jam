@@ -1602,23 +1602,21 @@ function setupSeekBar(el) {
         if (expTimeCur) expTimeCur.textContent = fmt(v);
     };
     const doSeek = () => {
-        seeking = false;
-        // Use hardware duration if available for maximum precision during seek
         const d = (audio && isFinite(audio.duration)) ? audio.duration : getRealDuration();
         if (audio && d) {
             const target = d * el.value / 100;
             const wasPaused = audio.paused;
-            
+
             // Log it for verification
             console.log(`[Safari Seek Fix] Target: ${target.toFixed(2)}s | Hardware Dur: ${d.toFixed(2)}s`);
-            
+
             audio.currentTime = target;
-            
+
             // Force a resync of the internal Safari buffer
             if (!wasPaused) {
-                audio.play().catch(() => {});
+                audio.play().catch(() => { });
             }
-            
+
             // Update OS lockscreen position immediately
             const t = queue && queue[qIdx];
             if (t) updateMediaSession(t);
