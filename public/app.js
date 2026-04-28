@@ -3087,6 +3087,13 @@ window.addEventListener('dragleave', e => {
 window.addEventListener('drop', handleDrop);
 
 async function init() {
+    // Set high-priority audio category for iOS (Crucial for PWA background stability)
+    if (navigator.audioSession) {
+        try {
+            navigator.audioSession.type = 'playback';
+        } catch (e) { console.error('[AudioSession] Failed to set type:', e); }
+    }
+
     cleanup();
     if (searchEl && !searchListener) {
         searchListener = debounce(applyFilter, 120);
