@@ -2337,6 +2337,7 @@ function updateMediaSession(t) {
                 });
             } catch (e) { }
         }
+        navigator.mediaSession.playbackState = (audio && !audio.paused) ? 'playing' : 'paused';
     } catch (e) {
         console.error('Failed to update MediaSession:', e);
     }
