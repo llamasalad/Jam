@@ -1576,7 +1576,7 @@ if (audio) {
     });
     audio.addEventListener('error', () => {
         _trackTransition = false;
-        console.error('Audio playback error:', audio.error?.message || 'Unknown error');
+        console.error('Audio error on:', audio.src, audio.error?.message);
     });
     audio.addEventListener('seeked', () => {
         seeking = false;

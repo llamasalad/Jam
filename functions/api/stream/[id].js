@@ -10,20 +10,22 @@ export async function onRequestGet({ params, request, env }) {
 
   const rangeHeader = request.headers.get("Range");
 
+  let parsedStart, parsedEnd;
   let object;
+
   if (rangeHeader) {
     const match = rangeHeader.match(/bytes=(\d*)-(\d*)/);
     if (match) {
-      const start = match[1] !== "" ? parseInt(match[1]) : undefined;
-      const end = match[2] !== "" ? parseInt(match[2]) : undefined;
+      parsedStart = match[1] !== "" ? parseInt(match[1]) : undefined;
+      parsedEnd = match[2] !== "" ? parseInt(match[2]) : undefined;
 
       let rangeObj;
-      if (start !== undefined && end !== undefined) {
-        rangeObj = { offset: start, length: end - start + 1 };
-      } else if (start !== undefined) {
-        rangeObj = { offset: start };
-      } else if (end !== undefined) {
-        rangeObj = { suffix: end };
+      if (parsedStart !== undefined && parsedEnd !== undefined) {
+        rangeObj = { offset: parsedStart, length: parsedEnd - parsedStart + 1 };
+      } else if (parsedStart !== undefined) {
+        rangeObj = { offset: parsedStart };
+      } else if (parsedEnd !== undefined) {
+        rangeObj = { suffix: parsedEnd };
       }
 
       object = await env.MUSIC_BUCKET.get(key, rangeObj ? { range: rangeObj } : undefined);
@@ -56,17 +58,10 @@ export async function onRequestGet({ params, request, env }) {
     "Cache-Control": "public, max-age=86400, no-transform",
   };
 
-  if (object.range) {
+  if (rangeHeader) {
     const size = object.size;
-    let offset, end;
-
-    if ('suffix' in object.range) {
-      offset = size - object.range.suffix;
-      end = size - 1;
-    } else {
-      offset = object.range.offset ?? 0;
-      end = object.range.length ? offset + object.range.length - 1 : size - 1;
-    }
+    const offset = parsedStart ?? (parsedEnd !== undefined ? size - parsedEnd : 0);
+    const end = parsedEnd ?? size - 1;
 
     headers["Content-Range"] = `bytes ${offset}-${end}/${size}`;
     headers["Content-Length"] = String(end - offset + 1);
