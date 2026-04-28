@@ -1516,9 +1516,8 @@ function play(t) {
         preloader.preload = 'auto';
         preloader.src = '/api/stream/' + nextT.id;
     }
-    if ('mediaSession' in navigator) {
-        navigator.mediaSession.playbackState = 'playing';
-    }
+    // Note: playbackState is set by the audio 'play' event handler,
+    // NOT here — setting it before audio.play() resolves confuses iOS Control Center.
 }
 
 function updateExpandedNowPlaying(t) {
@@ -2953,12 +2952,26 @@ function updatePositionState(force = false) {
 
 if ('mediaSession' in navigator) {
     navigator.mediaSession.setActionHandler('play', async () => {
-        if (audio && audio.paused) {
-            try { await audio.play(); updatePositionState(true); } catch (e) { console.error('Play action failed:', e); }
+        if (!audio) return;
+        try {
+            // iOS may need the source refreshed if the session was interrupted
+            if (audio.error || audio.readyState === 0) {
+                const t = queue && queue[qIdx];
+                if (t) { audio.src = '/api/stream/' + t.id; }
+            }
+            await audio.play();
+            navigator.mediaSession.playbackState = 'playing';
+            updatePositionState(true);
+        } catch (e) {
+            console.error('Media Session play failed:', e);
         }
     });
     navigator.mediaSession.setActionHandler('pause', () => {
-        if (audio && !audio.paused) { audio.pause(); updatePositionState(true); }
+        if (audio && !audio.paused) {
+            audio.pause();
+            navigator.mediaSession.playbackState = 'paused';
+            updatePositionState(true);
+        }
     });
     navigator.mediaSession.setActionHandler('previoustrack', () => {
         try { prevTrack(); } catch (e) { console.error('Previous track action failed:', e); }
@@ -2966,9 +2979,35 @@ if ('mediaSession' in navigator) {
     navigator.mediaSession.setActionHandler('nexttrack', () => {
         try { nextTrack(); } catch (e) { console.error('Next track action failed:', e); }
     });
-    navigator.mediaSession.setActionHandler('seekbackward', null);
-    navigator.mediaSession.setActionHandler('seekforward', null);
-    navigator.mediaSession.setActionHandler('seekto', null);
+    // iOS Safari: setting these to null reverts to DEFAULT 10s skip behavior.
+    // We must register real handlers so iOS shows prev/next buttons instead.
+    // seekbackward/seekforward map to prev/next track (same as the dedicated buttons).
+    try {
+        navigator.mediaSession.setActionHandler('seekbackward', () => {
+            if (audio && audio.currentTime > 3) audio.currentTime = 0; else prevTrack();
+        });
+    } catch (_) { /* unsupported */ }
+    try {
+        navigator.mediaSession.setActionHandler('seekforward', () => {
+            nextTrack();
+        });
+    } catch (_) { /* unsupported */ }
+    // seekto: support lock screen scrubber / progress bar
+    try {
+        navigator.mediaSession.setActionHandler('seekto', (details) => {
+            if (audio && details.seekTime != null) {
+                audio.currentTime = details.seekTime;
+                updatePositionState(true);
+            }
+        });
+    } catch (_) { /* unsupported */ }
+    // stop: prevent iOS showing a stop button
+    try {
+        navigator.mediaSession.setActionHandler('stop', () => {
+            if (audio) { audio.pause(); audio.currentTime = 0; }
+            navigator.mediaSession.playbackState = 'paused';
+        });
+    } catch (_) { /* unsupported */ }
 }
 
 function escAttr(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -3095,9 +3134,13 @@ function startHeartbeat() {
             lastHeartbeatPos = liveTime;
         }
 
-        if (!('mediaSession' in navigator)) return;
-        navigator.mediaSession.playbackState = 'playing';
-        updatePositionState(true);
+        // Sync media session position — but only override playbackState if audio
+        // is genuinely playing. Previously this unconditionally set 'playing',
+        // which fought the user's lock-screen pause on iOS.
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = audio.paused ? 'paused' : 'playing';
+            updatePositionState(true);
+        }
     }, 750);
 }
 
@@ -3275,6 +3318,12 @@ document.addEventListener('visibilitychange', () => {
     wasPlayingBeforeHidden = false;
 
     if (audio && !audio.paused) startHeartbeat();
+
+    // Re-sync media session state with iOS Control Center after returning from background
+    if ('mediaSession' in navigator && audio) {
+        navigator.mediaSession.playbackState = audio.paused ? 'paused' : 'playing';
+        updatePositionState(true);
+    }
 
     const ep = document.getElementById('expanded-player');
     if (ep && !ep.classList.contains('open')) {
