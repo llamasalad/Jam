@@ -3,10 +3,14 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "upload": "node upload-to-r2.mjs"
+    "upload": "node upload-to-r2.mjs",
+    "test": "playwright test"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.600.0",
     "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
   }
 }
