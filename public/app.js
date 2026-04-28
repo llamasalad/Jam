@@ -1555,6 +1555,7 @@ if (audio) {
         if (expIconPause) expIconPause.style.display = playing ? 'block' : 'none';
     }
     audio.addEventListener('play', () => {
+        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
         syncPlayPause(true);
         updateSyncedLyricsState(true);
         const ct = queue && queue[qIdx];
@@ -1564,6 +1565,7 @@ if (audio) {
         _trackTransition = false;
     });
     audio.addEventListener('pause', () => {
+        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
         if (!_trackTransition) {
             syncPlayPause(false);
         }
