@@ -1616,13 +1616,15 @@ function setupSeekBar(el) {
             audio.currentTime = target;
         }
     };
-    el.addEventListener('pointerdown', () => { active = true; seeking = true; });
-    el.addEventListener('touchstart', () => { active = true; seeking = true; }, { passive: true });
-    el.addEventListener('input', syncDisplay);
-    el.addEventListener('pointerup', () => { if (!active) return; active = false; doSeek(); });
-    el.addEventListener('touchend', () => { if (!active) return; active = false; doSeek(); }, { passive: true });
-    el.addEventListener('change', doSeek);
-    el.addEventListener('pointercancel', () => { active = false; seeking = false; });
+    el.onpointerdown = () => { active = true; seeking = true; };
+    el.oninput = syncDisplay;
+    el.onpointerup = () => {
+        if (active) {
+            active = false;
+            doSeek();
+        }
+    };
+    el.onpointercancel = () => { active = false; seeking = false; };
 }
 
 setupSeekBar(progress);
