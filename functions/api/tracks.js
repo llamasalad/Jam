@@ -4,6 +4,16 @@ function read24be(b, o) { return ((b[o] << 16) | (b[o + 1] << 8) | b[o + 2]) >>>
 
 function read32le(b, o) { return (b[o] | (b[o + 1] << 8) | (b[o + 2] << 16) | (b[o + 3] << 24)) >>> 0; }
 
+async function mapInBatches(arr, batchSize, fn) {
+  const results = [];
+  for (let i = 0; i < arr.length; i += batchSize) {
+    const batch = arr.slice(i, i + batchSize);
+    const batchResults = await Promise.all(batch.map(fn));
+    results.push(...batchResults);
+  }
+  return results;
+}
+
 function parseFlacMetadata(bytes) {
   const sig = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
   if (sig !== 'fLaC') return null;
@@ -25,11 +35,12 @@ function parseFlacMetadata(bytes) {
       const commentCount = read32le(bytes, commentListOffset);
       commentListOffset += 4;
 
+      const decoder = new TextDecoder(); // hoisted out of loop
       let artist = null, album = null;
       for (let i = 0; i < commentCount; i++) {
         const commentLength = read32le(bytes, commentListOffset);
         commentListOffset += 4;
-        const comment = new TextDecoder().decode(bytes.slice(commentListOffset, commentListOffset + commentLength));
+        const comment = decoder.decode(bytes.slice(commentListOffset, commentListOffset + commentLength));
         commentListOffset += commentLength;
 
         const lower = comment.toLowerCase();
@@ -120,8 +131,15 @@ function getDuration(bytes) {
 
     const b1 = bytes[frameStart + 1];
     const b2 = bytes[frameStart + 2];
+
+    // Check MPEG version: bits 4-3 of b1
+    const mpegVersion = (b1 >> 3) & 0x3; // 0=MPEG2.5, 2=MPEG2, 3=MPEG1
     const srIdx = (b2 >> 2) & 0x3;
-    const srTable = [44100, 48000, 32000, 0];
+    const srTableMpeg1 = [44100, 48000, 32000, 0];
+    const srTableMpeg2 = [22050, 24000, 16000, 0]; // MPEG2 and MPEG2.5 (halved)
+    const srTable = mpegVersion === 3 ? srTableMpeg1 : srTableMpeg2;
+    const samplesPerFrame = mpegVersion === 3 ? 1152 : 576;
+
     const sampleRate = srTable[srIdx];
     if (!sampleRate) return null;
 
@@ -132,7 +150,7 @@ function getDuration(bytes) {
         const flags = read32be(bytes, xOff + 4);
         if (flags & 0x1) {
           const frameCount = read32be(bytes, xOff + 8);
-          return Math.round(frameCount * 1152 / sampleRate);
+          return Math.round(frameCount * samplesPerFrame / sampleRate);
         }
       }
     }
@@ -179,7 +197,7 @@ export async function onRequestGet({ request, env }) {
       return SUPPORTED.has(ext);
     });
 
-    const tracks = await Promise.all(trackObjects.map(async obj => {
+    const tracks = await mapInBatches(trackObjects, 50, async obj => {
       const key = obj.key;
       // Fetch sidecar metadata if it exists
       let title, artist, album, duration;
@@ -218,7 +236,7 @@ export async function onRequestGet({ request, env }) {
       }
 
       return { id, key, title, artist, album, duration };
-    }));
+    });
 
     try {
       await env.PLAYLISTS.put('_tracks_cache', JSON.stringify(tracks), { expirationTtl: 3600 });
@@ -272,8 +290,11 @@ export async function onRequestPost({ request, env }) {
 
     // Extract and cache duration in sidecar metadata
     const duration = getDuration(bytes);
+    const title = file.name.replace(/\.[^/.]+$/, '').replace(/^\d{1,3}[\s.\-_]+/, '').trim();
     const metaKey = `${key}.meta.json`;
-    await env.MUSIC_BUCKET.put(metaKey, JSON.stringify({ title: file.name.replace(/\.[^/.]+$/, ''), artist, album, duration }));
+    await env.MUSIC_BUCKET.put(metaKey, JSON.stringify({ title, artist, album, duration }));
+
+    await env.PLAYLISTS.delete('_tracks_cache');
 
     return new Response(JSON.stringify({
       success: true,
@@ -295,6 +316,11 @@ export async function onRequestPost({ request, env }) {
 }
 
 export async function onRequestPut({ request, env }) {
+  if (!env.MUSIC_BUCKET) {
+    return new Response(JSON.stringify({ error: "MUSIC_BUCKET binding not found." }), {
+      status: 500, headers: { "Content-Type": "application/json" }
+    });
+  }
 
   try {
     const body = await request.json();
@@ -314,6 +340,8 @@ export async function onRequestPut({ request, env }) {
     } catch (_) { }
 
     await env.MUSIC_BUCKET.put(metaKey, JSON.stringify(metaObj));
+
+    await env.PLAYLISTS.delete('_tracks_cache');
 
     return new Response(JSON.stringify({ success: true }));
   } catch (err) {

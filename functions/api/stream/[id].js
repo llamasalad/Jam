@@ -1,4 +1,9 @@
 export async function onRequestGet({ params, request, env }) {
+  if (!env.MUSIC_BUCKET) {
+    return new Response(JSON.stringify({ error: "MUSIC_BUCKET binding not found." }), {
+      status: 500, headers: { "Content-Type": "application/json" }
+    });
+  }
 
   const id = params.id;
   const key = decodeURIComponent(id);
@@ -41,7 +46,7 @@ export async function onRequestGet({ params, request, env }) {
     ".m4a": "audio/mp4",
     ".wav": "audio/wav",
     ".aac": "audio/aac",
-    ".opus": "audio/ogg",
+    ".opus": "audio/opus",
   };
   const mime = mimeMap[ext] || "audio/mpeg";
 
@@ -53,14 +58,21 @@ export async function onRequestGet({ params, request, env }) {
 
   if (object.range) {
     const size = object.size;
-    const { offset = 0, length } = object.range;
-    const end = length ? offset + length - 1 : size - 1;
+    let offset, end;
+
+    if ('suffix' in object.range) {
+      offset = size - object.range.suffix;
+      end = size - 1;
+    } else {
+      offset = object.range.offset ?? 0;
+      end = object.range.length ? offset + object.range.length - 1 : size - 1;
+    }
+
     headers["Content-Range"] = `bytes ${offset}-${end}/${size}`;
     headers["Content-Length"] = String(end - offset + 1);
     return new Response(object.body, { status: 206, headers });
   }
 
   headers["Content-Length"] = String(object.size);
-
   return new Response(object.body, { status: 200, headers });
 }

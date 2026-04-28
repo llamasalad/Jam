@@ -2,14 +2,16 @@ export async function onRequest(context) {
   const { request, env, next } = context;
   const url = new URL(request.url);
 
-  // Handle CORS preflight requests early - allow OPTIONS without auth cdheck
+  // Handle CORS preflight requests early - allow OPTIONS without auth check
   if (request.method === 'OPTIONS') {
+    const origin = request.headers.get('Origin') || url.origin;
     return new Response(null, {
       headers: {
-        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Origin": origin,
         "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS, POST, PUT, DELETE",
         "Access-Control-Allow-Headers": "Content-Type, x-auth-token",
-        "Access-Control-Cache-Max-Age": "31536000",
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Max-Age": "86400",
       }
     });
   }
@@ -23,12 +25,42 @@ export async function onRequest(context) {
 
   const token = (headerToken || queryToken || cookieToken || '').trim();
 
-  // 3. Verify
+  // 3. Prepare common headers for Safari/CORS stability
+  const origin = request.headers.get('Origin') || url.origin;
+  const commonHeaders = {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS, POST",
+    "Access-Control-Allow-Headers": "Content-Type, x-auth-token",
+    "Access-Control-Allow-Credentials": "true",
+    "Accept-Ranges": "bytes"
+  };
+
+  // 4. Verify
   if (token !== env.AUTH_TOKEN) {
-    return new Response('unauthorized', { status: 401 });
+    return new Response('unauthorized', {
+      status: 401,
+      headers: {
+        ...commonHeaders,
+        "Content-Type": "text/plain"
+      }
+    });
   }
 
-  // 4. Important for Safari: If this is a streaming request, 
-  // we MUST NOT buffer the response. 
-  return next();
+  // 5. Success - proceed to the actual API
+  const response = await next();
+
+  // Clone the response to modify headers while preserving status/body
+  const newResponse = new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: new Headers(response.headers)
+  });
+
+  // Inject our Safari/CORS stability headers
+  Object.entries(commonHeaders).forEach(([k, v]) => {
+    // Only set if not already present or to ensure our specific values
+    newResponse.headers.set(k, v);
+  });
+
+  return newResponse;
 }

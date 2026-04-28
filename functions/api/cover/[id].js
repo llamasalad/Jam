@@ -4,65 +4,51 @@ export async function onRequestGet({ params, request, env }) {
   const id = decodeURIComponent(params.id);
   const cacheKey = `covers/${id}.jpg`;
 
+  const responseHeaders = {
+    "Content-Type": "image/jpeg",
+    "Cache-Control": "public, max-age=31536000",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+    "Access-Control-Max-Age": "31536000",
+  };
+
   // ── Serve from cache if exists ────────────────────────────────────────────
   const cached = await env.MUSIC_BUCKET.get(cacheKey);
   if (cached) {
     return new Response(cached.body, {
       headers: {
+        ...responseHeaders,
         "Content-Type": cached.httpMetadata?.contentType || "image/jpeg",
-        "Cache-Control": "public, max-age=31536000",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-        "Access-Control-Cache-Max-Age": "31536000",
       }
     });
   }
 
-  // ── Try music/covers/Uploads/{Artist}/{Album}/{filename}.jpg format ─────────
+  // ── Try cover image files in R2 ───────────────────────────────────────────
   const pathParts = id.split('/');
   if (pathParts.length >= 4 && pathParts[0] === 'Uploads') {
-    const filename = pathParts[pathParts.length - 1].replace(/\.[^/.]+$/, ''); // remove extension
-    const musicCoverKey = `music/covers/${pathParts.slice(1).join('/')}/${filename}.jpg`;
-    const musicCover = await env.MUSIC_BUCKET.get(musicCoverKey);
-    if (musicCover) {
-      // Cache it in the covers/ folder for future fast access
-      await env.MUSIC_BUCKET.put(cacheKey, musicCover.body, {
-        httpMetadata: { contentType: musicCover.httpMetadata?.contentType || "image/jpeg" }
-      });
-      return new Response(musicCover.body, {
-        headers: {
-          "Content-Type": musicCover.httpMetadata?.contentType || "image/jpeg",
-          "Cache-Control": "public, max-age=31536000",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-          "Access-Control-Cache-Max-Age": "31536000",
-        }
-      });
-    }
-
-    // ── Try music/covers/{Artist}/{Album}/{filename}.jpg format ─────────────
+    const filename = pathParts[pathParts.length - 1].replace(/\.[^/.]+$/, '');
     const artist = pathParts[1];
     const album = pathParts[2];
-    const altMusicCoverKey = `music/covers/${artist}/${album}/${filename}.jpg`;
-    const altMusicCover = await env.MUSIC_BUCKET.get(altMusicCoverKey);
-    if (altMusicCover) {
-      await env.MUSIC_BUCKET.put(cacheKey, altMusicCover.body, {
-        httpMetadata: { contentType: altMusicCover.httpMetadata?.contentType || "image/jpeg" }
-      });
-      return new Response(altMusicCover.body, {
-        headers: {
-          "Content-Type": altMusicCover.httpMetadata?.contentType || "image/jpeg",
-          "Cache-Control": "public, max-age=31536000",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-          "Access-Control-Cache-Max-Age": "31536000",
-        }
-      });
+
+    const candidates = [
+      `music/covers/${pathParts.slice(1).join('/')}/${filename}.jpg`,
+      `music/covers/${artist}/${album}/${filename}.jpg`,
+    ];
+
+    for (const key of candidates) {
+      const found = await env.MUSIC_BUCKET.get(key);
+      if (found) {
+        const buf = await found.arrayBuffer();
+        const mime = found.httpMetadata?.contentType || "image/jpeg";
+        await env.MUSIC_BUCKET.put(cacheKey, buf, { httpMetadata: { contentType: mime } });
+        return new Response(buf, { headers: { ...responseHeaders, "Content-Type": mime } });
+      }
     }
   }
 
   // ── Extract from audio file ───────────────────────────────────────────────
-  const object = await env.MUSIC_BUCKET.get(id);
+  // Only fetch the first 512KB — covers are always near the start
+  const object = await env.MUSIC_BUCKET.get(id, { range: { offset: 0, length: 524288 } });
   if (!object) return new Response("Not found", { status: 404 });
 
   const buf = await object.arrayBuffer();
@@ -71,19 +57,12 @@ export async function onRequestGet({ params, request, env }) {
 
   if (!cover) return new Response("No cover", { status: 404 });
 
-  // ── Store in R2 cache for next time ──────────────────────────────────────
   await env.MUSIC_BUCKET.put(cacheKey, cover.data, {
     httpMetadata: { contentType: cover.mime }
   });
 
   return new Response(cover.data, {
-    headers: {
-      "Content-Type": cover.mime,
-      "Cache-Control": "public, max-age=31536000",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-      "Access-Control-Cache-Max-Age": "31536000",
-    }
+    headers: { ...responseHeaders, "Content-Type": cover.mime }
   });
 }
 
