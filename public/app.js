@@ -1489,12 +1489,12 @@ function playTrack(t, list) {
 
 let _trackTransition = false;
 let _mediaSessionTrackId = null;
-
 function play(t) {
     seeking = false;
     lyricsOffset = 0;
     updateStatusBar();
     updateLyricsOffsetUI();
+    updateMediaSession(t);
     if (audio) {
         _trackTransition = true;
         audio.src = '/api/stream/' + t.id;
@@ -1512,7 +1512,6 @@ function play(t) {
     updateExpandedNowPlaying(t);
     updateAdaptiveBackground();
     startHeartbeat();
-    updateMediaSession(t);
     _mediaSessionTrackId = t.id;
 
     const nextT = queue[qIdx + 1];
@@ -2326,7 +2325,7 @@ function updateMediaSession(t) {
         navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack());
         navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack());
 
-        const dur = getRealDuration() || (t.duration > 0 ? t.duration : 0);
+        const dur = t.duration || 0;
         if (dur > 0) {
             try {
                 const pos = (audio && isFinite(audio.currentTime)) ? Math.min(audio.currentTime, dur) : 0;
@@ -2337,7 +2336,6 @@ function updateMediaSession(t) {
                 });
             } catch (e) { }
         }
-        navigator.mediaSession.playbackState = (audio && !audio.paused) ? 'playing' : 'paused';
     } catch (e) {
         console.error('Failed to update MediaSession:', e);
     }
@@ -3224,10 +3222,8 @@ async function init() {
                     cleanupRestore();
                 };
                 const cleanupRestore = () => {
-                    audio.removeEventListener('play', restorePos);
                     audio.removeEventListener('playing', restorePos);
                 };
-                audio.addEventListener('play', restorePos);
                 audio.addEventListener('playing', restorePos);
             } else {
                 updateMediaSession(t);
