@@ -74,3 +74,12 @@ public/purplestyle.css
 plannedfeatures.txt
 package-lock.json
 mobile_header_mockup.html
+tests/mobile.spec.js
+tests/screenshots/iphone-library.png
+tests/screenshots/iphone-load.png
+tests/screenshots/iphone-logged-in.png
+test-results/.last-run.json
+playwright-report/index.html
+playwright.config.js
+package.json
+package.json
