@@ -2293,29 +2293,45 @@ if (clearQueueBtn) {
     };
 }
 
+let _lastMetadataId = null;
 function updateMediaSession(t) {
     if (!('mediaSession' in navigator) || !t) return;
 
     try {
-        const base = window.location.origin;
-        let coverUrl = base + '/api/cover/' + t.id;
-        if (token) {
-            coverUrl += '?token=' + encodeURIComponent(token);
-        }
+        if (_lastMetadataId !== t.id) {
+            _lastMetadataId = t.id;
+            const base = window.location.origin;
+            let coverUrl = base + '/api/cover/' + t.id;
+            if (token) {
+                coverUrl += '?token=' + encodeURIComponent(token);
+            }
 
-        navigator.mediaSession.metadata = new MediaMetadata({
-            title: t.title || 'Unknown',
-            artist: t.artist || 'Unknown',
-            album: t.album || 'Unknown',
-            artwork: [
-                { src: coverUrl, sizes: '512x512', type: 'image/jpeg' }
-            ]
-        });
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: t.title || 'Unknown',
+                artist: t.artist || 'Unknown',
+                album: t.album || 'Unknown',
+                artwork: [
+                    { src: coverUrl, sizes: '512x512', type: 'image/jpeg' }
+                ]
+            });
+        }
 
         navigator.mediaSession.setActionHandler('play', () => { if (audio) audio.play().catch(() => { }); });
         navigator.mediaSession.setActionHandler('pause', () => { if (audio) audio.pause(); });
         navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack());
         navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack());
+
+        const dur = t.duration || 0;
+        if (dur > 0 && navigator.mediaSession.setPositionState) {
+            try {
+                const pos = (audio && isFinite(audio.currentTime)) ? Math.min(audio.currentTime, dur) : 0;
+                navigator.mediaSession.setPositionState({
+                    duration: dur,
+                    playbackRate: audio ? audio.playbackRate : 1,
+                    position: pos
+                });
+            } catch (e) { }
+        }
     } catch (e) {
         console.error('Failed to update MediaSession:', e);
     }
