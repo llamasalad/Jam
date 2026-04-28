@@ -1533,6 +1533,10 @@ function updateExpandedNowPlaying(t) {
 if (audio) {
     audio.addEventListener('loadedmetadata', () => {
         const d = getRealDuration();
+        const t = queue && queue[qIdx];
+        if (t) {
+            console.log(`[Duration Check] ID: ${t.id} | Metadata: ${t.duration}s | Hardware: ${audio.duration}s | Diff: ${Math.abs(t.duration - audio.duration).toFixed(2)}s`);
+        }
         if (d) {
             if (timeTot) timeTot.textContent = fmt(d);
             if (expTimeTot) expTimeTot.textContent = fmt(d);
@@ -1605,7 +1609,12 @@ function setupSeekBar(el) {
     const doSeek = () => {
         seeking = false;
         const d = getRealDuration();
-        if (audio && d) audio.currentTime = d * el.value / 100;
+        if (audio && d) {
+            const target = d * el.value / 100;
+            const hardwareDur = (audio && isFinite(audio.duration)) ? audio.duration : 'N/A';
+            console.log(`[Seek Check] Pct: ${el.value}% | Target: ${target.toFixed(2)}s | DB Dur: ${d}s | HW Dur: ${hardwareDur}s`);
+            audio.currentTime = target;
+        }
     };
     el.addEventListener('pointerdown', () => { active = true; seeking = true; });
     el.addEventListener('touchstart', () => { active = true; seeking = true; }, { passive: true });
