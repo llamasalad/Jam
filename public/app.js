@@ -1494,11 +1494,7 @@ function play(t) {
     updateLyricsOffsetUI();
     if (audio) {
         audio.src = '/api/stream/' + t.id;
-        audio.play().then(() => {
-            // iOS: register media session handlers AFTER playback starts
-            // This is critical — iOS ignores handlers set before audio is playing
-            registerMediaSessionHandlers();
-        }).catch(e => console.error("Playback failed", e));
+        audio.play().catch(e => console.error("Playback failed", e));
     }
     if (player) { player.classList.remove('hidden'); updatePlayerHeight(); }
     updatePlayerMetadata(t);
@@ -1566,8 +1562,9 @@ if (audio) {
     audio.addEventListener('playing', () => {
         lastKnownTime = audio.currentTime;
         lastKnownAt = performance.now();
-        // iOS: re-register handlers on every playing event to maintain media focus
-        // iOS can drop media session ownership if handlers aren't refreshed
+        // iOS: register handlers on first 'playing' event — this is the
+        // earliest point iOS will accept them. The guard flag inside
+        // registerMediaSessionHandlers prevents re-entrancy and re-registration.
         registerMediaSessionHandlers();
     });
     audio.addEventListener('pause', () => {
@@ -2318,6 +2315,11 @@ function updateMediaSession(t) {
                 { src: coverUrl, sizes: '512x512', type: 'image/jpeg' }
             ]
         });
+        // iOS: setting new MediaMetadata can reset playbackState.
+        // Re-sync it from the actual audio state immediately.
+        if (audio) {
+            navigator.mediaSession.playbackState = audio.paused ? 'paused' : 'playing';
+        }
     } catch (e) {
         console.error('Failed to update MediaSession metadata:', e);
         // Clear metadata on error to prevent stale data
@@ -2956,51 +2958,43 @@ function updatePositionState(force = false) {
 }
 
 // ── iOS Media Session Fix ──
-// iOS Safari requires action handlers to be registered AFTER audio playback
-// has started (inside the 'playing' event or after audio.play() resolves).
-// Registering them statically at page load is silently ignored by iOS.
-// Additionally, registering seekbackward/seekforward CONFLICTS with
-// previoustrack/nexttrack on iOS Control Center — only one set can appear.
-// We omit seek handlers entirely so iOS shows prev/next track buttons.
+// iOS Safari requires action handlers registered AFTER the first 'playing'
+// event. Handlers must be SYNCHRONOUS (no async/await) — iOS considers async
+// handlers "done" immediately and the later continuation corrupts the session.
+// Handlers must be registered ONCE — re-registering from within a handler
+// callback (via play→playing event chain) causes re-entrancy that kills the
+// session on iOS. The guard flag prevents this.
+let _mediaSessionHandlersRegistered = false;
 function registerMediaSessionHandlers() {
+    if (_mediaSessionHandlersRegistered) return;
     if (!('mediaSession' in navigator)) return;
-    try {
-        navigator.mediaSession.setActionHandler('play', async () => {
-            if (!audio) return;
-            try {
-                // iOS may need the source refreshed if the session was interrupted
-                if (audio.error || audio.readyState === 0) {
-                    const t = queue && queue[qIdx];
-                    if (t) audio.src = '/api/stream/' + t.id;
-                }
-                await audio.play();
-                navigator.mediaSession.playbackState = 'playing';
-                updatePositionState(true);
-            } catch (e) {
-                console.error('Media Session play failed:', e);
-            }
-        });
-        navigator.mediaSession.setActionHandler('pause', () => {
-            if (audio && !audio.paused) {
-                audio.pause();
-                navigator.mediaSession.playbackState = 'paused';
-                updatePositionState(true);
-            }
-        });
-        navigator.mediaSession.setActionHandler('previoustrack', () => {
-            try {
-                if (audio && audio.currentTime > 3) audio.currentTime = 0;
-                else prevTrack();
-            } catch (e) { console.error('Previous track failed:', e); }
-        });
-        navigator.mediaSession.setActionHandler('nexttrack', () => {
-            try { nextTrack(); } catch (e) { console.error('Next track failed:', e); }
-        });
-    } catch (e) {
-        console.error('Media Session handler registration failed:', e);
-    }
-    // seekto: support lock screen progress bar scrubbing (does NOT conflict
-    // with prev/next on iOS — seekto is a separate interaction)
+    _mediaSessionHandlersRegistered = true;
+
+    // All handlers are synchronous and minimal — no async, no state management.
+    // playbackState is managed exclusively by the audio element's event listeners
+    // (play, pause, ended, error) to avoid conflicts with iOS's internal state.
+    navigator.mediaSession.setActionHandler('play', () => {
+        if (!audio) return;
+        // iOS may need the source refreshed if the session was interrupted
+        if (audio.error || audio.readyState === 0) {
+            const t = queue && queue[qIdx];
+            if (t) audio.src = '/api/stream/' + t.id;
+        }
+        // Fire-and-forget — do NOT await. The audio 'play' event will set playbackState.
+        audio.play().catch(() => { });
+    });
+    navigator.mediaSession.setActionHandler('pause', () => {
+        if (audio) audio.pause();
+        // The audio 'pause' event will set playbackState.
+    });
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+        if (audio && audio.currentTime > 3) audio.currentTime = 0;
+        else prevTrack();
+    });
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+        nextTrack();
+    });
+    // seekto: support lock screen progress bar scrubbing
     try {
         navigator.mediaSession.setActionHandler('seekto', (details) => {
             if (audio && details.seekTime != null) {
@@ -3010,8 +3004,7 @@ function registerMediaSessionHandlers() {
         });
     } catch (_) { /* unsupported */ }
 }
-// Do NOT register handlers here at page load — iOS ignores them.
-// They are registered from the audio 'playing' event and after play() resolves.
+// Handlers are registered from the audio 'playing' event (first fire only).
 
 function escAttr(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
