@@ -1591,30 +1591,30 @@ function getRealDuration() {
 function setupSeekBar(el) {
     if (!el) return;
     let active = false;
+    let lastValue = parseFloat(el.value) || 0;
+
     const syncDisplay = () => {
-        const d = getRealDuration();
+        const d = (audio && isFinite(audio.duration) && audio.duration > 0) ? audio.duration : getRealDuration();
         if (!d) return;
-        const pct = el.value;
-        const v = d * pct / 100;
-        if (progress) progress.value = pct;
-        if (expProgress) expProgress.value = pct;
+        lastValue = parseFloat(el.value);
+        const v = d * lastValue / 100;
+        if (progress) progress.value = lastValue;
+        if (expProgress) expProgress.value = lastValue;
         if (timeCur) timeCur.textContent = fmt(v);
         if (expTimeCur) expTimeCur.textContent = fmt(v);
     };
-    const doSeek = () => {
-        const d = (audio && isFinite(audio.duration)) ? audio.duration : getRealDuration();
-        if (audio && d) {
-            const target = d * el.value / 100;
 
-            // Match lyrics panel logic for maximum precision
+    const doSeek = () => {
+        const d = (audio && isFinite(audio.duration) && audio.duration > 0) ? audio.duration : getRealDuration();
+        if (audio && d) {
+            const target = d * lastValue / 100;
+            // Match lyrics panel logic exactly for maximum stability
             audio.currentTime = target;
             updateSyncedLyricsState(true, target);
-
-            const t = queue && queue[qIdx];
-            if (t) updateMediaSession(t);
         }
     };
-    el.onpointerdown = () => { active = true; seeking = true; };
+
+    el.onpointerdown = () => { active = true; seeking = true; lastValue = parseFloat(el.value); };
     el.oninput = syncDisplay;
     el.onpointerup = () => {
         if (active) {
@@ -2314,18 +2314,6 @@ function updateMediaSession(t) {
         navigator.mediaSession.setActionHandler('pause', () => { if (audio) audio.pause(); });
         navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack());
         navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack());
-
-        const dur = t.duration || 0;
-        if (dur > 0 && navigator.mediaSession.setPositionState) {
-            try {
-                const pos = (audio && isFinite(audio.currentTime)) ? Math.min(audio.currentTime, dur) : 0;
-                navigator.mediaSession.setPositionState({
-                    duration: dur,
-                    playbackRate: audio ? audio.playbackRate : 1,
-                    position: pos
-                });
-            } catch (e) { }
-        }
     } catch (e) {
         console.error('Failed to update MediaSession:', e);
     }
