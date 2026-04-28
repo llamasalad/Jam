@@ -1488,6 +1488,7 @@ function playTrack(t, list) {
 }
 
 let _trackTransition = false;
+let _mediaSessionTrackId = null;
 
 function play(t) {
     seeking = false;
@@ -1512,6 +1513,7 @@ function play(t) {
     updateAdaptiveBackground();
     startHeartbeat();
     updateMediaSession(t);
+    _mediaSessionTrackId = t.id;
 
     const nextT = queue[qIdx + 1];
     if (nextT) {
@@ -1566,6 +1568,11 @@ if (audio) {
         lastKnownTime = audio.currentTime;
         lastKnownAt = performance.now();
         updateSyncedLyricsState(true);
+        const ct = queue && queue[qIdx];
+        if (ct && _mediaSessionTrackId !== ct.id) {
+            updateMediaSession(ct);
+            _mediaSessionTrackId = ct.id;
+        }
     });
     audio.addEventListener('playing', () => {
         lastKnownTime = audio.currentTime;
@@ -3200,10 +3207,9 @@ async function init() {
 
                 let restored = false;
                 const restorePos = () => {
-                    if (restored || audio.readyState === 0) return;
+                    if (restored) return;
                     if (!audio.src.includes(t.id)) {
-                        audio.removeEventListener('loadedmetadata', restorePos);
-                        audio.removeEventListener('play', restorePos);
+                        cleanupRestore();
                         return;
                     }
                     const d = (audio.duration && isFinite(audio.duration)) ? audio.duration : (t.duration || 0);
@@ -3211,11 +3217,14 @@ async function init() {
                         try { audio.currentTime = pos; } catch (e) { }
                     }
                     restored = true;
+                    cleanupRestore();
+                };
+                const cleanupRestore = () => {
                     audio.removeEventListener('loadedmetadata', restorePos);
-                    audio.removeEventListener('play', restorePos);
+                    audio.removeEventListener('canplay', restorePos);
                 };
                 audio.addEventListener('loadedmetadata', restorePos);
-                audio.addEventListener('play', restorePos);
+                audio.addEventListener('canplay', restorePos);
             } else {
                 updateMediaSession(t);
             }
