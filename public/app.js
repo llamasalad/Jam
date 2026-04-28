@@ -1603,12 +1603,25 @@ function setupSeekBar(el) {
     };
     const doSeek = () => {
         seeking = false;
-        const d = getRealDuration();
+        // Use hardware duration if available for maximum precision during seek
+        const d = (audio && isFinite(audio.duration)) ? audio.duration : getRealDuration();
         if (audio && d) {
             const target = d * el.value / 100;
-            const hardwareDur = (audio && isFinite(audio.duration)) ? audio.duration : 'N/A';
-            console.log(`[Seek Check] Pct: ${el.value}% | Target: ${target.toFixed(2)}s | DB Dur: ${d}s | HW Dur: ${hardwareDur}s`);
+            const wasPaused = audio.paused;
+            
+            // Log it for verification
+            console.log(`[Safari Seek Fix] Target: ${target.toFixed(2)}s | Hardware Dur: ${d.toFixed(2)}s`);
+            
             audio.currentTime = target;
+            
+            // Force a resync of the internal Safari buffer
+            if (!wasPaused) {
+                audio.play().catch(() => {});
+            }
+            
+            // Update OS lockscreen position immediately
+            const t = queue && queue[qIdx];
+            if (t) updateMediaSession(t);
         }
     };
     el.onpointerdown = () => { active = true; seeking = true; };
