@@ -297,9 +297,23 @@ export async function onRequestPost({ request, env }) {
 export async function onRequestPut({ request, env }) {
 
   try {
-    const { key, title, artist, album } = await request.json();
+    const body = await request.json();
+    const { key, title, artist, album } = body;
     const metaKey = `${key}.meta.json`;
-    await env.MUSIC_BUCKET.put(metaKey, JSON.stringify({ title, artist, album }));
+
+    let metaObj = { title, artist, album };
+    try {
+      const existing = await env.MUSIC_BUCKET.get(metaKey);
+      if (existing) {
+        const data = await existing.json();
+        metaObj = { ...data, title, artist, album };
+        if (body.duration !== undefined) metaObj.duration = body.duration;
+      } else if (body.duration !== undefined) {
+        metaObj.duration = body.duration;
+      }
+    } catch (_) { }
+
+    await env.MUSIC_BUCKET.put(metaKey, JSON.stringify(metaObj));
 
     return new Response(JSON.stringify({ success: true }));
   } catch (err) {

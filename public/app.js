@@ -2309,6 +2309,16 @@ function updateMediaSession(t) {
         navigator.mediaSession.setActionHandler('pause', () => { if (audio) audio.pause(); });
         navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack());
         navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack());
+
+        if (t.duration && t.duration > 0) {
+            try {
+                navigator.mediaSession.setPositionState({
+                    duration: t.duration,
+                    playbackRate: audio ? audio.playbackRate : 1,
+                    position: audio ? audio.currentTime : 0
+                });
+            } catch (e) { }
+        }
     } catch (e) {
         console.error('Failed to update MediaSession:', e);
     }
@@ -2945,7 +2955,7 @@ function openEditMetadataModal(t) {
             await fetch('/api/tracks', {
                 method: 'PUT',
                 headers: hdrs(),
-                body: JSON.stringify({ key: t.key, title, artist, album })
+                body: JSON.stringify({ key: t.key, title, artist, album, duration: t.duration })
             });
             t.title = title; t.artist = artist; t.album = album;
             renderList();
