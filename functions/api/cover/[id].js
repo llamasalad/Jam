@@ -47,13 +47,24 @@ export async function onRequestGet({ params, request, env }) {
   }
 
   // ── Extract from audio file ───────────────────────────────────────────────
-  // Only fetch the first 512KB — covers are always near the start
-  const object = await env.MUSIC_BUCKET.get(id, { range: { offset: 0, length: 524288 } });
+  // Fetch a generous chunk to cover most embedded art (1MB)
+  const CHUNK_SIZE = 1048576;
+  const object = await env.MUSIC_BUCKET.get(id, { range: { offset: 0, length: CHUNK_SIZE } });
   if (!object) return new Response("Not found", { status: 404 });
 
   const buf = await object.arrayBuffer();
   const bytes = new Uint8Array(buf);
-  const cover = extractCover(bytes);
+  let cover = extractCover(bytes);
+
+  // Check if we might have truncated the cover
+  if (cover && cover.data.length + 1024 >= CHUNK_SIZE) {
+    const fullObject = await env.MUSIC_BUCKET.get(id);
+    if (fullObject) {
+      const fullBuf = await fullObject.arrayBuffer();
+      const fullCover = extractCover(new Uint8Array(fullBuf));
+      if (fullCover) cover = fullCover;
+    }
+  }
 
   if (!cover) return new Response("No cover", { status: 404 });
 

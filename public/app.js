@@ -1411,7 +1411,7 @@ async function ensureCoverUrl(id) {
 async function loadCover(id, el) {
     if (!el) return;
     const url = await ensureCoverUrl(id);
-    if (url) el.src = url;
+    if (url) setCover(el, url);
 }
 
 const MAX_ARTIST_IMAGE_CACHE = 100;
