@@ -1578,6 +1578,9 @@ if (audio) {
         lastKnownTime = audio.currentTime;
         lastKnownAt = performance.now();
         _trackTransition = false;
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = 'playing';
+        }
     });
     audio.addEventListener('pause', () => {
         if (!_trackTransition) {
@@ -3220,11 +3223,11 @@ async function init() {
                     cleanupRestore();
                 };
                 const cleanupRestore = () => {
-                    audio.removeEventListener('loadedmetadata', restorePos);
-                    audio.removeEventListener('canplay', restorePos);
+                    audio.removeEventListener('play', restorePos);
+                    audio.removeEventListener('playing', restorePos);
                 };
-                audio.addEventListener('loadedmetadata', restorePos);
-                audio.addEventListener('canplay', restorePos);
+                audio.addEventListener('play', restorePos);
+                audio.addEventListener('playing', restorePos);
             } else {
                 updateMediaSession(t);
             }
