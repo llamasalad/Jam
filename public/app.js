@@ -20,6 +20,7 @@ function cleanup() {
         document.removeEventListener('click', globalClickListener);
         globalClickListener = null;
     }
+    _mediaSessionHandlersRegistered = false;
 }
 
 const mobileQuery = window.matchMedia('(max-width:768px)');
@@ -1567,28 +1568,29 @@ if (audio) {
     audio.addEventListener('playing', () => {
         lastKnownTime = audio.currentTime;
         lastKnownAt = performance.now();
-        _trackTransition = false; // track has started — pause events are real again
+        _trackTransition = false;
         registerMediaSessionHandlers();
     });
     audio.addEventListener('pause', () => {
-        syncPlayPause(false);
-        // Don't update playbackState during track transitions —
-        // changing audio.src fires a fake 'pause' that would
-        // incorrectly show the play icon on iOS Control Center.
+        if (!_trackTransition) {
+            syncPlayPause(false);
+        }
         if ('mediaSession' in navigator && !_trackTransition) {
             navigator.mediaSession.playbackState = 'paused';
             updatePositionState(true);
         }
     });
     audio.addEventListener('ended', () => {
+        if (_trackTransition) return;
         if ('mediaSession' in navigator) {
             navigator.mediaSession.playbackState = 'paused';
         }
         nextTrack();
     });
     audio.addEventListener('error', () => {
+        _trackTransition = false;
         if ('mediaSession' in navigator) {
-            try { navigator.mediaSession.playbackState = 'paused'; navigator.mediaSession.setPositionState(); } catch (_) { }
+            navigator.mediaSession.playbackState = 'paused';
         }
         console.error('Audio playback error:', audio.error?.message || 'Unknown error');
     });
@@ -2300,17 +2302,12 @@ if (clearQueueBtn) {
     };
 }
 
-// FIX: use direct /api/cover/ URL — blob: URLs are silently rejected by OS lock screens,
-// Control Center (iOS), and the macOS Now Playing widget.
-// Also: Ensure CORS headers are set on the cover endpoint for lock screen access
 function updateMediaSession(t) {
     if (!('mediaSession' in navigator) || !t) return;
 
     try {
         const base = window.location.origin;
-        // Build artwork URL with CORS-friendly construction
         let coverUrl = base + '/api/cover/' + t.id;
-        // Only add token if available (fallback for public access)
         if (token) {
             coverUrl += '?token=' + encodeURIComponent(token);
         }
@@ -2323,12 +2320,8 @@ function updateMediaSession(t) {
                 { src: coverUrl, sizes: '512x512', type: 'image/jpeg' }
             ]
         });
-        // iOS: don't try to sync playbackState from audio.paused here.
-        // During track transitions audio.paused is temporarily true (loading),
-        // which would incorrectly set 'paused'. The play() function handles this.
     } catch (e) {
         console.error('Failed to update MediaSession metadata:', e);
-        // Clear metadata on error to prevent stale data
         try {
             navigator.mediaSession.metadata = null;
         } catch (_) { }
@@ -2956,29 +2949,31 @@ function updatePositionState(force = false) {
         navigator.mediaSession.setPositionState({
             duration: d,
             playbackRate: audio.playbackRate || 1,
-            position: currentPos
+            position: Math.min(currentPos, d)
         });
     } catch (e) {
         console.warn('Failed to update MediaSession position state:', e);
     }
 }
 
-// ── Media Session Handlers ──
-// Registered once, on first 'playing' event. Kept as simple as possible.
 let _mediaSessionHandlersRegistered = false;
 function registerMediaSessionHandlers() {
     if (_mediaSessionHandlersRegistered || !('mediaSession' in navigator)) return;
     _mediaSessionHandlersRegistered = true;
 
     navigator.mediaSession.setActionHandler('play', () => {
-        if (audio) audio.play();
+        if (audio) audio.play().catch(() => { });
     });
     navigator.mediaSession.setActionHandler('pause', () => {
         if (audio) audio.pause();
     });
     navigator.mediaSession.setActionHandler('previoustrack', () => {
-        if (audio && audio.currentTime > 3) audio.currentTime = 0;
-        else prevTrack();
+        if (audio && audio.currentTime > 3) {
+            audio.currentTime = 0;
+            updatePositionState(true);
+        } else {
+            prevTrack();
+        }
     });
     navigator.mediaSession.setActionHandler('nexttrack', () => {
         nextTrack();
@@ -3099,7 +3094,6 @@ function startHeartbeat() {
     heartbeatInterval = setInterval(() => {
         if (!audio) return;
 
-        // iOS background fix: manually detect track end
         if (audio.duration && audio.currentTime > 0 && !audio.paused) {
             const remaining = audio.duration - audio.currentTime;
             if (remaining < 0.5) {
@@ -3108,19 +3102,19 @@ function startHeartbeat() {
             }
         }
 
-        // iOS background fix: detect stalled playback and resume
         if (!audio.paused && audio.readyState >= 3) {
-            const liveTime = getLiveTime();
-            if (liveTime > 0 && Math.abs(liveTime - lastHeartbeatPos) < 0.05) {
+            const currentTime = audio.currentTime;
+            if (currentTime > 0 && Math.abs(currentTime - lastHeartbeatPos) < 0.05) {
                 audio.play().catch(() => { });
             }
-            lastHeartbeatPos = liveTime;
+            lastHeartbeatPos = currentTime;
         }
 
-        // Only update position state, don't touch playbackState —
-        // it fights the lock screen controls on iOS.
         if ('mediaSession' in navigator && !audio.paused) {
-            updatePositionState(true);
+            const now = Date.now();
+            if (now - lastPositionUpdateTime >= 2000) {
+                updatePositionState(true);
+            }
         }
     }, 750);
 }
@@ -3300,7 +3294,6 @@ document.addEventListener('visibilitychange', () => {
 
     if (audio && !audio.paused) startHeartbeat();
 
-    // Re-sync media session state with iOS Control Center after returning from background
     if ('mediaSession' in navigator && audio) {
         navigator.mediaSession.playbackState = audio.paused ? 'paused' : 'playing';
         updatePositionState(true);
