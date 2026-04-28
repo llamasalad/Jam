@@ -1494,7 +1494,8 @@ function play(t) {
     updateMediaSession(t);
     if (audio) {
         _trackTransition = true;
-        audio.src = '/api/stream/' + t.id;
+        audio.src = '/api/stream/' + t.id + '?_sw_bypass=1';
+        audio.load();
         audio.play().catch(e => console.error("Playback failed", e));
     }
     if (player) { player.classList.remove('hidden'); updatePlayerHeight(); }
@@ -1510,12 +1511,6 @@ function play(t) {
     updateAdaptiveBackground();
     startHeartbeat();
 
-    const nextT = queue[qIdx + 1];
-    if (nextT) {
-        const preloader = new Audio();
-        preloader.preload = 'auto';
-        preloader.src = '/api/stream/' + nextT.id;
-    }
 }
 
 function updateExpandedNowPlaying(t) {
@@ -3157,7 +3152,8 @@ async function init() {
 
             if (audio) {
                 audio.preload = 'auto';
-                audio.src = '/api/stream/' + t.id;
+                audio.src = '/api/stream/' + t.id + '?_sw_bypass=1';
+                audio.load();
 
                 // Set media session after audio.src so iOS has a valid audio context
                 updateMediaSession(t);
