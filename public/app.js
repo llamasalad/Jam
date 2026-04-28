@@ -1605,22 +1605,10 @@ function setupSeekBar(el) {
         const d = (audio && isFinite(audio.duration)) ? audio.duration : getRealDuration();
         if (audio && d) {
             const target = d * el.value / 100;
-            const wasPaused = audio.paused;
 
-            // On-screen debug for iPhone
-            showToast(`Seeking to ${fmt(target)} (of ${fmt(d)})`);
-
-            if (audio.fastSeek) {
-                audio.fastSeek(target);
-            } else {
-                audio.currentTime = target;
-                // Safari double-jump workaround
-                setTimeout(() => { audio.currentTime = target; }, 10);
-            }
-
-            if (!wasPaused) {
-                audio.play().catch(() => { });
-            }
+            // Match lyrics panel logic for maximum precision
+            audio.currentTime = target;
+            updateSyncedLyricsState(true, target);
 
             const t = queue && queue[qIdx];
             if (t) updateMediaSession(t);
