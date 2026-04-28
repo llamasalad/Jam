@@ -1495,8 +1495,6 @@ function play(t) {
     updateStatusBar();
     updateLyricsOffsetUI();
     if (audio) {
-        // Flag: suppress the 'pause' event from audio.src change
-        // (changing src triggers a fake pause event that would set playbackState='paused')
         _trackTransition = true;
         audio.src = '/api/stream/' + t.id;
         audio.play().catch(e => console.error("Playback failed", e));
@@ -1507,7 +1505,7 @@ function play(t) {
     if (pt) { pt.src = FALLBACK; loadCover(t.id, pt); }
     document.title = (t.title || '?') + ' \u00B7 ' + (t.artist || '?');
     if (timeTot) timeTot.textContent = '-';
-    localStorage.setItem('music_last', JSON.stringify({ id: t.id, title: t.title, artist: t.artist, album: t.album }));
+    localStorage.setItem('music_last', JSON.stringify({ id: t.id, title: t.title, artist: t.artist, album: t.album, duration: t.duration }));
     saveQueueState();
     loadLyrics(t);
     updateExpandedNowPlaying(t);
@@ -1559,6 +1557,9 @@ if (audio) {
         lastKnownTime = audio.currentTime;
         lastKnownAt = performance.now();
         updateSyncedLyricsState(true);
+        if (queue && queue[qIdx]) {
+            updateMediaSession(queue[qIdx]);
+        }
     });
     audio.addEventListener('playing', () => {
         lastKnownTime = audio.currentTime;
@@ -3167,13 +3168,18 @@ async function init() {
                 let restored = false;
                 const restorePos = () => {
                     if (restored || audio.readyState === 0) return;
+                    if (!audio.src.includes(t.id)) {
+                        audio.removeEventListener('loadedmetadata', restorePos);
+                        audio.removeEventListener('play', restorePos);
+                        return;
+                    }
                     const d = (audio.duration && isFinite(audio.duration)) ? audio.duration : (t.duration || 0);
                     if (pos > 0 && d && pos < d - 5) {
-                        try {
-                            audio.currentTime = pos;
-                            restored = true;
-                        } catch (e) { }
+                        try { audio.currentTime = pos; } catch (e) { }
                     }
+                    restored = true;
+                    audio.removeEventListener('loadedmetadata', restorePos);
+                    audio.removeEventListener('play', restorePos);
                 };
                 audio.addEventListener('loadedmetadata', restorePos);
                 audio.addEventListener('play', restorePos);
