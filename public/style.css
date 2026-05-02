@@ -1272,6 +1272,19 @@ body {
   transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
   visibility: hidden;
   will-change: auto;
+  contain: strict;
+  overscroll-behavior: contain;
+}
+
+body.player-open,
+html.player-open {
+  overflow: hidden !important;
+  height: 100% !important;
+  overscroll-behavior: none !important;
+}
+
+body.player-open #main {
+  overflow: hidden !important;
 }
 
 #expanded-player.open {

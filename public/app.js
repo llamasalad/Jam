@@ -1787,6 +1787,8 @@ function scrollExpandedPlayerTo(top, behavior = 'smooth') {
 function openExpandedPlayer(options = {}) {
     const { revealLyrics = false } = options;
     playerExpanded = true;
+    document.body.classList.add('player-open');
+    document.documentElement.classList.add('player-open');
     if (expPlayer) expPlayer.classList.add('open');
     if (lyricsPanel) lyricsPanel.classList.remove('open');
     if (lyricsBtn) lyricsBtn.classList.remove('active');
@@ -1817,6 +1819,8 @@ function openExpandedPlayer(options = {}) {
 
 function closeExpandedPlayer() {
     playerExpanded = false;
+    document.body.classList.remove('player-open');
+    document.documentElement.classList.remove('player-open');
     if (expPlayer) {
         expPlayer.classList.remove('open');
         expPlayer.style.background = '';
