@@ -177,10 +177,10 @@ textarea {
   --surface: #000000;
   --surface2: #000000;
   --surface3: #000000;
-  --border: rgba(61, 220, 116, 0.07);
-  --border2: rgba(61, 220, 116, 0.14);
+  --border: rgba(0, 0, 0, 0.08);
+  --border2: rgba(0, 0, 0, 0.16);
   --text: var(--accent);
-  --muted: #507060;
+  --muted: #5f6368;
   --accent: #ffffff;
   --accent2: #ffffff;
   --danger: #e05252;
@@ -1117,6 +1117,10 @@ body {
   margin-top: 2px;
 }
 
+.black-theme #volume-row input {
+  background: var(--muted);
+}
+
 #volume-row input::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 10px;
@@ -1165,6 +1169,10 @@ body {
   height: 4px;
   border-radius: 2px;
   background: var(--surface3);
+}
+
+.black-theme #progress-row input::-webkit-slider-runnable-track {
+  background: var(--muted)
 }
 
 #progress-row input::-moz-range-track {
@@ -1505,6 +1513,10 @@ body.player-open #main {
   min-width: 0;
 }
 
+.black-theme #exp-volume-row input {
+  background: var(--muted)
+}
+
 #exp-volume-row input::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 10px;
@@ -1673,13 +1685,17 @@ body.player-open #main {
 #exp-progress::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 2px;
-  background: var(--accent);
+  background: var(--surface3);
+}
+
+.black-theme #exp-progress::-webkit-slider-runnable-track {
+  background: var(--muted);
 }
 
 #exp-progress::-moz-range-track {
   height: 4px;
   border-radius: 2px;
-  background: var(--accent);
+  background: var(--surface3);
 }
 
 #exp-progress::-webkit-slider-thumb {
@@ -1697,7 +1713,7 @@ body.player-open #main {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--surface3);
   border: none;
   cursor: pointer;
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
