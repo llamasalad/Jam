@@ -82,21 +82,6 @@ textarea {
   --shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
-.purple-theme {
-  --bg: #0f0f0f;
-  --surface: #1a1a2e;
-  --surface2: #24243e;
-  --surface3: #2e2e4e;
-  --border: rgba(255, 255, 255, 0.08);
-  --border2: rgba(255, 255, 255, 0.16);
-  --text: var(--accent);
-  --muted: #a0a0b8;
-  --accent: #7c5dfa;
-  --accent2: #927efb;
-  --danger: #e05252;
-  --shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-}
-
 .purple-light-theme {
   --bg: #f5f5ff;
   --surface: #ffffff;
@@ -110,21 +95,6 @@ textarea {
   --accent2: #6b4bc8;
   --danger: #e05252;
   --shadow: 0 4px 16px rgba(83, 58, 183, 0.1);
-}
-
-.pink-theme {
-  --bg: #0f0d0e;
-  --surface: #1e1620;
-  --surface2: #2a1e28;
-  --surface3: #382838;
-  --border: rgba(255, 80, 140, 0.06);
-  --border2: rgba(255, 80, 140, 0.12);
-  --text: var(--accent);
-  --muted: #a08098;
-  --accent: #e04080;
-  --accent2: #f060a0;
-  --danger: #e05252;
-  --shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .ember-theme {
