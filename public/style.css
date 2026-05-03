@@ -3679,6 +3679,10 @@ body.menu-open .queue-remove {
     color: #fff !important;
   }
 
+  .black-theme .tab.active {
+    background: none !important;
+  }
+
   #artists-container,
   #albums-container {
     display: grid;
