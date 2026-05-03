@@ -3211,57 +3211,21 @@ body.menu-open .queue-remove {
     min-height: 140px !important;
     overflow: visible !important;
     margin: 4px 0 16px !important;
-    justify-content: flex-start !important;
-    padding: 4px 0 0 !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    flex-shrink: 0 !important;
+    padding: 20px 0 0 !important;
   }
 
   #exp-lyrics {
-    width: 100%;
-    display: block;
-    text-align: center;
-    padding: 0;
-    flex: 0 0 auto !important;
     overflow: visible !important;
-    transform: none !important;
+    transition: transform .4s cubic-bezier(0.4, 0, 0.2, 1);
     scrollbar-width: none !important;
   }
 
   #exp-lyric-current {
-    display: block !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-    font-size: 20px !important;
-    font-weight: 600 !important;
-    color: var(--text) !important;
-    line-height: 1.35 !important;
-    white-space: pre-line !important;
-    overflow-wrap: break-word !important;
-    word-break: break-word !important;
-    margin-bottom: 8px !important;
-    min-height: 1.3em !important;
-    opacity: 1 !important;
-    visibility: visible !important;
+    line-height: 1.2em;
   }
 
   #exp-lyric-next {
-    display: block !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-    font-size: 15px !important;
-    color: var(--muted) !important;
-    line-height: 1.35 !important;
-    white-space: pre-line !important;
-    overflow-wrap: break-word !important;
-    word-break: break-word !important;
-    min-height: 1.3em !important;
-    opacity: 0.85 !important;
-    visibility: visible !important;
+    line-height: 2em;
   }
 
   #exp-offset-controls {
