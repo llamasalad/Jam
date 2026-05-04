@@ -201,7 +201,7 @@ body {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
-  padding-top: env(titlebar-area-height, env(safe-area-inset-top, 0px));
+  padding-top: env(titlebar-area-height, 0);
 }
 
 /*#app {
