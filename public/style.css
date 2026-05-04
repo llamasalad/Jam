@@ -201,7 +201,7 @@ body {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
-  padding-top: env(titlebar-area-height, 0);
+  padding-top: env(titlebar-area-height, env(safe-area-inset-top, 0px));
 }
 
 /*#app {
@@ -216,7 +216,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-top: calc(12px + env(titlebar-area-y, 0));
+  padding-top: calc(12px + env(titlebar-area-y, env(safe-area-inset-top, 0px)));
 }
 
 #header h1 {
@@ -3135,7 +3135,7 @@ body.menu-open .queue-remove {
     transition: transform .4s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: transform;
     visibility: hidden;
-    padding: 0;
+    padding: env(safe-area-inset-top, 0px) 0 0;
     touch-action: pan-y;
     scrollbar-width: none !important;
   }

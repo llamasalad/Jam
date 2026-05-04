@@ -2,7 +2,7 @@
   "name": "Jam!",
   "short_name": "Jam!",
   "start_url": "/",
-  "display": "fullscreen",
+  "display": "standalone",
   "background_color": "#0d0d0f",
   "theme_color": "#0d0d0f",
   "icons": [

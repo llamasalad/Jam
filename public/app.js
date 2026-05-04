@@ -2959,21 +2959,73 @@ function openEditMetadataModal(t) {
     };
 }
 
+const _dominantColorCache = new Map();
 function getDominantColor(img) {
+    const key = img.src || img.currentSrc;
+    if (key && _dominantColorCache.has(key)) return _dominantColorCache.get(key);
+
     const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const size = 4;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const size = 64;
     canvas.width = size;
     canvas.height = size;
     ctx.drawImage(img, 0, 0, size, size);
     const data = ctx.getImageData(0, 0, size, size).data;
-    let r = 0, g = 0, b = 0, count = 0;
+
+    // Bucket pixels by hue (12 buckets of 30°)
+    const BUCKETS = 12;
+    const buckets = Array.from({ length: BUCKETS }, () => ({ r: 0, g: 0, b: 0, count: 0 }));
+    let fallR = 0, fallG = 0, fallB = 0, fallCount = 0;
+
     for (let i = 0; i < data.length; i += 4) {
-        r += data[i]; g += data[i + 1]; b += data[i + 2]; count++;
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        const max = Math.max(r, g, b), min = Math.min(r, g, b);
+        const delta = max - min;
+        const lightness = (max + min) / 2;
+
+        // Skip very dark, very bright, or desaturated pixels
+        if (lightness < 20 || lightness > 240 || delta < 25) continue;
+
+        let hue = 0;
+        if (delta > 0) {
+            if (max === r) hue = ((g - b) / delta + 6) % 6;
+            else if (max === g) hue = (b - r) / delta + 2;
+            else hue = (r - g) / delta + 4;
+        }
+        const bucketIdx = Math.min(Math.floor(hue / 6 * BUCKETS), BUCKETS - 1);
+        buckets[bucketIdx].r += r;
+        buckets[bucketIdx].g += g;
+        buckets[bucketIdx].b += b;
+        buckets[bucketIdx].count++;
+
+        fallR += r; fallG += g; fallB += b; fallCount++;
     }
-    r = Math.round(r / count); g = Math.round(g / count); b = Math.round(b / count);
-    const factor = 0.4;
-    return `rgb(${Math.round(r * factor)}, ${Math.round(g * factor)}, ${Math.round(b * factor)})`;
+
+    let bestR, bestG, bestB;
+    const best = buckets.reduce((a, b) => b.count > a.count ? b : a, buckets[0]);
+
+    if (best.count > 0) {
+        bestR = Math.round(best.r / best.count);
+        bestG = Math.round(best.g / best.count);
+        bestB = Math.round(best.b / best.count);
+    } else if (fallCount > 0) {
+        bestR = Math.round(fallR / fallCount);
+        bestG = Math.round(fallG / fallCount);
+        bestB = Math.round(fallB / fallCount);
+    } else {
+        // Completely uniform image — just average everything
+        let tr = 0, tg = 0, tb = 0, tc = data.length / 4;
+        for (let i = 0; i < data.length; i += 4) { tr += data[i]; tg += data[i + 1]; tb += data[i + 2]; }
+        bestR = Math.round(tr / tc); bestG = Math.round(tg / tc); bestB = Math.round(tb / tc);
+    }
+
+    // Adaptive darkening based on luminance (darker colors get less darkening)
+    const lum = (0.299 * bestR + 0.587 * bestG + 0.114 * bestB) / 255;
+    const factor = 0.25 + lum * 0.25; // range: 0.25 (dark art) → 0.50 (bright art)
+    const result = `rgb(${Math.round(bestR * factor)}, ${Math.round(bestG * factor)}, ${Math.round(bestB * factor)})`;
+
+    if (key) _dominantColorCache.set(key, result);
+    return result;
 }
 
 async function updateAdaptiveBackground() {
