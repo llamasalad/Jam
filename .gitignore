@@ -73,6 +73,7 @@ Thumbs.db
 public/purplestyle.css
 plannedfeatures.txt
 package-lock.json
+package.json
 mobile_header_mockup.html
 tests/mobile.spec.js
 tests/screenshots/iphone-library.png
