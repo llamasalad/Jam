@@ -2328,30 +2328,41 @@ function updateMediaSession(t) {
 
         navigator.mediaSession.setActionHandler('play', async () => {
             if (!audio) return;
+
+            // Save position before any recovery attempt — iOS may have reset it
+            let pos = audio.currentTime;
+            if (!pos || !isFinite(pos)) {
+                pos = parseFloat(localStorage.getItem('music_pos') || '0');
+            }
+
+            // Helper: wait for 'playing' event to confirm audio actually started
+            const confirmPlaying = (ms) => new Promise(resolve => {
+                if (!audio.paused) { resolve(true); return; }
+                let done = false;
+                const onPlaying = () => { done = true; clearTimeout(t); resolve(true); };
+                const t = setTimeout(() => { audio.removeEventListener('playing', onPlaying); resolve(done); }, ms);
+                audio.addEventListener('playing', onPlaying, { once: true });
+            });
+
+            // Attempt 1: simple play
+            try { await audio.play(); } catch (_) { }
+            if (await confirmPlaying(800)) return;
+
+            // Attempt 2: reload the audio pipeline and retry
+            const src = audio.src;
+            if (!src) return;
+            audio.src = src;
+            audio.load();
             try {
-                await audio.play();
-            } catch (_) {
-                const src = audio.src;
-                if (!src) return;
-                let pos = audio.currentTime;
-                if (!pos || !isFinite(pos)) {
-                    pos = parseFloat(localStorage.getItem('music_pos') || '0');
-                }
-                audio.src = src;
-                audio.load();
-                // Wait for enough data before seeking + playing
                 await new Promise((resolve, reject) => {
                     const timeout = setTimeout(() => { cleanup(); reject(); }, 5000);
-                    const cleanup = () => {
-                        audio.removeEventListener('loadeddata', onReady);
-                        clearTimeout(timeout);
-                    };
+                    const cleanup = () => { audio.removeEventListener('loadeddata', onReady); clearTimeout(timeout); };
                     const onReady = () => { cleanup(); resolve(); };
                     audio.addEventListener('loadeddata', onReady, { once: true });
                 });
-                if (pos > 0) audio.currentTime = pos;
-                try { await audio.play(); } catch (_) { }
-            }
+            } catch (_) { return; } // load timed out, give up
+            if (pos > 0) audio.currentTime = pos;
+            try { await audio.play(); } catch (_) { }
         });
         navigator.mediaSession.setActionHandler('pause', () => { if (audio) audio.pause(); });
         navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack());
