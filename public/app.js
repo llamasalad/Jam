@@ -1521,6 +1521,7 @@ function updateExpandedNowPlaying(t) {
     if (expCoverIcon) expCoverIcon.style.display = 'none';
     if (expCover) {
         loadCover(t.id, expCover);
+        expCover.onload = () => updateAdaptiveBackground();
         expCover.onerror = () => { expCover.style.display = 'none'; if (expCoverIcon) expCoverIcon.style.display = 'block'; };
     }
 }
@@ -1606,8 +1607,6 @@ function setupSeekBar(el) {
     const doSeek = () => {
         const d = (audio && isFinite(audio.duration) && audio.duration > 0) ? audio.duration : getRealDuration();
         if (audio && d) {
-            // Read el.value directly — lastValue can be stale on iOS due to
-            // event ordering (pointerup/change firing before final input)
             const pct = parseFloat(el.value);
             const target = d * pct / 100;
             audio.currentTime = target;
@@ -1615,23 +1614,21 @@ function setupSeekBar(el) {
         }
     };
 
-    el.onpointerdown = () => { active = true; seeking = true; lastValue = parseFloat(el.value); };
+    el.onpointerdown = () => { active = true; seeking = true; };
     el.oninput = syncDisplay;
-    // 'change' fires reliably on all platforms (including iOS Safari) when
-    // the user finishes interacting with a range input. pointerup does NOT
-    // fire reliably on iOS for range inputs, so we use change as primary.
     el.onchange = () => {
-        if (active) {
-            syncDisplay();
-            active = false;
-            doSeek();
-        }
+        syncDisplay();
+        active = false;
+        doSeek();
     };
+
     el.onpointerup = () => {
-        if (active) {
-            active = false;
-            doSeek();
-        }
+        setTimeout(() => {
+            if (active) {
+                active = false;
+                seeking = false;
+            }
+        }, 50);
     };
     el.onpointercancel = () => { active = false; seeking = false; };
 }
@@ -2329,7 +2326,33 @@ function updateMediaSession(t) {
             });
         }
 
-        navigator.mediaSession.setActionHandler('play', () => { if (audio) audio.play().catch(() => { }); });
+        navigator.mediaSession.setActionHandler('play', async () => {
+            if (!audio) return;
+            try {
+                await audio.play();
+            } catch (_) {
+                const src = audio.src;
+                if (!src) return;
+                let pos = audio.currentTime;
+                if (!pos || !isFinite(pos)) {
+                    pos = parseFloat(localStorage.getItem('music_pos') || '0');
+                }
+                audio.src = src;
+                audio.load();
+                // Wait for enough data before seeking + playing
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => { cleanup(); reject(); }, 5000);
+                    const cleanup = () => {
+                        audio.removeEventListener('loadeddata', onReady);
+                        clearTimeout(timeout);
+                    };
+                    const onReady = () => { cleanup(); resolve(); };
+                    audio.addEventListener('loadeddata', onReady, { once: true });
+                });
+                if (pos > 0) audio.currentTime = pos;
+                try { await audio.play(); } catch (_) { }
+            }
+        });
         navigator.mediaSession.setActionHandler('pause', () => { if (audio) audio.pause(); });
         navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack());
         navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack());
