@@ -1606,8 +1606,10 @@ function setupSeekBar(el) {
     const doSeek = () => {
         const d = (audio && isFinite(audio.duration) && audio.duration > 0) ? audio.duration : getRealDuration();
         if (audio && d) {
-            const target = d * lastValue / 100;
-            // Match lyrics panel logic exactly for maximum stability
+            // Read el.value directly — lastValue can be stale on iOS due to
+            // event ordering (pointerup/change firing before final input)
+            const pct = parseFloat(el.value);
+            const target = d * pct / 100;
             audio.currentTime = target;
             updateSyncedLyricsState(true, target);
         }
@@ -1615,6 +1617,16 @@ function setupSeekBar(el) {
 
     el.onpointerdown = () => { active = true; seeking = true; lastValue = parseFloat(el.value); };
     el.oninput = syncDisplay;
+    // 'change' fires reliably on all platforms (including iOS Safari) when
+    // the user finishes interacting with a range input. pointerup does NOT
+    // fire reliably on iOS for range inputs, so we use change as primary.
+    el.onchange = () => {
+        if (active) {
+            syncDisplay();
+            active = false;
+            doSeek();
+        }
+    };
     el.onpointerup = () => {
         if (active) {
             active = false;
