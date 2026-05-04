@@ -155,21 +155,31 @@ let heartbeatInterval = null;
 // when audio is paused. Uses a Web Audio API oscillator at zero gain.
 let _silentCtx = null;
 let _silentSrc = null;
-function startSilentKeepAlive() {
+function initSilentKeepAlive() {
     if (_silentCtx) return;
     try {
-        _silentCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        _silentCtx = new AudioContext();
         _silentSrc = _silentCtx.createOscillator();
         const gain = _silentCtx.createGain();
-        gain.gain.value = 0.001; // near-silent but not zero (iOS may ignore true zero)
+        gain.gain.value = 0.01; // near-silent
         _silentSrc.connect(gain);
         gain.connect(_silentCtx.destination);
         _silentSrc.start();
+        // Start suspended; we'll wake it up when the main audio pauses
+        _silentCtx.suspend();
     } catch (_) { }
 }
+function startSilentKeepAlive() {
+    if (_silentCtx && _silentCtx.state === 'suspended') {
+        _silentCtx.resume().catch(() => { });
+    }
+}
 function stopSilentKeepAlive() {
-    if (_silentSrc) { try { _silentSrc.stop(); } catch (_) { } _silentSrc = null; }
-    if (_silentCtx) { try { _silentCtx.close(); } catch (_) { } _silentCtx = null; }
+    if (_silentCtx && _silentCtx.state === 'running') {
+        _silentCtx.suspend().catch(() => { });
+    }
 }
 
 if (menuBackdrop) {
@@ -1510,6 +1520,7 @@ let _trackTransition = false;
 function play(t) {
     seeking = false;
     lyricsOffset = 0;
+    initSilentKeepAlive();
     updateStatusBar();
     updateLyricsOffsetUI();
     updateMediaSession(t);
