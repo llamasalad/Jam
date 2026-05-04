@@ -231,6 +231,7 @@ if (authInput && !authKeydownListener) {
 }
 
 function switchTab(name) {
+    if (typeof saveScroll === 'function') saveScroll();
     const viewLibrary = document.getElementById('view-library');
     const viewPlaylists = document.getElementById('view-playlists');
     const sortBtn = document.getElementById('sort-btn');
@@ -252,6 +253,7 @@ function switchTab(name) {
     if (playlistsListView) playlistsListView.style.display = '';
 
     if (name === 'playlists') loadPlaylists();
+    if (typeof restoreScroll === 'function') restoreScroll();
 }
 
 document.querySelectorAll('.tab').forEach(tab => {
@@ -390,7 +392,38 @@ const sortLabels = ['VIEWS', 'ARTIST', 'ALBUM'];
 let sortModeIdx = 0;
 let currentDetailView = null;
 
+let viewScrolls = {};
+let lastViewState = 'tab:library:sort:title';
+
+function getViewState() {
+    if (currentDetailView) {
+        if (currentDetailView.type === 'playlist') return `detail:playlist:${currentPlaylist?.id || currentDetailView.name}`;
+        return `detail:${currentDetailView.type}:${currentDetailView.name}`;
+    }
+    const activeTab = document.querySelector('.sidebar-item.active')?.dataset.tab || 'library';
+    if (activeTab === 'library') {
+        return `tab:library:sort:${sortMode}`;
+    }
+    return `tab:${activeTab}`;
+}
+
+function saveScroll() {
+    viewScrolls[lastViewState] = window.scrollY;
+}
+
+function restoreScroll() {
+    const newState = getViewState();
+    lastViewState = newState;
+    const targetY = viewScrolls[newState] || 0;
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            window.scrollTo(0, targetY);
+        });
+    });
+}
+
 function openDetail(type, name) {
+    saveScroll();
     currentDetailView = { type, name };
     document.body.classList.add('detail-view');
     const viewLibrary = document.getElementById('view-library');
@@ -411,12 +444,14 @@ function openDetail(type, name) {
     searchEl.value = '';
     filtered = tracks.filter(t => t[type] === name);
     renderList();
+    restoreScroll();
 }
 
 function openArtistDetail(artist) { openDetail('artist', artist); }
 function openAlbumDetail(album) { openDetail('album', album); }
 
 function closeDetailView() {
+    saveScroll();
     if (currentDetailView?.type === 'playlist') {
         closePlaylistDetail();
         return;
@@ -447,15 +482,18 @@ function closeDetailView() {
     searchEl.value = '';
     filtered = [...tracks];
     sort();
+    restoreScroll();
 }
 
 function cycleSort() {
+    saveScroll();
     sortModeIdx = (sortModeIdx + 1) % 3;
     sortMode = sortModes[sortModeIdx];
     if (sortBtn) sortBtn.textContent = sortLabels[sortModeIdx];
     if (sortMode === 'title') filtered = [...tracks];
     sort();
     updateSidebarSortLabel();
+    restoreScroll();
 }
 
 if (sortBtn) {
@@ -1188,6 +1226,7 @@ function renderPlaylists() {
 }
 
 function openPlaylistDetail(pl) {
+    saveScroll();
     currentPlaylist = pl;
     currentDetailView = { type: 'playlist', name: pl.name };
     document.body.classList.add('detail-view');
@@ -1201,6 +1240,7 @@ function openPlaylistDetail(pl) {
     if (headerTitle) headerTitle.textContent = pl.name;
 
     renderPlaylistDetail(pl);
+    restoreScroll();
 }
 
 function closePlaylistDetail() {
@@ -1212,6 +1252,7 @@ function closePlaylistDetail() {
 
     const headerTitle = document.getElementById('header-title');
     if (headerTitle) headerTitle.textContent = 'Jam!';
+    restoreScroll();
 }
 
 function renderPlaylistDetail(pl) {
@@ -1561,6 +1602,7 @@ if (audio) {
     });
     audio.addEventListener('playing', () => {
         _trackTransition = false;
+        _pendingBackgroundPlay = false;
     });
     audio.addEventListener('pause', () => {
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
@@ -2343,27 +2385,9 @@ function updateMediaSession(t) {
         }
 
         navigator.mediaSession.setActionHandler('play', () => {
-            if (audio) {
-                // On iOS, if audio is paused in the background for a while, the socket drops.
-                // Any attempt to recover inside a Promise (.catch or await) happens asynchronously,
-                // which iOS blocks because it's outside the user gesture window.
-                // We MUST reload synchronously right here in the exact tick of the play action.
-                const pos = audio.currentTime || parseFloat(localStorage.getItem('music_pos') || '0');
-                const src = audio.src;
-
-                // Force network reconnect synchronously
-                if (src) {
-                    audio.src = src;
-                    audio.load();
-                    if (pos > 0) {
-                        audio.addEventListener('loadedmetadata', () => {
-                            audio.currentTime = pos;
-                        }, { once: true });
-                    }
-                }
-
-                audio.play().catch(e => console.error('MediaSession play failed:', e));
-            }
+            if (!audio) return;
+            _pendingBackgroundPlay = true;
+            audio.play().catch(() => { });
         });
         navigator.mediaSession.setActionHandler('pause', () => { if (audio) audio.pause(); });
         navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack());
@@ -3329,18 +3353,42 @@ window.addEventListener('beforeunload', cleanup);
 
 // AFTER
 let wasPlayingBeforeHidden = false;
+let _pendingBackgroundPlay = false;
 
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
         wasPlayingBeforeHidden = audio && !audio.paused;
         return;
     }
+
+    // Recover if play was triggered from lock screen but audio didn't actually start
+    if (_pendingBackgroundPlay && audio && audio.paused && audio.src) {
+        const pos = parseFloat(localStorage.getItem('music_pos') || '0');
+        audio.play().catch(() => {
+            // Pipeline is dead — reload and restore
+            const src = audio.src;
+            audio.src = src;
+            audio.load();
+            if (pos > 0) {
+                audio.addEventListener('loadedmetadata', () => {
+                    audio.currentTime = pos;
+                }, { once: true });
+            }
+            audio.play().catch(e => console.error('Recovery after foreground failed:', e));
+        });
+    }
+    _pendingBackgroundPlay = false;
+
     if (wasPlayingBeforeHidden && audio && audio.paused && audio.src) {
         audio.play().catch(e => console.error('Resume after visibility change failed:', e));
     }
     wasPlayingBeforeHidden = false;
 
     if (audio && !audio.paused) startHeartbeat();
+
+    if ('mediaSession' in navigator && audio) {
+        navigator.mediaSession.playbackState = audio.paused ? 'paused' : 'playing';
+    }
 
     const ep = document.getElementById('expanded-player');
     if (ep && !ep.classList.contains('open')) {
