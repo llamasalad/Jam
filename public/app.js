@@ -194,6 +194,9 @@ let gainNode = null;
 function applyVolume(vol) {
     if (gainNode) {
         gainNode.gain.value = vol;
+        if (audio) {
+            try { audio.volume = 1; } catch (e) { }
+        }
     } else if (audio) {
         audio.volume = vol;
     }
@@ -220,7 +223,9 @@ function initAudioContext(audioEl) {
     source.connect(gainNode);
     gainNode.connect(audioCtx.destination);
 
-    gainNode.gain.value = audioEl.volume;
+    const initialVol = audioEl.volume;
+    try { audioEl.volume = 1; } catch (e) { }
+    gainNode.gain.value = initialVol;
     startAudioContextHeartbeat(audioCtx);
 }
 
