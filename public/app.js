@@ -188,7 +188,43 @@ function debounce(fn, ms) {
     let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms) };
 }
 
-if (audio) audio.volume = Math.pow(SAVED_VOL / 100, 3);
+let audioCtx = null;
+let gainNode = null;
+
+function applyVolume(vol) {
+    if (gainNode) {
+        gainNode.gain.value = vol;
+    } else if (audio) {
+        audio.volume = vol;
+    }
+}
+
+function startAudioContextHeartbeat(ctx) {
+    setInterval(() => {
+        if (ctx.state === 'suspended') ctx.resume();
+        const buf = ctx.createBuffer(1, 1, 22050);
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(ctx.destination);
+        src.start(0);
+    }, 25000);
+}
+
+function initAudioContext(audioEl) {
+    if (audioCtx) return;
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    audioCtx = new AudioContext();
+    gainNode = audioCtx.createGain();
+    const source = audioCtx.createMediaElementSource(audioEl);
+    source.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    gainNode.gain.value = audioEl.volume;
+    startAudioContextHeartbeat(audioCtx);
+}
+
+if (audio) applyVolume(Math.pow(SAVED_VOL / 100, 3));
 
 function fmt(s) { if (!s || isNaN(s)) return '-'; s = Math.round(s); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') }
 function hdrs() { return token ? { 'x-auth-token': token, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' } }
@@ -1534,6 +1570,8 @@ function play(t) {
     updateLyricsOffsetUI();
     updateMediaSession(t);
     if (audio) {
+        initAudioContext(audio);
+        if (audioCtx?.state === 'suspended') audioCtx.resume();
         _trackTransition = true;
         audio.src = '/api/stream/' + t.id;
         audio.load();
@@ -1680,7 +1718,7 @@ setupSeekBar(expProgress);
 
 function setVolume(value) {
     const v = value / 100;
-    if (audio) audio.volume = Math.pow(v, 3);
+    if (audio) applyVolume(Math.pow(v, 3));
     muted = v === 0;
     if (v > 0) lastVol = parseInt(value);
     const iconHtml = v === 0 ? volIcons.muted : v < 0.5 ? volIcons.low : volIcons.high;
@@ -2384,8 +2422,11 @@ function updateMediaSession(t) {
             });
         }
 
-        navigator.mediaSession.setActionHandler('play', () => {
+        navigator.mediaSession.setActionHandler('play', async () => {
             if (!audio) return;
+            if (audioCtx?.state === 'suspended') {
+                await audioCtx.resume();
+            }
             _pendingBackgroundPlay = true;
             audio.play().catch(() => { });
         });
@@ -3256,7 +3297,7 @@ async function init() {
     if (volumeSlider) volumeSlider.value = SAVED_VOL;
     if (expVolumeSlider) expVolumeSlider.value = SAVED_VOL;
     const sv = SAVED_VOL / 100;
-    if (audio) audio.volume = Math.pow(sv, 3);
+    if (audio) applyVolume(Math.pow(sv, 3));
     if (volumeIcon) volumeIcon.innerHTML = sv === 0 ? volIcons.muted : sv < 0.5 ? volIcons.low : volIcons.high;
     if (expVolumeIcon) expVolumeIcon.innerHTML = sv === 0 ? volIcons.muted : sv < 0.5 ? volIcons.low : volIcons.high;
 
