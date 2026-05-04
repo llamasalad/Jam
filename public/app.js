@@ -151,37 +151,6 @@ const menuBackdrop = document.getElementById('menu-backdrop');
 let adaptiveMode = localStorage.getItem('adaptive_mode') === 'true';
 let heartbeatInterval = null;
 
-// Silent audio keepalive — prevents iOS from suspending the WebKit process
-// when audio is paused. Uses a Web Audio API oscillator at zero gain.
-let _silentCtx = null;
-let _silentSrc = null;
-function initSilentKeepAlive() {
-    if (_silentCtx) return;
-    try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
-        _silentCtx = new AudioContext();
-        _silentSrc = _silentCtx.createOscillator();
-        const gain = _silentCtx.createGain();
-        gain.gain.value = 0.01; // near-silent
-        _silentSrc.connect(gain);
-        gain.connect(_silentCtx.destination);
-        _silentSrc.start();
-        // Start suspended; we'll wake it up when the main audio pauses
-        _silentCtx.suspend();
-    } catch (_) { }
-}
-function startSilentKeepAlive() {
-    if (_silentCtx && _silentCtx.state === 'suspended') {
-        _silentCtx.resume().catch(() => { });
-    }
-}
-function stopSilentKeepAlive() {
-    if (_silentCtx && _silentCtx.state === 'running') {
-        _silentCtx.suspend().catch(() => { });
-    }
-}
-
 if (menuBackdrop) {
     menuBackdrop.onclick = () => {
         closeCtxMenu();
@@ -1520,7 +1489,6 @@ let _trackTransition = false;
 function play(t) {
     seeking = false;
     lyricsOffset = 0;
-    initSilentKeepAlive();
     updateStatusBar();
     updateLyricsOffsetUI();
     updateMediaSession(t);
@@ -1598,11 +1566,7 @@ if (audio) {
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
         if (!_trackTransition) {
             syncPlayPause(false);
-            startSilentKeepAlive();
         }
-    });
-    audio.addEventListener('playing', () => {
-        stopSilentKeepAlive();
     });
     audio.addEventListener('ended', () => {
         if (_trackTransition) return;
@@ -1828,9 +1792,18 @@ function scrollExpandedPlayerTo(top, behavior = 'smooth') {
     expPlayer.scrollTo({ top, behavior });
 }
 
+let _savedScrollY = 0;
+
 function openExpandedPlayer(options = {}) {
     const { revealLyrics = false } = options;
     playerExpanded = true;
+
+    // Save scroll and lock body
+    _savedScrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.top = `-${_savedScrollY}px`;
+
     document.body.classList.add('player-open');
     document.documentElement.classList.add('player-open');
     if (expPlayer) expPlayer.classList.add('open');
@@ -1863,8 +1836,15 @@ function openExpandedPlayer(options = {}) {
 
 function closeExpandedPlayer() {
     playerExpanded = false;
+
+    // Unlock body and restore scroll
     document.body.classList.remove('player-open');
     document.documentElement.classList.remove('player-open');
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.top = '';
+    window.scrollTo(0, _savedScrollY);
+
     if (expPlayer) {
         expPlayer.classList.remove('open');
         expPlayer.style.background = '';
@@ -2363,21 +2343,27 @@ function updateMediaSession(t) {
         }
 
         navigator.mediaSession.setActionHandler('play', () => {
-            if (!audio) return;
-            stopSilentKeepAlive();
-            audio.play().catch(() => {
-                // Fallback: reload pipeline if play fails outright
+            if (audio) {
+                // On iOS, if audio is paused in the background for a while, the socket drops.
+                // Any attempt to recover inside a Promise (.catch or await) happens asynchronously,
+                // which iOS blocks because it's outside the user gesture window.
+                // We MUST reload synchronously right here in the exact tick of the play action.
+                const pos = audio.currentTime || parseFloat(localStorage.getItem('music_pos') || '0');
                 const src = audio.src;
-                if (!src) return;
-                let pos = audio.currentTime;
-                if (!pos || !isFinite(pos)) pos = parseFloat(localStorage.getItem('music_pos') || '0');
-                audio.src = src;
-                audio.load();
-                audio.addEventListener('loadeddata', () => {
-                    if (pos > 0) audio.currentTime = pos;
-                    audio.play().catch(() => { });
-                }, { once: true });
-            });
+
+                // Force network reconnect synchronously
+                if (src) {
+                    audio.src = src;
+                    audio.load();
+                    if (pos > 0) {
+                        audio.addEventListener('loadedmetadata', () => {
+                            audio.currentTime = pos;
+                        }, { once: true });
+                    }
+                }
+
+                audio.play().catch(e => console.error('MediaSession play failed:', e));
+            }
         });
         navigator.mediaSession.setActionHandler('pause', () => { if (audio) audio.pause(); });
         navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack());
