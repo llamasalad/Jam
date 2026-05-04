@@ -1416,7 +1416,7 @@ body.player-open #main {
   font-size: 19px;
   font-weight: 600;
   color: var(--text);
-  margin-bottom: 4px;
+  margin-bottom: 10px;
   transition: opacity .3s, transform .3s;
 }
 
@@ -3215,10 +3215,6 @@ body.menu-open .queue-remove {
 
   #exp-lyric-current {
     line-height: 1.2em;
-  }
-
-  #exp-lyric-next {
-    line-height: 2em;
   }
 
   #exp-offset-controls {
