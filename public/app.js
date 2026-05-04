@@ -151,6 +151,27 @@ const menuBackdrop = document.getElementById('menu-backdrop');
 let adaptiveMode = localStorage.getItem('adaptive_mode') === 'true';
 let heartbeatInterval = null;
 
+// Silent audio keepalive — prevents iOS from suspending the WebKit process
+// when audio is paused. Uses a Web Audio API oscillator at zero gain.
+let _silentCtx = null;
+let _silentSrc = null;
+function startSilentKeepAlive() {
+    if (_silentCtx) return;
+    try {
+        _silentCtx = new (window.AudioContext || window.webkitAudioContext)();
+        _silentSrc = _silentCtx.createOscillator();
+        const gain = _silentCtx.createGain();
+        gain.gain.value = 0.001; // near-silent but not zero (iOS may ignore true zero)
+        _silentSrc.connect(gain);
+        gain.connect(_silentCtx.destination);
+        _silentSrc.start();
+    } catch (_) { }
+}
+function stopSilentKeepAlive() {
+    if (_silentSrc) { try { _silentSrc.stop(); } catch (_) { } _silentSrc = null; }
+    if (_silentCtx) { try { _silentCtx.close(); } catch (_) { } _silentCtx = null; }
+}
+
 if (menuBackdrop) {
     menuBackdrop.onclick = () => {
         closeCtxMenu();
@@ -1566,7 +1587,11 @@ if (audio) {
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
         if (!_trackTransition) {
             syncPlayPause(false);
+            startSilentKeepAlive();
         }
+    });
+    audio.addEventListener('playing', () => {
+        stopSilentKeepAlive();
     });
     audio.addEventListener('ended', () => {
         if (_trackTransition) return;
@@ -2326,43 +2351,22 @@ function updateMediaSession(t) {
             });
         }
 
-        navigator.mediaSession.setActionHandler('play', async () => {
+        navigator.mediaSession.setActionHandler('play', () => {
             if (!audio) return;
-
-            // Save position before any recovery attempt — iOS may have reset it
-            let pos = audio.currentTime;
-            if (!pos || !isFinite(pos)) {
-                pos = parseFloat(localStorage.getItem('music_pos') || '0');
-            }
-
-            // Helper: wait for 'playing' event to confirm audio actually started
-            const confirmPlaying = (ms) => new Promise(resolve => {
-                if (!audio.paused) { resolve(true); return; }
-                let done = false;
-                const onPlaying = () => { done = true; clearTimeout(t); resolve(true); };
-                const t = setTimeout(() => { audio.removeEventListener('playing', onPlaying); resolve(done); }, ms);
-                audio.addEventListener('playing', onPlaying, { once: true });
+            stopSilentKeepAlive();
+            audio.play().catch(() => {
+                // Fallback: reload pipeline if play fails outright
+                const src = audio.src;
+                if (!src) return;
+                let pos = audio.currentTime;
+                if (!pos || !isFinite(pos)) pos = parseFloat(localStorage.getItem('music_pos') || '0');
+                audio.src = src;
+                audio.load();
+                audio.addEventListener('loadeddata', () => {
+                    if (pos > 0) audio.currentTime = pos;
+                    audio.play().catch(() => { });
+                }, { once: true });
             });
-
-            // Attempt 1: simple play
-            try { await audio.play(); } catch (_) { }
-            if (await confirmPlaying(800)) return;
-
-            // Attempt 2: reload the audio pipeline and retry
-            const src = audio.src;
-            if (!src) return;
-            audio.src = src;
-            audio.load();
-            try {
-                await new Promise((resolve, reject) => {
-                    const timeout = setTimeout(() => { cleanup(); reject(); }, 5000);
-                    const cleanup = () => { audio.removeEventListener('loadeddata', onReady); clearTimeout(timeout); };
-                    const onReady = () => { cleanup(); resolve(); };
-                    audio.addEventListener('loadeddata', onReady, { once: true });
-                });
-            } catch (_) { return; } // load timed out, give up
-            if (pos > 0) audio.currentTime = pos;
-            try { await audio.play(); } catch (_) { }
         });
         navigator.mediaSession.setActionHandler('pause', () => { if (audio) audio.pause(); });
         navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack());

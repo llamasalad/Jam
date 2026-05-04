@@ -204,13 +204,6 @@ body {
   padding-top: env(titlebar-area-height, 0);
 }
 
-/*#app {
-  display: flex;
-  flex-direction: column;
-  height: 100%; 
-  padding-bottom: calc(var(--player-h) + env(safe-area-inset-bottom, 0px));
-}*/
-
 #header {
   flex-shrink: 0;
   display: flex;

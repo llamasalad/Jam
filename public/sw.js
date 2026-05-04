@@ -1,9 +1,8 @@
-const CACHE = 'jam-v159';
+const CACHE = 'jam-v160';
 const ASSETS = ['/', '/index.html', '/style.css', '/app.js', '/manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
-  // Don't skipWaiting here — wait for app to tell us
 });
 
 self.addEventListener('activate', e => {
@@ -11,7 +10,6 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// Listen for app telling us to activate
 self.addEventListener('message', event => {
   if (event.data?.type === 'SKIP_WAITING') {
     self.skipWaiting();
@@ -29,7 +27,7 @@ self.addEventListener('fetch', e => {
     }));
     return;
   }
-  if (url.pathname.startsWith('/api/stream/')) return; // never cache audio
+  if (url.pathname.startsWith('/api/stream/')) return;
   if (url.pathname.startsWith('/api/cover/')) {
     e.respondWith(caches.open(CACHE).then(async cache => {
       const cached = await cache.match(e.request);
