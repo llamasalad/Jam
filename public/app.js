@@ -4,10 +4,6 @@ let authKeydownListener = null;
 let globalClickListener = null;
 
 function cleanup() {
-    if (resizeObserver) {
-        resizeObserver.disconnect();
-        resizeObserver = null;
-    }
     if (searchListener && searchEl) {
         searchEl.removeEventListener('input', searchListener);
         searchListener = null;
