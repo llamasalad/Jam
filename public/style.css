@@ -204,6 +204,12 @@ body {
   padding-top: env(titlebar-area-height, 0);
 }
 
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 #header {
   flex-shrink: 0;
   display: flex;
@@ -215,7 +221,6 @@ body {
 #header h1 {
   font-size: 20px;
   font-weight: 600;
-  letter-spacing: 0.02em;
   flex: 1;
   display: grid;
   justify-content: start;
@@ -370,6 +375,7 @@ body {
   overflow-x: hidden;
   transform: translateZ(0);
   will-change: transform;
+  margin-bottom: calc(var(--player-h) + env(safe-area-inset-bottom, 0px));
 }
 
 #main::-webkit-scrollbar {
@@ -2728,7 +2734,7 @@ body.menu-open .queue-remove {
   body.detail-view #library-back {
     display: grid !important;
     grid-column: 2;
-    padding-left: 15px;
+    padding: 10px 0 10px 15px;
   }
 
   body.detail-view #theme-toggle,
@@ -2793,6 +2799,7 @@ body.menu-open .queue-remove {
   #main {
     grid-column: 2;
     grid-row: 2;
+    margin-bottom: 20px;
   }
 
   #player {
@@ -3610,11 +3617,6 @@ body.menu-open .queue-remove {
     display: grid;
     grid-template-columns: repeat(auto-fill, 120px);
     gap: 0.4rem;
-  }
-
-  #main {
-    padding-bottom: calc(var(--player-h) + env(safe-area-inset-bottom, 0px));
-    background: var(--bg);
   }
 
   #player-utils {
