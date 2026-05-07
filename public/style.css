@@ -3202,8 +3202,7 @@ body.menu-open .queue-remove {
   }
 
   #exp-lyrics-wrap {
-    height: auto !important;
-    min-height: 140px !important;
+    max-height: 100px !important;
     overflow: visible !important;
     margin: 4px 0 16px !important;
     padding: 20px 0 0 !important;
