@@ -957,7 +957,6 @@ body {
 }
 
 #expand-handle {
-  width: 36px;
   height: 28px;
   margin: 0 auto 2px;
   cursor: pointer;
@@ -973,17 +972,16 @@ body {
 #player-main {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  gap: 12px;
+  justify-content: center;
+  position: relative;
 }
 
 #player-left {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-width: 0;
   cursor: pointer;
+  width: 350px;
 }
 
 #player-thumb {
@@ -1021,16 +1019,17 @@ body {
 
 #player-center {
   display: flex;
-  flex-direction: column;
-  align-items: center;
   gap: 4px;
-  flex: 0 0 auto;
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, 0);
+  justify-content: center;
 }
 
 #controls {
   display: flex;
-  align-items: center;
   gap: 12px;
+  align-items: center;
 }
 
 .ctrl-btn {
@@ -1112,7 +1111,8 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-shrink: 0;
+  margin-left: auto;
+  width: 225px;
 }
 
 #progress-row {
@@ -3062,10 +3062,11 @@ body.menu-open .queue-remove {
   }
 
   #player-center {
-    flex: 0 0 auto !important;
     display: flex;
-    justify-content: center;
     order: 2 !important;
+    justify-content: flex-end;
+    position: unset;
+    transform: none;
   }
 
   #controls .ctrl-btn {
@@ -3088,7 +3089,8 @@ body.menu-open .queue-remove {
     order: 3 !important;
     width: 100% !important;
     gap: 12px !important;
-    justify-content: space-between !important;
+    display: flex;
+    justify-content: space-between;
   }
 
   #player-info {
