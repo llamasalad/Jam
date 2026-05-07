@@ -215,7 +215,6 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-top: calc(12px + env(titlebar-area-y, env(safe-area-inset-top, 0px)));
 }
 
 #header h1 {
@@ -241,11 +240,7 @@ body {
 #playlist-play-btn:active,
 .tab:active,
 .artist-card:active,
-.album-card:active {
-  transform: scale(0.96) !important;
-  transition: transform 0.1s cubic-bezier(0, 0, 0.2, 1) !important;
-}
-
+.album-card:active,
 .track-menu-btn:active {
   transform: scale(0.96) !important;
   transition: transform 0.1s cubic-bezier(0, 0, 0.2, 1) !important;
