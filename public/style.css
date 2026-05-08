@@ -215,6 +215,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+  padding-top: calc(12px + env(titlebar-area-y, env(safe-area-inset-top, 0px)));
 }
 
 #header h1 {
