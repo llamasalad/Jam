@@ -2638,7 +2638,6 @@ async function loadLyrics(t) {
     setLyricsMessage("Loading lyrics\u2026", "\u2026");
     if (expLyricsWrap) {
         expLyricsWrap.style.display = 'flex';
-        expLyricsWrap.style.flex = '1';
     }
 
     try {
