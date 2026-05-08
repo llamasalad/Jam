@@ -1,3 +1,3 @@
 Jam!
 
-Lowkey self-hosted web app player with cloudflare pages. R2 integrated
+Lowkey self-hosted web app music player
