@@ -2702,7 +2702,7 @@ async function loadLyrics(t) {
         } else if (d.type === 'plain' && d.lyrics) {
             plainLyrics = d.lyrics;
             renderPlainLyrics();
-            if (expLyricCur) expLyricCur.innerHTML = '<span style="font-size:12px;font-weight:400;color:var(--muted)">No synced lyrics available</span>';
+            if (expLyricCur) expLyricCur.innerHTML = '<span style="font-size:11px;font-weight:400;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">No synced lyrics available</span>';
             const titleText = d.source === 'lrclib' ? 'Lyrics' : `Lyrics \u00b7 ${d.source}`;
             if (plTitle) plTitle.textContent = titleText;
             if (cardTitle) cardTitle.textContent = titleText;
@@ -2791,7 +2791,7 @@ function applyLyricsPick(item, manual = false) {
         syncedLyrics = [];
         plainLyrics = item.plainLyrics;
         renderPlainLyrics();
-        if (expLyricCur) expLyricCur.innerHTML = '<span style="font-size:12px;font-weight:400;color:var(--muted)">No synced lyrics available</span>';
+        if (expLyricCur) expLyricCur.innerHTML = '<span style="font-size:11px;font-weight:400;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">No synced lyrics available</span>';
         if (plTitle) plTitle.textContent = 'Lyrics';
         if (cardTitle) cardTitle.textContent = 'Lyrics';
         if (desktopTitle) desktopTitle.textContent = 'Lyrics';
