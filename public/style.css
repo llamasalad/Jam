@@ -3538,6 +3538,18 @@ body.menu-open .queue-remove {
     display: none !important
   }
 
+  body.detail-view #view-library.active,
+  body:has(#playlist-detail.active) #view-playlists.active {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 100% !important;
+  }
+
+  body.detail-view #track-list,
+  #playlist-detail.active {
+    flex: 1 !important;
+  }
+
   #expanded-player::-webkit-scrollbar,
   #lyrics-panel::-webkit-scrollbar,
   #exp-lyrics::-webkit-scrollbar {
