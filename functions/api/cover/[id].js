@@ -2,7 +2,7 @@ export async function onRequestGet({ params, request, env }) {
   if (!env.MUSIC_BUCKET) return new Response("No bucket", { status: 500 });
 
   const id = decodeURIComponent(params.id);
-  const cacheKey = `covers/${id}.jpg`;
+  const cacheKey = `covers/v2/${id}.jpg`;
 
   const responseHeaders = {
     "Content-Type": "image/jpeg",
