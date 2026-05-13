@@ -1461,7 +1461,14 @@ function coverCacheSet(id, url) {
     coverCache[id] = url;
     coverCacheOrder.push(id);
     while (coverCacheOrder.length > MAX_COVER_CACHE) {
-        const evictId = coverCacheOrder.shift();
+        const evictId = coverCacheOrder[0];
+        // Never evict the currently playing track's cover — revoking its
+        // object URL would cause visible glitches in the player UI
+        if (qIdx >= 0 && queue[qIdx]?.id === evictId) {
+            coverCacheOrder.push(coverCacheOrder.shift());
+            break;
+        }
+        coverCacheOrder.shift();
         if (coverCache[evictId]) URL.revokeObjectURL(coverCache[evictId]);
         delete coverCache[evictId];
     }

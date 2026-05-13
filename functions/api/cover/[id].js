@@ -56,8 +56,13 @@ export async function onRequestGet({ params, request, env }) {
   const bytes = new Uint8Array(buf);
   let cover = extractCover(bytes);
 
-  // Check if we might have truncated the cover
-  if (cover && cover.data.length + 1024 >= CHUNK_SIZE) {
+  // Detect truncated covers: if the data ends at or very near the chunk
+  // boundary, or if the declared size exceeds extracted data, re-fetch full file
+  const maybeTruncated = cover && (
+    (cover.declaredSize && cover.data.length < cover.declaredSize) ||
+    (cover.data.length + cover.dataOffset >= bytes.length - 16)
+  );
+  if (maybeTruncated) {
     const fullObject = await env.MUSIC_BUCKET.get(id);
     if (fullObject) {
       const fullBuf = await fullObject.arrayBuffer();
@@ -99,7 +104,7 @@ function extractCover(bytes) {
         const descLen = read32be(bytes, i); i += 4; i += descLen;
         i += 16;
         const dataLen = read32be(bytes, i); i += 4;
-        return { data: bytes.slice(i, i + dataLen), mime: mime || 'image/jpeg' };
+        return { data: bytes.slice(i, i + dataLen), mime: mime || 'image/jpeg', declaredSize: dataLen, dataOffset: i };
       }
       if (isLast) break;
       offset += blockSize;
@@ -134,7 +139,8 @@ function extractCover(bytes) {
           while (i < offset + 10 + frameSize && bytes[i] !== 0) i++;
           i++;
         }
-        return { data: bytes.slice(i, offset + 10 + frameSize), mime };
+        const declaredSize = offset + 10 + frameSize - i;
+        return { data: bytes.slice(i, offset + 10 + frameSize), mime, declaredSize, dataOffset: i };
       }
       if (frameId === '\x00\x00\x00\x00' || frameSize <= 0 || frameSize > tagSize) break;
       offset += 10 + frameSize;
@@ -168,7 +174,9 @@ function extractCover(bytes) {
       const data = findBox(bytes, covr.dataStart, covr.end, 'data');
       if (!data) return null;
       const typeFlag = read32be(bytes, data.dataStart);
-      return { data: bytes.slice(data.dataStart + 8, data.end), mime: typeFlag === 14 ? 'image/png' : 'image/jpeg' };
+      const imgStart = data.dataStart + 8;
+      const declaredSize = data.end - imgStart;
+      return { data: bytes.slice(imgStart, data.end), mime: typeFlag === 14 ? 'image/png' : 'image/jpeg', declaredSize, dataOffset: imgStart };
     } catch (_) { return null; }
   }
 
