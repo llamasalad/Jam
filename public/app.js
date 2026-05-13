@@ -1671,65 +1671,30 @@ function getRealDuration() {
 
 function setupSeekBar(el) {
     if (!el) return;
-    let active = false;
-    let lastValue = parseFloat(el.value) || 0;
-    let userValue = null; // Stores the user's intended value, immune to timeupdate overwrites
+    let userPct = null;
 
-    const syncDisplay = () => {
+    el.oninput = () => {
+        seeking = true;
+        userPct = parseFloat(el.value);
         const d = (audio && isFinite(audio.duration) && audio.duration > 0) ? audio.duration : getRealDuration();
         if (!d) return;
-        lastValue = parseFloat(el.value);
-        userValue = lastValue; // Capture what the user dragged to
-        const v = d * lastValue / 100;
-        if (progress) progress.value = lastValue;
-        if (expProgress) expProgress.value = lastValue;
+        const v = d * userPct / 100;
+        if (progress) progress.value = userPct;
+        if (expProgress) expProgress.value = userPct;
         if (timeCur) timeCur.textContent = fmt(v);
         if (expTimeCur) expTimeCur.textContent = fmt(v);
     };
 
-    const doSeek = () => {
+    el.onchange = () => {
+        if (userPct === null) return;
         const d = (audio && isFinite(audio.duration) && audio.duration > 0) ? audio.duration : getRealDuration();
         if (audio && d) {
-            // Use userValue (captured during input events) instead of el.value,
-            // because on iOS Safari timeupdate can overwrite el.value between
-            // the user releasing the slider and the change event firing.
-            const pct = userValue !== null ? userValue : parseFloat(el.value);
-            const target = d * pct / 100;
+            const target = d * userPct / 100;
             audio.currentTime = target;
             updateSyncedLyricsState(true, target);
-            userValue = null;
         }
+        userPct = null;
     };
-
-    const beginSeek = () => { active = true; seeking = true; };
-    const endSeek = () => {
-        setTimeout(() => {
-            if (active) {
-                active = false;
-                seeking = false;
-            }
-        }, 50);
-    };
-
-    el.onpointerdown = beginSeek;
-    el.oninput = () => {
-        // On iOS Safari, pointerdown may not fire on range inputs via touch,
-        // but input always fires — use it as a fallback to set seeking flag.
-        if (!active) beginSeek();
-        syncDisplay();
-    };
-    el.onchange = () => {
-        syncDisplay();
-        active = false;
-        doSeek();
-    };
-
-    el.onpointerup = endSeek;
-    el.onpointercancel = () => { active = false; seeking = false; };
-    // iOS touch fallbacks for pointer events that may not fire
-    el.addEventListener('touchstart', beginSeek, { passive: true });
-    el.addEventListener('touchend', endSeek, { passive: true });
-    el.addEventListener('touchcancel', () => { active = false; seeking = false; }, { passive: true });
 }
 
 setupSeekBar(progress);
