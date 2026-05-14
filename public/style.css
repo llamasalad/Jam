@@ -1294,18 +1294,18 @@ body.player-open #main {
 
 #exp-collapse {
   position: absolute;
-  top: 20px;
-  right: 24px;
-  background: none;
-  border: none;
-  color: var(--muted);
-  font-size: 24px;
+  top: 0;
   cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
   line-height: 1;
   z-index: 10;
-  transition: background .15s;
+  width: 40px;
+  height: 5px;
+  background: var(--muted);
+  border-radius: 3px;
+  font-size: 0;
+  border: none;
+  padding: 0;
+  color: transparent;
 }
 
 #exp-content {
