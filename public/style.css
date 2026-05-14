@@ -3739,6 +3739,11 @@ body.menu-open .queue-remove {
 
   #main {
     margin-bottom: calc(var(--player-h));
+    scrollbar-width: none;
+  }
+
+  #main::-webkit-scrollbar {
+    display: none;
   }
 
   .section-title {
