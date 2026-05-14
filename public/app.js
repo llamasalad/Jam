@@ -424,9 +424,30 @@ function renderLibraryCards() {
         });
     albumsContainer.appendChild(fragB);
 
-    if (suggestedContainer) {
+    function renderSuggestedCards(force = false) {
+        if (!suggestedContainer || !tracks.length) return;
+
+        let suggestedIds = [];
+        const saved = localStorage.getItem('jam_suggested_tracks');
+        const savedTime = localStorage.getItem('jam_suggested_time');
+        const now = Date.now();
+
+        if (!force && saved && savedTime && now - parseInt(savedTime) < 3600000) {
+            try { suggestedIds = JSON.parse(saved); } catch (e) { }
+        }
+
+        let suggestedTracks = [];
+        if (suggestedIds.length) {
+            suggestedTracks = suggestedIds.map(id => tracks.find(t => t.id === id)).filter(Boolean);
+        }
+
+        if (suggestedTracks.length < 8) {
+            suggestedTracks = [...tracks].sort(() => 0.5 - Math.random()).slice(0, 8);
+            localStorage.setItem('jam_suggested_tracks', JSON.stringify(suggestedTracks.map(t => t.id)));
+            localStorage.setItem('jam_suggested_time', now.toString());
+        }
+
         suggestedContainer.innerHTML = '';
-        const suggestedTracks = [...tracks].sort(() => 0.5 - Math.random()).slice(0, 8);
         const fragS = document.createDocumentFragment();
         suggestedTracks.forEach(t => {
             const card = document.createElement('div');
@@ -453,6 +474,32 @@ function renderLibraryCards() {
             if (t.id) coverObserver.observe(card);
         });
         suggestedContainer.appendChild(fragS);
+    }
+
+    if (suggestedContainer) {
+        renderSuggestedCards();
+
+        const checkAndRefresh = () => {
+            const savedTime = localStorage.getItem('jam_suggested_time');
+            if (savedTime && Date.now() - parseInt(savedTime) >= 3600000) {
+                // Only refresh if no music is playing AND app is in background
+                if (audio.paused && document.visibilityState === 'hidden') {
+                    renderSuggestedCards(true);
+                }
+            }
+        };
+
+        setInterval(checkAndRefresh, 60000);
+
+        // Catch up if the interval was throttled in background or just now expired
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                const savedTime = localStorage.getItem('jam_suggested_time');
+                if (savedTime && Date.now() - parseInt(savedTime) >= 3600000 && audio.paused) {
+                    renderSuggestedCards(true);
+                }
+            }
+        });
     }
 }
 

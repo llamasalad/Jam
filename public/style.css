@@ -1903,7 +1903,6 @@ body.player-open #main {
   z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
 .suggested-title {
