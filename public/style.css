@@ -1850,12 +1850,12 @@ body.player-open #main {
 
 .section-title {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
   margin-bottom: 16px;
-  color: var(--text);
+  color: var(--muted);
   padding: 0 16px;
-  font-family: 'SF Pro Display', -apple-system, sans-serif;
-  letter-spacing: -0.2px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 #suggested-container {
@@ -3742,6 +3742,11 @@ body.menu-open .queue-remove {
 
   #main {
     margin-bottom: calc(var(--player-h));
+  }
+
+  .section-title {
+    letter-spacing: 0;
+    text-transform: lowercase;
   }
 
   #suggested-container {
