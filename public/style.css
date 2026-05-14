@@ -1849,8 +1849,8 @@ body.player-open #main {
 }
 
 .section-title {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 600;
   margin-bottom: 16px;
   color: var(--text);
   padding: 0 16px;
@@ -1864,10 +1864,7 @@ body.player-open #main {
   padding: 0 16px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-}
-
-#suggested-container::-webkit-scrollbar {
-  display: none;
+  touch-action: pan-x;
 }
 
 .suggested-card {
@@ -3038,6 +3035,23 @@ body.menu-open .queue-remove {
     font-weight: 500;
   }
 
+  #suggested-container::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  #suggested-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  #suggested-container::-webkit-scrollbar-thumb {
+    background: var(--surface3);
+    border-radius: 4px;
+  }
+
+  #suggested-container::-webkit-scrollbar-thumb:hover {
+    background: var(--muted);
+  }
+
   @keyframes update-pulse {
 
     0%,
@@ -3719,5 +3733,14 @@ body.menu-open .queue-remove {
 
   #main {
     margin-bottom: calc(var(--player-h));
+  }
+
+  #suggested-container {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  #suggested-container::-webkit-scrollbar {
+    display: none;
   }
 }
