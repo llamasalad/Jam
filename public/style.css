@@ -466,11 +466,9 @@ body {
 .group-header {
   padding: 10px 16px 6px;
   font-size: 10px;
-  font-family: 'SF Pro Display', -apple-system, sans-serif;
   letter-spacing: 0.1em;
   color: var(--muted);
   text-transform: uppercase;
-  position: sticky;
   top: 0;
   background: var(--bg);
   z-index: 2;
@@ -3759,5 +3757,6 @@ body.menu-open .queue-remove {
 
   .group-header {
     top: var(--header-h, 0px) !important;
+    transition: top 0.2s ease !important;
   }
 }
