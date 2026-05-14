@@ -929,14 +929,23 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
         return dt > 0 ? dx / dt : 0;
     }
 
+    let currentSwipeDir = 0;
+
     function showAction(dir) {
-        const h = dir > 0 ? handlers.right : handlers.left;
-        if (!h) return;
+        if (dir === currentSwipeDir) return;
+        currentSwipeDir = dir;
+        const h = dir > 0 ? handlers.right : (dir < 0 ? handlers.left : null);
+        if (!h) {
+            bgElement.className = 'track-actions';
+            bgElement.innerHTML = '';
+            return;
+        }
         bgElement.className = `track-actions ${dir > 0 ? 'right' : 'left'}-active`;
         bgElement.innerHTML = `<div class="action-icon">${h.icon}</div>`;
     }
 
     function cleanup() {
+        currentSwipeDir = 0;
         bgElement.className = 'track-actions';
         bgElement.innerHTML = '';
         bgElement.classList.remove('locked');
@@ -1001,12 +1010,13 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
             }
             state = 'swiping';
             container.classList.add('swiping');
-            showAction(deltaX > 0 ? 1 : -1);
         }
 
         if (state === 'swiping') {
             if (e.cancelable) e.preventDefault();
             e.stopPropagation();
+
+            showAction(deltaX > 0 ? 1 : (deltaX < 0 ? -1 : 0));
 
             let efX = deltaX;
             // Strong resistance if no handler in this direction
@@ -1604,23 +1614,46 @@ function clearArtistImageCache() {
     console.log('Artist image cache cleared');
 }
 
+const artistImageRequests = {};
+
 async function loadArtistImage(name, imgEl) {
+    // Prepare for fade-in
+    imgEl.style.opacity = '0';
+    imgEl.style.visibility = 'visible';
+    imgEl.style.transition = 'opacity 0.3s ease-in-out';
+
+    const applyImage = (url) => {
+        imgEl.onload = () => { imgEl.style.opacity = '1'; };
+        imgEl.src = url;
+        if (imgEl.complete) imgEl.style.opacity = '1';
+    };
+
     const cached = artistImageCache[name];
     if (cached && cached.expires > Date.now()) {
-        imgEl.src = cached.url;
-        imgEl.style.visibility = 'visible';
+        applyImage(cached.url);
         return;
     }
-    try {
-        const r = await fetch('/api/artist-image?name=' + encodeURIComponent(name), { headers: hget() });
-        if (!r.ok) return;
-        const d = await r.json();
-        if (d.picture) {
-            artistImageCache[name] = { url: d.picture, expires: Date.now() + 86400000 };
-            imgEl.src = d.picture;
-            imgEl.style.visibility = 'visible';
-        }
-    } catch (_) { }
+
+    if (!artistImageRequests[name]) {
+        artistImageRequests[name] = fetch('/api/artist-image?name=' + encodeURIComponent(name), { headers: hget() })
+            .then(r => r.ok ? r.json() : null)
+            .then(d => {
+                if (d && d.picture) {
+                    artistImageCache[name] = { url: d.picture, expires: Date.now() + 86400000 };
+                    return d.picture;
+                }
+                return null;
+            })
+            .catch(() => null)
+            .finally(() => { delete artistImageRequests[name]; });
+    }
+
+    const pictureUrl = await artistImageRequests[name];
+    if (pictureUrl) {
+        applyImage(pictureUrl);
+    } else {
+        imgEl.style.display = 'none';
+    }
 }
 
 function setCover(el, url) {
@@ -3083,14 +3116,30 @@ function updateSyncedLyricsState(force = false, atTime = null) {
 
     getLyricScrollEls().forEach(scroll => {
         const oldActive = scroll.querySelector('.lyric-line.active');
+
+        let shouldScroll = force;
+        if (!force && oldActive) {
+            const elTop = oldActive.offsetTop;
+            const elBottom = elTop + oldActive.offsetHeight;
+            const scrollTop = scroll.scrollTop;
+            const scrollBottom = scrollTop + scroll.clientHeight;
+            if (elBottom >= scrollTop && elTop <= scrollBottom) {
+                shouldScroll = true;
+            }
+        } else if (!force && !oldActive) {
+            shouldScroll = true;
+        }
+
         if (oldActive) oldActive.classList.remove('active');
 
         if (idx >= 0) {
             const el = scroll.querySelector(`[data-idx="${idx}"]`);
             if (el) {
                 el.classList.add('active');
-                const top = el.offsetTop - scroll.clientHeight / 2 + el.offsetHeight / 2;
-                scroll.scrollTo({ top: Math.max(0, top), behavior: force ? 'auto' : 'smooth' });
+                if (shouldScroll) {
+                    const top = el.offsetTop - scroll.clientHeight / 2 + el.offsetHeight / 2;
+                    scroll.scrollTo({ top: Math.max(0, top), behavior: force ? 'auto' : 'smooth' });
+                }
             }
         }
     });
@@ -3365,12 +3414,37 @@ async function init() {
         const mainEl = document.getElementById('main');
         const headerTitle = document.getElementById('header-title');
         const searchWrap = document.getElementById('search-wrap');
-        if (mainEl && headerTitle) {
+        const headerEl = document.getElementById('header');
+
+        if (mainEl && headerTitle && headerEl) {
+            const updatePadding = () => {
+                const wasCollapsed = headerEl.classList.contains('collapsed');
+                if (wasCollapsed) {
+                    headerEl.classList.remove('collapsed');
+                    if (searchWrap) searchWrap.classList.remove('hidden');
+                    headerTitle.classList.remove('collapsed');
+                }
+                mainEl.style.paddingTop = headerEl.offsetHeight + 'px';
+                if (wasCollapsed) {
+                    headerEl.classList.add('collapsed');
+                    if (searchWrap) searchWrap.classList.add('hidden');
+                    headerTitle.classList.add('collapsed');
+                }
+            };
+
+            requestAnimationFrame(updatePadding);
+
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((m) => {
+                    if (m.attributeName === 'class') updatePadding();
+                });
+            });
+            observer.observe(document.body, { attributes: true });
+
             mainEl.addEventListener('scroll', () => {
                 const scrolled = mainEl.scrollTop > 40;
                 headerTitle.classList.toggle('collapsed', scrolled);
-                const headerEl = document.getElementById('header');
-                if (headerEl) headerEl.classList.toggle('collapsed', scrolled);
+                headerEl.classList.toggle('collapsed', scrolled);
                 if (searchWrap) searchWrap.classList.toggle('hidden', scrolled);
             }, { passive: true });
         }
