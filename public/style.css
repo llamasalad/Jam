@@ -3759,6 +3759,5 @@ body.menu-open .queue-remove {
 
   .group-header {
     top: var(--header-h, 0px) !important;
-    transition: top 0.2s ease !important;
   }
 }

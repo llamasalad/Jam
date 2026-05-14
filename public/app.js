@@ -3417,47 +3417,20 @@ async function init() {
         const headerEl = document.getElementById('header');
 
         if (mainEl && headerTitle && headerEl) {
-            const updatePadding = () => {
-                const wasCollapsed = headerEl.classList.contains('collapsed');
-
-                if (wasCollapsed) {
-                    headerEl.classList.remove('collapsed');
-                    if (searchWrap) searchWrap.classList.remove('hidden');
-                    headerTitle.classList.remove('collapsed');
+            const headerObserver = new ResizeObserver(() => {
+                const h = headerEl.offsetHeight;
+                mainEl.style.setProperty('--header-h', h + 'px');
+                if (!headerEl.classList.contains('collapsed')) {
+                    mainEl.style.paddingTop = h + 'px';
                 }
-
-                const fullH = headerEl.offsetHeight;
-                mainEl.style.paddingTop = fullH + 'px';
-
-                const shrinkAmount = 10 + (searchWrap ? 60 : 0);
-                const collapsedH = fullH - shrinkAmount;
-
-                if (wasCollapsed) {
-                    headerEl.classList.add('collapsed');
-                    if (searchWrap) searchWrap.classList.add('hidden');
-                    headerTitle.classList.add('collapsed');
-                }
-
-                mainEl.style.setProperty('--header-full', fullH + 'px');
-                mainEl.style.setProperty('--header-collapsed', collapsedH + 'px');
-                mainEl.style.setProperty('--header-h', wasCollapsed ? collapsedH + 'px' : fullH + 'px');
-            };
-
-            requestAnimationFrame(updatePadding);
-
-            const observer = new MutationObserver((mutations) => {
-                mutations.forEach((m) => {
-                    if (m.attributeName === 'class') updatePadding();
-                });
             });
-            observer.observe(document.body, { attributes: true });
+            headerObserver.observe(headerEl);
 
             mainEl.addEventListener('scroll', () => {
                 const scrolled = mainEl.scrollTop > 40;
                 headerTitle.classList.toggle('collapsed', scrolled);
                 headerEl.classList.toggle('collapsed', scrolled);
                 if (searchWrap) searchWrap.classList.toggle('hidden', scrolled);
-                mainEl.style.setProperty('--header-h', scrolled ? 'var(--header-collapsed)' : 'var(--header-full)');
             }, { passive: true });
         }
     }
