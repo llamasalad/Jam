@@ -1869,7 +1869,7 @@ body.player-open #main {
 
 .suggested-card {
   flex: 0 0 160px;
-  height: 200px;
+  height: 100px;
   background-size: cover;
   background-position: center;
   background-color: var(--surface2);
