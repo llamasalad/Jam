@@ -328,6 +328,7 @@ let libraryCardsBuilt = false;
 function renderLibraryCards() {
     if (libraryCardsBuilt) return;
     libraryCardsBuilt = true;
+    const suggestedContainer = document.getElementById('suggested-container');
     const artistsContainer = document.getElementById('artists-container');
     const albumsContainer = document.getElementById('albums-container');
     if (!artistsContainer || !albumsContainer) return;
@@ -422,6 +423,37 @@ function renderLibraryCards() {
             if (data.artwork) coverObserver.observe(card);
         });
     albumsContainer.appendChild(fragB);
+
+    if (suggestedContainer) {
+        suggestedContainer.innerHTML = '';
+        const suggestedTracks = [...tracks].sort(() => 0.5 - Math.random()).slice(0, 8);
+        const fragS = document.createDocumentFragment();
+        suggestedTracks.forEach(t => {
+            const card = document.createElement('div');
+            card.className = 'suggested-card';
+            if (t.id) card.dataset.artworkId = t.id;
+
+            const overlay = document.createElement('div');
+            const info = document.createElement('div');
+            info.className = 'suggested-info';
+
+            const titleLabel = document.createElement('div');
+            titleLabel.className = 'suggested-title';
+            titleLabel.textContent = t.title || 'Unknown';
+
+            const artistLabel = document.createElement('div');
+            artistLabel.className = 'suggested-artist';
+            artistLabel.textContent = t.artist || 'Unknown Artist';
+
+            info.append(titleLabel, artistLabel);
+            card.append(overlay, info);
+
+            card.onclick = () => playTrack(t, tracks);
+            fragS.appendChild(card);
+            if (t.id) coverObserver.observe(card);
+        });
+        suggestedContainer.appendChild(fragS);
+    }
 }
 
 const sortModes = ['title', 'artist', 'album'];
@@ -687,6 +719,12 @@ function sort() {
     const trackList = document.getElementById('track-list');
     const artistsSection = document.getElementById('artists-section');
     const albumsSection = document.getElementById('albums-section');
+    const suggestedSection = document.getElementById('suggested-section');
+
+    if (suggestedSection) {
+        const q = searchEl ? searchEl.value.trim() : '';
+        suggestedSection.style.display = q ? 'none' : 'block';
+    }
 
     if (libraryCards) {
         if (sortMode === 'title') {
