@@ -3426,7 +3426,7 @@ async function init() {
                     headerTitle.classList.remove('collapsed');
                 }
                 const fullH = headerEl.offsetHeight;
-                mainEl.style.marginTop = fullH + 'px';
+                mainEl.style.paddingTop = fullH + 'px';
 
                 headerEl.classList.add('collapsed');
                 if (searchWrap) searchWrap.classList.add('hidden');
