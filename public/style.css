@@ -2744,7 +2744,7 @@ body.menu-open .queue-remove {
     border-radius: var(--radius-s) !important;
     font-family: inherit !important;
     font-size: 13px !important;
-    padding: 6px 10px 6px 8px !important;
+    padding: 6px 0 6px 6px;
     width: 100% !important;
     box-sizing: border-box !important;
     outline: none !important;

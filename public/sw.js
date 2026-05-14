@@ -1,4 +1,4 @@
-const CACHE = 'jam-v183';
+const CACHE = 'jam-v184';
 const ASSETS = ['/', '/index.html', '/style.css', '/app.js', '/manifest.json'];
 
 self.addEventListener('install', e => {
