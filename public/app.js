@@ -3425,18 +3425,17 @@ async function init() {
                     if (searchWrap) searchWrap.classList.remove('hidden');
                     headerTitle.classList.remove('collapsed');
                 }
+
                 const fullH = headerEl.offsetHeight;
                 mainEl.style.paddingTop = fullH + 'px';
 
-                headerEl.classList.add('collapsed');
-                if (searchWrap) searchWrap.classList.add('hidden');
-                headerTitle.classList.add('collapsed');
-                const collapsedH = headerEl.offsetHeight;
+                const shrinkAmount = 10 + (searchWrap ? 60 : 0);
+                const collapsedH = fullH - shrinkAmount;
 
-                if (!wasCollapsed) {
-                    headerEl.classList.remove('collapsed');
-                    if (searchWrap) searchWrap.classList.remove('hidden');
-                    headerTitle.classList.remove('collapsed');
+                if (wasCollapsed) {
+                    headerEl.classList.add('collapsed');
+                    if (searchWrap) searchWrap.classList.add('hidden');
+                    headerTitle.classList.add('collapsed');
                 }
 
                 mainEl.style.setProperty('--header-full', fullH + 'px');
