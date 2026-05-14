@@ -1873,7 +1873,7 @@ body.player-open #main {
   background-size: cover;
   background-position: center;
   background-color: var(--surface2);
-  border-radius: var(--radius);
+  border-radius: var(--radius-s);
   position: relative;
   overflow: hidden;
   cursor: pointer;
@@ -3031,6 +3031,14 @@ body.menu-open .queue-remove {
     animation: update-pulse 2s ease-in-out infinite;
   }
 
+  .section-title {
+    padding: 0;
+  }
+
+  #suggested-container {
+    padding: 0;
+  }
+
   #sidebar-update .sidebar-label {
     font-weight: 500;
   }
@@ -3066,6 +3074,7 @@ body.menu-open .queue-remove {
 }
 
 @media (max-width: 768px) {
+
   #sidebar {
     display: none;
   }
