@@ -3419,17 +3419,29 @@ async function init() {
         if (mainEl && headerTitle && headerEl) {
             const updatePadding = () => {
                 const wasCollapsed = headerEl.classList.contains('collapsed');
+
                 if (wasCollapsed) {
                     headerEl.classList.remove('collapsed');
                     if (searchWrap) searchWrap.classList.remove('hidden');
                     headerTitle.classList.remove('collapsed');
                 }
-                mainEl.style.paddingTop = headerEl.offsetHeight + 'px';
-                if (wasCollapsed) {
-                    headerEl.classList.add('collapsed');
-                    if (searchWrap) searchWrap.classList.add('hidden');
-                    headerTitle.classList.add('collapsed');
+                const fullH = headerEl.offsetHeight;
+                mainEl.style.paddingTop = fullH + 'px';
+
+                headerEl.classList.add('collapsed');
+                if (searchWrap) searchWrap.classList.add('hidden');
+                headerTitle.classList.add('collapsed');
+                const collapsedH = headerEl.offsetHeight;
+
+                if (!wasCollapsed) {
+                    headerEl.classList.remove('collapsed');
+                    if (searchWrap) searchWrap.classList.remove('hidden');
+                    headerTitle.classList.remove('collapsed');
                 }
+
+                mainEl.style.setProperty('--header-full', fullH + 'px');
+                mainEl.style.setProperty('--header-collapsed', collapsedH + 'px');
+                mainEl.style.setProperty('--header-h', wasCollapsed ? collapsedH + 'px' : fullH + 'px');
             };
 
             requestAnimationFrame(updatePadding);
@@ -3446,6 +3458,7 @@ async function init() {
                 headerTitle.classList.toggle('collapsed', scrolled);
                 headerEl.classList.toggle('collapsed', scrolled);
                 if (searchWrap) searchWrap.classList.toggle('hidden', scrolled);
+                mainEl.style.setProperty('--header-h', scrolled ? 'var(--header-collapsed)' : 'var(--header-full)');
             }, { passive: true });
         }
     }

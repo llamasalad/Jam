@@ -3756,4 +3756,9 @@ body.menu-open .queue-remove {
   #suggested-container::-webkit-scrollbar {
     display: none;
   }
+
+  .group-header {
+    top: var(--header-h, 0px) !important;
+    transition: top 0.2s ease !important;
+  }
 }
