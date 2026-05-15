@@ -3154,14 +3154,29 @@ if (audio) {
         }
         const d = getRealDuration();
         if (!seeking && d) {
-            const pct = (audio.currentTime / d) * 100;
-            if (progress) progress.value = pct;
-            if (expProgress) expProgress.value = pct;
             if (timeCur) timeCur.textContent = fmt(audio.currentTime);
             if (expTimeCur) expTimeCur.textContent = fmt(audio.currentTime);
         }
         updateSyncedLyricsState();
     });
+
+    let rafId = null;
+    const tickProgress = () => {
+        const d = getRealDuration();
+        if (!seeking && d && !audio.paused) {
+            const pct = (audio.currentTime / d) * 100;
+            if (progress) progress.value = pct;
+            if (expProgress) expProgress.value = pct;
+        }
+        rafId = requestAnimationFrame(tickProgress);
+    };
+
+    audio.addEventListener('play', () => {
+        cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(tickProgress);
+    });
+    audio.addEventListener('pause', () => cancelAnimationFrame(rafId));
+    audio.addEventListener('ended', () => cancelAnimationFrame(rafId));
 }
 
 function escAttr(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
