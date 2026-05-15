@@ -3042,6 +3042,7 @@ body.menu-open .queue-remove {
 
   .section-title {
     padding: 0;
+    justify-self: center;
   }
 
   #suggested-container {
@@ -3068,6 +3069,10 @@ body.menu-open .queue-remove {
 
   #suggested-container::-webkit-scrollbar-thumb:hover {
     background: var(--muted);
+  }
+
+  .suggested-card {
+    flex: 1 1 20%;
   }
 
   @keyframes update-pulse {
