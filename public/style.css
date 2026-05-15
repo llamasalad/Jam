@@ -415,7 +415,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  height: 50vh;
+  height: 100%;
   color: var(--muted);
   font-size: 14px;
 }
@@ -2231,6 +2231,14 @@ body.detail-view #suggested-section {
   display: none;
 }
 
+body.detail-view #suggested-section {
+  display: none !important;
+}
+
+body:has(#library-cards.show) #suggested-section {
+  display: none !important;
+}
+
 body.is-dragging {
   user-select: none;
   -webkit-user-select: none;
@@ -2520,6 +2528,10 @@ body.menu-open .queue-remove {
 @media (min-width: 769px) {
   #player-meta-mobile {
     display: none;
+  }
+
+  #expanded-player.open {
+    overflow: hidden
   }
 
   #volume-row {
@@ -3034,6 +3046,7 @@ body.menu-open .queue-remove {
 
   #suggested-container {
     padding: 0;
+    flex-wrap: wrap;
   }
 
   #sidebar-update .sidebar-label {
