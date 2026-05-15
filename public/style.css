@@ -1164,9 +1164,11 @@ body {
 }
 
 .time-label {
-  font-family: 'SF Pro Display', -apple-system, sans-serif;
   font-size: 11px;
   color: var(--muted);
+  min-width: 35px;
+  flex-shrink: 0;
+  text-align: center;
 }
 
 /* Lyrics timing */
