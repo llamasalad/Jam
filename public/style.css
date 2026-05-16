@@ -3731,6 +3731,7 @@ body.menu-open .queue-remove {
     left: 0;
     right: 0;
     z-index: 300;
+    border-top: 1px solid var(--border2);
   }
 
   .dock-item {
@@ -3789,7 +3790,7 @@ body.menu-open .queue-remove {
   }
 
   #main {
-    padding-top: 60px !important;
+    padding-top: calc(65px + env(safe-area-inset-top, 0px)) !important;
     padding-bottom: calc(65px + var(--player-h)) !important;
   }
 
