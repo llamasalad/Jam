@@ -526,9 +526,11 @@ body {
   opacity: 1;
 }
 
-.track:active .track-content {
-  background: var(--surface3);
-  transition: background 0s;
+@media (hover: hover) {
+  .track:active .track-content {
+    background: var(--surface3);
+    transition: background 0s;
+  }
 }
 
 .track.active .track-content {
@@ -2367,8 +2369,10 @@ body.menu-open .queue-remove {
   transform: none !important;
 }
 
-.track:active .track-content {
-  background: var(--surface2) !important;
+@media (hover: hover) {
+  .track:active .track-content {
+    background: var(--surface2) !important;
+  }
 }
 
 #library-cards {
@@ -2572,20 +2576,7 @@ body.menu-open .queue-remove {
   }
 }
 
-@media (hover: none),
-(pointer: coarse) {
-  .playlist-card:active {
-    background: var(--surface2) !important;
-  }
-}
-
-@media (hover: none),
-(pointer: coarse) {
-  .track:active:not(.swiping) .track-content {
-    background: var(--surface2) !important;
-    opacity: 0.96;
-  }
-}
+/* Mobile active highlight overrides removed per user request */
 
 @media (min-width: 769px) {
   #player-meta-mobile {
