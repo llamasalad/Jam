@@ -652,10 +652,70 @@ body {
 
 .track-title {
   font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.track-title>span:first-child {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: 600;
+}
+
+.music-bars {
+  display: none;
+  position: relative;
+  justify-content: space-between;
+  width: 13px;
+  height: 13px;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.track.active .music-bars {
+  display: flex;
+}
+
+.music-bars span {
+  width: 3px;
+  height: 100%;
+  background-color: var(--accent);
+  border-radius: 3px;
+  transform-origin: bottom;
+  animation: bounce 2.2s ease infinite alternate;
+  content: '';
+}
+
+.music-bars span:nth-of-type(2) {
+  animation-delay: -2.2s;
+}
+
+.music-bars span:nth-of-type(3) {
+  animation-delay: -3.7s;
+}
+
+@keyframes bounce {
+  10% {
+    transform: scaleY(0.3);
+  }
+
+  30% {
+    transform: scaleY(1);
+  }
+
+  60% {
+    transform: scaleY(0.5);
+  }
+
+  80% {
+    transform: scaleY(0.75);
+  }
+
+  100% {
+    transform: scaleY(0.6);
+  }
 }
 
 .track-sub {

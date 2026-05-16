@@ -1085,7 +1085,15 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
     loadCover(t.id, thumb);
 
     const info = document.createElement('div'); info.className = 'track-info';
-    const ti = document.createElement('div'); ti.className = 'track-title'; ti.textContent = t.title || 'Unknown';
+    const ti = document.createElement('div'); ti.className = 'track-title';
+    const spanTitle = document.createElement('span');
+    spanTitle.textContent = t.title || 'Unknown';
+    ti.appendChild(spanTitle);
+
+    const bars = document.createElement('div');
+    bars.className = 'music-bars';
+    bars.innerHTML = '<span></span><span></span><span></span>';
+    ti.appendChild(bars);
     const ts = document.createElement('div'); ts.className = 'track-sub'; ts.textContent = [t.artist, t.album].filter(Boolean).join(' \u00B7 ') || '\u2014';
     info.append(ti, ts);
 
