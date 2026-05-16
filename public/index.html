@@ -22,6 +22,10 @@
   <div id="drop-zone">
     <div id="drop-zone-text">Drop tracks to upload</div>
   </div>
+  <div id="floating-search-wrap" style="display:none">
+    <input id="search" type="text" placeholder="search..." autocomplete="off" spellcheck="false" />
+    <button id="floating-search-close">✕</button>
+  </div>
   <div id="auth-overlay" style="display:none">
     <div id="auth-box">
       <h2>Jam!</h2>
@@ -195,13 +199,6 @@
             </div>
           </div>
         </div>
-      </div>
-      <div id="tabs">
-        <div class="tab active" data-tab="library">Library</div>
-        <div class="tab" data-tab="playlists">Playlists</div>
-      </div>
-      <div id="search-wrap">
-        <input id="search" type="search" placeholder="search..." autocomplete="off" />
       </div>
     </div>
     <div id="main">
@@ -400,6 +397,11 @@
         <button id="lyrics-btn">lyrics</button>
       </div>
     </div>
+  </div>
+  <div id="mobile-dock">
+    <div class="dock-item active" data-tab="library">library</div>
+    <div class="dock-item" id="dock-search">search</div>
+    <div class="dock-item" data-tab="playlists">playlists</div>
   </div>
   </div>
   </div>

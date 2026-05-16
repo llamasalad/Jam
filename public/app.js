@@ -276,6 +276,7 @@ function switchTab(name) {
 
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
     document.querySelectorAll('.sidebar-item[data-tab]').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    document.querySelectorAll('.dock-item[data-tab]').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
 
     if (viewLibrary) viewLibrary.classList.toggle('active', name === 'library');
     if (viewPlaylists) viewPlaylists.classList.toggle('active', name === 'playlists');
@@ -298,6 +299,10 @@ document.querySelectorAll('.tab').forEach(tab => {
 });
 
 document.querySelectorAll('.sidebar-item[data-tab]').forEach(item => {
+    item.onclick = () => switchTab(item.dataset.tab);
+});
+
+document.querySelectorAll('.dock-item[data-tab]').forEach(item => {
     item.onclick = () => switchTab(item.dataset.tab);
 });
 
@@ -3434,55 +3439,27 @@ async function init() {
     }
 
     if (isMobile()) {
-        const mainEl = document.getElementById('main');
-        const headerTitle = document.getElementById('header-title');
-        const searchWrap = document.getElementById('search-wrap');
-        const headerEl = document.getElementById('header');
+        const dockSearch = document.getElementById('dock-search');
+        const floatingSearchWrap = document.getElementById('floating-search-wrap');
+        const floatingSearchClose = document.getElementById('floating-search-close');
 
-        if (mainEl && headerTitle && headerEl) {
-            const updatePadding = () => {
-                const wasCollapsed = headerEl.classList.contains('collapsed');
-
-                if (wasCollapsed) {
-                    headerEl.classList.remove('collapsed');
-                    if (searchWrap) searchWrap.classList.remove('hidden');
-                    headerTitle.classList.remove('collapsed');
-                }
-                const fullH = headerEl.offsetHeight;
-                mainEl.style.paddingTop = fullH + 'px';
-
-                headerEl.classList.add('collapsed');
-                if (searchWrap) searchWrap.classList.add('hidden');
-                headerTitle.classList.add('collapsed');
-                const collapsedH = headerEl.offsetHeight;
-
-                if (!wasCollapsed) {
-                    headerEl.classList.remove('collapsed');
-                    if (searchWrap) searchWrap.classList.remove('hidden');
-                    headerTitle.classList.remove('collapsed');
-                }
-
-                mainEl.style.setProperty('--header-full', fullH + 'px');
-                mainEl.style.setProperty('--header-collapsed', collapsedH + 'px');
-                mainEl.style.setProperty('--header-h', wasCollapsed ? collapsedH + 'px' : fullH + 'px');
+        if (dockSearch) {
+            dockSearch.onclick = (e) => {
+                e.stopPropagation();
+                floatingSearchWrap.style.display = 'flex';
+                if (searchEl) searchEl.focus();
             };
+        }
 
-            requestAnimationFrame(updatePadding);
-
-            const observer = new MutationObserver((mutations) => {
-                mutations.forEach((m) => {
-                    if (m.attributeName === 'class') updatePadding();
-                });
-            });
-            observer.observe(document.body, { attributes: true });
-
-            mainEl.addEventListener('scroll', () => {
-                const scrolled = mainEl.scrollTop > 40;
-                headerTitle.classList.toggle('collapsed', scrolled);
-                headerEl.classList.toggle('collapsed', scrolled);
-                if (searchWrap) searchWrap.classList.toggle('hidden', scrolled);
-                mainEl.style.setProperty('--header-h', scrolled ? 'var(--header-collapsed)' : 'var(--header-full)');
-            }, { passive: true });
+        if (floatingSearchClose) {
+            floatingSearchClose.onclick = (e) => {
+                e.stopPropagation();
+                floatingSearchWrap.style.display = 'none';
+                if (searchEl && searchEl.value !== '') {
+                    searchEl.value = '';
+                    applyFilter();
+                }
+            };
         }
     }
 
