@@ -3549,7 +3549,6 @@ body.menu-open .queue-remove {
     border-top: none;
     border-radius: 16px 16px 0 0;
     box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.5);
-    transform: translateY(100%);
     transition: transform .35s cubic-bezier(0.32, 0.72, 0, 1), border-radius .35s;
     will-change: transform;
   }
