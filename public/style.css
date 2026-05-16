@@ -219,7 +219,6 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-top: calc(12px + env(titlebar-area-y, env(safe-area-inset-top, 0px)));
 }
 
 #header h1 {
@@ -3731,7 +3730,6 @@ body.menu-open .queue-remove {
     left: 0;
     right: 0;
     z-index: 300;
-    padding-bottom: env(safe-area-inset-bottom, 0);
   }
 
   .dock-item {
