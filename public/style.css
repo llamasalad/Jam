@@ -3620,6 +3620,7 @@ body.menu-open .queue-remove {
     flex-wrap: nowrap;
     width: 100%;
     flex-direction: column;
+    padding-top: calc(12px + env(titlebar-area-y, env(safe-area-inset-top, 0px)));
   }
 
   #header-top-row {
