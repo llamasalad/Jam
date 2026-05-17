@@ -3406,15 +3406,6 @@ body.menu-open .queue-remove {
     scrollbar-width: none !important;
   }
 
-  #exp-lyric-current {
-    line-height: 1.2em;
-    font-size: 17px;
-  }
-
-  #exp-lyric-next {
-    font-size: 14px;
-  }
-
   #exp-offset-controls {
     display: none !important;
   }
