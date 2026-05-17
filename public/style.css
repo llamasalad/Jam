@@ -1918,7 +1918,6 @@ body.player-open #main {
   font-weight: 500;
   margin-bottom: 16px;
   color: var(--muted);
-  padding: 0 16px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
