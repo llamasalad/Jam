@@ -3866,12 +3866,4 @@ body.menu-open .queue-remove {
     top: var(--header-h, 0px) !important;
     transition: top 0.2s ease !important;
   }
-
-  #exp-title {
-    font-size: 20px;
-  }
-
-  #exp-artist {
-    font-size: 15px;
-  }
 }
