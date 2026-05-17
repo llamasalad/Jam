@@ -3360,11 +3360,12 @@ body.menu-open .queue-remove {
     min-width: 0 !important;
     max-width: 100% !important;
     align-items: center !important;
+    gap: 0;
   }
 
   #exp-cover-wrap {
     width: min(80vw, 320px);
-    margin: 12px auto 20px !important;
+    margin: 12px auto 12px !important;
     box-shadow: 0 16px 48px rgba(0, 0, 0, .6);
     align-self: center !important;
   }
@@ -3391,6 +3392,11 @@ body.menu-open .queue-remove {
 
   #exp-lyric-current {
     line-height: 1.2em;
+    font-size: 17px;
+  }
+
+  #exp-lyric-next {
+    font-size: 14px;
   }
 
   #exp-offset-controls {
@@ -3841,5 +3847,13 @@ body.menu-open .queue-remove {
   .group-header {
     top: var(--header-h, 0px) !important;
     transition: top 0.2s ease !important;
+  }
+
+  #exp-title {
+    font-size: 20px;
+  }
+
+  #exp-artist {
+    font-size: 15px;
   }
 }
