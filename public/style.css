@@ -2891,7 +2891,7 @@ body.menu-open .queue-remove {
     border-radius: var(--radius-s) !important;
     font-family: inherit !important;
     font-size: 13px !important;
-    padding: 6px 0 6px 6px;
+    padding: 6px 0px 6px 28px !important;
     width: 100% !important;
     box-sizing: border-box !important;
     outline: none !important;
@@ -2914,7 +2914,24 @@ body.menu-open .queue-remove {
 
   .sidebar-search-wrap {
     position: relative;
-    padding: 0 14px 0;
+    padding: 10px 0;
+  }
+
+  .sidebar-search-wrap svg {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    transition: color 0.2s ease;
+  }
+
+  .sidebar-search-wrap:focus-within svg {
+    color: var(--accent);
   }
 
   .sidebar-search-wrap #search {
