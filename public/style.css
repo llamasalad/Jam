@@ -2897,6 +2897,8 @@ body.menu-open .queue-remove {
     -webkit-box-shadow: 0 0 0 30px transparent inset !important;
     box-shadow: 0 0 0 30px transparent inset !important;
     -webkit-text-fill-color: var(--muted) !important;
+    border-right: 0 !important;
+    border-left: 0 !important;
   }
 
   #sidebar-search:focus {
