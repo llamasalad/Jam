@@ -3506,11 +3506,6 @@ body.menu-open .queue-remove {
     border: 1px solid var(--border2);
   }
 
-  .lyrics-timing.mobile .lyrics-offset-display {
-    min-width: 92px;
-    font-size: 10px;
-  }
-
   #exp-lyrics-card-scroll {
     max-height: 0;
     overflow: hidden;
