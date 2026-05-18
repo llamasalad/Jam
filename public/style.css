@@ -2652,7 +2652,6 @@ body.menu-open .queue-remove {
 
   #exp-desktop-lyrics-panel {
     min-width: 340px;
-    max-width: 520px;
     max-height: calc(100dvh - 105px);
     background: color-mix(in srgb, var(--bg) 50%, transparent);
     border: 1px solid var(--border2);
