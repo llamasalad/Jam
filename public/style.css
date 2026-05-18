@@ -733,6 +733,18 @@ body {
   margin-top: 2px;
 }
 
+.interactable {
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+@media (hover: hover) {
+  .interactable:hover {
+    text-decoration: underline;
+    color: var(--accent) !important;
+  }
+}
+
 .track-right {
   display: flex;
   align-items: center;

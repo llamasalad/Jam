@@ -48,17 +48,77 @@ function saveQueueState() {
     localStorage.setItem('music_qidx', qIdx);
 }
 
+function renderArtistAlbumSub(parentEl, t, viewType) {
+    if (!parentEl) return;
+    parentEl.innerHTML = '';
+
+    const artist = t.artist;
+    const album = t.album;
+
+    if (!artist && !album) {
+        parentEl.textContent = '—';
+        return;
+    }
+
+    const isTouchScreen = window.matchMedia("(pointer: coarse)").matches;
+
+    // Check if interaction is disabled: mobile devices on track lists & queue panel (only enable in players)
+    const isInteractionDisabled = isTouchScreen && (viewType !== 'player' && viewType !== 'expanded-player');
+
+    if (artist) {
+        const artistSpan = document.createElement('span');
+        artistSpan.className = 'interactive-artist';
+        artistSpan.textContent = artist;
+        if (!isInteractionDisabled) {
+            artistSpan.classList.add('interactable');
+            artistSpan.onclick = (e) => {
+                e.stopPropagation();
+                if (typeof closeExpandedPlayer === 'function') {
+                    closeExpandedPlayer();
+                }
+                closeCtxMenu();
+                openArtistDetail(artist);
+            };
+        }
+        parentEl.appendChild(artistSpan);
+    }
+
+    if (artist && album) {
+        const dot = document.createElement('span');
+        dot.textContent = ' \u00B7 ';
+        parentEl.appendChild(dot);
+    }
+
+    if (album) {
+        const albumSpan = document.createElement('span');
+        albumSpan.className = 'interactive-album';
+        albumSpan.textContent = album;
+        if (!isInteractionDisabled) {
+            albumSpan.classList.add('interactable');
+            albumSpan.onclick = (e) => {
+                e.stopPropagation();
+                if (typeof closeExpandedPlayer === 'function') {
+                    closeExpandedPlayer();
+                }
+                closeCtxMenu();
+                openAlbumDetail(album);
+            };
+        }
+        parentEl.appendChild(albumSpan);
+    }
+}
+
 function updatePlayerMetadata(t) {
     const plTitle = document.getElementById('player-title');
     const plArtist = document.getElementById('player-artist');
     const mobTitle = document.querySelector('#player-meta-mobile .title');
     const mobArtist = document.querySelector('#player-meta-mobile .artist');
     const fullTitle = t.title || 'Unknown';
-    const fullArtist = [t.artist, t.album].filter(Boolean).join(' \u00B7 ') || '\u2014';
     if (plTitle) plTitle.textContent = fullTitle;
-    if (plArtist) plArtist.textContent = fullArtist;
     if (mobTitle) mobTitle.textContent = fullTitle;
-    if (mobArtist) mobArtist.textContent = fullArtist;
+
+    renderArtistAlbumSub(plArtist, t, 'player');
+    renderArtistAlbumSub(mobArtist, t, 'player');
 }
 
 function setLyricsMessage(msg, curMsg) {
@@ -469,7 +529,7 @@ function renderLibraryCards() {
 
             const artistLabel = document.createElement('div');
             artistLabel.className = 'suggested-artist';
-            artistLabel.textContent = t.artist || 'Unknown Artist';
+            renderArtistAlbumSub(artistLabel, t, 'track-list');
 
             info.append(titleLabel, artistLabel);
             card.append(overlay, info);
@@ -1099,7 +1159,8 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
     bars.className = 'music-bars';
     bars.innerHTML = '<span></span><span></span><span></span>';
     ti.appendChild(bars);
-    const ts = document.createElement('div'); ts.className = 'track-sub'; ts.textContent = [t.artist, t.album].filter(Boolean).join(' \u00B7 ') || '\u2014';
+    const ts = document.createElement('div'); ts.className = 'track-sub';
+    renderArtistAlbumSub(ts, t, 'track-list');
     info.append(ti, ts);
 
     const right = document.createElement('div'); right.className = 'track-right';
@@ -1966,7 +2027,7 @@ function play(t) {
 function updateExpandedNowPlaying(t) {
     if (!t) return;
     if (expTitle) expTitle.textContent = t.title || 'Unknown';
-    if (expArtist) expArtist.textContent = [t.artist, t.album].filter(Boolean).join(' \u00B7 ') || '\u2014';
+    if (expArtist) renderArtistAlbumSub(expArtist, t, 'expanded-player');
     if (expCover) expCover.style.display = 'block';
     if (expCoverIcon) expCoverIcon.style.display = 'none';
     if (expCover) {
@@ -2659,7 +2720,9 @@ function renderQueue(skipScroll = false) {
 
         const content = document.createElement('div');
         content.className = 'queue-item-content';
-        content.innerHTML = `<span class="queue-handle">\u283f</span><span class="queue-num">${i === qIdx ? '\u25b6' : i + 1}</span><div class="queue-info"><div class="queue-title">${t.title || 'Unknown'}</div><div class="queue-sub">${t.artist || '\u2014'}</div></div><button class="queue-remove" title="remove">\u2715</button>`;
+        content.innerHTML = `<span class="queue-handle">\u283f</span><span class="queue-num">${i === qIdx ? '\u25b6' : i + 1}</span><div class="queue-info"><div class="queue-title">${t.title || 'Unknown'}</div><div class="queue-sub"></div></div><button class="queue-remove" title="remove">\u2715</button>`;
+        const qSub = content.querySelector('.queue-sub');
+        renderArtistAlbumSub(qSub, t, 'queue');
         item.appendChild(content);
 
         const handle = content.querySelector('.queue-handle');
