@@ -1239,27 +1239,19 @@ body {
 /* Lyrics timing */
 #exp-lyrics-card-controls,
 #lyrics-timing-row {
-  display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .lyrics-timing {
-  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
 }
 
 .lyrics-timing-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
   flex-wrap: wrap;
-  justify-content: center;
 }
 
 .lyrics-timing-btn {
@@ -1297,6 +1289,7 @@ body {
 
 .lyrics-timing.has-offset .lyrics-timing-btn.reset {
   display: inline-flex;
+  margin-left: 8px;
 }
 
 .lyrics-offset-display {
@@ -2578,8 +2571,6 @@ body.menu-open .queue-remove {
   }
 }
 
-/* Mobile active highlight overrides removed per user request */
-
 @media (min-width: 769px) {
   #player-meta-mobile {
     display: none;
@@ -2661,11 +2652,10 @@ body.menu-open .queue-remove {
   }
 
   #exp-desktop-lyrics-panel {
-    width: min(42vw, 520px);
     min-width: 340px;
     max-width: 520px;
-    max-height: calc(100dvh - 64px);
-    background: var(--surface);
+    max-height: calc(100dvh - 105px);
+    background: color-mix(in srgb, var(--bg) 50%, transparent);
     border: 1px solid var(--border2);
     border-radius: 18px;
     overflow: hidden;
@@ -2819,22 +2809,8 @@ body.menu-open .queue-remove {
     flex: 1;
     overflow-y: auto;
     padding: 10px 0;
-  }
-
-  #exp-desktop-lyrics-scroll::-webkit-scrollbar {
-    width: 12px;
-  }
-
-  #exp-desktop-lyrics-scroll::-webkit-scrollbar-thumb {
-    background: var(--surface3);
-    border-radius: 6px;
-    border: 3px solid transparent;
-    background-clip: padding-box;
-    min-height: 100px;
-  }
-
-  #exp-desktop-lyrics-scroll::-webkit-scrollbar-thumb:hover {
-    background: var(--muted);
+    scrollbar-width: none;
+    text-align: right;
   }
 
   /* Desktop Queue */
@@ -3096,6 +3072,14 @@ body.menu-open .queue-remove {
 
   .lyrics-timing-btn {
     background: transparent;
+  }
+
+  .lyric-line {
+    filter: blur(1px);
+  }
+
+  .lyric-line.active {
+    filter: none;
   }
 
   .track-title {
@@ -3505,11 +3489,6 @@ body.menu-open .queue-remove {
     transform: rotate(180deg);
   }
 
-  .lyrics-timing.mobile {
-    border-bottom: none;
-    padding: 10px 14px 0;
-  }
-
   .lyrics-timing.mobile .lyrics-timing-actions {
     width: 100%;
     justify-content: space-between;
@@ -3517,13 +3496,12 @@ body.menu-open .queue-remove {
 
   .lyrics-timing.mobile .lyrics-timing-btn {
     padding: 6px 14px;
-    margin-bottom: 10px;
+    border: 1px solid var(--border2);
   }
 
   .lyrics-timing.mobile .lyrics-offset-display {
     min-width: 92px;
     font-size: 10px;
-    margin-bottom: 8px;
   }
 
   #exp-lyrics-card-scroll {
