@@ -1241,6 +1241,10 @@ body {
 #lyrics-timing-row {
   align-items: center;
   gap: 8px;
+  position: absolute;
+  justify-content: center;
+  left: 50%;
+  transform: translate(-50%, 0);
 }
 
 .lyrics-timing {
@@ -3465,10 +3469,11 @@ body.menu-open .queue-remove {
   #exp-lyrics-card-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     padding: 12px 14px;
     cursor: pointer;
     touch-action: manipulation;
+    justify-content: center;
+    position: relative;
   }
 
   #exp-lyrics-card-title {
@@ -3476,6 +3481,7 @@ body.menu-open .queue-remove {
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--muted);
+    display: flex;
   }
 
   #exp-lyrics-card-chevron {
@@ -3518,20 +3524,19 @@ body.menu-open .queue-remove {
   }
 
   #exp-lyrics-card.open #exp-lyrics-card-header {
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--border2);
   }
 
   #exp-lyrics-card-scroll .lyric-line {
     color: var(--muted) !important;
     font-weight: 400 !important;
-    font-size: 15px;
-    padding: 6px 14px !important;
+    font-size: 20px;
   }
 
   #exp-lyrics-card-scroll .lyric-line.active {
     color: var(--accent) !important;
     font-weight: 700 !important;
-    font-size: 17px;
+    font-size: 22px;
   }
 
   /* Mobile queue */
