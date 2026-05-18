@@ -53,7 +53,7 @@ function renderArtistAlbumSub(parentEl, t, viewType) {
     parentEl.innerHTML = '';
 
     const artist = t.artist;
-    const album = t.album;
+    const album = viewType === 'suggested' ? null : t.album;
 
     if (!artist && !album) {
         parentEl.textContent = '—';
@@ -529,7 +529,7 @@ function renderLibraryCards() {
 
             const artistLabel = document.createElement('div');
             artistLabel.className = 'suggested-artist';
-            renderArtistAlbumSub(artistLabel, t, 'track-list');
+            renderArtistAlbumSub(artistLabel, t, 'suggested');
 
             info.append(titleLabel, artistLabel);
             card.append(overlay, info);
