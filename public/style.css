@@ -1306,7 +1306,7 @@ body {
 .lyrics-offset-display {
   font-size: 11px;
   color: var(--muted);
-  min-width: 88px;
+  min-width: 60px;
   text-align: center;
   white-space: nowrap;
 }
