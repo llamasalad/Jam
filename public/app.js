@@ -511,8 +511,8 @@ function renderLibraryCards() {
             refreshBtn.onclick = (e) => {
                 e.stopPropagation();
                 // Add a quick spin effect for feedback
-                refreshBtn.style.transition = 'transform 0.3s ease';
-                refreshBtn.style.transform = `rotate(${(refreshBtn._rot || 0) + 360}deg)`;
+                refreshBtn.style.transition = 'transform 0.3s ease !important';
+                refreshBtn.style.transform = `rotate(${(refreshBtn._rot || 0) + 360}deg) !important`;
                 refreshBtn._rot = (refreshBtn._rot || 0) + 360;
 
                 renderSuggestedCards(true);
