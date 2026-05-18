@@ -3157,10 +3157,6 @@ body.menu-open .queue-remove {
     border: 1px solid transparent;
   }
 
-  * {
-    scrollbar-width: thin;
-  }
-
   .track-menu-btn,
   .playlist-del,
   .queue-remove {
