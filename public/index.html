@@ -89,6 +89,15 @@
       </svg>
       New Playlist
     </div>
+    <div class="ctx-item" id="ctx-delete-playlist" style="display:none;color:var(--danger)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 6h18" />
+        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+      </svg>
+      Delete Playlist
+    </div>
   </div>
   <div id="modal-new" class="modal-overlay" style="display:none">
     <div class="modal">
@@ -97,6 +106,24 @@
       <div class="modal-btns">
         <button id="modal-cancel" class="btn-cancel">Cancel</button>
         <button id="modal-confirm" class="btn-confirm">Create</button>
+      </div>
+    </div>
+  </div>
+  <div id="modal-edit-playlist" class="modal-overlay" style="display:none">
+    <div class="modal">
+      <div class="edit-pl-avatar-wrap"
+        style="display:flex;flex-direction:column;align-items:center;margin-bottom:8px;gap:8px;">
+        <div id="edit-pl-preview" class="playlist-icon"
+          style="width:80px;height:80px;font-size:36px;border-radius:10px;cursor:pointer;background:var(--surface3);overflow:hidden;display:flex;align-items:center;justify-content:center;">
+          ♫</div>
+        <button id="edit-pl-upload-btn" class="lyrics-timing-btn"
+          style="padding:4px 8px;font-size:11px;">change</button>
+        <input type="file" id="edit-pl-image-input" accept="image/*" style="display:none;" />
+      </div>
+      <input id="edit-pl-name-input" placeholder="Playlist name" autocomplete="off" />
+      <div class="modal-btns">
+        <button id="modal-edit-cancel" class="btn-cancel">Cancel</button>
+        <button id="modal-edit-confirm" class="btn-confirm">Save</button>
       </div>
     </div>
   </div>
@@ -253,7 +280,16 @@
           <div id="playlists-container"></div>
         </div>
         <div id="playlist-detail">
-          <div id="playlist-detail-count"></div><button id="playlist-play-btn">▶ Play all</button>
+          <div id="playlist-detail-header" style="display:flex;align-items:center;gap:16px;padding:16px;">
+            <div id="playlist-detail-cover" class="playlist-icon"
+              style="width:64px;height:64px;font-size:28px;border-radius:8px;background:var(--surface3);overflow:hidden;display:flex;align-items:center;justify-content:center;">
+              ♫</div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <h2 id="playlist-detail-name" style="margin:0;font-size:18px;font-weight:600;"></h2>
+              <div id="playlist-detail-count" style="padding:0;font-size:12px;color:var(--muted);"></div>
+            </div>
+          </div>
+          <button id="playlist-play-btn">▶ play all</button><button id="playlist-edit-btn">✎ edit</button>
           <div id="playlist-tracks"></div>
         </div>
       </div>

@@ -35,6 +35,9 @@ export async function onRequest({ request, params, env }) {
   if (method === "PATCH") {
     const body = await request.json();
     if (body.name) playlist.name = body.name.trim();
+    if (body.hasOwnProperty('image')) {
+      playlist.image = body.image;
+    }
     await env.PLAYLISTS.put(key, JSON.stringify(playlist));
     return new Response(JSON.stringify(playlist), { headers: { "Content-Type": "application/json" } });
   }
