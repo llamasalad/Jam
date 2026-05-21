@@ -2554,8 +2554,6 @@ body.menu-open .queue-remove {
 }
 
 @media (hover: hover) {
-
-  #exp-lyrics-toggle:hover,
   #exp-queue-btn:hover {
     background: var(--surface3);
     color: var(--text);
@@ -2563,7 +2561,7 @@ body.menu-open .queue-remove {
 }
 
 @media (hover: hover) {
-  #exp-collapse:hover {
+  #exp-lyrics-toggle:hover {
     color: var(--text);
   }
 }
