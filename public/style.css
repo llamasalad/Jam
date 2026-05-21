@@ -1572,6 +1572,16 @@ body.player-open #main {
   border: none;
 }
 
+#exp-lyrics-toggle {
+  cursor: pointer;
+  font-size: 20px;
+  border: none;
+  color: var(--muted);
+  background: transparent;
+  position: relative;
+  max-height: 20px;
+}
+
 #exp-volume-icon {
   cursor: pointer;
   user-select: none;
@@ -1579,7 +1589,6 @@ body.player-open #main {
   margin-top: 2px;
 }
 
-#exp-lyrics-toggle,
 #exp-queue-btn {
   background: none;
   border: 1px solid var(--border);
@@ -1671,10 +1680,13 @@ body.player-open #main {
   }
 }
 
-#exp-lyrics-toggle.active,
 #exp-queue-btn.active {
   color: var(--muted);
   border-color: var(--accent);
+}
+
+#exp-lyrics-toggle.active {
+  color: var(--accent);
 }
 
 #exp-adaptive-btn.active {
@@ -2557,6 +2569,12 @@ body.menu-open .queue-remove {
 }
 
 @media (hover: hover) {
+  #desktop-exp-collapse:hover {
+    color: var(--text);
+  }
+}
+
+@media (hover: hover) {
   .queue-item:hover .queue-item-content {
     background: var(--surface2);
   }
@@ -3145,6 +3163,20 @@ body.menu-open .queue-remove {
     flex: 1 1 20%;
   }
 
+  #desktop-exp-collapse {
+    cursor: pointer;
+    font-size: 20px;
+    border: none;
+    color: var(--muted);
+    background: transparent;
+    position: relative;
+    max-height: 20px;
+  }
+
+  #exp-collapse {
+    display: none !important;
+  }
+
   @keyframes update-pulse {
 
     0%,
@@ -3161,6 +3193,10 @@ body.menu-open .queue-remove {
 @media (max-width: 768px) {
 
   #sidebar {
+    display: none;
+  }
+
+  #desktop-exp-collapse {
     display: none;
   }
 

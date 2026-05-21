@@ -178,6 +178,7 @@ const playlistsListView = document.getElementById('playlists-list-view');
 
 const expPlayer = document.getElementById('expanded-player');
 const expCollapse = document.getElementById('exp-collapse');
+const expDesktopCollapse = document.getElementById('desktop-exp-collapse');
 const expContent = document.getElementById('exp-content');
 const expCover = document.getElementById('exp-cover');
 const expCoverIcon = document.getElementById('exp-cover-icon');
@@ -2350,6 +2351,7 @@ function closeExpandedPlayer() {
 }
 
 if (expCollapse) expCollapse.onclick = closeExpandedPlayer;
+if (expDesktopCollapse) expDesktopCollapse.onclick = closeExpandedPlayer;
 if (expPlayer) expPlayer.addEventListener('click', e => { if (e.target === expPlayer) closeExpandedPlayer() });
 
 function setDesktopExpandedLyricsOpen(open) {
