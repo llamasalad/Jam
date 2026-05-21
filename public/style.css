@@ -1534,7 +1534,6 @@ body.player-open #main {
   gap: 8px;
   width: 120px;
   min-width: 60px;
-  margin-left: 5px;
 }
 
 #exp-volume-row input {
@@ -1580,6 +1579,7 @@ body.player-open #main {
   background: transparent;
   position: relative;
   max-height: 20px;
+  margin-top: 2px;
 }
 
 #exp-volume-icon {
@@ -3171,6 +3171,7 @@ body.menu-open .queue-remove {
     background: transparent;
     position: relative;
     max-height: 20px;
+    margin-top: 1px;
   }
 
   #exp-collapse {
