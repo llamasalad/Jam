@@ -2937,6 +2937,7 @@ function openLyricsCard() {
     lyricsCardOpen = true;
     expLyricsCard.classList.add('open');
     if (expLyricsCardControls) expLyricsCardControls.style.display = 'flex';
+    if (expLyricsWrap) expLyricsWrap.style.display = 'none';
     if (isMobile()) {
         setTimeout(() => {
             expLyricsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2963,6 +2964,7 @@ function closeLyricsCard() {
     lyricsCardOpen = false;
     expLyricsCard.classList.remove('open');
     if (expLyricsCardControls) expLyricsCardControls.style.display = 'none';
+    if (expLyricsWrap) expLyricsWrap.style.display = 'flex';
 }
 function toggleLyricsCard() {
     lyricsCardOpen ? closeLyricsCard() : openLyricsCard();
