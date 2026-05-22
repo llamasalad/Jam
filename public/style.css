@@ -3419,11 +3419,8 @@ body.menu-open .queue-remove {
   }
 
   #exp-utils {
-    display: flex !important;
     width: 100%;
     justify-content: center;
-    margin: 8px 0 12px;
-    order: 4;
   }
 
   #exp-lyrics-toggle {
