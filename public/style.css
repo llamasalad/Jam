@@ -3429,6 +3429,7 @@ body.menu-open .queue-remove {
 
   #exp-adaptive-btn {
     display: inline-flex !important;
+    font-size: 35px;
   }
 
   #exp-queue-btn {
