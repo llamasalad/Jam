@@ -3516,11 +3516,6 @@ body.menu-open .queue-remove {
     width: 100%;
   }
 
-  .lyrics-timing.mobile .lyrics-timing-btn {
-    padding: 6px 14px;
-    border: 1px solid var(--border2);
-  }
-
   #exp-lyrics-card-scroll {
     max-height: 0;
     overflow: hidden;
