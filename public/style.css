@@ -1013,7 +1013,7 @@ body {
   left: 0;
   right: 0;
   height: auto;
-  background: var(--bg);
+  background: color-mix(in srgb, var(--bg) 99%, transparent) !important;
   border-top: 1px solid var(--border2);
   display: flex;
   flex-direction: column;
@@ -3622,10 +3622,8 @@ body.menu-open .queue-remove {
     top: 0;
     z-index: 100;
     display: flex !important;
-    border-bottom: none !important;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    background: color-mix(in srgb, var(--bg) 85%, transparent) !important;
+    border-bottom: 1px solid var(--border2);
+    background: color-mix(in srgb, var(--bg) 99%, transparent) !important;
     flex-wrap: nowrap;
     width: 100%;
     flex-direction: column;
@@ -3735,7 +3733,7 @@ body.menu-open .queue-remove {
     justify-content: space-evenly;
     align-items: center;
     height: 60px;
-    background: var(--bg);
+    background: color-mix(in srgb, var(--bg) 99%, transparent) !important;
     position: fixed;
     bottom: 0;
     left: 0;
