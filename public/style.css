@@ -1287,7 +1287,6 @@ body {
   outline: none;
   color: var(--text);
   border-color: var(--accent);
-  background: var(--surface3);
 }
 
 .lyrics-timing-btn:active {
@@ -2520,7 +2519,6 @@ body.menu-open .queue-remove {
   .lyrics-timing-btn:hover {
     color: var(--text);
     border-color: var(--border2);
-    background: var(--surface3);
   }
 }
 
