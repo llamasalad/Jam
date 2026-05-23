@@ -3290,6 +3290,7 @@ body.menu-open .queue-remove {
     gap: 12px !important;
     display: flex;
     justify-content: space-between;
+    margin-bottom: 5px;
   }
 
   #player-info {
@@ -3753,6 +3754,10 @@ body.menu-open .queue-remove {
 
   .dock-item.active {
     color: var(--text);
+  }
+
+  #suggested-section {
+    margin-left: 10px;
   }
 
   #floating-search-wrap {
