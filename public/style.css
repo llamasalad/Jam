@@ -1586,7 +1586,7 @@ body.player-open #main {
 
 #exp-queue-btn {
   cursor: pointer;
-  font-size: 30px;
+  font-size: 40px;
   border: none;
   color: var(--muted);
   background: transparent;
