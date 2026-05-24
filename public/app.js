@@ -571,7 +571,11 @@ function renderLibraryCards() {
         if (refreshBtn) {
             refreshBtn.onclick = (e) => {
                 e.stopPropagation();
-                // Add a quick spin effect for feedback
+                // Ensure a starting transform exists so the transition has a "from" value
+                if (refreshBtn._rot == null) {
+                    refreshBtn.style.setProperty('transform', 'rotate(0deg)', 'important');
+                    refreshBtn.getBoundingClientRect(); // force reflow
+                }
                 refreshBtn.style.setProperty('transition', 'transform 0.3s ease', 'important');
                 refreshBtn.style.setProperty('transform', `rotate(${(refreshBtn._rot || 0) + 360}deg)`, 'important');
                 refreshBtn._rot = (refreshBtn._rot || 0) + 360;
