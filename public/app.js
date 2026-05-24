@@ -2361,6 +2361,16 @@ function setDesktopExpandedLyricsOpen(open) {
     if (expLyricsToggle) expLyricsToggle.classList.toggle('active', desktopExpandedLyricsOpen);
     if (desktopExpandedLyricsOpen) {
         requestAnimationFrame(() => scrollExpandedPlayerTo(0, 'auto'));
+        // Auto-scroll to active lyric line when opening
+        setTimeout(() => {
+            if (expDesktopLyricsScroll) {
+                const activeLine = expDesktopLyricsScroll.querySelector('.lyric-line.active');
+                if (activeLine) {
+                    const top = activeLine.offsetTop - expDesktopLyricsScroll.clientHeight / 2 + activeLine.offsetHeight / 2;
+                    expDesktopLyricsScroll.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+                }
+            }
+        }, 100);
     }
 }
 
