@@ -2745,8 +2745,19 @@ function renderQueue(skipScroll = false) {
     });
 
     if (!skipScroll) {
-        const activeEl = queuePanel.querySelector('.queue-item.active');
-        if (activeEl) activeEl.scrollIntoView({ block: 'center' });
+        const scrollToActive = () => {
+            const activeEl = queuePanel.querySelector('.queue-item.active');
+            if (activeEl) {
+                const top = activeEl.offsetTop - queuePanel.clientHeight / 2 + activeEl.offsetHeight / 2;
+                queuePanel.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+            }
+        };
+        // On mobile, wait for the panel slide-up transition to finish before scrolling
+        if (isMobile()) {
+            setTimeout(scrollToActive, 380);
+        } else {
+            scrollToActive();
+        }
     }
 }
 
