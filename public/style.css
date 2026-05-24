@@ -3562,11 +3562,6 @@ body.menu-open .queue-remove {
     transform: translateY(40%);
   }
 
-  #queue-panel.expanded {
-    transform: translateY(0);
-    border-radius: 0;
-  }
-
   #queue-panel.swiping {
     transition: none;
   }

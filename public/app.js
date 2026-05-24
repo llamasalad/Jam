@@ -2365,7 +2365,6 @@ function setDesktopExpandedLyricsOpen(open) {
 }
 
 let swipeStartX = 0, swipeStartY = 0, swipeDeltaY = 0, swipeStartTime = 0, isPanelSwiping = false, swipeTarget = null;
-let queueExpanded = false;
 const SWIPE_THRESHOLD = 50;
 
 if (player) {
@@ -2419,13 +2418,8 @@ document.addEventListener('touchmove', e => {
         const translate = Math.min(100, (swipeDeltaY / window.innerHeight) * 100);
         expPlayer.classList.add('swiping');
         expPlayer.style.transform = `translateY(${translate}%)`;
-    } else if (swipeTarget === 'queue-swipe' && swipeDeltaY !== 0) {
-        let translate;
-        if (queueExpanded) {
-            translate = Math.max(0, Math.min(100, (swipeDeltaY / window.innerHeight) * 100));
-        } else {
-            translate = Math.max(0, Math.min(100, 40 + (swipeDeltaY / window.innerHeight) * 100));
-        }
+    } else if (swipeTarget === 'queue-swipe' && swipeDeltaY > 0) {
+        const translate = Math.max(0, Math.min(100, 40 + (swipeDeltaY / window.innerHeight) * 100));
         queuePanel.classList.add('swiping');
         queuePanel.style.transform = `translateY(${translate}%)`;
     }
@@ -2458,20 +2452,10 @@ document.addEventListener('touchend', () => {
         queuePanel.classList.remove('swiping');
         queuePanel.style.transform = '';
 
-        const finalTranslate = queueExpanded
-            ? (swipeDeltaY / window.innerHeight) * 100
-            : 40 + (swipeDeltaY / window.innerHeight) * 100;
+        const finalTranslate = 40 + (swipeDeltaY / window.innerHeight) * 100;
 
-        if ((isFlick && swipeDeltaY < 0) || finalTranslate < 20) {
-            queueExpanded = true;
-            queuePanel.classList.add('expanded');
-            queuePanel.classList.add('open');
-        } else if ((isFlick && swipeDeltaY > 0 && finalTranslate > 55) || finalTranslate > 70) {
+        if ((isFlick && swipeDeltaY > 0 && finalTranslate > 55) || finalTranslate > 70) {
             closeQueuePanel();
-        } else {
-            queueExpanded = false;
-            queuePanel.classList.remove('expanded');
-            queuePanel.classList.add('open');
         }
     }
     swipeTarget = null;
@@ -2490,7 +2474,6 @@ document.addEventListener('touchcancel', () => {
     } else if (swipeTarget === 'queue-swipe' && queuePanel) {
         queuePanel.classList.remove('swiping');
         queuePanel.style.transform = '';
-        if (!queueExpanded) queuePanel.classList.add('open');
     }
     swipeTarget = null;
 }, { passive: true });
@@ -2586,8 +2569,7 @@ bindBackSwipe(trackList, closeDetailView, () => !!currentDetailView);
 
 function closeQueuePanel() {
     queueOpen = false;
-    queueExpanded = false;
-    if (queuePanel) { queuePanel.classList.remove('open', 'expanded'); queuePanel.style.transform = ''; }
+    if (queuePanel) { queuePanel.classList.remove('open'); queuePanel.style.transform = ''; }
     if (queueBtn) queueBtn.classList.remove('active');
 }
 
@@ -2656,8 +2638,7 @@ if (queueBtn) {
     queueBtn.onclick = () => {
         queueOpen = !queueOpen;
         if (queueOpen) {
-            queueExpanded = false;
-            if (queuePanel) { queuePanel.classList.add('open'); queuePanel.classList.remove('expanded'); }
+            if (queuePanel) { queuePanel.classList.add('open'); }
             if (queueBtn) queueBtn.classList.add('active');
             renderQueue();
         } else {
@@ -2670,8 +2651,7 @@ const expQueueBtn = document.getElementById('exp-queue-btn');
 if (expQueueBtn) {
     expQueueBtn.onclick = () => {
         queueOpen = true;
-        queueExpanded = false;
-        if (queuePanel) { queuePanel.classList.add('open'); queuePanel.classList.remove('expanded'); }
+        if (queuePanel) { queuePanel.classList.add('open'); }
         if (queueBtn) queueBtn.classList.add('active');
         renderQueue();
     };
