@@ -904,7 +904,9 @@ function groupKey(t) {
     return t.album || 'Unknown';
 }
 
+let renderGeneration = 0;
 function renderList() {
+    const gen = ++renderGeneration;
     if (loading) loading.style.display = 'none';
     if (trackList) trackList.innerHTML = '';
     if (!filtered.length) { if (empty) empty.style.display = 'flex'; return }
@@ -912,6 +914,7 @@ function renderList() {
     const CHUNK = 50;
     let i = 0, lastGroup = '';
     function renderChunk() {
+        if (gen !== renderGeneration) return;
         const frag = document.createDocumentFragment();
         const end = Math.min(i + CHUNK, filtered.length);
         for (; i < end; i++) {
