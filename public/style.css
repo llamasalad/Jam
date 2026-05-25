@@ -1759,9 +1759,14 @@ body.player-open #main {
   height: 220px;
   background: var(--surface);
   border-top: 1px solid var(--border2);
-  overflow-y: auto;
   transition: transform .3s ease;
   z-index: 100;
+}
+
+#queue-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 #queue-panel.open {
@@ -1769,11 +1774,11 @@ body.player-open #main {
   transform: translateY(0);
 }
 
-#queue-panel::-webkit-scrollbar {
+#queue-scroll-area::-webkit-scrollbar {
   width: 12px;
 }
 
-#queue-panel::-webkit-scrollbar-thumb {
+#queue-scroll-area::-webkit-scrollbar-thumb {
   background: var(--surface3);
   border-radius: 6px;
   border: 3px solid transparent;
@@ -1781,8 +1786,10 @@ body.player-open #main {
   min-height: 100px;
 }
 
-#queue-panel::-webkit-scrollbar-thumb:hover {
+#queue-scroll-area::-webkit-scrollbar-thumb:hover {
   background: var(--muted);
+  border: 3px solid transparent;
+  background-clip: padding-box;
 }
 
 #queue-header {
@@ -2820,7 +2827,7 @@ body.menu-open .queue-remove {
   /* Desktop Queue */
   #queue-resizer {
     display: block;
-    position: sticky;
+    position: absolute;
     top: 0;
     left: 0;
     right: 0;

@@ -2633,6 +2633,7 @@ if (handle) {
 });
 
 const queuePanel = document.getElementById('queue-panel');
+const queueScrollArea = document.getElementById('queue-scroll-area');
 const queueBtn = document.getElementById('queue-btn');
 const queueResizer = document.getElementById('queue-resizer');
 
@@ -2704,7 +2705,7 @@ if (queuePanel) {
     queuePanel.addEventListener('touchstart', e => {
         if (!isMobile()) return;
         if (e.target.tagName === 'INPUT' || e.target.closest('.queue-handle')) return;
-        if (queuePanel.scrollTop > 20 && !e.target.closest('#queue-panel-mobile-handle')) return;
+        if (queueScrollArea && queueScrollArea.scrollTop > 20 && !e.target.closest('#queue-panel-mobile-handle')) return;
         swipeStartX = e.touches[0].clientX;
         swipeStartY = e.touches[0].clientY;
         swipeStartTime = Date.now();
@@ -2715,16 +2716,16 @@ if (queuePanel) {
 }
 
 function renderQueue(skipScroll = false) {
-    if (!queuePanel) return;
-    queuePanel.querySelectorAll('.queue-item').forEach(e => e.remove());
-    const oldEmpty = queuePanel.querySelector('[style*="padding:40px"]');
+    if (!queueScrollArea) return;
+    queueScrollArea.querySelectorAll('.queue-item').forEach(e => e.remove());
+    const oldEmpty = queueScrollArea.querySelector('[style*="padding:40px"]');
     if (oldEmpty) oldEmpty.remove();
 
     if (!queue.length) {
         const emptyDiv = document.createElement('div');
         emptyDiv.style.cssText = 'padding:40px 20px;text-align:center;color:var(--muted);font-size:13px';
         emptyDiv.textContent = 'Queue is empty';
-        queuePanel.appendChild(emptyDiv);
+        queueScrollArea.appendChild(emptyDiv);
         return;
     }
 
@@ -2768,15 +2769,15 @@ function renderQueue(skipScroll = false) {
             if (e.target.closest('.queue-handle') || item.style.opacity === '0.5') return;
             qIdx = i; play(queue[qIdx]); updateActive(); renderQueue();
         };
-        queuePanel.appendChild(item);
+        queueScrollArea.appendChild(item);
     });
 
     if (!skipScroll) {
         const scrollToActive = () => {
-            const activeEl = queuePanel.querySelector('.queue-item.active');
+            const activeEl = queueScrollArea.querySelector('.queue-item.active');
             if (activeEl) {
-                const top = activeEl.offsetTop - queuePanel.clientHeight / 2 + activeEl.offsetHeight / 2;
-                queuePanel.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+                const top = activeEl.offsetTop - queueScrollArea.clientHeight / 2 + activeEl.offsetHeight / 2;
+                queueScrollArea.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
             }
         };
         // On mobile, wait for the panel slide-up transition to finish before scrolling
@@ -2799,7 +2800,7 @@ function startQueueDrag(e, item) {
 
     item.onpointermove = e => {
         if (!dragItem) return;
-        const items = [...queuePanel.querySelectorAll('.queue-item')];
+        const items = [...queueScrollArea.querySelectorAll('.queue-item')];
         const over = items.find(it => {
             if (it === dragItem) return false;
             const r = it.getBoundingClientRect();
@@ -2812,7 +2813,7 @@ function startQueueDrag(e, item) {
     item.onpointerup = e => {
         if (!dragItem) return;
         document.body.classList.remove('is-dragging');
-        const items = [...queuePanel.querySelectorAll('.queue-item')];
+        const items = [...queueScrollArea.querySelectorAll('.queue-item')];
         const over = items.find(it => it.classList.contains('drag-over'));
         if (over) {
             const newIdx = parseInt(over.dataset.idx);
