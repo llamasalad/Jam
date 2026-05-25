@@ -8,6 +8,9 @@
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Jam!</title>
+  <link rel="preload" href="/api/font/subset-SFProDisplay-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/api/font/subset-SFProDisplay-Medium.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/api/font/subset-SFProDisplay-Bold.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/style.css?v=11">
   <link rel="icon" href="/icon-192.png">
@@ -511,7 +514,7 @@
       </svg>playlists</div>
   </div>
   <audio id="audio" crossorigin="use-credentials"></audio>
-  <script src="/app.js"></script>
+  <script src="/app.js" defer></script>
 </body>
 
 </html>

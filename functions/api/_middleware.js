@@ -2,6 +2,11 @@ export async function onRequest(context) {
   const { request, env, next } = context;
   const url = new URL(request.url);
 
+  // Allow font requests without auth (fonts are not sensitive, needed for SW precaching)
+  if (url.pathname.startsWith('/api/font/')) {
+    return await next();
+  }
+
   // Handle CORS preflight requests early - allow OPTIONS without auth check
   if (request.method === 'OPTIONS') {
     const origin = request.headers.get('Origin') || url.origin;

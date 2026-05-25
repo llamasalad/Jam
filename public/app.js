@@ -909,20 +909,29 @@ function renderList() {
     if (trackList) trackList.innerHTML = '';
     if (!filtered.length) { if (empty) empty.style.display = 'flex'; return }
     if (empty) empty.style.display = 'none';
-    let lastGroup = '';
-    const frag = document.createDocumentFragment();
-    for (const t of filtered) {
-        const g = groupKey(t);
-        if (g !== lastGroup) {
-            lastGroup = g;
-            const h = document.createElement('div');
-            h.className = 'group-header';
-            h.textContent = g;
-            frag.appendChild(h);
+    const CHUNK = 50;
+    let i = 0, lastGroup = '';
+    function renderChunk() {
+        const frag = document.createDocumentFragment();
+        const end = Math.min(i + CHUNK, filtered.length);
+        for (; i < end; i++) {
+            const t = filtered[i];
+            const g = groupKey(t);
+            if (g !== lastGroup) {
+                lastGroup = g;
+                const h = document.createElement('div');
+                h.className = 'group-header';
+                h.textContent = g;
+                frag.appendChild(h);
+            }
+            frag.appendChild(makeRow(t, true));
         }
-        frag.appendChild(makeRow(t, true));
+        if (trackList) trackList.appendChild(frag);
+        if (i < filtered.length) {
+            requestAnimationFrame(renderChunk);
+        }
     }
-    if (trackList) trackList.appendChild(frag);
+    renderChunk();
 }
 
 function bindTapActivation(el, handler, options = {}) {
@@ -1152,7 +1161,8 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
     const thumb = document.createElement('div'); thumb.className = 'thumb';
     const sp = document.createElement('span'); sp.className = 'thumb-icon'; sp.textContent = '\u266A';
     thumb.appendChild(sp);
-    loadCover(t.id, thumb);
+    thumb.dataset.coverId = t.id;
+    trackCoverObserver.observe(thumb);
 
     const info = document.createElement('div'); info.className = 'track-info';
     const ti = document.createElement('div'); ti.className = 'track-title';
@@ -1903,6 +1913,16 @@ async function loadCover(id, el) {
     const url = await ensureCoverUrl(id);
     if (url) setCover(el, url);
 }
+
+const trackCoverObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const el = entry.target;
+        const id = el.dataset.coverId;
+        if (id) loadCover(id, el);
+        trackCoverObserver.unobserve(el);
+    });
+}, { rootMargin: '400px' });
 
 const MAX_ARTIST_IMAGE_CACHE = 100;
 const artistImageCache = {}; // { name: { url, expires } }
@@ -3767,6 +3787,17 @@ async function init() {
     if (audio) applyVolume(Math.pow(sv, 3));
     if (volumeIcon) volumeIcon.innerHTML = sv === 0 ? volIcons.muted : sv < 0.5 ? volIcons.low : volIcons.high;
     if (expVolumeIcon) expVolumeIcon.innerHTML = sv === 0 ? volIcons.muted : sv < 0.5 ? volIcons.low : volIcons.high;
+    // Pre-fetch the last played track's cover and start buffering the audio stream
+    // in parallel with API calls, so both are ready when the player UI restores
+    const lastTrackData = JSON.parse(localStorage.getItem('music_last') || 'null');
+    if (lastTrackData?.id) {
+        ensureCoverUrl(lastTrackData.id);
+        if (audio) {
+            audio.preload = 'auto';
+            audio.src = '/api/stream/' + lastTrackData.id;
+            audio.load();
+        }
+    }
 
     await Promise.all([loadTracks(), loadPlaylists()]);
 
@@ -3811,9 +3842,13 @@ async function init() {
             loadLyrics(t);
 
             if (audio) {
-                audio.preload = 'auto';
-                audio.src = '/api/stream/' + t.id;
-                audio.load();
+                // Only set src if not already buffering the correct track
+                const alreadyBuffering = audio.src && audio.src.includes(t.id);
+                if (!alreadyBuffering) {
+                    audio.preload = 'auto';
+                    audio.src = '/api/stream/' + t.id;
+                    audio.load();
+                }
 
                 // Set media session after audio.src so iOS has a valid audio context
                 updateMediaSession(t);
@@ -4007,7 +4042,7 @@ async function checkForUpdate() {
 }
 
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
+    setTimeout(() => {
         navigator.serviceWorker.register('/sw.js').then(reg => {
             swRegistration = reg;
             console.log('[SW] Registered, scope:', reg.scope);
@@ -4044,7 +4079,7 @@ if ('serviceWorker' in navigator) {
             console.log('[SW] New controller, reloading...');
             window.location.reload();
         });
-    });
+    }, 2000);
 }
 
 (async () => { const ok = await checkAuth(); if (ok) init() })();

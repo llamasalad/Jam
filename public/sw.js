@@ -1,5 +1,10 @@
-const CACHE = 'jam-v261';
-const ASSETS = ['/', '/index.html', '/style.css', '/app.js', '/manifest.json'];
+const CACHE = 'jam-v263';
+const ASSETS = [
+  '/', '/index.html', '/style.css', '/app.js', '/manifest.json',
+  '/api/font/subset-SFProDisplay-Regular.woff2',
+  '/api/font/subset-SFProDisplay-Medium.woff2',
+  '/api/font/subset-SFProDisplay-Bold.woff2'
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
@@ -17,6 +22,20 @@ self.addEventListener('message', event => {
 });
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
+
+  // Stale-while-revalidate for tracks API — instant library render from cache
+  if (url.pathname === '/api/tracks') {
+    e.respondWith(caches.open(CACHE).then(async cache => {
+      const cached = await cache.match(e.request);
+      const fetchPromise = fetch(e.request).then(res => {
+        if (res.ok) cache.put(e.request, res.clone());
+        return res;
+      }).catch(() => cached);
+      return cached || fetchPromise;
+    }));
+    return;
+  }
+
   if (url.pathname.startsWith('/api/font/')) {
     e.respondWith(caches.open(CACHE).then(async cache => {
       const cached = await cache.match(e.request);

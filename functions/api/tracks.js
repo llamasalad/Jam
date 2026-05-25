@@ -175,7 +175,7 @@ export async function onRequestGet({ request, env }) {
       const cached = await env.PLAYLISTS.get('_tracks_cache', 'json');
       if (cached) {
         return new Response(JSON.stringify(cached), {
-          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'private, max-age=60' }
         });
       }
     } catch (_) { }
@@ -243,7 +243,7 @@ export async function onRequestGet({ request, env }) {
     } catch (_) { }
 
     return new Response(JSON.stringify(tracks), {
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json", "Cache-Control": "private, max-age=60" }
     });
 
   } catch (err) {
