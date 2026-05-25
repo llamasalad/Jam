@@ -2982,16 +2982,16 @@ body.menu-open .queue-remove {
     max-height: 0;
     overflow-y: auto;
     transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .sidebar-theme-dropdown::-webkit-scrollbar {
+    display: none;
   }
 
   .sidebar-theme-dropdown.open {
     max-height: 300px;
-    scrollbar-width: thin;
-    -ms-overflow-style: none;
-  }
-
-  .sidebar-theme-dropdown.open::-webkit-scrollbar {
-    display: none;
   }
 
   .sidebar-theme-option {
@@ -3111,6 +3111,14 @@ body.menu-open .queue-remove {
   .track-sub {
     font-size: 13px;
     margin-top: 2px;
+  }
+
+  .group-header {
+    padding: 10px 0 6px;
+  }
+
+  .track-content {
+    padding: 8px 0;
   }
 
   #sidebar-update {
