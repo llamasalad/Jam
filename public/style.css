@@ -2912,6 +2912,7 @@ body.menu-open .queue-remove {
 
   .sidebar-search-wrap {
     position: relative;
+    flex-shrink: 0;
   }
 
   .sidebar-search-wrap svg {
@@ -2968,6 +2969,7 @@ body.menu-open .queue-remove {
     font-weight: 500;
     padding: 20px 20px 28px;
     color: var(--text);
+    flex-shrink: 0;
   }
 
   .sidebar-nav {
@@ -2975,15 +2977,19 @@ body.menu-open .queue-remove {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    flex-shrink: 1;
+    min-height: 0;
   }
 
   .sidebar-theme-dropdown {
     list-style: none;
     max-height: 0;
     overflow-y: auto;
-    transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), flex-basis 0.3s;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    flex-shrink: 1;
+    min-height: 0;
   }
 
   .sidebar-theme-dropdown::-webkit-scrollbar {
@@ -3019,6 +3025,7 @@ body.menu-open .queue-remove {
     height: 44px;
     display: flex;
     align-items: center;
+    flex-shrink: 0;
   }
 
   .sidebar-label {
@@ -3744,7 +3751,7 @@ body.menu-open .queue-remove {
     justify-content: space-evenly;
     align-items: center;
     height: 60px;
-    background: color-mix(in srgb, var(--bg) 99%, transparent) !important;
+    background: color-mix(in srgb, var(--bg) 95%, transparent) !important;
     position: fixed;
     bottom: 0;
     left: 0;
