@@ -2397,7 +2397,7 @@ function setDesktopExpandedLyricsOpen(open) {
                     expDesktopLyricsScroll.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
                 }
             }
-        }, 100);
+        }, 400);
     }
 }
 
