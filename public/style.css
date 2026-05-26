@@ -1390,7 +1390,7 @@ body.player-open #main {
 }
 
 #exp-content {
-  width: 100%;
+  width: 90%;
   max-width: 1100px;
   display: flex;
   flex-direction: column;
@@ -2642,7 +2642,7 @@ body.menu-open .queue-remove {
   }
 
   #exp-content.desktop-lyrics-open #exp-main-left {
-    width: min(46%, 460px);
+    width: min(50%, 500px);
     align-items: center;
     transform: none;
   }
@@ -2675,7 +2675,7 @@ body.menu-open .queue-remove {
   }
 
   #exp-desktop-lyrics-panel {
-    min-width: 340px;
+    width: min(70%, 700px);
     max-height: calc(100dvh - 105px);
     background: color-mix(in srgb, var(--bg) 50%, transparent);
     border: 1px solid var(--border2);
