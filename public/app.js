@@ -2967,25 +2967,23 @@ function openLyricsCard() {
     expLyricsCard.classList.add('open');
     if (expLyricsCardControls) expLyricsCardControls.style.display = 'flex';
     if (expLyricsWrap) expLyricsWrap.style.display = 'none';
-    if (isMobile()) {
-        setTimeout(() => {
-            expLyricsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            setTimeout(() => {
-                const cardScroll = document.getElementById('exp-lyrics-card-scroll');
-                const activeLine = cardScroll?.querySelector('.lyric-line.active');
-                if (activeLine) {
-                    activeLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                } else if (cardScroll) {
-                    cardScroll.scrollTop = 0;
-                }
-            }, 350);
-        }, 100);
-    }
+    // Scroll the expanded player to show the lyrics card, then scroll to the active lyric line
     requestAnimationFrame(() => {
         if (expPlayer && expLyricsCard) {
             const top = expLyricsCard.offsetTop - 16;
-            expPlayer.scrollTo({ top, behavior: 'smooth' });
+            expPlayer.scrollTo({ top, behavior: isMobile() ? 'smooth' : 'auto' });
         }
+        // After the card is in view, scroll to the active lyric line within the card
+        setTimeout(() => {
+            const cardScroll = document.getElementById('exp-lyrics-card-scroll');
+            const activeLine = cardScroll?.querySelector('.lyric-line.active');
+            if (activeLine) {
+                const lineTop = activeLine.offsetTop - cardScroll.clientHeight / 2 + activeLine.offsetHeight / 2;
+                cardScroll.scrollTo({ top: Math.max(0, lineTop), behavior: 'smooth' });
+            } else if (cardScroll) {
+                cardScroll.scrollTop = 0;
+            }
+        }, isMobile() ? 400 : 100);
     });
 }
 function closeLyricsCard() {
