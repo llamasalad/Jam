@@ -1493,7 +1493,6 @@ body.player-open #main {
   }
 }
 
-
 #exp-artist {
   font-size: 17px;
   color: var(--muted);
@@ -1519,10 +1518,10 @@ body.player-open #main {
 }
 
 #exp-lyric-current {
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--text);
-  margin-bottom: 10px;
+  margin-bottom: 5px;
   transition: opacity .3s, transform .3s;
 }
 
@@ -2738,10 +2737,6 @@ body.menu-open .queue-remove {
     gap: 8px;
   }
 
-  #exp-info {
-    margin-bottom: 8px !important;
-  }
-
   #lyrics-picker-btn {
     background: none;
     border: none;
@@ -3229,6 +3224,10 @@ body.menu-open .queue-remove {
   #playlist-edit-btn {
     padding: 0.49em 10px !important;
     margin: 0 10px 10px 0;
+  }
+
+  #exp-lyrics-wrap {
+    margin: 12px;
   }
 
   @keyframes update-pulse {
