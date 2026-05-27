@@ -3329,17 +3329,11 @@ body.menu-open .queue-remove {
     display: none !important;
   }
 
-  .track.active .track-content,
-  .track.selected .track-content {
-    background: transparent !important;
+  .track.selected,
+  .track:hover {
+    background: none !important;
   }
 
-  .track.active .track-title,
-  .track.active.selected .track-title {
-    color: var(--text) !important;
-  }
-
-  .track,
   .track * {
     -webkit-user-select: none !important;
     user-select: none !important;
