@@ -2873,7 +2873,7 @@ body.menu-open .queue-remove {
   body.detail-view #library-back {
     display: grid !important;
     grid-column: 2;
-    padding: 10px 0 10px 15px;
+    padding: 10px 0 10px 0;
   }
 
   body.detail-view #theme-toggle,
