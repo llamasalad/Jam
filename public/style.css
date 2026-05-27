@@ -3432,7 +3432,7 @@ body.menu-open .queue-remove {
   }
 
   #exp-cover-wrap {
-    width: min(80vw, 320px);
+    width: min(80vw, 280px);
     margin: 12px auto 12px !important;
     box-shadow: 0 16px 48px rgba(0, 0, 0, .6);
     align-self: center !important;
