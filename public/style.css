@@ -1455,6 +1455,7 @@ body.player-open #main {
 }
 
 #exp-title {
+  position: relative;
   width: 100%;
   font-size: 26px;
   font-weight: 600;
@@ -1464,6 +1465,34 @@ body.player-open #main {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+#exp-title.marquee-bouncy {
+  text-overflow: clip;
+}
+
+#exp-title .marquee-inner {
+  display: inline-block;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+#exp-title.marquee-bouncy .marquee-inner {
+  animation: bouncy-marquee var(--scroll-duration, 6s) ease-in-out infinite alternate;
+}
+
+@keyframes bouncy-marquee {
+
+  0%,
+  20% {
+    transform: translateX(0);
+  }
+
+  80%,
+  100% {
+    transform: translateX(calc(-1 * var(--scroll-amount, 0px)));
+  }
+}
+
 
 #exp-artist {
   font-size: 17px;

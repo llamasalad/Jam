@@ -2052,9 +2052,44 @@ function play(t) {
 
 }
 
+function adjustExpTitleMarquee() {
+    if (!expTitle) return;
+    const inner = expTitle.querySelector('.marquee-inner');
+    if (!inner) return;
+
+    // Reset styles to get clean client/scroll width measurements
+    expTitle.classList.remove('marquee-bouncy');
+    expTitle.style.removeProperty('--scroll-amount');
+    expTitle.style.removeProperty('--scroll-duration');
+
+    const containerWidth = expTitle.clientWidth;
+    const textWidth = inner.offsetWidth;
+
+    if (textWidth > containerWidth) {
+        const diff = textWidth - containerWidth;
+        const speed = 40; // pixels per second
+        const duration = Math.max(4, diff / speed) + 2; // dynamic duration with 2s padding for pauses
+        expTitle.style.setProperty('--scroll-amount', `${diff}px`);
+        expTitle.style.setProperty('--scroll-duration', `${duration}s`);
+        expTitle.classList.add('marquee-bouncy');
+    }
+}
+
+// Window resize listener to recalculate marquee overflow dynamically
+window.addEventListener('resize', () => {
+    if (playerExpanded) {
+        adjustExpTitleMarquee();
+    }
+});
+
 function updateExpandedNowPlaying(t) {
     if (!t) return;
-    if (expTitle) expTitle.textContent = t.title || 'Unknown';
+    if (expTitle) {
+        expTitle.innerHTML = `<span class="marquee-inner">${t.title || 'Unknown'}</span>`;
+        setTimeout(adjustExpTitleMarquee, 50);
+        // Also run at 400ms when the open transition finishes, to be extra safe
+        setTimeout(adjustExpTitleMarquee, 400);
+    }
     if (expArtist) renderArtistAlbumSub(expArtist, t, 'expanded-player');
     if (expCover) expCover.style.display = 'block';
     if (expCoverIcon) expCoverIcon.style.display = 'none';
@@ -2064,6 +2099,7 @@ function updateExpandedNowPlaying(t) {
         expCover.onerror = () => { expCover.style.display = 'none'; if (expCoverIcon) expCoverIcon.style.display = 'block'; };
     }
 }
+
 
 if (audio) {
     audio.addEventListener('loadedmetadata', () => {
