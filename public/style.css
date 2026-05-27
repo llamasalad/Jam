@@ -2707,6 +2707,14 @@ body.menu-open .queue-remove {
     text-transform: uppercase;
   }
 
+  #exp-main-left {
+    gap: 8px;
+  }
+
+  #exp-info {
+    margin-bottom: 8px !important;
+  }
+
   #lyrics-picker-btn {
     background: none;
     border: none;
