@@ -1451,7 +1451,6 @@ body.player-open #main {
 #exp-info {
   text-align: center;
   width: 100%;
-  margin-bottom: 24px !important;
   padding-bottom: 0 !important;
 }
 
@@ -1482,13 +1481,12 @@ body.player-open #main {
   text-align: center;
   position: relative;
   overflow: hidden;
-  margin-top: 0 !important;
+  margin: 24px;
 }
 
 #exp-lyrics {
   width: 100%;
   transition: transform .4s cubic-bezier(0.4, 0, 0.2, 1);
-  padding-bottom: 20px;
 }
 
 #exp-lyric-current {
@@ -3438,17 +3436,8 @@ body.menu-open .queue-remove {
     align-self: center !important;
   }
 
-  #exp-info {
-    text-align: center;
-    width: 100%;
-    padding-bottom: 0 !important;
-  }
-
   #exp-lyrics-wrap {
-    max-height: 100px !important;
     overflow: visible !important;
-    margin: 4px 0 16px !important;
-    padding: 20px 0 0 !important;
   }
 
   #exp-lyrics {
@@ -3478,7 +3467,6 @@ body.menu-open .queue-remove {
   #exp-queue-btn {
     display: inline-flex !important;
   }
-
 
   #exp-controls .ctrl-btn {
     padding: 14px !important;
