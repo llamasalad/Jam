@@ -1059,7 +1059,8 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  cursor: pointer;
+  text-overflow: ellipsis;
+  max-width: 37%;
 }
 
 #player-thumb {
@@ -3309,6 +3310,7 @@ body.menu-open .queue-remove {
     min-width: 0;
     order: 2 !important;
     touch-action: manipulation;
+    max-width: none;
   }
 
   #player-center {
@@ -3639,7 +3641,6 @@ body.menu-open .queue-remove {
     font-size: 13px;
   }
 
-
   #header {
     position: absolute;
     top: 0;
@@ -3682,19 +3683,18 @@ body.menu-open .queue-remove {
     align-items: center !important;
     gap: 8px !important;
     flex-shrink: 0 !important;
-    text-transform: lowercase;
   }
 
   #header-top-actions #sort-btn,
   #header-top-actions #theme-toggle {
-    all: unset !important;
-    cursor: pointer !important;
-    font-size: 14px !important;
+    font-size: 20px !important;
     color: var(--muted) !important;
     border: 1px solid var(--border) !important;
     border-radius: 6px !important;
     padding: 4px 8px !important;
-    white-space: nowrap !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   #library-back {

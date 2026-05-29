@@ -587,7 +587,11 @@ function renderLibraryCards() {
 }
 
 const sortModes = ['title', 'artist', 'album'];
-const sortLabels = ['VIEWS', 'ARTIST', 'ALBUM'];
+const sortSVGs = [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 32 32"><path fill="currentColor" d="m8.19 5l-.22.66L6.03 11H6v.06l-.94 2.6l-.06.15V15h2v-.84L7.41 13h3.18l.41 1.16V15h2v-1.19l-.06-.15l-.94-2.6V11h-.03l-1.94-5.34L9.81 5zM23 5.5l-.72.69L18 10.5l1.41 1.41L22 9.31V28h2V9.31l2.59 2.6L28 10.5l-4.28-4.31zM9 8.66L9.84 11H8.16zM5 17v2h5.56l-5.28 5.28l-.28.31V27h8v-2H7.44l5.28-5.28l.28-.31V17z"/></svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M15.725 19.275Q15 18.55 15 17.5t.725-1.775T17.5 15q.2 0 .45.038t.55.162V10H22v2h-2v5.5q0 1.05-.725 1.775T17.5 20t-1.775-.725m-7.55-8.45Q7 9.65 7 8t1.175-2.825T11 4t2.825 1.175T15 8t-1.175 2.825T11 12t-2.825-1.175M3 20v-2.8q0-.875.438-1.575T4.6 14.55q1.55-.775 3.15-1.162T11 13q1.05 0 2.088.163t2.087.487q-1.65 1-2.05 2.863t.65 3.487z"/></svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="none"><path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"/><path fill="currentColor" d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12S6.477 2 12 2m0 8a2 2 0 1 0 0 4a2 2 0 0 0 0-4m-.56-3.493a1 1 0 0 0-1.276-.61a7.02 7.02 0 0 0-3.73 3.1A1 1 0 0 0 8.166 10a5.02 5.02 0 0 1 2.665-2.216a1 1 0 0 0 .61-1.276Z"/></g></svg>`
+];
 let sortModeIdx = 0;
 let currentDetailView = null;
 
@@ -688,7 +692,7 @@ function cycleSort() {
     saveScroll();
     sortModeIdx = (sortModeIdx + 1) % 3;
     sortMode = sortModes[sortModeIdx];
-    if (sortBtn) sortBtn.textContent = sortLabels[sortModeIdx];
+    if (sortBtn) sortBtn.innerHTML = sortSVGs[sortModeIdx];
     if (sortMode === 'title') filtered = [...tracks];
     sort();
     updateSidebarSortLabel();
@@ -697,6 +701,7 @@ function cycleSort() {
 
 if (sortBtn) {
     sortBtn.onclick = cycleSort;
+    sortBtn.innerHTML = sortSVGs[sortModeIdx];
 }
 
 let currentTheme = localStorage.getItem('music_theme') || 'default';
