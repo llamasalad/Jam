@@ -1,4 +1,4 @@
-const CACHE = 'jam-v297';
+const CACHE = 'jam-v298';
 const ASSETS = [
   '/', '/index.html', '/style.css', '/app.js', '/manifest.json',
   '/api/font/subset-SFProDisplay-Regular.woff2',
@@ -24,7 +24,7 @@ self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
   // Stale-while-revalidate for tracks API — instant library render from cache (GET only)
-  if (url.pathname === '/api/tracks' && e.request.method === 'GET') {
+  if (url.pathname === '/api/tracks' && e.request.method === 'GET' && !url.searchParams.has('refresh')) {
     e.respondWith(caches.open(CACHE).then(async cache => {
       const cached = await cache.match(e.request);
       const fetchPromise = fetch(e.request).then(res => {
