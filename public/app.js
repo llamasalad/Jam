@@ -373,7 +373,7 @@ async function loadTracks(forceRefresh = false) {
     if (empty) empty.style.display = 'none';
     if (trackList) trackList.innerHTML = '';
     try {
-        const url = forceRefresh ? '/api/tracks?refresh' : '/api/tracks';
+        const url = forceRefresh ? `/api/tracks?refresh&_=${Date.now()}` : '/api/tracks';
         const r = await fetch(url, { headers: hget() });
         if (r.status === 401) { showAuth(); return }
         tracks = await r.json();
