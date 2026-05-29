@@ -1562,20 +1562,15 @@ body.player-open #main {
 
 #exp-volume-row {
   display: flex;
-  gap: 8px;
-  width: 120px;
-  min-width: 60px;
+  width: 100px;
   align-items: center;
 }
 
 #exp-volume-row input {
-  height: 4px;
   -webkit-appearance: none;
   appearance: none;
-  border-radius: 2px;
+  border-radius: var(--radius-s);
   background: var(--surface3);
-  outline: none;
-  cursor: pointer;
   flex: 1;
   min-width: 0;
 }
@@ -1608,15 +1603,12 @@ body.player-open #main {
   color: var(--muted);
   background: transparent;
   display: flex;
-  border-radius: var(--radius-s);
-  border-color: var(--muted);
+  border: none;
 }
 
 #exp-volume-icon {
-  border-radius: var(--radius-s);
   font-size: 30px;
   max-height: 32px;
-  width: 32px;
   text-align: center;
   background: transparent;
 }
@@ -1626,18 +1618,16 @@ body.player-open #main {
   color: var(--muted);
   background: transparent;
   display: flex;
-  border-radius: var(--radius-s);
-  border-color: var(--muted);
+  border: none;
 }
 
 #exp-adaptive-btn {
   font-size: 30px;
-  border-radius: var(--radius-s);
   color: var(--muted);
   background: transparent;
   transition: transform 0.2s ease;
   display: flex;
-  border-color: var(--muted);
+  border: none;
 }
 
 #exp-adaptive-btn:hover {
@@ -3192,8 +3182,7 @@ body.menu-open .queue-remove {
     color: var(--muted);
     background: transparent;
     display: flex;
-    border-radius: var(--radius-s);
-    border-color: var(--muted);
+    border: none;
   }
 
   #exp-collapse {
