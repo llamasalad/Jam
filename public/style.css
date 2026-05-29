@@ -1616,7 +1616,7 @@ body.player-open #main {
 #exp-queue-btn {
   font-size: 35px;
   color: var(--muted);
-  background: transparent;
+  background: none;
   display: flex;
   border: none;
 }
@@ -3465,7 +3465,6 @@ body.menu-open .queue-remove {
 
   #exp-adaptive-btn {
     display: inline-flex !important;
-    font-size: 35px;
   }
 
   #exp-queue-btn {
