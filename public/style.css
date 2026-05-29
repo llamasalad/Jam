@@ -1555,7 +1555,7 @@ body.player-open #main {
 
 #exp-utils {
   display: flex;
-  gap: 10px;
+  gap: 18px;
   max-height: 30px;
   align-items: center;
 }
@@ -1608,7 +1608,7 @@ body.player-open #main {
 
 #exp-volume-icon {
   font-size: 30px;
-  max-height: 32px;
+  max-height: 30px;
   text-align: center;
   background: transparent;
 }
