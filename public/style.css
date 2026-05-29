@@ -1568,7 +1568,7 @@ body.player-open #main {
 
 #exp-utils {
   display: flex;
-  gap: 18px;
+  gap: 10px;
   max-height: 30px;
   align-items: center;
 }
