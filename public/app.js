@@ -367,13 +367,14 @@ document.querySelectorAll('.dock-item[data-tab]').forEach(item => {
     item.onclick = () => switchTab(item.dataset.tab);
 });
 
-async function loadTracks() {
+async function loadTracks(forceRefresh = false) {
     libraryCardsBuilt = false;
     if (loading) loading.style.display = 'flex';
     if (empty) empty.style.display = 'none';
     if (trackList) trackList.innerHTML = '';
     try {
-        const r = await fetch('/api/tracks', { headers: hget() });
+        const url = forceRefresh ? '/api/tracks?refresh' : '/api/tracks';
+        const r = await fetch(url, { headers: hget() });
         if (r.status === 401) { showAuth(); return }
         tracks = await r.json();
         if (!tracks.length) {
@@ -4117,7 +4118,7 @@ window.removeTrack = async function (query) {
         updateActive();
 
         // Reload tracks
-        await loadTracks();
+        await loadTracks(true);
 
         if (currentPlaylist) {
             const updated = await fetchPlaylist(currentPlaylist.id);
@@ -4193,7 +4194,7 @@ window.restoreTrack = async function (query) {
 
     if (successCount > 0) {
         // Reload tracks
-        await loadTracks();
+        await loadTracks(true);
 
         if (currentPlaylist) {
             const updated = await fetchPlaylist(currentPlaylist.id);
