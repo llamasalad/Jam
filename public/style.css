@@ -3860,7 +3860,6 @@ body.menu-open .queue-remove {
 
   .section-title {
     letter-spacing: 0;
-    text-transform: lowercase;
     justify-self: center;
     display: flex;
     justify-content: center;
