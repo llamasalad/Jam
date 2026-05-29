@@ -4,10 +4,25 @@ export async function onRequest({ request, env }) {
   const method = request.method;
 
   if (method === "GET") {
+    let hiddenKeys = new Set();
+    try {
+      const hidden = await env.PLAYLISTS.get('_hidden_tracks', 'json');
+      if (hidden) hiddenKeys = new Set(hidden);
+    } catch (_) { }
+
     const list = await env.PLAYLISTS.list({ prefix: "playlist:" });
     const playlists = await Promise.all(
       list.keys.map(async k => {
         const val = await env.PLAYLISTS.get(k.name, "json");
+        if (val && val.tracks && hiddenKeys.size > 0) {
+          val.tracks = val.tracks.filter(t => {
+            try {
+              return !hiddenKeys.has(decodeURIComponent(t.trackId));
+            } catch (_) {
+              return true;
+            }
+          });
+        }
         return val;
       })
     );

@@ -9,6 +9,21 @@ export async function onRequest({ request, params, env }) {
   if (!playlist) return new Response(JSON.stringify({ error: "Playlist not found" }), { status: 404, headers: { "Content-Type": "application/json" } });
 
   if (method === "GET") {
+    let hiddenKeys = new Set();
+    try {
+      const hidden = await env.PLAYLISTS.get('_hidden_tracks', 'json');
+      if (hidden) hiddenKeys = new Set(hidden);
+    } catch (_) { }
+
+    if (playlist.tracks && hiddenKeys.size > 0) {
+      playlist.tracks = playlist.tracks.filter(t => {
+        try {
+          return !hiddenKeys.has(decodeURIComponent(t.trackId));
+        } catch (_) {
+          return true;
+        }
+      });
+    }
     return new Response(JSON.stringify(playlist), { headers: { "Content-Type": "application/json" } });
   }
 

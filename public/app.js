@@ -4043,6 +4043,169 @@ window.getSWStatus = function () {
     };
 };
 
+window.removeTrack = async function (query) {
+    if (!query) {
+        console.error("Please provide a track title, artist, album, key, or ID to match.");
+        return;
+    }
+    const queryStr = String(query).toLowerCase();
+
+    // Find all tracks matching the query
+    const matches = tracks.filter(t => {
+        return t.key.toLowerCase().includes(queryStr) ||
+            t.id.toLowerCase() === queryStr ||
+            (t.title && t.title.toLowerCase().includes(queryStr)) ||
+            (t.artist && t.artist.toLowerCase().includes(queryStr)) ||
+            (t.album && t.album.toLowerCase().includes(queryStr));
+    });
+
+    if (matches.length === 0) {
+        console.warn("No tracks found matching query:", query);
+        return;
+    }
+
+    console.log(`Found ${matches.length} matching track(s):`);
+    matches.forEach(t => console.log(` - [${t.id}] ${t.title} by ${t.artist} (${t.key})`));
+
+    if (!confirm(`Are you sure you want to remove these ${matches.length} track(s) from your library?`)) {
+        console.log("Removal cancelled.");
+        return;
+    }
+
+    let successCount = 0;
+    for (const track of matches) {
+        try {
+            const res = await fetch(`/api/tracks?key=${encodeURIComponent(track.key)}`, {
+                method: 'DELETE',
+                headers: hget()
+            });
+            if (res.ok) {
+                console.log(`Successfully removed: ${track.title}`);
+                successCount++;
+            } else {
+                console.error(`Failed to remove ${track.title}:`, await res.text());
+            }
+        } catch (err) {
+            console.error(`Error removing track ${track.title}:`, err);
+        }
+    }
+
+    if (successCount > 0) {
+        // Update player queue if active
+        const currentTrack = queue[qIdx];
+        const isPlayingRemoved = currentTrack && matches.some(t => t.id === currentTrack.id);
+        if (isPlayingRemoved) {
+            if (queue.length > 1) {
+                nextTrack();
+            } else {
+                if (audio) audio.pause();
+                queue = [];
+                qIdx = -1;
+                updateActive();
+            }
+        }
+
+        // Filter from queue
+        queue = queue.filter(q => !matches.some(t => t.id === q.id));
+        if (queue.length === 0) {
+            qIdx = -1;
+        } else {
+            if (qIdx >= queue.length) qIdx = 0;
+        }
+        saveQueueState();
+        if (queueOpen) renderQueue();
+        updateActive();
+
+        // Reload tracks
+        await loadTracks();
+
+        if (currentPlaylist) {
+            const updated = await fetchPlaylist(currentPlaylist.id);
+            if (updated) {
+                currentPlaylist = updated;
+                renderPlaylistDetail(updated);
+            }
+        }
+        console.log(`Successfully removed ${successCount} track(s) from library.`);
+    }
+};
+
+window.restoreTrack = async function (query) {
+    if (!query) {
+        console.error("Please provide a track title, artist, album, key, or ID to match.");
+        return;
+    }
+    const queryStr = String(query).toLowerCase();
+
+    // Fetch all tracks including hidden ones to find matches
+    let allTracks = [];
+    try {
+        const r = await fetch('/api/tracks?include_hidden=true', { headers: hget() });
+        if (r.ok) {
+            allTracks = await r.json();
+        } else {
+            console.error("Failed to load tracks list from API.");
+            return;
+        }
+    } catch (err) {
+        console.error("Error loading tracks:", err);
+        return;
+    }
+
+    const matches = allTracks.filter(t => {
+        return t.key.toLowerCase().includes(queryStr) ||
+            t.id.toLowerCase() === queryStr ||
+            (t.title && t.title.toLowerCase().includes(queryStr)) ||
+            (t.artist && t.artist.toLowerCase().includes(queryStr)) ||
+            (t.album && t.album.toLowerCase().includes(queryStr));
+    });
+
+    if (matches.length === 0) {
+        console.warn("No tracks found matching query:", query);
+        return;
+    }
+
+    console.log(`Found ${matches.length} matching track(s) to restore:`);
+    matches.forEach(t => console.log(` - [${t.id}] ${t.title} by ${t.artist} (${t.key})`));
+
+    if (!confirm(`Are you sure you want to restore these ${matches.length} track(s) to your library?`)) {
+        console.log("Restore cancelled.");
+        return;
+    }
+
+    let successCount = 0;
+    for (const track of matches) {
+        try {
+            const res = await fetch(`/api/tracks?key=${encodeURIComponent(track.key)}&unhide=true`, {
+                method: 'DELETE',
+                headers: hget()
+            });
+            if (res.ok) {
+                console.log(`Successfully restored: ${track.title}`);
+                successCount++;
+            } else {
+                console.error(`Failed to restore ${track.title}:`, await res.text());
+            }
+        } catch (err) {
+            console.error(`Error restoring track ${track.title}:`, err);
+        }
+    }
+
+    if (successCount > 0) {
+        // Reload tracks
+        await loadTracks();
+
+        if (currentPlaylist) {
+            const updated = await fetchPlaylist(currentPlaylist.id);
+            if (updated) {
+                currentPlaylist = updated;
+                renderPlaylistDetail(updated);
+            }
+        }
+        console.log(`Successfully restored ${successCount} track(s) to library.`);
+    }
+};
+
 function showUpdateUI() {
     // Desktop: show in sidebar
     const sidebarUpdate = document.getElementById('sidebar-update');

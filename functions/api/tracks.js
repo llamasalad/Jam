@@ -169,12 +169,21 @@ export async function onRequestGet({ request, env }) {
 
   const url = new URL(request.url);
   const refresh = url.searchParams.has('refresh');
+  const includeHidden = url.searchParams.has('include_hidden');
 
-  if (!refresh) {
+  // Load hidden tracks set
+  let hiddenKeys = new Set();
+  try {
+    const hidden = await env.PLAYLISTS.get('_hidden_tracks', 'json');
+    if (hidden) hiddenKeys = new Set(hidden);
+  } catch (_) { }
+
+  if (!refresh && !includeHidden) {
     try {
       const cached = await env.PLAYLISTS.get('_tracks_cache', 'json');
       if (cached) {
-        return new Response(JSON.stringify(cached), {
+        const visible = cached.filter(t => !hiddenKeys.has(t.key));
+        return new Response(JSON.stringify(visible), {
           headers: { 'Content-Type': 'application/json', 'Cache-Control': 'private, max-age=60' }
         });
       }
@@ -242,7 +251,8 @@ export async function onRequestGet({ request, env }) {
       await env.PLAYLISTS.put('_tracks_cache', JSON.stringify(tracks), { expirationTtl: 3600 });
     } catch (_) { }
 
-    return new Response(JSON.stringify(tracks), {
+    const visible = includeHidden ? tracks : tracks.filter(t => !hiddenKeys.has(t.key));
+    return new Response(JSON.stringify(visible), {
       headers: { "Content-Type": "application/json", "Cache-Control": "private, max-age=60" }
     });
 
@@ -344,6 +354,55 @@ export async function onRequestPut({ request, env }) {
     await env.PLAYLISTS.delete('_tracks_cache');
 
     return new Response(JSON.stringify({ success: true }));
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500, headers: { "Content-Type": "application/json" }
+    });
+  }
+}
+
+export async function onRequestDelete({ request, env }) {
+  if (!env.MUSIC_BUCKET) {
+    return new Response(JSON.stringify({ error: "MUSIC_BUCKET binding not found." }), {
+      status: 500, headers: { "Content-Type": "application/json" }
+    });
+  }
+
+  try {
+    const url = new URL(request.url);
+    const key = url.searchParams.get('key');
+    if (!key) {
+      return new Response(JSON.stringify({ error: "Missing 'key' parameter" }), {
+        status: 400, headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    const unhide = url.searchParams.has('unhide');
+
+    let hiddenKeys = [];
+    try {
+      const existing = await env.PLAYLISTS.get('_hidden_tracks', 'json');
+      if (existing) hiddenKeys = existing;
+    } catch (_) { }
+
+    const hiddenSet = new Set(hiddenKeys);
+    if (unhide) {
+      hiddenSet.delete(key);
+    } else {
+      hiddenSet.add(key);
+    }
+
+    await env.PLAYLISTS.put('_hidden_tracks', JSON.stringify([...hiddenSet]));
+    await env.PLAYLISTS.delete('_tracks_cache');
+
+    return new Response(JSON.stringify({
+      success: true,
+      action: unhide ? 'unhidden' : 'hidden',
+      key,
+      hiddenCount: hiddenSet.size
+    }), {
+      headers: { "Content-Type": "application/json" }
+    });
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500, headers: { "Content-Type": "application/json" }
