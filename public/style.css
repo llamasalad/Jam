@@ -1169,8 +1169,6 @@ body {
   appearance: none;
   border-radius: var(--radius-s);
   background: var(--surface3);
-  outline: none;
-  cursor: pointer;
   flex: 1;
   min-width: 0;
   height: 4px;
@@ -1186,7 +1184,6 @@ body {
   height: 10px;
   border-radius: 50%;
   background: var(--accent);
-  cursor: pointer;
 }
 
 #volume-icon {
@@ -1577,6 +1574,7 @@ body.player-open #main {
   display: flex;
   width: 100px;
   align-items: center;
+  gap: 5px;
 }
 
 #exp-volume-row input {
@@ -1586,6 +1584,7 @@ body.player-open #main {
   background: var(--surface3);
   flex: 1;
   min-width: 0;
+  height: 4px;
 }
 
 .black-theme #exp-volume-row input {
@@ -1598,8 +1597,6 @@ body.player-open #main {
   height: 10px;
   border-radius: 50%;
   background: var(--accent);
-  cursor: pointer;
-  margin-top: -2px;
 }
 
 #exp-volume-row input::-moz-range-thumb {
