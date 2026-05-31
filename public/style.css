@@ -2225,9 +2225,12 @@ body.theme-menu-open #menu-backdrop {
   -webkit-backdrop-filter: none;
 }
 
-body.detail-view .group-header,
-body.detail-view #suggested-section {
+body.detail-view .group-header {
   display: none;
+}
+
+body.detail-view #suggested-section {
+  display: none !important;
 }
 
 body:has(#library-cards.show) #suggested-section {
@@ -2780,12 +2783,12 @@ body.menu-open .queue-remove {
   }
 
   body.detail-view #header-top-row {
-    display: flex !important;
+    display: flex;
   }
 
   body.detail-view #header,
   body.detail-view #library-back {
-    display: grid;
+    display: grid !important;
     grid-column: 2;
     padding: 10px 0 10px 0;
   }

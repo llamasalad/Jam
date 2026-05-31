@@ -2726,6 +2726,11 @@ function openLyricsCard() {
     expLyricsCard.classList.add('open');
     if (expLyricsCardControls) expLyricsCardControls.style.display = 'flex';
     if (expLyricsWrap) expLyricsWrap.style.display = 'none';
+    if (cardScroll && !cardScroll.querySelector('.lyric-line')) {
+        if (syncedLyrics.length) renderSyncedLyrics();
+        else if (plainLyrics) renderPlainLyrics();
+    }
+    updateSyncedLyricsState(true);
     requestAnimationFrame(() => {
         if (expPlayer && expLyricsCard) {
             const top = expLyricsCard.offsetTop - 16;
