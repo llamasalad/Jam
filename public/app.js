@@ -2719,36 +2719,40 @@ const expLyricsCardHeader = document.getElementById('exp-lyrics-card-header');
 const expLyricsCardControls = document.getElementById('exp-lyrics-card-controls');
 let lyricsCardOpen = false;
 
-function openLyricsCard() {
-    if (!expLyricsCard) return;
-    lyricsCardOpen = true;
+function openLyricsCard(open) {
+    lyricsCardOpen = open !== undefined ? !!open : true;
     invalidateLyricScrollCache();
-    expLyricsCard.classList.add('open');
-    if (expLyricsCardControls) expLyricsCardControls.style.display = 'flex';
-    if (expLyricsWrap) expLyricsWrap.style.display = 'none';
+    if (expLyricsCard) expLyricsCard.classList.toggle('open', lyricsCardOpen);
+    if (expLyricsCardControls) expLyricsCardControls.style.display = lyricsCardOpen ? 'flex' : 'none';
+    if (expLyricsWrap) expLyricsWrap.style.display = lyricsCardOpen ? 'none' : '';
+
     if (lyricsCardOpen) {
+        const cardScroll = document.getElementById('exp-lyrics-card-scroll');
+
         if (cardScroll && !cardScroll.querySelector('.lyric-line')) {
             if (syncedLyrics.length) renderSyncedLyrics();
             else if (plainLyrics) renderPlainLyrics();
         }
-    }
-    updateSyncedLyricsState(true);
-    requestAnimationFrame(() => {
-        if (expPlayer && expLyricsCard) {
-            const top = expLyricsCard.offsetTop - 16;
-            expPlayer.scrollTo({ top, behavior: isMobile() ? 'smooth' : 'auto' });
-        }
+        updateSyncedLyricsState(true);
+        requestAnimationFrame(() => {
+            if (expPlayer && expLyricsCard) {
+                const top = expLyricsCard.offsetTop - 16;
+                expPlayer.scrollTo({ top, behavior: isMobile() ? 'smooth' : 'auto' });
+            }
+        });
+
         setTimeout(() => {
-            const cardScroll = document.getElementById('exp-lyrics-card-scroll');
-            const activeLine = cardScroll?.querySelector('.lyric-line.active');
-            if (activeLine) {
-                const lineTop = activeLine.offsetTop - cardScroll.clientHeight / 2 + activeLine.offsetHeight / 2;
-                cardScroll.scrollTo({ top: Math.max(0, lineTop), behavior: 'smooth' });
-            } else if (cardScroll) {
-                cardScroll.scrollTop = 0;
+            if (cardScroll) {
+                const activeLine = cardScroll.querySelector('.lyric-line.active');
+                if (activeLine) {
+                    const lineTop = activeLine.offsetTop - cardScroll.clientHeight / 2 + activeLine.offsetHeight / 2;
+                    cardScroll.scrollTo({ top: Math.max(0, lineTop), behavior: 'smooth' });
+                } else {
+                    cardScroll.scrollTop = 0;
+                }
             }
         }, isMobile() ? 400 : 100);
-    });
+    }
 }
 
 function closeLyricsCard() {
