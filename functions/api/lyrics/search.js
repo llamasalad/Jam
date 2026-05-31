@@ -5,7 +5,6 @@ function jsonResponse(body, init = {}) {
 }
 
 export async function onRequestGet({ request, env }) {
-  // auth already checked by functions/api/_middleware.js
   const url = new URL(request.url)
   const title = url.searchParams.get('title') || ''
   const artist = url.searchParams.get('artist') || ''
@@ -27,7 +26,6 @@ export async function onRequestGet({ request, env }) {
     if (!r.ok) return jsonResponse([], { headers: { 'Cache-Control': 'public, max-age=300' } })
 
     const results = await r.json()
-    // Map to a lighter format for the client
     const items = (Array.isArray(results) ? results : []).map(item => ({
       id: item.id,
       trackName: item.trackName || item.name || '',

@@ -12,7 +12,6 @@ export async function onRequestGet({ params, request, env }) {
     "Access-Control-Max-Age": "31536000",
   };
 
-  // ── Serve from cache if exists ────────────────────────────────────────────
   const cached = await env.MUSIC_BUCKET.get(cacheKey);
   if (cached) {
     return new Response(cached.body, {
@@ -23,7 +22,6 @@ export async function onRequestGet({ params, request, env }) {
     });
   }
 
-  // ── Try cover image files in R2 ───────────────────────────────────────────
   const pathParts = id.split('/');
   if (pathParts.length >= 4 && pathParts[0] === 'Uploads') {
     const filename = pathParts[pathParts.length - 1].replace(/\.[^/.]+$/, '');
@@ -46,8 +44,6 @@ export async function onRequestGet({ params, request, env }) {
     }
   }
 
-  // ── Extract from audio file ───────────────────────────────────────────────
-  // Fetch a generous chunk to cover most embedded art (1MB)
   const CHUNK_SIZE = 1048576;
   const object = await env.MUSIC_BUCKET.get(id, { range: { offset: 0, length: CHUNK_SIZE } });
   if (!object) return new Response("Not found", { status: 404 });
@@ -56,8 +52,6 @@ export async function onRequestGet({ params, request, env }) {
   const bytes = new Uint8Array(buf);
   let cover = extractCover(bytes);
 
-  // Detect truncated covers: if the data ends at or very near the chunk
-  // boundary, or if the declared size exceeds extracted data, re-fetch full file
   const maybeTruncated = cover && (
     (cover.declaredSize && cover.data.length < cover.declaredSize) ||
     (cover.data.length + cover.dataOffset >= bytes.length - 16)
@@ -87,7 +81,6 @@ function read32be(b, o) { return ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] <<
 function extractCover(bytes) {
   const sig = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
 
-  // ── FLAC ──────────────────────────────────────────────────────────────────
   if (sig === 'fLaC') {
     let offset = 4;
     while (offset < bytes.length - 4) {
@@ -112,7 +105,6 @@ function extractCover(bytes) {
     return null;
   }
 
-  // ── ID3v2 (MP3, AAC) ──────────────────────────────────────────────────────
   if (bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) {
     const version = bytes[3];
     const tagSize = ((bytes[6] & 0x7f) << 21) | ((bytes[7] & 0x7f) << 14) | ((bytes[8] & 0x7f) << 7) | (bytes[9] & 0x7f);
@@ -148,7 +140,6 @@ function extractCover(bytes) {
     return null;
   }
 
-  // ── MP4/M4A ───────────────────────────────────────────────────────────────
   if (bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70) {
     function findBox(buf, start, end, name) {
       let off = start;

@@ -19,23 +19,22 @@ function parseFlacMetadata(bytes) {
   if (sig !== 'fLaC') return null;
 
   let offset = 4;
-  const maxOffset = Math.min(bytes.length, 65536); // Only check first 64KB
+  const maxOffset = Math.min(bytes.length, 65536);
 
   while (offset < maxOffset) {
     const header = bytes[offset];
     const isLast = (header & 0x80) !== 0;
     const blockType = header & 0x7f;
-    const blockSize = read24be(bytes, offset + 1); // FLAC uses 24-bit big-endian block size
+    const blockSize = read24be(bytes, offset + 1);
 
-    if (blockType === 4) { // VORBIS_COMMENT
+    if (blockType === 4) {
       const dataStart = offset + 4;
-      // Vorbis comments use little-endian
       const vendorLength = read32le(bytes, dataStart);
       let commentListOffset = dataStart + 4 + vendorLength;
       const commentCount = read32le(bytes, commentListOffset);
       commentListOffset += 4;
 
-      const decoder = new TextDecoder(); // hoisted out of loop
+      const decoder = new TextDecoder();
       let artist = null, album = null;
       for (let i = 0; i < commentCount; i++) {
         const commentLength = read32le(bytes, commentListOffset);
@@ -44,7 +43,6 @@ function parseFlacMetadata(bytes) {
         commentListOffset += commentLength;
 
         const lower = comment.toLowerCase();
-        // Only take first artist/album found (don't overwrite with featured artists)
         if (lower.startsWith('artist=') && !artist) artist = comment.slice(7);
         if (lower.startsWith('album=') && !album) album = comment.slice(6);
       }
@@ -60,10 +58,9 @@ function parseFlacMetadata(bytes) {
 function getDuration(bytes) {
   const sig = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
 
-  // ── FLAC ──────────────────────────────────────────────────────────────────
   if (sig === 'fLaC') {
     let offset = 4;
-    const maxOffset = Math.min(bytes.length, 262144); // Check first 256KB
+    const maxOffset = Math.min(bytes.length, 262144);
 
     while (offset < maxOffset) {
       const blockHeader = bytes[offset];
@@ -71,7 +68,7 @@ function getDuration(bytes) {
       const blockType = blockHeader & 0x7f;
       const blockSize = read24be(bytes, offset + 1);
 
-      if (blockType === 0) { // STREAMINFO
+      if (blockType === 0) {
         const off = offset + 4;
         const sampleRate = (bytes[off + 10] << 12) | (bytes[off + 11] << 4) | (bytes[off + 12] >> 4);
         const totalSamples =
@@ -90,7 +87,6 @@ function getDuration(bytes) {
     return null;
   }
 
-  // ── MP4/M4A ───────────────────────────────────────────────────────────────
   if (bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70) {
     function findBox(buf, start, end, name) {
       let off = start;
@@ -123,7 +119,6 @@ function getDuration(bytes) {
     } catch (_) { return null; }
   }
 
-  // ── MP3 (ID3v2 + Xing/Info header) ────────────────────────────────────────
   if (bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) {
     const id3Size = ((bytes[6] & 0x7f) << 21) | ((bytes[7] & 0x7f) << 14) | ((bytes[8] & 0x7f) << 7) | (bytes[9] & 0x7f);
     const frameStart = 10 + id3Size;
@@ -132,11 +127,10 @@ function getDuration(bytes) {
     const b1 = bytes[frameStart + 1];
     const b2 = bytes[frameStart + 2];
 
-    // Check MPEG version: bits 4-3 of b1
-    const mpegVersion = (b1 >> 3) & 0x3; // 0=MPEG2.5, 2=MPEG2, 3=MPEG1
+    const mpegVersion = (b1 >> 3) & 0x3;
     const srIdx = (b2 >> 2) & 0x3;
     const srTableMpeg1 = [44100, 48000, 32000, 0];
-    const srTableMpeg2 = [22050, 24000, 16000, 0]; // MPEG2 and MPEG2.5 (halved)
+    const srTableMpeg2 = [22050, 24000, 16000, 0];
     const srTable = mpegVersion === 3 ? srTableMpeg1 : srTableMpeg2;
     const samplesPerFrame = mpegVersion === 3 ? 1152 : 576;
 
@@ -171,7 +165,6 @@ export async function onRequestGet({ request, env }) {
   const refresh = url.searchParams.has('refresh');
   const includeHidden = url.searchParams.has('include_hidden');
 
-  // Load hidden tracks set
   let hiddenKeys = new Set();
   try {
     const hidden = await env.PLAYLISTS.get('_hidden_tracks', 'json');
@@ -208,7 +201,6 @@ export async function onRequestGet({ request, env }) {
 
     const tracks = await mapInBatches(trackObjects, 50, async obj => {
       const key = obj.key;
-      // Fetch sidecar metadata if it exists
       let title, artist, album, duration;
       try {
         const meta = await env.MUSIC_BUCKET.get(`${key}.meta.json`);
@@ -233,7 +225,6 @@ export async function onRequestGet({ request, env }) {
 
       const id = encodeURIComponent(key).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16));
 
-      // Only fetch from R2 if duration not cached
       if (duration === null || duration === undefined) {
         try {
           const partial = await env.MUSIC_BUCKET.get(key, { range: { offset: 0, length: 65536 } });
@@ -277,7 +268,6 @@ export async function onRequestPost({ request, env }) {
       return new Response(JSON.stringify({ error: "No file provided" }), { status: 400 });
     }
 
-    // Parse FLAC metadata for artist/album
     let artist = "Unknown", album = "Unknown";
     const arrayBuffer = await file.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
@@ -298,7 +288,6 @@ export async function onRequestPost({ request, env }) {
       httpMetadata: { contentType: file.type }
     });
 
-    // Extract and cache duration in sidecar metadata
     const duration = getDuration(bytes);
     const title = file.name.replace(/\.[^/.]+$/, '').replace(/^\d{1,3}[\s.\-_]+/, '').trim();
     const metaKey = `${key}.meta.json`;

@@ -2,12 +2,10 @@ export async function onRequest(context) {
   const { request, env, next } = context;
   const url = new URL(request.url);
 
-  // Allow font requests without auth (fonts are not sensitive, needed for SW precaching)
   if (url.pathname.startsWith('/api/font/')) {
     return await next();
   }
 
-  // Handle CORS preflight requests early - allow OPTIONS without auth check
   if (request.method === 'OPTIONS') {
     const origin = request.headers.get('Origin') || url.origin;
     return new Response(null, {
@@ -21,7 +19,6 @@ export async function onRequest(context) {
     });
   }
 
-  // 2. Get the token from all possible sources
   const headerToken = request.headers.get('x-auth-token');
   const queryToken = url.searchParams.get('token');
   const cookieHeader = request.headers.get('Cookie') || '';
@@ -30,7 +27,6 @@ export async function onRequest(context) {
 
   const token = (headerToken || queryToken || cookieToken || '').trim();
 
-  // 3. Prepare common headers for Safari/CORS stability
   const origin = request.headers.get('Origin') || url.origin;
   const commonHeaders = {
     "Access-Control-Allow-Origin": origin,
@@ -40,7 +36,6 @@ export async function onRequest(context) {
     "Accept-Ranges": "bytes"
   };
 
-  // 4. Verify
   if (token !== env.AUTH_TOKEN) {
     return new Response('unauthorized', {
       status: 401,
@@ -51,19 +46,15 @@ export async function onRequest(context) {
     });
   }
 
-  // 5. Success - proceed to the actual API
   const response = await next();
 
-  // Clone the response to modify headers while preserving status/body
   const newResponse = new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
     headers: new Headers(response.headers)
   });
 
-  // Inject our Safari/CORS stability headers
   Object.entries(commonHeaders).forEach(([k, v]) => {
-    // Only set if not already present or to ensure our specific values
     newResponse.headers.set(k, v);
   });
 

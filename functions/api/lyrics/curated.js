@@ -4,7 +4,6 @@ function jsonResponse(body, init = {}) {
   return new Response(JSON.stringify(body), { ...init, headers })
 }
 
-// Normalize key to avoid duplicates from different formatting
 function makeKey(artist, title) {
   const cleanArtist = (artist || '').toLowerCase().trim();
   const cleanTitle = (title || '').toLowerCase().trim();
@@ -12,7 +11,6 @@ function makeKey(artist, title) {
 }
 
 export async function onRequest({ request, env }) {
-  // auth already checked by functions/api/_middleware.js
   if (!env.LYRICS_PICKS) {
     return jsonResponse({ error: 'LYRICS_PICKS KV binding not found' }, { status: 500 })
   }
@@ -22,7 +20,6 @@ export async function onRequest({ request, env }) {
   const artist = url.searchParams.get('artist') || '';
   const title = url.searchParams.get('title') || '';
 
-  // GET: Check if a curated pick exists
   if (method === 'GET') {
     if (!artist || !title) {
       return jsonResponse({ error: 'artist and title required' }, { status: 400 })
@@ -35,7 +32,6 @@ export async function onRequest({ request, env }) {
     return jsonResponse({ exists: false })
   }
 
-  // POST: Save a curated pick
   if (method === 'POST') {
     const body = await request.json();
     const lrclibId = body.lrclibId;
@@ -47,7 +43,6 @@ export async function onRequest({ request, env }) {
     return jsonResponse({ success: true })
   }
 
-  // DELETE: Remove a curated pick
   if (method === 'DELETE') {
     if (!artist || !title) {
       return jsonResponse({ error: 'artist and title required' }, { status: 400 })

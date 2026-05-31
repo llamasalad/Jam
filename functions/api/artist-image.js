@@ -7,7 +7,6 @@ async function fetchDeezerArtist(name) {
     if (!r.ok) return null;
     const d = await r.json();
     if (d.data && d.data.length > 0) {
-      // Sort by actual fan count (highest first), prefer exact name match
       const normalizedQuery = name.toLowerCase().trim();
       const sorted = d.data.sort((a, b) => (b.nb_fan || 0) - (a.nb_fan || 0));
       const exactMatch = sorted.find(a => a.name.toLowerCase().trim() === normalizedQuery);
@@ -18,7 +17,7 @@ async function fetchDeezerArtist(name) {
         picture: match.picture_big || match.picture_medium || match.picture
       };
     }
-  } catch (_) {}
+  } catch (_) { }
   return null;
 }
 

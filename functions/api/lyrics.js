@@ -1,11 +1,11 @@
 async function fetchLyrics(artist, title) {
   try {
-    const q = new URLSearchParams({ 
-      artist_name: artist || '', 
-      track_name: title || '' 
+    const q = new URLSearchParams({
+      artist_name: artist || '',
+      track_name: title || ''
     })
     const r = await fetch(`https://lrclib.net/api/get?${q}`, {
-      headers: { 
+      headers: {
         'User-Agent': 'jam/1.0',
         'Accept': 'application/json'
       }
@@ -14,7 +14,7 @@ async function fetchLyrics(artist, title) {
     const d = await r.json()
     if (d.syncedLyrics) return { source: 'lrclib', type: 'synced', lyrics: d.syncedLyrics }
     if (d.plainLyrics) return { source: 'lrclib', type: 'plain', lyrics: d.plainLyrics }
-  } catch (_) {}
+  } catch (_) { }
   return null
 }
 
@@ -34,7 +34,6 @@ function normalizeTitle(title) {
 }
 
 export async function onRequestGet({ request, env }) {
-  // auth already checked by functions/api/_middleware.js
   const url = new URL(request.url)
   const title = url.searchParams.get('title') || ''
   const artist = url.searchParams.get('artist') || ''

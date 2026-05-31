@@ -7,7 +7,6 @@ export async function onRequest({ request, env }) {
     'Cache-Control': 'no-store'
   })
 
-  // use append, not object syntax, for Set-Cookie
   headers.append('Set-Cookie', `music_token=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=31536000`)
 
   return new Response(JSON.stringify({ ok: true }), { headers })

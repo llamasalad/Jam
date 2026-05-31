@@ -235,7 +235,6 @@ body {
   background: linear-gradient(180deg, var(--adaptive-color) 0%, var(--bg) 80%) !important;
 }
 
-/* Pseudohaptics */
 .ctrl-btn:active,
 #expand-handle:active,
 .playlist-card:active,
@@ -1029,7 +1028,6 @@ body {
   margin-left: 0;
 }
 
-/* Mini player */
 #player {
   position: fixed;
   bottom: 0;
@@ -1265,7 +1263,6 @@ body {
   text-align: center;
 }
 
-/* Lyrics timing */
 #exp-lyrics-card-controls,
 #lyrics-timing-row {
   align-items: center;
@@ -1331,7 +1328,6 @@ body {
   white-space: nowrap;
 }
 
-/* Expanded player */
 #expanded-player {
   position: fixed;
   inset: 0;
@@ -1768,7 +1764,6 @@ body.player-open #main {
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
 }
 
-/* Queue panel */
 #queue-resizer {
   display: none;
 }
@@ -2013,7 +2008,6 @@ body.player-open #main {
   text-overflow: ellipsis;
 }
 
-/* Lyrics panel */
 #lyrics-panel {
   display: none;
   flex-direction: column;
@@ -2110,7 +2104,6 @@ body.player-open #main {
   position: relative !important;
 }
 
-/* Backdrop */
 #menu-backdrop {
   position: fixed;
   inset: 0;
@@ -2139,7 +2132,6 @@ body.player-open #main {
   -webkit-user-select: none;
 }
 
-/* Auth */
 #auth-overlay {
   position: fixed;
   inset: 0;
@@ -2212,7 +2204,6 @@ body.player-open #main {
   display: none;
 }
 
-/* Modals */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -2356,7 +2347,6 @@ body.menu-open .queue-remove {
   }
 }
 
-/* misc/temporary */
 .ctrl-btn {
   transition: transform 0.1s, background 0.1s, color 0.1s !important;
 }
@@ -2855,7 +2845,6 @@ body.menu-open .queue-remove {
     text-align: right;
   }
 
-  /* Desktop Queue */
   #queue-resizer {
     display: block;
     position: absolute;
@@ -3374,7 +3363,6 @@ body.menu-open .queue-remove {
     -webkit-touch-callout: none;
   }
 
-  /* Expanded player mobile */
   #expanded-player {
     display: block !important;
     position: fixed;
@@ -3516,7 +3504,6 @@ body.menu-open .queue-remove {
     touch-action: none;
   }
 
-  /* Mobile lyrics card */
   #exp-lyrics-card {
     order: 5;
     display: block;
@@ -3591,7 +3578,6 @@ body.menu-open .queue-remove {
     font-size: 22px;
   }
 
-  /* Mobile queue */
   #queue-panel {
     top: 0;
     bottom: 0;
