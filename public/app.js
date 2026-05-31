@@ -2,7 +2,6 @@ let resizeObserver = null;
 let searchListener = null;
 let authKeydownListener = null;
 let globalClickListener = null;
-// OPT 4: module-level observer refs to prevent leaks on library rebuild
 let _coverObserver = null;
 let _artistImgObserver = null;
 
@@ -24,7 +23,6 @@ function cleanup() {
 const mobileQuery = window.matchMedia('(max-width:768px)');
 const isMobile = () => mobileQuery.matches;
 
-// OPT 5: debounce moved here (before saveQueueState) so it can be used as a const
 function debounce(fn, ms) {
     let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms) };
 }
@@ -51,8 +49,6 @@ function setTokenCookie(t) {
     if (t) document.cookie = `music_token=${encodeURIComponent(t)}; path=/; max-age=31536000; SameSite=Lax; Secure`;
 }
 
-// OPT 5: saveQueueState debounced — prevents JSON.stringify + localStorage write on every
-// drag step, queue modification, etc. 300ms is imperceptible for queue persistence.
 const saveQueueState = debounce(() => {
     localStorage.setItem('music_queue', JSON.stringify(queue.map(x => x.id)));
     localStorage.setItem('music_qidx', qIdx);
@@ -244,8 +240,6 @@ if (player && !resizeObserver) {
     resizeObserver.observe(player);
 }
 
-// debounce is now defined at the top of the file
-
 let audioCtx = null;
 let gainNode = null;
 
@@ -409,7 +403,6 @@ function renderLibraryCards() {
         }
     });
 
-    // OPT 4: disconnect old observers before creating new ones to prevent leaks
     if (_coverObserver) _coverObserver.disconnect();
     if (_artistImgObserver) _artistImgObserver.disconnect();
 
@@ -2145,7 +2138,6 @@ let _savedScrollY = 0;
 function openExpandedPlayer(options = {}) {
     const { revealLyrics = false } = options;
     playerExpanded = true;
-    // OPT 3: invalidate lyric scroll cache now that player is open
     invalidateLyricScrollCache();
 
     _savedScrollY = window.scrollY;
@@ -2190,7 +2182,6 @@ function openExpandedPlayer(options = {}) {
 
 function closeExpandedPlayer() {
     playerExpanded = false;
-    // OPT 3: invalidate so hidden scroll els are excluded from next lyric update
     invalidateLyricScrollCache();
 
     document.body.classList.remove('player-open');
@@ -2212,12 +2203,16 @@ if (expPlayer) expPlayer.addEventListener('click', e => { if (e.target === expPl
 
 function setDesktopExpandedLyricsOpen(open) {
     desktopExpandedLyricsOpen = !!open;
-    // OPT 3: invalidate so cache reflects new visibility
     invalidateLyricScrollCache();
     if (expPlayer) expPlayer.classList.toggle('desktop-lyrics-open', desktopExpandedLyricsOpen);
     if (expContent) expContent.classList.toggle('desktop-lyrics-open', desktopExpandedLyricsOpen);
     if (expLyricsToggle) expLyricsToggle.classList.toggle('active', desktopExpandedLyricsOpen);
     if (desktopExpandedLyricsOpen) {
+        if (expDesktopLyricsScroll && !expDesktopLyricsScroll.querySelector('.lyric-line')) {
+            if (syncedLyrics.length) renderSyncedLyrics();
+            else if (plainLyrics) renderPlainLyrics();
+        }
+        updateSyncedLyricsState(true);
         requestAnimationFrame(() => scrollExpandedPlayerTo(0, 'auto'));
         setTimeout(() => {
             if (expDesktopLyricsScroll) {
@@ -2669,9 +2664,6 @@ const LYRICS_OFFSET_STEP = 0.2;
 
 let _lyricScrollEls = null;
 
-// OPT 3: visibility-aware lyric scroll element cache
-// Only includes containers that are actually visible, avoiding wasted DOM queries
-// and scrollTo calls on hidden elements.
 function getLyricScrollEls() {
     if (!_lyricScrollEls) {
         _lyricScrollEls = [
@@ -2730,7 +2722,6 @@ let lyricsCardOpen = false;
 function openLyricsCard() {
     if (!expLyricsCard) return;
     lyricsCardOpen = true;
-    // OPT 3: card is now visible, rebuild cache
     invalidateLyricScrollCache();
     expLyricsCard.classList.add('open');
     if (expLyricsCardControls) expLyricsCardControls.style.display = 'flex';
@@ -2756,7 +2747,6 @@ function openLyricsCard() {
 function closeLyricsCard() {
     if (!expLyricsCard) return;
     lyricsCardOpen = false;
-    // OPT 3: card is hidden, rebuild cache to exclude it
     invalidateLyricScrollCache();
     expLyricsCard.classList.remove('open');
     if (expLyricsCardControls) expLyricsCardControls.style.display = 'none';
@@ -2824,7 +2814,6 @@ const lyricsCloseBtn = document.getElementById('lyrics-close-btn');
 if (lyricsCloseBtn) {
     lyricsCloseBtn.onclick = () => {
         lyricsOpen = false;
-        // OPT 3: panel closed, rebuild cache
         invalidateLyricScrollCache();
         if (lyricsPanel) lyricsPanel.classList.remove('open');
         if (lyricsBtn) lyricsBtn.classList.remove('active');
@@ -3093,16 +3082,12 @@ function renderPlainLyrics() {
 
 let lastExpLyricIdx = -1;
 
-// OPT 7: early-out when nothing is visible avoids all DOM work while player is closed.
-// Index tracking still runs so position is correct when player opens.
 function updateSyncedLyricsState(force = false, atTime = null) {
     if (!audio) return;
-    // Nothing loaded and not a force refresh — bail immediately
     if (!syncedLyrics.length && !plainLyrics && !force) return;
 
     const anyVisible = playerExpanded || lyricsOpen;
 
-    // Player closed: just track index, skip all DOM/scroll work
     if (!anyVisible && !force && syncedLyrics.length) {
         const baseTime = atTime !== null ? atTime : (audio?.currentTime || 0);
         const t = baseTime + lyricsOffset;
@@ -3199,8 +3184,6 @@ if (audio) {
         updateSyncedLyricsState();
     });
 
-    // OPT 1: throttle the progress RAF loop to ~30fps (~33ms) — the scrubber
-    // doesn't need 60fps, and this is the single highest-CPU idle path.
     let rafId = null;
     let _lastRafTime = 0;
     const tickProgress = (timestamp) => {
@@ -3262,7 +3245,6 @@ function openEditMetadataModal(t) {
     };
 }
 
-// OPT 6: cap dominant color cache at 50 entries (LRU eviction via Map insertion order)
 const MAX_DOMINANT_COLOR_CACHE = 50;
 const _dominantColorCache = new Map();
 
@@ -3319,7 +3301,6 @@ function getDominantColor(img) {
     const result = `rgb(${Math.round(bestR * factor)}, ${Math.round(bestG * factor)}, ${Math.round(bestB * factor)})`;
 
     if (key) {
-        // OPT 6: evict oldest entry when cap is reached (Map preserves insertion order)
         if (_dominantColorCache.size >= MAX_DOMINANT_COLOR_CACHE) {
             _dominantColorCache.delete(_dominantColorCache.keys().next().value);
         }
@@ -3360,9 +3341,6 @@ if (expAdaptiveBtn) {
     };
 }
 
-// OPT 2: heartbeat interval increased from 750ms to 2000ms.
-// The heartbeat exists only to recover stalled iOS audio, not to drive UI.
-// Normal track endings are caught by the 'ended' event already.
 function startHeartbeat() {
     if (heartbeatInterval) clearInterval(heartbeatInterval);
     heartbeatInterval = setInterval(() => {
@@ -3378,7 +3356,7 @@ function startHeartbeat() {
             }
             lastHeartbeatPos = currentTime;
         }
-    }, 2000); // was 750ms
+    }, 2000);
 }
 
 async function uploadTrack(file) {
