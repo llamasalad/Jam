@@ -12,7 +12,7 @@
   <link rel="preload" href="/api/font/subset-SFProDisplay-Medium.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/api/font/subset-SFProDisplay-Bold.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/style.css?v=11">
+  <link rel="stylesheet" href="/style.css">
   <link rel="icon" href="/icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -45,7 +45,7 @@
       <h2>Jam!</h2>
       <p>Enter your password to continue.</p><input id="auth-input" type="password" placeholder="Password"
         autocomplete="current-password" />
-      <p id="auth-error">Incorrect password - try again.</p><button id="auth-submit">Continue</button>
+      <p id="auth-error">Incorrect password</p><button id="auth-submit">Continue</button>
     </div>
   </div>
   <div id="menu-backdrop" style="display:none"></div>
@@ -420,7 +420,7 @@
           <div id="exp-lyrics-card-controls" class="lyrics-timing mobile" style="display:none">
             <div class="lyrics-timing-actions">
               <button class="lyrics-timing-btn" data-offset-action="earlier">earlier</button>
-              <span class="lyrics-offset-display">synced</span>
+              <span class="lyrics-offset-display">default</span>
               <button class="lyrics-timing-btn" data-offset-action="later">later</button>
               <button class="lyrics-timing-btn reset" data-offset-action="reset">reset</button>
             </div>
