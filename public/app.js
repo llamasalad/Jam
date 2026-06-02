@@ -676,7 +676,7 @@ if (sortBtn) { sortBtn.onclick = cycleSort; sortBtn.innerHTML = sortSVGs[sortMod
 
 let currentTheme = localStorage.getItem('music_theme') || 'default';
 function applyTheme() {
-    document.body.classList.remove('ember-theme', 'glacier-theme', 'void-theme', 'blind-theme', 'rosecore-theme', 'abyss-theme', 'aurille-theme');
+    document.body.classList.remove('ember-theme', 'glacier-theme', 'void-theme', 'blind-theme', 'rosecore-theme', 'abyss-theme', 'aurielle-theme');
     if (currentTheme === 'ember-theme') document.body.classList.add('ember-theme');
     else if (currentTheme === 'glacier-theme') document.body.classList.add('glacier-theme');
     else if (currentTheme === 'void-theme') document.body.classList.add('void-theme');
