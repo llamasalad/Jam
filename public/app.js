@@ -676,15 +676,14 @@ if (sortBtn) { sortBtn.onclick = cycleSort; sortBtn.innerHTML = sortSVGs[sortMod
 
 let currentTheme = localStorage.getItem('music_theme') || 'default';
 function applyTheme() {
-    document.body.classList.remove('light-theme', 'purple-light-theme', 'ember-theme', 'glacier-theme', 'void-theme', 'black-theme', 'cherry-theme', 'abyss-theme');
-    if (currentTheme === 'light') document.body.classList.add('light-theme');
-    else if (currentTheme === 'purple-light') document.body.classList.add('purple-light-theme');
-    else if (currentTheme === 'ember-theme') document.body.classList.add('ember-theme');
+    document.body.classList.remove('ember-theme', 'glacier-theme', 'void-theme', 'blind-theme', 'rosecore-theme', 'abyss-theme', 'aurille-theme');
+    if (currentTheme === 'ember-theme') document.body.classList.add('ember-theme');
     else if (currentTheme === 'glacier-theme') document.body.classList.add('glacier-theme');
     else if (currentTheme === 'void-theme') document.body.classList.add('void-theme');
-    else if (currentTheme === 'black-theme') document.body.classList.add('black-theme');
-    else if (currentTheme === 'cherry-theme') document.body.classList.add('cherry-theme');
+    else if (currentTheme === 'blind-theme') document.body.classList.add('blind-theme');
+    else if (currentTheme === 'rosecore-theme') document.body.classList.add('rosecore-theme');
     else if (currentTheme === 'abyss-theme') document.body.classList.add('abyss-theme');
+    else if (currentTheme === 'aurielle-theme') document.body.classList.add('aurielle-theme');
     updateStatusBar();
     document.querySelectorAll('.theme-option').forEach(option => {
         option.classList.toggle('active', option.dataset.theme === currentTheme);
@@ -698,7 +697,7 @@ function updateStatusBar(overrideColor) {
     const meta = document.querySelector('meta[name="theme-color"]');
     if (!meta) return;
     if (overrideColor) { meta.setAttribute('content', overrideColor); return; }
-    const themeColors = { 'default': '#0d0d0f', 'light': '#f8f9fa', 'purple-light': '#f0f0ff', 'ember-theme': '#0e0c0b', 'glacier-theme': '#0a0e10', 'void-theme': '#080c09', 'black-theme': '#000000', 'cherry-theme': '#0f0d0e', 'abyss-theme': '#0d0d0f' };
+    const themeColors = { 'default': '#0d0d0f', 'ember-theme': '#0e0c0b', 'glacier-theme': '#0a0e10', 'void-theme': '#080c09', 'blind-theme': '#000000', 'rosecore-theme': '#0f0d0e', 'abyss-theme': '#0d0d0f', 'aurielle-theme': '#f8f9fa' };
     meta.setAttribute('content', themeColors[currentTheme] || '#0d0d0f');
 }
 
