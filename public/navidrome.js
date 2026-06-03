@@ -140,12 +140,16 @@ export async function getPlaylists() {
   const data = await res.json();
   const playlists = data['subsonic-response']?.playlists?.playlist || [];
   const playlistArray = Array.isArray(playlists) ? playlists : [playlists];
-  return playlistArray.filter(Boolean).map(pl => ({
-    id: pl.id,
-    name: pl.name,
-    tracks: Array.from({ length: pl.songCount || 0 }),
-    image: pl.coverArt ? `${NAVIDROME_URL}/rest/getCoverArt?id=${pl.coverArt}&${getAuthParams()}` : null
-  }));
+  const token = localStorage.getItem('music_token') || '';
+  return playlistArray.filter(Boolean).map(pl => {
+    const fallback = pl.coverArt ? `${NAVIDROME_URL}/rest/getCoverArt?id=${pl.coverArt}&${getAuthParams()}` : '';
+    return {
+      id: pl.id,
+      name: pl.name,
+      tracks: Array.from({ length: pl.songCount || 0 }),
+      image: `/api/playlists/image?id=${pl.id}&fallback=${encodeURIComponent(fallback)}&token=${token}`
+    };
+  });
 }
 
 /**
@@ -162,10 +166,12 @@ export async function getPlaylist(id) {
 
   const entries = pl.entry || [];
   const entryArray = Array.isArray(entries) ? entries : [entries];
+  const fallback = pl.coverArt ? `${NAVIDROME_URL}/rest/getCoverArt?id=${pl.coverArt}&${getAuthParams()}` : '';
+  const token = localStorage.getItem('music_token') || '';
   return {
     id: pl.id,
     name: pl.name,
-    image: pl.coverArt ? `${NAVIDROME_URL}/rest/getCoverArt?id=${pl.coverArt}&${getAuthParams()}` : null,
+    image: `/api/playlists/image?id=${pl.id}&fallback=${encodeURIComponent(fallback)}&token=${token}`,
     tracks: entryArray.filter(Boolean).map(song => {
       const meta = formatTrackMeta(song);
       return {
@@ -189,9 +195,11 @@ export async function createPlaylist(name) {
   const data = await res.json();
   const pl = data['subsonic-response']?.playlist;
   if (!pl) return null;
+  const token = localStorage.getItem('music_token') || '';
   return {
     id: pl.id,
     name: pl.name,
+    image: `/api/playlists/image?id=${pl.id}&token=${token}`,
     tracks: []
   };
 }
@@ -204,6 +212,14 @@ export async function deletePlaylist(id) {
   const params = getAuthParams();
   params.set('id', id);
   await fetchWithBypass(`${NAVIDROME_URL}/rest/deletePlaylist?${params}`);
+  try {
+    const token = localStorage.getItem('music_token') || '';
+    const headers = token ? { 'x-auth-token': token } : {};
+    await fetch(`/api/playlists/image?id=${id}`, {
+      method: 'DELETE',
+      headers
+    });
+  } catch (_) { }
 }
 
 /**

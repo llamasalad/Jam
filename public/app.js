@@ -1576,6 +1576,18 @@ if (editPlConfirm) {
         try {
             const updated = await Navidrome.renamePlaylist(currentPlaylist.id, newName);
             if (updated) {
+                if (editPlaylistImageBase64 && editPlaylistImageBase64.startsWith('data:image/')) {
+                    await fetch('/api/playlists/image', {
+                        method: 'POST',
+                        headers: hdrs(),
+                        body: JSON.stringify({ id: currentPlaylist.id, image: editPlaylistImageBase64 })
+                    });
+                }
+                const timestamp = Date.now();
+                if (updated.image) {
+                    updated.image = updated.image + `&t=${timestamp}`;
+                }
+
                 const idx = playlists.findIndex(p => p.id === currentPlaylist.id);
                 if (idx !== -1) playlists[idx] = updated;
                 currentPlaylist = updated;
