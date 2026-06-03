@@ -1120,6 +1120,15 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
 
     const isTouchScreen = window.matchMedia("(pointer: coarse)").matches;
 
+    const playHandler = () => {
+        if (inPlaylist && currentPlaylist) {
+            const list = currentPlaylist.tracks.map(pt => tracks.find(x => x.id === pt.trackId) || { id: pt.trackId, title: pt.title, artist: pt.artist, album: pt.album }).filter(Boolean);
+            playTrack(t, list);
+        } else {
+            playTrack(t, filtered);
+        }
+    };
+
     if (!isTouchScreen) {
         div.onmousedown = (e) => {
             if (e.button !== 0) return;
@@ -1129,9 +1138,9 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
             div.classList.toggle('selected', toggleMode);
         };
         div.onmouseenter = () => { if (isSelecting) div.classList.toggle('selected', toggleMode); };
-        div.ondblclick = () => playTrack(t, filtered);
+        div.ondblclick = playHandler;
     } else {
-        bindTapActivation(div, () => playTrack(t, filtered), {
+        bindTapActivation(div, playHandler, {
             onLongPress: e => openCtxMenu({ clientX: e.clientX, clientY: e.clientY, stopPropagation() { } }, t)
         });
 
@@ -1418,7 +1427,7 @@ function renderPlaylists() {
     });
 }
 
-function openPlaylistDetail(pl) {
+async function openPlaylistDetail(pl) {
     saveScroll();
     currentPlaylist = pl;
     currentDetailView = { type: 'playlist', name: pl.name };
@@ -1437,6 +1446,23 @@ function openPlaylistDetail(pl) {
 
     renderPlaylistDetail(pl);
     restoreScroll();
+
+    try {
+        const fullPl = await fetchPlaylist(pl.id);
+        if (fullPl) {
+            currentPlaylist = fullPl;
+            const idx = playlists.findIndex(p => p.id === pl.id);
+            if (idx !== -1) playlists[idx] = fullPl;
+            renderPlaylistDetail(fullPl);
+        } else {
+            renderPlaylistDetail({ ...pl, tracks: [] });
+            showToast('Failed to load playlist songs');
+        }
+    } catch (e) {
+        console.error("Failed to load playlist tracks", e);
+        renderPlaylistDetail({ ...pl, tracks: [] });
+        showToast('Failed to load playlist songs');
+    }
 }
 
 function closePlaylistDetail() {
@@ -1458,6 +1484,10 @@ function renderPlaylistDetail(pl) {
     container.innerHTML = '';
     if (!pl.tracks.length) {
         container.innerHTML = '<div style="padding:32px 16px;text-align:center;color:var(--muted);font-size:14px">No songs yet</div>';
+        return;
+    }
+    if (pl.tracks.length && pl.tracks[0] === undefined) {
+        container.innerHTML = '<div style="padding:32px 16px;text-align:center;color:var(--muted);font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;"><div class="spinner"></div>Loading songs...</div>';
         return;
     }
     const isTouchScreen = window.matchMedia("(pointer: coarse)").matches;

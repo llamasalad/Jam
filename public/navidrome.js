@@ -1,4 +1,4 @@
-const NAVIDROME_URL = 'https://width-panoramic-yearning.ngrok-free.dev';  // Change this to your server's address (e.g., https://your-tunnel.yourdomain.com)
+const NAVIDROME_URL = 'https://jam-server.loca.lt';
 
 const USERNAME = 'bobert';                        // Your Navidrome username
 const PASSWORD = 'bobert';                 // Your Navidrome password
@@ -85,12 +85,12 @@ function getAuthParams() {
 }
 
 /**
- * Custom fetch wrapper to append ngrok skip warning headers.
+ * Custom fetch wrapper to append LocalTunnel skip warning headers.
  */
 async function fetchWithBypass(url, options = {}) {
   const headers = {
     ...options.headers,
-    'ngrok-skip-browser-warning': 'true'
+    'Bypass-Tunnel-Reminder': 'true'
   };
   return fetch(url, { ...options, headers });
 }

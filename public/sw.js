@@ -1,4 +1,4 @@
-const CACHE = 'jam-v20';
+const CACHE = 'jam-v21';
 const ASSETS = [
   '/', '/index.html', '/style.css', '/app.js', '/manifest.json',
   '/fonts/subset-SFProDisplay-Regular.woff2',
@@ -31,12 +31,12 @@ self.addEventListener('fetch', e => {
     return u.toString();
   };
 
-  // Add ngrok skip warning headers to any request going to ngrok to prevent CORS preflight blocking
+  // Add bypass headers to localtunnel requests to prevent browser warning blocks
   let requestToFetch = e.request;
-  const isNgrok = url.hostname.endsWith('ngrok-free.dev') || url.hostname.endsWith('ngrok-free.app');
-  if (isNgrok) {
+  const isLocalTunnel = url.hostname.endsWith('loca.lt') || url.hostname.endsWith('localtunnel.me');
+  if (isLocalTunnel) {
     const newHeaders = new Headers(e.request.headers);
-    newHeaders.set('ngrok-skip-browser-warning', 'true');
+    newHeaders.set('Bypass-Tunnel-Reminder', 'true');
     try {
       requestToFetch = new Request(e.request, { headers: newHeaders });
     } catch (_) { }
