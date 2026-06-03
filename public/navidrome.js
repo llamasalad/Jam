@@ -85,6 +85,17 @@ function getAuthParams() {
 }
 
 /**
+ * Custom fetch wrapper to append ngrok skip warning headers.
+ */
+async function fetchWithBypass(url, options = {}) {
+  const headers = {
+    ...options.headers,
+    'ngrok-skip-browser-warning': 'true'
+  };
+  return fetch(url, { ...options, headers });
+}
+
+/**
  * Fetch all tracks from Navidrome.
  * Replaces your old: GET /api/tracks
  */
@@ -96,7 +107,7 @@ export async function getTracks(forceRefresh = false) {
     params.set('refresh', 'true');
   }
 
-  const res = await fetch(`${NAVIDROME_URL}/rest/search3?${params}`);
+  const res = await fetchWithBypass(`${NAVIDROME_URL}/rest/search3?${params}`);
   const data = await res.json();
 
   // Navidrome returns: { subsonic-response: { searchResult3: { song: [...] } } }
@@ -125,7 +136,7 @@ export async function getTracks(forceRefresh = false) {
  */
 export async function getPlaylists() {
   const params = getAuthParams();
-  const res = await fetch(`${NAVIDROME_URL}/rest/getPlaylists?${params}`);
+  const res = await fetchWithBypass(`${NAVIDROME_URL}/rest/getPlaylists?${params}`);
   const data = await res.json();
   const playlists = data['subsonic-response']?.playlists?.playlist || [];
   const playlistArray = Array.isArray(playlists) ? playlists : [playlists];
@@ -144,7 +155,7 @@ export async function getPlaylists() {
 export async function getPlaylist(id) {
   const params = getAuthParams();
   params.set('id', id);
-  const res = await fetch(`${NAVIDROME_URL}/rest/getPlaylist?${params}`);
+  const res = await fetchWithBypass(`${NAVIDROME_URL}/rest/getPlaylist?${params}`);
   const data = await res.json();
   const pl = data['subsonic-response']?.playlist;
   if (!pl) return null;
@@ -174,7 +185,7 @@ export async function getPlaylist(id) {
 export async function createPlaylist(name) {
   const params = getAuthParams();
   params.set('name', name);
-  const res = await fetch(`${NAVIDROME_URL}/rest/createPlaylist?${params}`);
+  const res = await fetchWithBypass(`${NAVIDROME_URL}/rest/createPlaylist?${params}`);
   const data = await res.json();
   const pl = data['subsonic-response']?.playlist;
   if (!pl) return null;
@@ -192,7 +203,7 @@ export async function createPlaylist(name) {
 export async function deletePlaylist(id) {
   const params = getAuthParams();
   params.set('id', id);
-  await fetch(`${NAVIDROME_URL}/rest/deletePlaylist?${params}`);
+  await fetchWithBypass(`${NAVIDROME_URL}/rest/deletePlaylist?${params}`);
 }
 
 /**
@@ -203,7 +214,7 @@ export async function addTrackToPlaylist(playlistId, trackId) {
   const params = getAuthParams();
   params.set('playlistId', playlistId);
   params.set('songIdToAdd', trackId);
-  await fetch(`${NAVIDROME_URL}/rest/updatePlaylist?${params}`);
+  await fetchWithBypass(`${NAVIDROME_URL}/rest/updatePlaylist?${params}`);
   return await getPlaylist(playlistId);
 }
 
@@ -220,7 +231,7 @@ export async function removeTrackFromPlaylist(playlistId, trackId) {
   const params = getAuthParams();
   params.set('playlistId', playlistId);
   params.set('songIndexToRemove', trackIndex);
-  await fetch(`${NAVIDROME_URL}/rest/updatePlaylist?${params}`);
+  await fetchWithBypass(`${NAVIDROME_URL}/rest/updatePlaylist?${params}`);
   return await getPlaylist(playlistId);
 }
 
@@ -232,7 +243,7 @@ export async function renamePlaylist(id, newName) {
   const params = getAuthParams();
   params.set('playlistId', id);
   params.set('name', newName);
-  await fetch(`${NAVIDROME_URL}/rest/updatePlaylist?${params}`);
+  await fetchWithBypass(`${NAVIDROME_URL}/rest/updatePlaylist?${params}`);
   return await getPlaylist(id);
 }
 

@@ -31,17 +31,28 @@ self.addEventListener('fetch', e => {
     return u.toString();
   };
 
+  // Add ngrok skip warning headers to any request going to ngrok to prevent CORS preflight blocking
+  let requestToFetch = e.request;
+  const isNgrok = url.hostname.endsWith('ngrok-free.dev') || url.hostname.endsWith('ngrok-free.app');
+  if (isNgrok) {
+    const newHeaders = new Headers(e.request.headers);
+    newHeaders.set('ngrok-skip-browser-warning', 'true');
+    try {
+      requestToFetch = new Request(e.request, { headers: newHeaders });
+    } catch (_) { }
+  }
+
   if ((url.pathname === '/api/tracks' || url.pathname.endsWith('/rest/search3')) && e.request.method === 'GET' && !url.searchParams.has('refresh')) {
     e.respondWith(caches.open(CACHE).then(async cache => {
-      const cacheKey = getCacheKey(e.request);
+      const cacheKey = getCacheKey(requestToFetch);
       const cached = await cache.match(cacheKey);
       if (cached) {
-        fetch(e.request).then(res => {
+        fetch(requestToFetch).then(res => {
           if (res.ok) cache.put(cacheKey, res.clone());
         }).catch(() => { });
         return cached;
       }
-      return fetch(e.request).then(res => {
+      return fetch(requestToFetch).then(res => {
         if (res.ok) cache.put(cacheKey, res.clone());
         return res;
       });
@@ -53,15 +64,15 @@ self.addEventListener('fetch', e => {
 
   if (url.pathname.startsWith('/api/cover/') || url.pathname.endsWith('/rest/getCoverArt')) {
     e.respondWith(caches.open(CACHE).then(async cache => {
-      const cacheKey = getCacheKey(e.request);
+      const cacheKey = getCacheKey(requestToFetch);
       const cached = await cache.match(cacheKey);
       if (cached) return cached;
-      const res = await fetch(e.request);
+      const res = await fetch(requestToFetch);
       if (res.ok) cache.put(cacheKey, res.clone());
       return res;
     }));
     return;
   }
 
-  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+  e.respondWith(caches.match(e.request).then(r => r || fetch(requestToFetch)));
 });
