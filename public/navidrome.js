@@ -1,4 +1,4 @@
-const NAVIDROME_URL = 'http://width-panoramic-yearning.ngrok-free.dev';  // Change this to your server's address (e.g., https://your-tunnel.yourdomain.com)
+const NAVIDROME_URL = 'https://width-panoramic-yearning.ngrok-free.dev';  // Change this to your server's address (e.g., https://your-tunnel.yourdomain.com)
 
 const USERNAME = 'bobert';                        // Your Navidrome username
 const PASSWORD = 'bobert';                 // Your Navidrome password
