@@ -1,16 +1,27 @@
 async function fetchDeezerArtist(name) {
   try {
-    const q = new URLSearchParams({ q: name || '', limit: '10' });
+    const cleanName = (name || '').replace(/[\u2010\u2011\u2012\u2013\u2014\u2212]/g, '-');
+    const q = new URLSearchParams({ q: cleanName || '', limit: '10' });
     const r = await fetch(`https://api.deezer.com/search/artist?${q}`, {
       headers: { 'Accept': 'application/json' }
     });
     if (!r.ok) return null;
     const d = await r.json();
     if (d.data && d.data.length > 0) {
-      const normalizedQuery = name.toLowerCase().trim();
+      const normalizedQuery = cleanName.toLowerCase().trim();
       const sorted = d.data.sort((a, b) => (b.nb_fan || 0) - (a.nb_fan || 0));
-      const exactMatch = sorted.find(a => a.name.toLowerCase().trim() === normalizedQuery);
-      const match = exactMatch || sorted[0];
+
+      const exactMatch = sorted.find(a => {
+        const normalizedArtist = a.name.replace(/[\u2010\u2011\u2012\u2013\u2014\u2212]/g, '-').toLowerCase().trim();
+        return normalizedArtist === normalizedQuery;
+      });
+
+      const substringMatch = sorted.find(a => {
+        const normalizedArtist = a.name.replace(/[\u2010\u2011\u2012\u2013\u2014\u2212]/g, '-').toLowerCase().trim();
+        return normalizedArtist.includes(normalizedQuery) || normalizedQuery.includes(normalizedArtist);
+      });
+
+      const match = exactMatch || substringMatch || sorted[0];
       return {
         id: match.id,
         name: match.name,

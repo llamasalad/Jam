@@ -1,3 +1,5 @@
+import * as Navidrome from './navidrome.js';
+
 let resizeObserver = null;
 let searchListener = null;
 let authKeydownListener = null;
@@ -199,7 +201,6 @@ const expIconPlay = document.getElementById('exp-icon-play');
 const expIconPause = document.getElementById('exp-icon-pause');
 const expLyricsToggle = document.getElementById('exp-lyrics-toggle');
 const expAdaptiveBtn = document.getElementById('exp-adaptive-btn');
-const dropZone = document.getElementById('drop-zone');
 const expDesktopLyricsPanel = document.getElementById('exp-desktop-lyrics-panel');
 const expDesktopLyricsScroll = document.getElementById('exp-desktop-lyrics-scroll');
 const menuBackdrop = document.getElementById('menu-backdrop');
@@ -357,10 +358,7 @@ async function loadTracks(forceRefresh = false) {
     if (empty) empty.style.display = 'none';
     if (trackList) trackList.innerHTML = '';
     try {
-        const url = forceRefresh ? `/api/tracks?refresh&_=${Date.now()}` : '/api/tracks';
-        const r = await fetch(url, { headers: hget() });
-        if (r.status === 401) { showAuth(); return }
-        tracks = await r.json();
+        tracks = await Navidrome.getTracks(forceRefresh);
         if (!tracks.length) {
             if (loading) loading.style.display = 'none';
             if (empty) empty.style.display = 'flex';
@@ -1298,7 +1296,7 @@ function openCtxMenu(e, t) {
     const row = document.querySelector(`.track[data-id="${t.id}"]`);
     if (row) row.classList.add('long-press');
 
-    const trackItems = ['ctx-add-queue', 'ctx-edit-metadata', 'ctx-new-playlist'];
+    const trackItems = ['ctx-add-queue', 'ctx-new-playlist'];
     trackItems.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'flex'; });
 
     if (ctxPlaylists) ctxPlaylists.style.display = 'block';
@@ -1323,9 +1321,6 @@ function openCtxMenu(e, t) {
 
     const trackNameLabel = document.getElementById('ctx-track-name');
     if (trackNameLabel) trackNameLabel.textContent = targetTracks.length > 1 ? `${targetTracks.length} tracks selected` : (t.title || 'Track');
-
-    const ctxEditMetadata = document.getElementById('ctx-edit-metadata');
-    if (ctxEditMetadata) ctxEditMetadata.onclick = () => { closeCtxMenu(); openEditMetadataModal(t); };
 
     const ctxPlayNext = document.getElementById('ctx-play-next');
     if (ctxPlayNext) {
@@ -1397,9 +1392,7 @@ if (ctxNewPlaylist) ctxNewPlaylist.onclick = () => { pendingPlaylistTrack = ctxT
 
 async function loadPlaylists() {
     try {
-        const r = await fetch('/api/playlists', { headers: hget() });
-        if (!r.ok) return;
-        playlists = await r.json();
+        playlists = await Navidrome.getPlaylists();
         renderPlaylists();
     } catch (e) { console.error("Failed to load playlists", e); }
 }
@@ -1581,13 +1574,8 @@ if (editPlConfirm) {
         const newName = nameInput ? nameInput.value.trim() : '';
         if (!newName) { alert('Playlist name required'); return; }
         try {
-            const r = await fetch('/api/playlists/' + currentPlaylist.id, {
-                method: 'PATCH',
-                headers: hdrs(),
-                body: JSON.stringify({ name: newName, image: editPlaylistImageBase64 })
-            });
-            if (r.ok) {
-                const updated = await r.json();
+            const updated = await Navidrome.renamePlaylist(currentPlaylist.id, newName);
+            if (updated) {
                 const idx = playlists.findIndex(p => p.id === currentPlaylist.id);
                 if (idx !== -1) playlists[idx] = updated;
                 currentPlaylist = updated;
@@ -1612,9 +1600,8 @@ if (editPlConfirm) {
 
 async function addToPlaylist(playlistId, t) {
     try {
-        const r = await fetch('/api/playlists/' + playlistId, { method: 'POST', headers: hdrs(), body: JSON.stringify({ trackId: t.id, title: t.title, artist: t.artist, album: t.album }) });
-        if (r.ok) {
-            const updated = await r.json();
+        const updated = await Navidrome.addTrackToPlaylist(playlistId, t.id);
+        if (updated) {
             playlists = playlists.map(p => p.id === playlistId ? updated : p);
             if (currentPlaylist?.id === playlistId) { currentPlaylist = updated; renderPlaylistDetail(updated); }
         }
@@ -1623,9 +1610,8 @@ async function addToPlaylist(playlistId, t) {
 
 async function removeFromPlaylist(playlistId, trackId) {
     try {
-        const r = await fetch('/api/playlists/' + playlistId + '?trackId=' + encodeURIComponent(trackId), { method: 'DELETE', headers: hget() });
-        if (r.ok) {
-            const updated = await r.json();
+        const updated = await Navidrome.removeTrackFromPlaylist(playlistId, trackId);
+        if (updated) {
             playlists = playlists.map(p => p.id === playlistId ? updated : p);
             if (currentPlaylist?.id === playlistId) { currentPlaylist = updated; renderPlaylistDetail(updated); }
         }
@@ -1634,16 +1620,14 @@ async function removeFromPlaylist(playlistId, trackId) {
 
 async function fetchPlaylist(id) {
     try {
-        const r = await fetch('/api/playlists/' + id, { headers: hget() });
-        if (!r.ok) return null;
-        return await r.json();
+        return await Navidrome.getPlaylist(id);
     } catch (e) { console.error("Failed to fetch playlist", e); return null; }
 }
 
 async function deletePlaylist(id) {
     if (!confirm('Delete this playlist?')) return;
     try {
-        await fetch('/api/playlists?id=' + id, { method: 'DELETE', headers: hget() });
+        await Navidrome.deletePlaylist(id);
         playlists = playlists.filter(p => p.id !== id);
         renderPlaylists();
     } catch (e) { console.error("Failed to delete playlist", e); }
@@ -1663,9 +1647,8 @@ if (modalConfirm) {
         const name = modalNameInput ? modalNameInput.value.trim() : '';
         if (!name) return;
         try {
-            const r = await fetch('/api/playlists', { method: 'POST', headers: hdrs(), body: JSON.stringify({ name }) });
-            if (r.ok) {
-                const pl = await r.json();
+            const pl = await Navidrome.createPlaylist(name);
+            if (pl) {
                 playlists.push(pl);
                 if (pendingPlaylistTrack) { await addToPlaylist(pl.id, pendingPlaylistTrack); pendingPlaylistTrack = null; }
                 renderPlaylists();
@@ -1731,7 +1714,9 @@ function coverCacheHas(id) { return id in coverCache; }
 async function ensureCoverUrl(id) {
     if (coverCacheHas(id)) return coverCacheGet(id);
     if (coverRequests[id]) return coverRequests[id];
-    coverRequests[id] = fetch('/api/cover/' + id, { headers: hget() }).then(async r => {
+    const track = tracks.find(t => t.id === id);
+    const coverUrl = track?.coverUrl || Navidrome.getCoverUrl(id);
+    coverRequests[id] = fetch(coverUrl).then(async r => {
         if (!r.ok) return null;
         const blob = await r.blob();
         const objectUrl = URL.createObjectURL(blob);
@@ -1849,7 +1834,7 @@ function play(t) {
         initAudioContext(audio);
         if (audioCtx?.state === 'suspended') audioCtx.resume();
         _trackTransition = true;
-        audio.src = '/api/stream/' + t.id;
+        audio.src = t.streamUrl || Navidrome.getStreamUrl(t.id);
         audio.load();
         audio.play().catch(e => console.error("Playback failed", e));
     }
@@ -2624,9 +2609,7 @@ function updateMediaSession(t) {
     try {
         if (_lastMetadataId !== t.id) {
             _lastMetadataId = t.id;
-            const base = window.location.origin;
-            let coverUrl = base + '/api/cover/' + t.id;
-            if (token) coverUrl += '?token=' + encodeURIComponent(token);
+            let coverUrl = t.coverUrl || Navidrome.getCoverUrl(t.id);
             navigator.mediaSession.metadata = new MediaMetadata({
                 title: t.title || 'Unknown',
                 artist: t.artist || 'Unknown',
@@ -3220,40 +3203,6 @@ if (audio) {
 
 function escAttr(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
-function openEditMetadataModal(t) {
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal">
-            <h3>Edit Metadata</h3>
-            <input id="edit-title" value="${escAttr(t.title)}" placeholder="Title" />
-            <input id="edit-artist" value="${escAttr(t.artist)}" placeholder="Artist" />
-            <input id="edit-album" value="${escAttr(t.album)}" placeholder="Album" />
-            <div class="modal-btns">
-                <button class="btn-cancel">Cancel</button>
-                <button class="btn-confirm">Save</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    modal.querySelector('.btn-cancel').onclick = () => modal.remove();
-    modal.querySelector('.btn-confirm').onclick = async () => {
-        const title = document.getElementById('edit-title').value;
-        const artist = document.getElementById('edit-artist').value;
-        const album = document.getElementById('edit-album').value;
-        showToast('Saving...');
-        try {
-            await fetch('/api/tracks', { method: 'PUT', headers: hdrs(), body: JSON.stringify({ key: t.key, title, artist, album, duration: t.duration }) });
-            t.title = title; t.artist = artist; t.album = album;
-            renderList();
-            libraryCardsBuilt = false;
-            renderLibraryCards();
-            modal.remove();
-            showToast('Metadata updated!');
-            if (queue[qIdx]?.id === t.id) updateMediaSession(t);
-        } catch (e) { console.error('Update error:', e); showToast('Save failed'); }
-    };
-}
 
 const MAX_DOMINANT_COLOR_CACHE = 50;
 const _dominantColorCache = new Map();
@@ -3369,38 +3318,19 @@ function startHeartbeat() {
     }, 2000);
 }
 
-async function uploadTrack(file) {
-    if (!token) { showAuth(); return; }
-    const formData = new FormData();
-    formData.append('file', file);
-    showToast(`Uploading ${file.name}...`);
-    try {
-        const r = await fetch('/api/tracks', { method: 'POST', headers: { 'x-auth-token': token }, body: formData });
-        if (r.ok) { showToast(`Uploaded ${file.name} successfully!`); loadTracks(); }
-        else { const err = await r.json(); showToast(`Upload failed: ${err.error || 'Unknown error'}`); }
-    } catch (e) { console.error('Upload error:', e); showToast('Upload failed. Check console.'); }
-}
-
-function handleDrop(e) {
-    e.preventDefault();
-    if (dropZone) dropZone.classList.remove('active');
-    const files = Array.from(e.dataTransfer.files).filter(f =>
-        f.type.startsWith('audio/') ||
-        f.name.endsWith('.mp3') || f.name.endsWith('.flac') ||
-        f.name.endsWith('.m4a') || f.name.endsWith('.ogg') ||
-        f.name.endsWith('.wav') || f.name.endsWith('.opus')
-    );
-    if (files.length > 0) files.forEach(uploadTrack);
-}
-
-window.addEventListener('dragover', e => {
-    e.preventDefault();
-    if (dropZone && !document.body.classList.contains('menu-open')) dropZone.classList.add('active');
-});
-window.addEventListener('dragleave', e => { if (e.relatedTarget === null && dropZone) dropZone.classList.remove('active'); });
-window.addEventListener('drop', handleDrop);
 
 async function init() {
+    try {
+        const last = JSON.parse(localStorage.getItem('music_last') || 'null');
+        if (last && last.id && (last.id.includes('/') || last.id.includes('%') || /\.(mp3|flac|wav|m4a|ogg)$/i.test(last.id))) {
+            console.log('[App] Stale R2 track ID detected in localStorage, clearing saved queue/playback state');
+            localStorage.removeItem('music_last');
+            localStorage.removeItem('music_queue');
+            localStorage.removeItem('music_pos');
+            localStorage.removeItem('music_qidx');
+        }
+    } catch (_) { }
+
     if (navigator.audioSession) {
         try { navigator.audioSession.type = 'playback'; }
         catch (e) { console.error('[AudioSession] Failed to set type:', e); }
@@ -3456,7 +3386,7 @@ async function init() {
     const lastTrackData = JSON.parse(localStorage.getItem('music_last') || 'null');
     if (lastTrackData?.id) {
         ensureCoverUrl(lastTrackData.id);
-        if (audio) { audio.preload = 'auto'; audio.src = '/api/stream/' + lastTrackData.id; audio.load(); }
+        if (audio) { audio.preload = 'auto'; audio.src = lastTrackData.streamUrl || Navidrome.getStreamUrl(lastTrackData.id); audio.load(); }
     }
 
     await Promise.all([loadTracks(), loadPlaylists()]);
@@ -3500,7 +3430,7 @@ async function init() {
 
             if (audio) {
                 const alreadyBuffering = audio.src && audio.src.includes(t.id);
-                if (!alreadyBuffering) { audio.preload = 'auto'; audio.src = '/api/stream/' + t.id; audio.load(); }
+                if (!alreadyBuffering) { audio.preload = 'auto'; audio.src = t.streamUrl || Navidrome.getStreamUrl(t.id); audio.load(); }
                 updateMediaSession(t);
                 let restored = false;
                 const restorePos = () => {

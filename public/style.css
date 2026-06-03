@@ -2,7 +2,7 @@
 
 @font-face {
   font-family: 'SF Pro Display';
-  src: url('api/font/subset-SFProDisplay-Bold.woff2') format('woff2');
+  src: url('/fonts/subset-SFProDisplay-Bold.woff2') format('woff2');
   font-weight: bold;
   font-style: normal;
   font-display: swap;
@@ -10,7 +10,7 @@
 
 @font-face {
   font-family: 'SF Pro Display';
-  src: url('api/font/subset-SFProDisplay-Medium.woff2') format('woff2');
+  src: url('/fonts/subset-SFProDisplay-Medium.woff2') format('woff2');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -18,7 +18,7 @@
 
 @font-face {
   font-family: 'SF Pro Display';
-  src: url('api/font/subset-SFProDisplay-Regular.woff2') format('woff2');
+  src: url('/fonts/subset-SFProDisplay-Regular.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -226,32 +226,6 @@ body {
 .track-menu-btn:active {
   transform: scale(0.96);
   transition: transform 0.1s cubic-bezier(0, 0, 0.2, 1);
-}
-
-#drop-zone {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  z-index: 1000;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  border: 4px dashed var(--accent);
-  margin: 20px;
-  border-radius: 20px;
-}
-
-#drop-zone.active {
-  display: flex;
-}
-
-#drop-zone-text {
-  color: var(--accent);
-  font-size: 24px;
-  font-weight: 700;
 }
 
 #search-wrap {

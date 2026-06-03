@@ -2,10 +2,6 @@ export async function onRequest(context) {
   const { request, env, next } = context;
   const url = new URL(request.url);
 
-  if (url.pathname.startsWith('/api/font/')) {
-    return await next();
-  }
-
   if (request.method === 'OPTIONS') {
     const origin = request.headers.get('Origin') || url.origin;
     return new Response(null, {

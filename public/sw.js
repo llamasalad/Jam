@@ -1,9 +1,9 @@
-const CACHE = 'jam-v310';
+const CACHE = 'jam-v2';
 const ASSETS = [
   '/', '/index.html', '/style.css', '/app.js', '/manifest.json',
-  '/api/font/subset-SFProDisplay-Regular.woff2',
-  '/api/font/subset-SFProDisplay-Medium.woff2',
-  '/api/font/subset-SFProDisplay-Bold.woff2'
+  '/fonts/subset-SFProDisplay-Regular.woff2',
+  '/fonts/subset-SFProDisplay-Medium.woff2',
+  '/fonts/subset-SFProDisplay-Bold.woff2'
 ];
 
 self.addEventListener('install', e => {
@@ -23,11 +23,20 @@ self.addEventListener('message', event => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  if (url.pathname === '/api/tracks' && e.request.method === 'GET' && !url.searchParams.has('refresh')) {
+  // Helper to normalize cache keys by stripping dynamic Subsonic authentication params (t, s)
+  const getCacheKey = (request) => {
+    const u = new URL(request.url);
+    u.searchParams.delete('t');
+    u.searchParams.delete('s');
+    return u.toString();
+  };
+
+  if ((url.pathname === '/api/tracks' || url.pathname.endsWith('/rest/search3')) && e.request.method === 'GET' && !url.searchParams.has('refresh')) {
     e.respondWith(caches.open(CACHE).then(async cache => {
-      const cached = await cache.match(e.request);
+      const cacheKey = getCacheKey(e.request);
+      const cached = await cache.match(cacheKey);
       const fetchPromise = fetch(e.request).then(res => {
-        if (res.ok) cache.put(e.request, res.clone());
+        if (res.ok) cache.put(cacheKey, res.clone());
         return res;
       }).catch(() => cached);
       return cached || fetchPromise;
@@ -35,26 +44,19 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  if (url.pathname.startsWith('/api/font/')) {
+  if (url.pathname.startsWith('/api/stream/') || url.pathname.endsWith('/rest/stream')) return;
+
+  if (url.pathname.startsWith('/api/cover/') || url.pathname.endsWith('/rest/getCoverArt')) {
     e.respondWith(caches.open(CACHE).then(async cache => {
-      const cached = await cache.match(e.request);
+      const cacheKey = getCacheKey(e.request);
+      const cached = await cache.match(cacheKey);
       if (cached) return cached;
       const res = await fetch(e.request);
-      if (res.ok) cache.put(e.request, res.clone());
+      if (res.ok) cache.put(cacheKey, res.clone());
       return res;
     }));
     return;
   }
-  if (url.pathname.startsWith('/api/stream/')) return;
-  if (url.pathname.startsWith('/api/cover/')) {
-    e.respondWith(caches.open(CACHE).then(async cache => {
-      const cached = await cache.match(e.request);
-      if (cached) return cached;
-      const res = await fetch(e.request);
-      if (res.ok) cache.put(e.request, res.clone());
-      return res;
-    }));
-    return;
-  }
+
   e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
 });
