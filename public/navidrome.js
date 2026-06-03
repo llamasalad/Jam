@@ -1,6 +1,5 @@
-// src/navidrome.js
+const NAVIDROME_URL = 'http://width-panoramic-yearning.ngrok-free.dev';  // Change this to your server's address (e.g., https://your-tunnel.yourdomain.com)
 
-const NAVIDROME_URL = 'http://localhost:4533';  // Change this to your server's address
 const USERNAME = 'bobert';                        // Your Navidrome username
 const PASSWORD = 'bobert';                 // Your Navidrome password
 const CLIENT_NAME = 'Jam';

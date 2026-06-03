@@ -23,7 +23,7 @@ self.addEventListener('message', event => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Helper to normalize cache keys by stripping dynamic Subsonic authentication params (t, s)
+  // Helper to normlize cache keys by stripping dynamic Subsonic authentication params (t, s)
   const getCacheKey = (request) => {
     const u = new URL(request.url);
     u.searchParams.delete('t');
@@ -35,11 +35,16 @@ self.addEventListener('fetch', e => {
     e.respondWith(caches.open(CACHE).then(async cache => {
       const cacheKey = getCacheKey(e.request);
       const cached = await cache.match(cacheKey);
-      const fetchPromise = fetch(e.request).then(res => {
+      if (cached) {
+        fetch(e.request).then(res => {
+          if (res.ok) cache.put(cacheKey, res.clone());
+        }).catch(() => { });
+        return cached;
+      }
+      return fetch(e.request).then(res => {
         if (res.ok) cache.put(cacheKey, res.clone());
         return res;
-      }).catch(() => cached);
-      return cached || fetchPromise;
+      });
     }));
     return;
   }
