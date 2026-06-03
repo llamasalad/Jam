@@ -60,7 +60,10 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  if (url.pathname.startsWith('/api/stream/') || url.pathname.endsWith('/rest/stream')) return;
+  if (url.pathname.startsWith('/api/stream/') || url.pathname.endsWith('/rest/stream')) {
+    e.respondWith(fetch(requestToFetch));
+    return;
+  }
 
   if (url.pathname.startsWith('/api/cover/') || url.pathname.endsWith('/rest/getCoverArt')) {
     e.respondWith(caches.open(CACHE).then(async cache => {

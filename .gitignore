@@ -3,6 +3,6 @@ node_modules/
 wrangler.toml
 dont open/
 .vscode/
-fonts/
+/fonts/
 .dev.vars
 package-lock.json
