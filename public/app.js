@@ -2869,13 +2869,13 @@ async function loadLyrics(t) {
     if (expLyricsWrap) { expLyricsWrap.style.display = 'flex'; expLyricsWrap.style.flex = ''; }
 
     try {
-        const cleanTitle = (t.title || '').replace(/^\d{1,3}[\s.\-_]+/, '').trim();
-        const cq = new URLSearchParams({ title: cleanTitle, artist: t.artist || '' });
+        const rawTitle = (t.title || '').trim();
+        const cq = new URLSearchParams({ title: rawTitle, artist: t.artist || '' });
         const cr = await fetch(`/api/lyrics/curated?${cq}`, { headers: token ? { 'x-auth-token': token } : {} });
         if (cr.ok) {
             const cData = await cr.json();
             if (cData.exists && cData.lrclibId) {
-                const sq = new URLSearchParams({ title: cleanTitle, artist: t.artist || '' });
+                const sq = new URLSearchParams({ title: rawTitle, artist: t.artist || '' });
                 const sr = await fetch(`/api/lyrics/search?${sq}`, { headers: token ? { 'x-auth-token': token } : {} });
                 if (sr.ok) {
                     const sItems = await sr.json();
@@ -2888,7 +2888,7 @@ async function loadLyrics(t) {
 
         const savedPick = getSavedLyricsPick(t.id);
         if (savedPick) {
-            const sq = new URLSearchParams({ title: cleanTitle, artist: t.artist || '' });
+            const sq = new URLSearchParams({ title: rawTitle, artist: t.artist || '' });
             const sr = await fetch(`/api/lyrics/search?${sq}`, { headers: token ? { 'x-auth-token': token } : {} });
             if (sr.ok) {
                 const sItems = await sr.json();
@@ -2898,7 +2898,7 @@ async function loadLyrics(t) {
             }
         }
 
-        const q = new URLSearchParams({ title: cleanTitle, artist: t.artist || '', album: t.album || '' });
+        const q = new URLSearchParams({ title: rawTitle, artist: t.artist || '', album: t.album || '' });
         const r = await fetch(`/api/lyrics?${q}`, { headers: token ? { 'x-auth-token': token } : {} });
         if (!r.ok) throw new Error('not found');
         const d = await r.json();
@@ -3020,8 +3020,8 @@ async function openLyricsPicker() {
     if (!t) { closeLyricsPicker(); return; }
 
     try {
-        const cleanTitle = (t.title || '').replace(/^\d{1,3}[\s.\-_]+/, '').trim();
-        const q = new URLSearchParams({ title: cleanTitle, artist: t.artist || '' });
+        const rawTitle = (t.title || '').trim();
+        const q = new URLSearchParams({ title: rawTitle, artist: t.artist || '' });
         const r = await fetch(`/api/lyrics/search?${q}`, { headers: token ? { 'x-auth-token': token } : {} });
         if (!r.ok) throw new Error('search failed');
         const items = await r.json();

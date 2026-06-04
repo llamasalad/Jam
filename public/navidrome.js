@@ -6,62 +6,7 @@ const CLIENT_NAME = 'Jam';
 
 let cachedParams = null;
 
-const PROTECTED_ARTISTS = [
-  "Tyler, The Creator",
-  "Lil Nas X",
-  "Tay-K",
-  "Earth, Wind & Fire",
-  "Simon & Garfunkel",
-  "Florence + The Machine",
-  "Florence and the Machine",
-  "Mumford & Sons",
-  "Marina & the Diamonds",
-  "Earth, Wind and Fire"
-];
 
-export function formatTrackMeta(song) {
-  let artist = (song.artist || '').replace(/[\u2010\u2011\u2012\u2013\u2014\u2212]/g, '-');
-  let title = song.title || '';
-
-  const lowerArtist = artist.toLowerCase();
-  let matchedProtected = null;
-
-  for (const name of PROTECTED_ARTISTS) {
-    if (lowerArtist.startsWith(name.toLowerCase())) {
-      matchedProtected = artist.slice(0, name.length);
-      break;
-    }
-  }
-
-  if (matchedProtected) {
-    const remaining = artist.slice(matchedProtected.length).trim();
-    if (remaining) {
-      const remMatch = remaining.match(/^(?:(?:feat\.?|ft\.?|&|,|\+)\s*|\s+(?:x)\s+)(.*)$/i);
-      if (remMatch) {
-        artist = matchedProtected;
-        title = `${title} (feat. ${remMatch[1].trim()})`;
-      } else {
-        // Remaining text is not a separator (e.g. "Tay-K 47" -> remaining is "47").
-        // This is a prefix match false positive. Do not split.
-        matchedProtected = null;
-      }
-    } else {
-      artist = matchedProtected;
-    }
-  }
-
-  if (!matchedProtected) {
-    const match = artist.match(/^(.*?)\s*(?:(feat\.?|ft\.?|&|,|\+)\s*|\s+(?:x)\s+)(.*)$/i);
-    if (match) {
-      const primaryArtist = match[1].trim();
-      const featured = match[3].trim();
-      artist = primaryArtist;
-      title = `${title} (feat. ${featured})`;
-    }
-  }
-
-  return { artist, title };
-}
 
 
 /**
@@ -115,11 +60,10 @@ export async function getTracks(forceRefresh = false) {
 
   // Remap to the same shape your frontend already expects
   return songs.map(song => {
-    const meta = formatTrackMeta(song);
     return {
       id: song.id,
-      title: meta.title,
-      artist: meta.artist,
+      title: song.title || '',
+      artist: song.albumArtist,
       album: song.album,
       duration: song.duration,
       // Cover art URL — drop-in replacement for your old /api/cover/[id]
@@ -173,11 +117,10 @@ export async function getPlaylist(id) {
     name: pl.name,
     image: `/api/playlists/image?id=${pl.id}&fallback=${encodeURIComponent(fallback)}&token=${token}`,
     tracks: entryArray.filter(Boolean).map(song => {
-      const meta = formatTrackMeta(song);
       return {
         trackId: song.id,
-        title: meta.title,
-        artist: meta.artist,
+        title: song.title || '',
+        artist: song.albumArtist,
         album: song.album
       };
     })

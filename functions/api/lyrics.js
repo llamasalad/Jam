@@ -24,15 +24,6 @@ function jsonResponse(body, init = {}) {
   return new Response(JSON.stringify(body), { ...init, headers })
 }
 
-function normalizeTitle(title) {
-  return (title || '')
-    .replace(/^\d{1,3}[\s.\-_]+/, '')
-    .replace(/\s*[\(\[](feat\.?|ft\.?|featuring)[^\)\]]*[\)\]]/gi, '')
-    .replace(/\s+(feat\.?|ft\.?|featuring).*$/gi, '')
-    .replace(/\s*-\s*(remaster(ed)?|live|edit|mono|stereo|version|radio edit|explicit|clean).*$/gi, '')
-    .trim()
-}
-
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url)
   const title = url.searchParams.get('title') || ''
@@ -43,13 +34,6 @@ export async function onRequestGet({ request, env }) {
   }
 
   let result = await fetchLyrics(artist, title)
-
-  if (!result) {
-    const cleanTitle = normalizeTitle(title)
-    if (cleanTitle && cleanTitle !== title) {
-      result = await fetchLyrics(artist, cleanTitle)
-    }
-  }
 
   if (result) {
     return jsonResponse(result, {
