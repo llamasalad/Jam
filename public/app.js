@@ -1952,6 +1952,13 @@ if (audio) {
         }
     });
 
+    audio.addEventListener('durationchange', () => {
+        if (!audio.duration || !isFinite(audio.duration)) return;
+        const d = audio.duration;
+        if (timeTot) timeTot.textContent = fmt(d);
+        if (expTimeTot) expTimeTot.textContent = fmt(d);
+    });
+
     function syncPlayPause(playing) {
         if (iconPlay) iconPlay.style.display = playing ? 'none' : 'block';
         if (iconPause) iconPause.style.display = playing ? 'block' : 'none';
@@ -2012,6 +2019,15 @@ function setupSeekBar(el) {
 
 setupSeekBar(progress);
 setupSeekBar(expProgress);
+
+[progress, expProgress].forEach(el => {
+    if (!el) return;
+    el.addEventListener('touchend', () => {
+        setTimeout(() => { if (seeking) seeking = false; }, 300);
+    });
+    el.addEventListener('touchcancel', () => { seeking = false; });
+    el.addEventListener('pointercancel', () => { seeking = false; });
+});
 
 function setVolume(value) {
     const v = value / 100;
@@ -3213,6 +3229,9 @@ if (audio) {
         }
         const d = getRealDuration();
         if (!seeking && d) {
+            const pct = (audio.currentTime / d) * 100;
+            if (progress) progress.value = pct;
+            if (expProgress) expProgress.value = pct;
             if (timeCur) timeCur.textContent = fmt(audio.currentTime);
             if (expTimeCur) expTimeCur.textContent = fmt(audio.currentTime);
         }
@@ -3342,18 +3361,26 @@ if (expAdaptiveBtn) {
     };
 }
 
+let _heartbeatStallCount = 0;
 function startHeartbeat() {
     if (heartbeatInterval) clearInterval(heartbeatInterval);
+    _heartbeatStallCount = 0;
     heartbeatInterval = setInterval(() => {
         if (!audio) return;
         if (audio.duration && audio.currentTime > 0 && !audio.paused) {
             const remaining = audio.duration - audio.currentTime;
             if (remaining < 0.5) { nextTrack(); return; }
         }
-        if (!audio.paused && audio.readyState >= 3) {
+        if (!audio.paused && audio.readyState >= 4) {
             const currentTime = audio.currentTime;
             if (currentTime > 0 && Math.abs(currentTime - lastHeartbeatPos) < 0.05) {
-                audio.play().catch(() => { });
+                _heartbeatStallCount++;
+                if (_heartbeatStallCount >= 2) {
+                    audio.play().catch(() => { });
+                    _heartbeatStallCount = 0;
+                }
+            } else {
+                _heartbeatStallCount = 0;
             }
             lastHeartbeatPos = currentTime;
         }
