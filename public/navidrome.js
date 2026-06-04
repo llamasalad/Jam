@@ -1,4 +1,4 @@
-const NAVIDROME_URL = 'https://jam-server.shares.zrok.io';
+const NAVIDROME_URL = 'https://jam-server.webredirect.org';
 
 const USERNAME = 'bobert';                        // Your Navidrome username
 const PASSWORD = 'bobert';                 // Your Navidrome password
