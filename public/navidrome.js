@@ -63,7 +63,7 @@ export async function getTracks(forceRefresh = false) {
     return {
       id: song.id,
       title: song.title || '',
-      artist: song.albumArtist,
+      artist: song.artist || '',
       album: song.album,
       duration: song.duration,
       // Cover art URL — drop-in replacement for your old /api/cover/[id]
@@ -120,7 +120,7 @@ export async function getPlaylist(id) {
       return {
         trackId: song.id,
         title: song.title || '',
-        artist: song.albumArtist,
+        artist: song.artist || '',
         album: song.album
       };
     })
