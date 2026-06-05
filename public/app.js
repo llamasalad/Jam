@@ -492,7 +492,9 @@ async function loadTracks(forceRefresh = false) {
         if (loading) loading.style.display = 'none';
         if (empty) {
             const swActive = !!navigator.serviceWorker?.controller;
-            empty.innerHTML = `No tracks found.<br><span style="font-size:10px;color:var(--danger);word-break:break-all">Error: ${e.message || e} (SW: ${swActive})</span>`;
+            const capActive = !!window.Capacitor;
+            const httpActive = !!window.Capacitor?.Plugins?.CapacitorHttp;
+            empty.innerHTML = `No tracks found.<br><span style="font-size:10px;color:var(--danger);word-break:break-all">Error: ${e.message || e} (SW: ${swActive}, Cap: ${capActive}, Http: ${httpActive})</span>`;
             empty.style.display = 'flex';
         }
     }
