@@ -3845,27 +3845,36 @@ async function checkForUpdate() {
 }
 
 if ('serviceWorker' in navigator) {
-    setTimeout(() => {
-        navigator.serviceWorker.register('/sw.js').then(reg => {
-            swRegistration = reg;
-            console.log('[SW] Registered, scope:', reg.scope);
-            console.log('[SW] Status:', window.getSWStatus());
-            setInterval(() => { console.log('[SW] Checking for updates...'); reg.update(); }, 60000);
-            reg.addEventListener('updatefound', () => {
-                const newWorker = reg.installing;
-                console.log('[SW] Update found, installing...');
-                newWorker.addEventListener('statechange', () => {
-                    console.log('[SW] Worker state:', newWorker.state);
-                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        console.log('[SW] Update ready — showing UI');
-                        showUpdateUI();
-                    }
+    if (window.Capacitor && window.Capacitor.getPlatform() === 'ios') {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+            for (let reg of regs) {
+                reg.unregister();
+                console.log('[SW] Unregistered active service worker for Capacitor');
+            }
+        });
+    } else {
+        setTimeout(() => {
+            navigator.serviceWorker.register('/sw.js').then(reg => {
+                swRegistration = reg;
+                console.log('[SW] Registered, scope:', reg.scope);
+                console.log('[SW] Status:', window.getSWStatus());
+                setInterval(() => { console.log('[SW] Checking for updates...'); reg.update(); }, 60000);
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    console.log('[SW] Update found, installing...');
+                    newWorker.addEventListener('statechange', () => {
+                        console.log('[SW] Worker state:', newWorker.state);
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            console.log('[SW] Update ready — showing UI');
+                            showUpdateUI();
+                        }
+                    });
                 });
-            });
-            if (reg.waiting && navigator.serviceWorker.controller) { console.log('[SW] Update was already waiting'); showUpdateUI(); }
-        }).catch(err => console.error('[SW] Registration failed:', err));
-        navigator.serviceWorker.addEventListener('controllerchange', () => { console.log('[SW] New controller, reloading...'); window.location.reload(); });
-    }, 2000);
+                if (reg.waiting && navigator.serviceWorker.controller) { console.log('[SW] Update was already waiting'); showUpdateUI(); }
+            }).catch(err => console.error('[SW] Registration failed:', err));
+            navigator.serviceWorker.addEventListener('controllerchange', () => { console.log('[SW] New controller, reloading...'); window.location.reload(); });
+        }, 2000);
+    }
 }
 
 (async () => { const ok = await checkAuth(); if (ok) init() })();
