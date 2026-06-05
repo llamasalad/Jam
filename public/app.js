@@ -29,6 +29,44 @@ function debounce(fn, ms) {
     let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms) };
 }
 
+function triggerHaptic(type) {
+    const Haptics = window.Capacitor?.Plugins?.Haptics;
+    if (!Haptics) return;
+    try {
+        switch (type) {
+            case 'IMPACT_LIGHT':
+                Haptics.impact({ style: 'LIGHT' });
+                break;
+            case 'IMPACT_MEDIUM':
+                Haptics.impact({ style: 'MEDIUM' });
+                break;
+            case 'IMPACT_HEAVY':
+                Haptics.impact({ style: 'HEAVY' });
+                break;
+            case 'SELECTION_START':
+                Haptics.selectionStart();
+                break;
+            case 'SELECTION_CHANGED':
+                Haptics.selectionChanged();
+                break;
+            case 'SELECTION_END':
+                Haptics.selectionEnd();
+                break;
+            case 'SUCCESS':
+                Haptics.notification({ type: 'SUCCESS' });
+                break;
+            case 'WARNING':
+                Haptics.notification({ type: 'WARNING' });
+                break;
+            case 'ERROR':
+                Haptics.notification({ type: 'ERROR' });
+                break;
+        }
+    } catch (e) {
+        console.error('[Haptics] Failed to trigger:', e);
+    }
+}
+
 const TOKEN_KEY = 'music_token';
 let token = localStorage.getItem(TOKEN_KEY) || '';
 setTokenCookie(token);
@@ -511,6 +549,7 @@ if (authInput && !authKeydownListener) {
 }
 
 function switchTab(name) {
+    triggerHaptic('IMPACT_LIGHT');
     if (typeof saveScroll === 'function') saveScroll();
     const viewLibrary = document.getElementById('view-library');
     const viewPlaylists = document.getElementById('view-playlists');
@@ -869,7 +908,7 @@ if (sortBtn) { sortBtn.onclick = cycleSort; sortBtn.innerHTML = sortSVGs[sortMod
 
 let currentTheme = localStorage.getItem('music_theme') || 'default';
 function applyTheme() {
-    document.body.classList.remove('ember-theme', 'glacier-theme', 'void-theme', 'blind-theme', 'rosecore-theme', 'abyss-theme', 'aurielle-theme');
+    document.body.classList.remove('ember-theme', 'glacier-theme', 'void-theme', 'blind-theme', 'rosecore-theme', 'abyss-theme', 'aurielle-theme', 'liquid-glass-theme');
     if (currentTheme === 'ember-theme') document.body.classList.add('ember-theme');
     else if (currentTheme === 'glacier-theme') document.body.classList.add('glacier-theme');
     else if (currentTheme === 'void-theme') document.body.classList.add('void-theme');
@@ -877,6 +916,7 @@ function applyTheme() {
     else if (currentTheme === 'rosecore-theme') document.body.classList.add('rosecore-theme');
     else if (currentTheme === 'abyss-theme') document.body.classList.add('abyss-theme');
     else if (currentTheme === 'aurielle-theme') document.body.classList.add('aurielle-theme');
+    else if (currentTheme === 'liquid-glass-theme') document.body.classList.add('liquid-glass-theme');
     updateStatusBar();
     document.querySelectorAll('.theme-option').forEach(option => {
         option.classList.toggle('active', option.dataset.theme === currentTheme);
@@ -890,7 +930,17 @@ function updateStatusBar(overrideColor) {
     const meta = document.querySelector('meta[name="theme-color"]');
     if (!meta) return;
     if (overrideColor) { meta.setAttribute('content', overrideColor); return; }
-    const themeColors = { 'default': '#0d0d0f', 'ember-theme': '#0e0c0b', 'glacier-theme': '#0a0e10', 'void-theme': '#080c09', 'blind-theme': '#000000', 'rosecore-theme': '#0f0d0e', 'abyss-theme': '#0d0d0f', 'aurielle-theme': '#f8f9fa' };
+    const themeColors = {
+        'default': '#0d0d0f',
+        'ember-theme': '#0e0c0b',
+        'glacier-theme': '#0a0e10',
+        'void-theme': '#080c09',
+        'blind-theme': '#000000',
+        'rosecore-theme': '#0f0d0e',
+        'abyss-theme': '#0d0d0f',
+        'aurielle-theme': '#f8f9fa',
+        'liquid-glass-theme': '#09090c'
+    };
     meta.setAttribute('content', themeColors[currentTheme] || '#0d0d0f');
 }
 
@@ -919,6 +969,7 @@ if (themeToggle) {
 if (themeMenu) {
     document.querySelectorAll('.theme-option').forEach(option => {
         option.onclick = () => {
+            triggerHaptic('SUCCESS');
             currentTheme = option.dataset.theme;
             localStorage.setItem('music_theme', currentTheme);
             applyTheme();
@@ -962,6 +1013,7 @@ if (sidebarThemeItem) {
 document.querySelectorAll('.sidebar-theme-option').forEach(opt => {
     opt.classList.toggle('active', opt.dataset.theme === currentTheme);
     opt.onclick = () => {
+        triggerHaptic('SUCCESS');
         currentTheme = opt.dataset.theme;
         localStorage.setItem('music_theme', currentTheme);
         applyTheme();
@@ -1099,7 +1151,8 @@ function bindTapActivation(el, handler, options = {}) {
             longPressTimer = setTimeout(() => {
                 longPressed = true;
                 handledAt = Date.now();
-                if (navigator.vibrate) navigator.vibrate(10);
+                if (typeof triggerHaptic === 'function') triggerHaptic('IMPACT_MEDIUM');
+                else if (navigator.vibrate) navigator.vibrate(10);
                 options.onLongPress(e);
             }, longPressMs);
         }
@@ -1235,7 +1288,8 @@ function attachSwipeHandlers(container, content, bgElement, handlers) {
             if (pastThreshold && hasHandler) {
                 if (!bgElement.classList.contains('locked')) {
                     bgElement.classList.add('locked');
-                    if (navigator.vibrate) navigator.vibrate(8);
+                    if (typeof triggerHaptic === 'function') triggerHaptic('IMPACT_LIGHT');
+                    else if (navigator.vibrate) navigator.vibrate(8);
                 }
             } else {
                 bgElement.classList.remove('locked');
@@ -2041,6 +2095,7 @@ function setCover(el, url) {
 const FALLBACK = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="%2326262e"/><text x="50%25" y="54%25" text-anchor="middle" fill="%237a7a8e" font-size="18">\u266A</text></svg>';
 
 function playTrack(t, list) {
+    triggerHaptic('IMPACT_LIGHT');
     if (shuffle) {
         let rest = list.filter(x => x.id !== t.id);
         for (let i = rest.length - 1; i > 0; i--) {
@@ -2202,7 +2257,11 @@ function setupSeekBar(el) {
     if (!el) return;
     let userPct = null;
 
+    el.addEventListener('touchstart', () => triggerHaptic('SELECTION_START'), { passive: true });
+    el.addEventListener('mousedown', () => triggerHaptic('SELECTION_START'));
+
     el.oninput = () => {
+        triggerHaptic('SELECTION_CHANGED');
         seeking = true;
         userPct = parseFloat(el.value);
         const d = (audio && isFinite(audio.duration) && audio.duration > 0) ? audio.duration : getRealDuration();
@@ -2215,6 +2274,7 @@ function setupSeekBar(el) {
     };
 
     el.onchange = () => {
+        triggerHaptic('SELECTION_END');
         if (userPct === null) return;
         const d = (audio && isFinite(audio.duration) && audio.duration > 0) ? audio.duration : getRealDuration();
         if (audio && d) {
@@ -2262,7 +2322,13 @@ function toggleMute() {
 }
 
 if (volumeSlider) {
-    volumeSlider.addEventListener('input', () => setVolume(volumeSlider.value));
+    volumeSlider.addEventListener('touchstart', () => triggerHaptic('SELECTION_START'), { passive: true });
+    volumeSlider.addEventListener('mousedown', () => triggerHaptic('SELECTION_START'));
+    volumeSlider.addEventListener('input', () => {
+        triggerHaptic('SELECTION_CHANGED');
+        setVolume(volumeSlider.value);
+    });
+    volumeSlider.addEventListener('change', () => triggerHaptic('SELECTION_END'));
     volumeSlider.addEventListener('wheel', (e) => {
         e.preventDefault();
         const delta = e.deltaY > 0 ? -5 : 5;
@@ -2272,7 +2338,13 @@ if (volumeSlider) {
 if (volumeIcon) volumeIcon.addEventListener('click', toggleMute);
 
 if (expVolumeSlider) {
-    expVolumeSlider.addEventListener('input', () => setVolume(expVolumeSlider.value));
+    expVolumeSlider.addEventListener('touchstart', () => triggerHaptic('SELECTION_START'), { passive: true });
+    expVolumeSlider.addEventListener('mousedown', () => triggerHaptic('SELECTION_START'));
+    expVolumeSlider.addEventListener('input', () => {
+        triggerHaptic('SELECTION_CHANGED');
+        setVolume(expVolumeSlider.value);
+    });
+    expVolumeSlider.addEventListener('change', () => triggerHaptic('SELECTION_END'));
     expVolumeSlider.addEventListener('wheel', (e) => {
         e.preventDefault();
         const delta = e.deltaY > 0 ? -5 : 5;
@@ -2281,12 +2353,13 @@ if (expVolumeSlider) {
 }
 if (expVolumeIcon) expVolumeIcon.addEventListener('click', toggleMute);
 
-if (btnPlay) btnPlay.onclick = () => audio && (audio.paused ? audio.play() : audio.pause());
-if (btnPrev) btnPrev.onclick = () => { if (audio && audio.currentTime > 3) audio.currentTime = 0; else prevTrack(); };
-if (btnNext) btnNext.onclick = () => nextTrack();
+if (btnPlay) btnPlay.onclick = () => { triggerHaptic('IMPACT_MEDIUM'); audio && (audio.paused ? audio.play() : audio.pause()); };
+if (btnPrev) btnPrev.onclick = () => { triggerHaptic('IMPACT_LIGHT'); if (audio && audio.currentTime > 3) audio.currentTime = 0; else prevTrack(); };
+if (btnNext) btnNext.onclick = () => { triggerHaptic('IMPACT_LIGHT'); nextTrack(); };
 
 if (btnShuffle) {
     btnShuffle.onclick = () => {
+        triggerHaptic('IMPACT_LIGHT');
         shuffle = !shuffle;
         btnShuffle.style.color = shuffle ? 'var(--accent)' : 'var(--muted)';
         if (expShuffle) expShuffle.style.color = shuffle ? 'var(--accent)' : 'var(--muted)';
@@ -2335,6 +2408,7 @@ applyRepeat();
 
 if (btnRepeat) {
     btnRepeat.onclick = () => {
+        triggerHaptic('IMPACT_LIGHT');
         const modes = ['off', 'all', 'one'];
         repeatMode = modes[(modes.indexOf(repeatMode) + 1) % 3];
         localStorage.setItem('music_repeat', repeatMode);
@@ -2374,9 +2448,9 @@ document.addEventListener('keydown', e => {
     if (e.key === 'ArrowLeft') prevTrack();
 });
 
-if (expPlay) expPlay.onclick = () => audio && (audio.paused ? audio.play() : audio.pause());
-if (expPrev) expPrev.onclick = () => { if (audio && audio.currentTime > 3) audio.currentTime = 0; else prevTrack(); };
-if (expNext) expNext.onclick = () => nextTrack();
+if (expPlay) expPlay.onclick = () => { triggerHaptic('IMPACT_MEDIUM'); audio && (audio.paused ? audio.play() : audio.pause()); };
+if (expPrev) expPrev.onclick = () => { triggerHaptic('IMPACT_LIGHT'); if (audio && audio.currentTime > 3) audio.currentTime = 0; else prevTrack(); };
+if (expNext) expNext.onclick = () => { triggerHaptic('IMPACT_LIGHT'); nextTrack(); };
 if (expShuffle) expShuffle.onclick = () => btnShuffle && btnShuffle.onclick();
 
 function scrollExpandedPlayerTo(top, behavior = 'smooth') {
