@@ -6,7 +6,8 @@ function jsonResponse(body, init = {}) {
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url)
-  const title = url.searchParams.get('title') || ''
+  const rawTitle = url.searchParams.get('title') || ''
+  const title = rawTitle.split('(')[0].trim()
   const artist = url.searchParams.get('artist') || ''
 
   if (!title && !artist) {

@@ -1,4 +1,4 @@
-const CACHE = 'jam-v25';
+const CACHE = 'jam-v26';
 const ASSETS = [
   '/', '/index.html', '/style.css', '/app.js', '/manifest.json',
   '/fonts/subset-SFProDisplay-Regular.woff2',
@@ -23,7 +23,6 @@ self.addEventListener('message', event => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Helper to normlize cache keys by stripping dynamic Subsonic authentication params (t, s)
   const getCacheKey = (request) => {
     const u = new URL(request.url);
     u.searchParams.delete('t');
@@ -31,7 +30,6 @@ self.addEventListener('fetch', e => {
     return u.toString();
   };
 
-  // Add bypass headers to localtunnel requests to prevent browser warning blocks
   let requestToFetch = e.request;
   const isLocalTunnel = url.hostname.endsWith('loca.lt') || url.hostname.endsWith('localtunnel.me');
   if (isLocalTunnel) {

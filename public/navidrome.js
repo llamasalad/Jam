@@ -1,18 +1,11 @@
 const NAVIDROME_URL = 'https://jam-server.webredirect.org';
 
-const USERNAME = 'bobert';                        // Your Navidrome username
-const PASSWORD = 'bobert';                 // Your Navidrome password
+const USERNAME = 'bobert';
+const PASSWORD = 'bobert';
 const CLIENT_NAME = 'Jam';
 
 let cachedParams = null;
 
-
-
-
-/**
- * Generates the authentication parameters required by Navidrome.
- * These must be appended to every API request.
- */
 function getAuthParams() {
   if (!cachedParams) {
     const salt = Math.random().toString(36).substring(2, 10);
@@ -29,9 +22,6 @@ function getAuthParams() {
   return new URLSearchParams(cachedParams);
 }
 
-/**
- * Custom fetch wrapper to append LocalTunnel skip warning headers.
- */
 async function fetchWithBypass(url, options = {}) {
   const headers = {
     ...options.headers,
@@ -40,25 +30,16 @@ async function fetchWithBypass(url, options = {}) {
   return fetch(url, { ...options, headers });
 }
 
-/**
- * Fetch all tracks from Navidrome.
- * Replaces your old: GET /api/tracks
- */
 export async function getTracks(forceRefresh = false) {
   const params = getAuthParams();
-  params.set('query', '');       // Empty query returns everything
-  params.set('songCount', '50000'); // Increased limit from 500 to support larger libraries
+  params.set('query', '');
+  params.set('songCount', '50000');
   if (forceRefresh) {
     params.set('refresh', 'true');
   }
-
   const res = await fetchWithBypass(`${NAVIDROME_URL}/rest/search3?${params}`);
   const data = await res.json();
-
-  // Navidrome returns: { subsonic-response: { searchResult3: { song: [...] } } }
   const songs = data['subsonic-response']?.searchResult3?.song || [];
-
-  // Remap to the same shape your frontend already expects
   return songs.map(song => {
     return {
       id: song.id,
@@ -66,18 +47,12 @@ export async function getTracks(forceRefresh = false) {
       artist: song.artist || '',
       album: song.album,
       duration: song.duration,
-      // Cover art URL — drop-in replacement for your old /api/cover/[id]
       coverUrl: `${NAVIDROME_URL}/rest/getCoverArt?id=${song.coverArt}&${getAuthParams()}`,
-      // Stream URL — drop-in replacement for your old /api/stream/[id]
       streamUrl: `${NAVIDROME_URL}/rest/stream?id=${song.id}&${getAuthParams()}`,
     };
   });
 }
 
-/**
- * Fetch all playlists.
- * Replaces your old: GET /api/playlists
- */
 export async function getPlaylists() {
   const params = getAuthParams();
   const res = await fetchWithBypass(`${NAVIDROME_URL}/rest/getPlaylists?${params}`);
@@ -96,10 +71,6 @@ export async function getPlaylists() {
   });
 }
 
-/**
- * Fetch a single playlist with its tracks.
- * Replaces your old: GET /api/playlists/[id]
- */
 export async function getPlaylist(id) {
   const params = getAuthParams();
   params.set('id', id);
@@ -107,7 +78,6 @@ export async function getPlaylist(id) {
   const data = await res.json();
   const pl = data['subsonic-response']?.playlist;
   if (!pl) return null;
-
   const entries = pl.entry || [];
   const entryArray = Array.isArray(entries) ? entries : [entries];
   const fallback = pl.coverArt ? `${NAVIDROME_URL}/rest/getCoverArt?id=${pl.coverArt}&${getAuthParams()}` : '';
@@ -127,10 +97,6 @@ export async function getPlaylist(id) {
   };
 }
 
-/**
- * Create a new playlist.
- * Replaces your old: POST /api/playlists
- */
 export async function createPlaylist(name) {
   const params = getAuthParams();
   params.set('name', name);
@@ -147,10 +113,6 @@ export async function createPlaylist(name) {
   };
 }
 
-/**
- * Delete a playlist.
- * Replaces your old: DELETE /api/playlists?id=
- */
 export async function deletePlaylist(id) {
   const params = getAuthParams();
   params.set('id', id);
@@ -165,10 +127,6 @@ export async function deletePlaylist(id) {
   } catch (_) { }
 }
 
-/**
- * Add a track to a playlist.
- * Replaces your old: POST /api/playlists/[id]
- */
 export async function addTrackToPlaylist(playlistId, trackId) {
   const params = getAuthParams();
   params.set('playlistId', playlistId);
@@ -177,16 +135,11 @@ export async function addTrackToPlaylist(playlistId, trackId) {
   return await getPlaylist(playlistId);
 }
 
-/**
- * Remove a track from a playlist by its trackId.
- * Replaces your old: DELETE /api/playlists/[id]?trackId=
- */
 export async function removeTrackFromPlaylist(playlistId, trackId) {
   const pl = await getPlaylist(playlistId);
   if (!pl) return null;
   const trackIndex = pl.tracks.findIndex(pt => pt.trackId === trackId);
   if (trackIndex === -1) return pl;
-
   const params = getAuthParams();
   params.set('playlistId', playlistId);
   params.set('songIndexToRemove', trackIndex);
@@ -194,10 +147,6 @@ export async function removeTrackFromPlaylist(playlistId, trackId) {
   return await getPlaylist(playlistId);
 }
 
-/**
- * Rename a playlist.
- * Replaces your old: PATCH /api/playlists/[id] with { name }
- */
 export async function renamePlaylist(id, newName) {
   const params = getAuthParams();
   params.set('playlistId', id);
@@ -206,16 +155,10 @@ export async function renamePlaylist(id, newName) {
   return await getPlaylist(id);
 }
 
-/**
- * Get the stream URL for a track ID.
- */
 export function getStreamUrl(id) {
   return `${NAVIDROME_URL}/rest/stream?id=${id}&${getAuthParams()}`;
 }
 
-/**
- * Get the cover art URL for a coverArt ID or track ID.
- */
 export function getCoverUrl(id) {
   return `${NAVIDROME_URL}/rest/getCoverArt?id=${id}&${getAuthParams()}`;
 }

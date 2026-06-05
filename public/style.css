@@ -3628,6 +3628,7 @@ body.menu-open .queue-remove {
   #main {
     padding-top: calc(65px + env(safe-area-inset-top, 0px));
     padding-bottom: calc(65px + var(--player-h));
+    scrollbar-width: none;
   }
 
   .blind-theme .tab.active {
@@ -3649,10 +3650,6 @@ body.menu-open .queue-remove {
   .album-card {
     width: 110px;
     height: 130px;
-  }
-
-  #main {
-    scrollbar-width: none;
   }
 
   #main::-webkit-scrollbar {
