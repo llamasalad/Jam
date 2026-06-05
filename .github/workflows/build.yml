@@ -39,6 +39,7 @@ jobs:
               CODE_SIGNING_ALLOWED=NO \
               CODE_SIGNING_REQUIRED=NO \
               CODE_SIGN_IDENTITY="" \
+              SWIFT_OPTIMIZATION_LEVEL="-Onone" \
               clean build
           else
             echo "Building using xcodeproj..."
@@ -51,6 +52,7 @@ jobs:
               CODE_SIGNING_ALLOWED=NO \
               CODE_SIGNING_REQUIRED=NO \
               CODE_SIGN_IDENTITY="" \
+              SWIFT_OPTIMIZATION_LEVEL="-Onone" \
               clean build
           fi
 
