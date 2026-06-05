@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import AVFoundation
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -8,6 +9,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        
+        // Configure AVAudioSession for background playback
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            print("Failed to set audio session category: \(error)")
+        }
+        
         return true
     }
 
@@ -46,4 +56,113 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
+}
+
+@objc(AudioPlayerPlugin)
+public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "AudioPlayerPlugin"
+    public let jsName = "AudioPlayerPlugin"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "initPlayer", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "play", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "pause", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "seek", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setVolume", returnType: CAPPluginReturnPromise)
+    ]
+
+    private var player: AVPlayer?
+    private var timeObserverToken: Any?
+    private var playerItemStatusObserver: NSKeyValueObservation?
+
+    @objc func initPlayer(_ call: CAPPluginCall) {
+        guard let urlString = call.getString("url"),
+              let url = URL(string: urlString) else {
+            call.reject("Must provide a valid URL")
+            return
+        }
+
+        removeObservers()
+
+        let playerItem = AVPlayerItem(url: url)
+        player = AVPlayer(playerItem: playerItem)
+
+        // Add observer to player item status using block KVO
+        playerItemStatusObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, change in
+            guard let self = self else { return }
+            if item.status == .readyToPlay {
+                let duration = CMTimeGetSeconds(item.duration)
+                if !duration.isNaN {
+                    self.notifyListeners("ready", data: ["duration": duration])
+                }
+            }
+        }
+
+        // Add periodic time observer for timeupdate events
+        let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        timeObserverToken = player?.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+            guard let self = self else { return }
+            let currentTime = CMTimeGetSeconds(time)
+            if !currentTime.isNaN {
+                self.notifyListeners("timeupdate", data: ["currentTime": currentTime])
+            }
+        }
+
+        // Add end observer
+        NotificationCenter.default.addObserver(self, selector: #selector(playerItemDidReachEnd), name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
+
+        call.resolve()
+    }
+
+    @objc func play(_ call: CAPPluginCall) {
+        player?.play()
+        notifyListeners("play", data: [:])
+        call.resolve()
+    }
+
+    @objc func pause(_ call: CAPPluginCall) {
+        player?.pause()
+        notifyListeners("pause", data: [:])
+        call.resolve()
+    }
+
+    @objc func seek(_ call: CAPPluginCall) {
+        guard let to = call.getDouble("to") else {
+            call.reject("Must provide a time to seek to")
+            return
+        }
+        let time = CMTime(seconds: to, preferredTimescale: 1000)
+        player?.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
+            if finished {
+                self?.notifyListeners("seeked", data: ["currentTime": to])
+            }
+        }
+        call.resolve()
+    }
+
+    @objc func setVolume(_ call: CAPPluginCall) {
+        guard let volume = call.getFloat("volume") else {
+            call.reject("Must provide a volume value")
+            return
+        }
+        player?.volume = volume
+        call.resolve()
+    }
+
+    @objc func playerItemDidReachEnd(notification: Notification) {
+        notifyListeners("ended", data: [:])
+    }
+
+    private func removeObservers() {
+        if let token = timeObserverToken {
+            player?.removeTimeObserver(token)
+            timeObserverToken = nil
+        }
+        playerItemStatusObserver?.invalidate()
+        playerItemStatusObserver = nil
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    deinit {
+        removeObservers()
+    }
 }

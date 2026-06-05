@@ -142,8 +142,128 @@ function setLyricsMessage(msg, curMsg) {
     }
 }
 
-const audio = document.getElementById('audio');
-if (audio) audio.preload = 'auto';
+class CapacitorAudioPlayerShim {
+    constructor() {
+        this._src = '';
+        this._volume = 1.0;
+        this._currentTime = 0;
+        this._duration = 0;
+        this._paused = true;
+        this.listeners = {};
+
+        const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
+        if (plugin) {
+            plugin.addListener('ready', (data) => {
+                this._duration = data.duration;
+                this.dispatchEvent('loadedmetadata');
+                this.dispatchEvent('durationchange');
+            });
+            plugin.addListener('timeupdate', (data) => {
+                this._currentTime = data.currentTime;
+                this.dispatchEvent('timeupdate');
+            });
+            plugin.addListener('ended', () => {
+                this._paused = true;
+                this.dispatchEvent('ended');
+            });
+            plugin.addListener('play', () => {
+                this._paused = false;
+                this.dispatchEvent('play');
+                this.dispatchEvent('playing');
+            });
+            plugin.addListener('pause', () => {
+                this._paused = true;
+                this.dispatchEvent('pause');
+            });
+            plugin.addListener('seeked', (data) => {
+                this._currentTime = data.currentTime;
+                this.dispatchEvent('seeked');
+            });
+        }
+    }
+
+    get src() { return this._src; }
+    set src(val) {
+        this._src = val;
+        const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
+        if (plugin) {
+            plugin.initPlayer({ url: val });
+        }
+    }
+
+    load() {
+        // Handled during src setting
+    }
+
+    play() {
+        const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
+        if (plugin) {
+            return plugin.play();
+        }
+        return Promise.resolve();
+    }
+
+    pause() {
+        const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
+        if (plugin) {
+            plugin.pause();
+        }
+    }
+
+    get paused() { return this._paused; }
+
+    get volume() { return this._volume; }
+    set volume(val) {
+        this._volume = val;
+        const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
+        if (plugin) {
+            plugin.setVolume({ volume: val });
+        }
+    }
+
+    get currentTime() { return this._currentTime; }
+    set currentTime(val) {
+        this._currentTime = val;
+        const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
+        if (plugin) {
+            plugin.seek({ to: val });
+        }
+    }
+
+    get duration() { return this._duration; }
+
+    get readyState() { return 4; } // Always ready/loaded
+    get error() { return null; }
+    get preload() { return 'auto'; }
+    set preload(val) { }
+
+    addEventListener(event, callback) {
+        if (!this.listeners[event]) this.listeners[event] = [];
+        this.listeners[event].push(callback);
+    }
+
+    removeEventListener(event, callback) {
+        if (!this.listeners[event]) return;
+        this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
+    }
+
+    dispatchEvent(event) {
+        const list = this.listeners[event];
+        if (list) {
+            list.forEach(cb => {
+                try { cb(); } catch (e) { console.error("Event error:", event, e); }
+            });
+        }
+    }
+}
+
+let audio;
+if (window.Capacitor && window.Capacitor.getPlatform() === 'ios') {
+    audio = new CapacitorAudioPlayerShim();
+} else {
+    audio = document.getElementById('audio');
+    if (audio) audio.preload = 'auto';
+}
 const player = document.getElementById('player');
 const trackList = document.getElementById('track-list');
 const loading = document.getElementById('loading');
@@ -265,6 +385,7 @@ function startAudioContextHeartbeat(ctx) {
 }
 
 function initAudioContext(audioEl) {
+    if (window.Capacitor && window.Capacitor.getPlatform() === 'ios') return;
     if (audioCtx) return;
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return;

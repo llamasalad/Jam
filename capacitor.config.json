@@ -1,5 +1,9 @@
 {
   "appId": "jam.native",
   "appName": "jam",
-  "webDir": "public"
+  "webDir": "public",
+  "server": {
+    "url": "https://jam-ei5.pages.dev/",
+    "cleartext": true
+  }
 }
