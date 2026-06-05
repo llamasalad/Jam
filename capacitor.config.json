@@ -5,5 +5,10 @@
   "server": {
     "url": "https://jam-ei5.pages.dev/",
     "cleartext": true
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
   }
 }
