@@ -3673,8 +3673,6 @@ body.menu-open .queue-remove {
   }
 }
 
-/* Liquid Glass Theme Specific Overrides and Animated Blobs */
-
 .liquid-glass-theme {
   --bg: #09090c;
   --surface: rgba(18, 18, 24, 0.45);
@@ -3684,21 +3682,17 @@ body.menu-open .queue-remove {
   --border2: rgba(255, 255, 255, 0.15);
   --text: var(--accent);
   --muted: #80809b;
-  --accent: #a855f7;
-  /* Purple */
-  --accent2: #c084fc;
+  --accent: #f8f9fabf;
   --danger: #ef4444;
   --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
-/* Liquid Background Container */
 .liquid-bg-container {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: -2;
   overflow: hidden;
   background: radial-gradient(circle at 50% 50%, #0d0d15, #050508);
   opacity: 0;
@@ -3710,13 +3704,16 @@ body.liquid-glass-theme .liquid-bg-container {
   opacity: 1;
 }
 
-/* Color Blobs */
+body.liquid-glass-theme #app {
+  position: relative;
+  background: transparent !important;
+}
+
 .liquid-bg-container .blob {
   position: absolute;
   border-radius: 50%;
   filter: blur(80px);
   opacity: 0.45;
-  mix-blend-mode: screen;
   transition: all 0.5s ease;
 }
 
@@ -3789,7 +3786,6 @@ body.liquid-glass-theme .liquid-bg-container {
   }
 }
 
-/* Glassmorphism Overrides */
 body.liquid-glass-theme #sidebar,
 body.liquid-glass-theme #player,
 body.liquid-glass-theme #mobile-dock,
@@ -3815,12 +3811,17 @@ body.liquid-glass-theme #header {
   -webkit-backdrop-filter: blur(25px) !important;
 }
 
+body.liquid-glass-theme .track,
 body.liquid-glass-theme .track-content {
-  background: transparent !important;
+  background: none !important;
 }
 
 body.liquid-glass-theme #view-library,
 body.liquid-glass-theme #view-playlists,
 body.liquid-glass-theme #view-library.active:has(#library-cards.show) {
   background: transparent !important;
+}
+
+body.liquid-glass-theme #exp-adaptive-btn {
+  display: none !important;
 }
