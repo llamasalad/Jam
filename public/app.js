@@ -491,7 +491,8 @@ async function loadTracks(forceRefresh = false) {
     } catch (e) {
         if (loading) loading.style.display = 'none';
         if (empty) {
-            empty.innerHTML = `No tracks found.<br><span style="font-size:10px;color:var(--danger);word-break:break-all">Error: ${e.message || e}</span>`;
+            const swActive = !!navigator.serviceWorker?.controller;
+            empty.innerHTML = `No tracks found.<br><span style="font-size:10px;color:var(--danger);word-break:break-all">Error: ${e.message || e} (SW: ${swActive})</span>`;
             empty.style.display = 'flex';
         }
     }
