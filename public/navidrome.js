@@ -47,6 +47,7 @@ export async function getTracks(forceRefresh = false) {
       artist: song.artist || '',
       album: song.album,
       duration: song.duration,
+      suffix: song.suffix || 'flac',
       coverUrl: `${NAVIDROME_URL}/rest/getCoverArt?id=${song.coverArt}&${getAuthParams()}`,
       streamUrl: `${NAVIDROME_URL}/rest/stream?id=${song.id}&${getAuthParams()}`,
     };
@@ -91,7 +92,8 @@ export async function getPlaylist(id) {
         trackId: song.id,
         title: song.title || '',
         artist: song.artist || '',
-        album: song.album
+        album: song.album,
+        suffix: song.suffix || 'flac'
       };
     })
   };

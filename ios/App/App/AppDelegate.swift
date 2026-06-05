@@ -194,10 +194,27 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         currentArtist = call.getString("artist") ?? "Unknown"
         currentAlbum = call.getString("album") ?? "Unknown"
         currentDuration = call.getDouble("duration") ?? 0.0
+        let suffix = call.getString("suffix") ?? "flac"
 
         removeObservers()
 
-        let options = [AVURLAssetPreferPreciseDurationAndTimingKey: true]
+        var mimeType = "audio/flac"
+        let lowerSuffix = suffix.lowercased()
+        if lowerSuffix == "mp3" {
+            mimeType = "audio/mpeg"
+        } else if lowerSuffix == "m4a" || lowerSuffix == "mp4" {
+            mimeType = "audio/mp4"
+        } else if lowerSuffix == "wav" {
+            mimeType = "audio/wav"
+        } else if lowerSuffix == "ogg" || lowerSuffix == "oga" {
+            mimeType = "audio/ogg"
+        }
+
+        let options: [String: Any] = [
+            AVURLAssetPreferPreciseDurationAndTimingKey: true,
+            "AVURLAssetOutOfBandMIMETypeKey": mimeType,
+            "AVURLAssetOverrideMIMETypeKey": mimeType
+        ]
         let asset = AVURLAsset(url: url, options: options)
         let playerItem = AVPlayerItem(asset: asset)
         player = AVPlayer(playerItem: playerItem)

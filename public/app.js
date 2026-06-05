@@ -240,7 +240,8 @@ class CapacitorAudioPlayerShim {
                 artist: this._metadata?.artist || 'Unknown',
                 album: this._metadata?.album || 'Unknown',
                 coverUrl: this._metadata?.coverUrl || '',
-                duration: this._metadata?.duration || 0
+                duration: this._metadata?.duration || 0,
+                suffix: this._metadata?.suffix || 'flac'
             });
         }
     }
@@ -1316,7 +1317,7 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
 
     const playHandler = () => {
         if (inPlaylist && currentPlaylist) {
-            const list = currentPlaylist.tracks.map(pt => tracks.find(x => x.id === pt.trackId) || { id: pt.trackId, title: pt.title, artist: pt.artist, album: pt.album }).filter(Boolean);
+            const list = currentPlaylist.tracks.map(pt => tracks.find(x => x.id === pt.trackId) || { id: pt.trackId, title: pt.title, artist: pt.artist, album: pt.album, suffix: pt.suffix || 'flac' }).filter(Boolean);
             playTrack(t, list);
         } else {
             playTrack(t, filtered);
@@ -1686,7 +1687,7 @@ function renderPlaylistDetail(pl) {
     }
     const isTouchScreen = window.matchMedia("(pointer: coarse)").matches;
     pl.tracks.forEach(pt => {
-        const t = tracks.find(x => x.id === pt.trackId) || { id: pt.trackId, title: pt.title, artist: pt.artist, album: pt.album };
+        const t = tracks.find(x => x.id === pt.trackId) || { id: pt.trackId, title: pt.title, artist: pt.artist, album: pt.album, suffix: pt.suffix || 'flac' };
         const row = makeRow(t, false, true);
         if (!isTouchScreen) {
             const removeBtn = document.createElement('button');
@@ -2066,7 +2067,8 @@ function setAudioMetadata(t) {
             artist: t.artist,
             album: t.album,
             coverUrl: t.coverUrl || Navidrome.getCoverUrl(t.id),
-            duration: t.duration
+            duration: t.duration,
+            suffix: t.suffix || 'flac'
         });
     }
 }
@@ -2093,7 +2095,7 @@ function play(t) {
     if (pt) { pt.src = FALLBACK; loadCover(t.id, pt); }
     document.title = (t.title || '?') + ' \u00B7 ' + (t.artist || '?');
     if (timeTot) timeTot.textContent = '-';
-    localStorage.setItem('music_last', JSON.stringify({ id: t.id, title: t.title, artist: t.artist, album: t.album, duration: t.duration }));
+    localStorage.setItem('music_last', JSON.stringify({ id: t.id, title: t.title, artist: t.artist, album: t.album, duration: t.duration, suffix: t.suffix || 'flac' }));
     saveQueueState();
     loadLyrics(t);
     updateExpandedNowPlaying(t);
