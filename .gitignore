@@ -5,4 +5,3 @@ dont open/
 .vscode/
 /fonts/
 .dev.vars
-package-lock.json
