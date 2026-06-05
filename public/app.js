@@ -3362,17 +3362,17 @@ function updateSyncedLyricsState(force = false, atTime = null) {
         if (expLyricCur && !isLoading) {
             clearTimeout(lyricUpdateTimers.cur);
             expLyricCur.style.opacity = '0';
-            lyricUpdateTimers.cur = setTimeout(() => { expLyricCur.innerHTML = '<span class="loading-dots"></span>'; expLyricCur.style.opacity = '1' }, 120);
+            lyricUpdateTimers.cur = setTimeout(() => { expLyricCur.innerHTML = '<span class="loading-dots"></span>'; expLyricCur.style.opacity = '1' }, 100);
         }
         if (expLyricNext) {
             clearTimeout(lyricUpdateTimers.next);
             expLyricNext.style.opacity = '0';
-            lyricUpdateTimers.next = setTimeout(() => { expLyricNext.textContent = ''; expLyricNext.style.opacity = '1' }, 120);
+            lyricUpdateTimers.next = setTimeout(() => { expLyricNext.textContent = ''; expLyricNext.style.opacity = '1' }, 100);
         }
         return;
     }
 
-    const FADE_LOOKAHEAD = (force || isMobile()) ? 0 : 0.12;
+    const FADE_LOOKAHEAD = force ? 0 : 0.10;
     const baseTime = atTime !== null ? atTime : (audio?.currentTime || 0);
     const t = baseTime + FADE_LOOKAHEAD + lyricsOffset;
     const idx = syncedLyrics.findIndex((l, i) => { const n = syncedLyrics[i + 1]; return t >= l.time && (!n || t < n.time) });
@@ -3388,7 +3388,7 @@ function updateSyncedLyricsState(force = false, atTime = null) {
             expLyricCur.innerHTML = curText; expLyricCur.style.opacity = '1'; expLyricCur.style.transform = 'translateY(0)';
         } else {
             expLyricCur.style.opacity = '0'; expLyricCur.style.transform = 'translateY(6px)';
-            lyricUpdateTimers.cur = setTimeout(() => { expLyricCur.innerHTML = curText; expLyricCur.style.opacity = '1'; expLyricCur.style.transform = 'translateY(0)' }, 120);
+            lyricUpdateTimers.cur = setTimeout(() => { expLyricCur.innerHTML = curText; expLyricCur.style.opacity = '1'; expLyricCur.style.transform = 'translateY(0)' }, 100);
         }
     }
     if (expLyricNext) {
@@ -3397,7 +3397,7 @@ function updateSyncedLyricsState(force = false, atTime = null) {
             expLyricNext.textContent = nextText; expLyricNext.style.opacity = '1'; expLyricNext.style.transform = 'translateY(0)';
         } else {
             expLyricNext.style.opacity = '0'; expLyricNext.style.transform = 'translateY(6px)';
-            lyricUpdateTimers.next = setTimeout(() => { expLyricNext.textContent = nextText; expLyricNext.style.opacity = '1'; expLyricNext.style.transform = 'translateY(0)' }, 120);
+            lyricUpdateTimers.next = setTimeout(() => { expLyricNext.textContent = nextText; expLyricNext.style.opacity = '1'; expLyricNext.style.transform = 'translateY(0)' }, 100);
         }
     }
 

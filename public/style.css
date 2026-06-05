@@ -1436,7 +1436,7 @@ body.player-open #main {
   font-weight: 600;
   color: var(--text);
   margin-bottom: 5px;
-  transition: opacity .3s, transform .3s;
+  transition: opacity 80ms ease-out, transform 80ms ease-out;
 }
 
 .aurielle-theme #expanded-player.adaptive #exp-title,
@@ -1447,7 +1447,7 @@ body.player-open #main {
 #exp-lyric-next {
   font-size: 15px;
   color: var(--muted);
-  transition: opacity .3s, transform .3s;
+  transition: opacity 80ms ease-out, transform 80ms ease-out;
 }
 
 #exp-controls-row {
