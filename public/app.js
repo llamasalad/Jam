@@ -150,6 +150,10 @@ class CapacitorAudioPlayerShim {
         this._duration = 0;
         this._paused = true;
         this.listeners = {};
+        this._metadata = null;
+        this._lastSyncTime = 0;
+        this._lastNativeTime = 0;
+        this._tickInterval = null;
 
         const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
         if (plugin) {
@@ -160,34 +164,84 @@ class CapacitorAudioPlayerShim {
             });
             plugin.addListener('timeupdate', (data) => {
                 this._currentTime = data.currentTime;
+                this._lastNativeTime = data.currentTime;
+                this._lastSyncTime = performance.now();
                 this.dispatchEvent('timeupdate');
             });
             plugin.addListener('ended', () => {
                 this._paused = true;
+                this.stopJSProgressTicks();
                 this.dispatchEvent('ended');
             });
             plugin.addListener('play', () => {
                 this._paused = false;
+                this._lastSyncTime = performance.now();
+                this._lastNativeTime = this._currentTime;
                 this.dispatchEvent('play');
                 this.dispatchEvent('playing');
+                this.startJSProgressTicks();
             });
             plugin.addListener('pause', () => {
+                this._currentTime = this.currentTime;
                 this._paused = true;
+                this.stopJSProgressTicks();
                 this.dispatchEvent('pause');
             });
             plugin.addListener('seeked', (data) => {
                 this._currentTime = data.currentTime;
+                this._lastNativeTime = data.currentTime;
+                this._lastSyncTime = performance.now();
                 this.dispatchEvent('seeked');
             });
+            plugin.addListener('nextTrack', () => {
+                if (typeof nextTrack === 'function') {
+                    nextTrack();
+                }
+            });
+            plugin.addListener('previousTrack', () => {
+                if (typeof prevTrack === 'function') {
+                    prevTrack();
+                }
+            });
         }
+    }
+
+    startJSProgressTicks() {
+        this.stopJSProgressTicks();
+        this._tickInterval = setInterval(() => {
+            if (!this._paused) {
+                this.dispatchEvent('timeupdate');
+            }
+        }, 100);
+    }
+
+    stopJSProgressTicks() {
+        if (this._tickInterval) {
+            clearInterval(this._tickInterval);
+            this._tickInterval = null;
+        }
+    }
+
+    setMetadata(meta) {
+        this._metadata = meta;
     }
 
     get src() { return this._src; }
     set src(val) {
         this._src = val;
+        this._currentTime = 0;
+        this._lastNativeTime = 0;
+        this._lastSyncTime = 0;
         const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
         if (plugin) {
-            plugin.initPlayer({ url: val });
+            plugin.initPlayer({
+                url: val,
+                title: this._metadata?.title || 'Unknown',
+                artist: this._metadata?.artist || 'Unknown',
+                album: this._metadata?.album || 'Unknown',
+                coverUrl: this._metadata?.coverUrl || '',
+                duration: this._metadata?.duration || 0
+            });
         }
     }
 
@@ -221,9 +275,22 @@ class CapacitorAudioPlayerShim {
         }
     }
 
-    get currentTime() { return this._currentTime; }
+    get currentTime() {
+        if (this._paused || this._lastSyncTime === 0) {
+            return this._currentTime;
+        }
+        const now = performance.now();
+        const elapsedSeconds = (now - this._lastSyncTime) / 1000;
+        const interpolated = this._lastNativeTime + elapsedSeconds;
+        if (this._duration > 0) {
+            return Math.min(interpolated, this._duration);
+        }
+        return interpolated;
+    }
     set currentTime(val) {
         this._currentTime = val;
+        this._lastNativeTime = val;
+        this._lastSyncTime = performance.now();
         const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
         if (plugin) {
             plugin.seek({ to: val });
@@ -1992,6 +2059,18 @@ function playTrack(t, list) {
     if (queueOpen) renderQueue();
 }
 
+function setAudioMetadata(t) {
+    if (audio && typeof audio.setMetadata === 'function') {
+        audio.setMetadata({
+            title: t.title,
+            artist: t.artist,
+            album: t.album,
+            coverUrl: t.coverUrl || Navidrome.getCoverUrl(t.id),
+            duration: t.duration
+        });
+    }
+}
+
 let _trackTransition = false;
 function play(t) {
     seeking = false;
@@ -2003,6 +2082,7 @@ function play(t) {
         initAudioContext(audio);
         if (audioCtx?.state === 'suspended') audioCtx.resume();
         _trackTransition = true;
+        setAudioMetadata(t);
         audio.src = t.streamUrl || Navidrome.getStreamUrl(t.id);
         audio.load();
         audio.play().catch(e => console.error("Playback failed", e));
@@ -3582,7 +3662,12 @@ async function init() {
     const lastTrackData = JSON.parse(localStorage.getItem('music_last') || 'null');
     if (lastTrackData?.id) {
         ensureCoverUrl(lastTrackData.id);
-        if (audio) { audio.preload = 'auto'; audio.src = lastTrackData.streamUrl || Navidrome.getStreamUrl(lastTrackData.id); audio.load(); }
+        if (audio) {
+            audio.preload = 'auto';
+            setAudioMetadata(lastTrackData);
+            audio.src = lastTrackData.streamUrl || Navidrome.getStreamUrl(lastTrackData.id);
+            audio.load();
+        }
     }
 
     await Promise.all([loadTracks(), loadPlaylists()]);
@@ -3626,7 +3711,12 @@ async function init() {
 
             if (audio) {
                 const alreadyBuffering = audio.src && audio.src.includes(t.id);
-                if (!alreadyBuffering) { audio.preload = 'auto'; audio.src = t.streamUrl || Navidrome.getStreamUrl(t.id); audio.load(); }
+                if (!alreadyBuffering) {
+                    audio.preload = 'auto';
+                    setAudioMetadata(t);
+                    audio.src = t.streamUrl || Navidrome.getStreamUrl(t.id);
+                    audio.load();
+                }
                 updateMediaSession(t);
                 let restored = false;
                 const restorePos = () => {

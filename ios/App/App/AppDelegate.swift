@@ -1,6 +1,7 @@
 import UIKit
 import Capacitor
 import AVFoundation
+import MediaPlayer
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -74,6 +75,114 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     private var timeObserverToken: Any?
     private var playerItemStatusObserver: NSKeyValueObservation?
 
+    private var currentTitle: String = ""
+    private var currentArtist: String = ""
+    private var currentAlbum: String = ""
+    private var currentDuration: Double = 0.0
+
+    override public func load() {
+        setupRemoteCommands()
+    }
+
+    private func setupRemoteCommands() {
+        let commandCenter = MPRemoteCommandCenter.shared()
+        
+        // Remove existing targets to avoid duplicates
+        commandCenter.playCommand.removeTarget(nil)
+        commandCenter.pauseCommand.removeTarget(nil)
+        commandCenter.togglePlayPauseCommand.removeTarget(nil)
+        commandCenter.nextTrackCommand.removeTarget(nil)
+        commandCenter.previousTrackCommand.removeTarget(nil)
+        commandCenter.changePlaybackPositionCommand.removeTarget(nil)
+        
+        commandCenter.playCommand.addTarget { [weak self] event in
+            self?.player?.play()
+            self?.updateNowPlayingInfo(rate: 1.0)
+            self?.notifyListeners("play", data: [:])
+            return .success
+        }
+        
+        commandCenter.pauseCommand.addTarget { [weak self] event in
+            self?.player?.pause()
+            self?.updateNowPlayingInfo(rate: 0.0)
+            self?.notifyListeners("pause", data: [:])
+            return .success
+        }
+
+        commandCenter.togglePlayPauseCommand.addTarget { [weak self] event in
+            guard let self = self, let player = self.player else { return .commandFailed }
+            if player.rate == 0 {
+                player.play()
+                self.updateNowPlayingInfo(rate: 1.0)
+                self.notifyListeners("play", data: [:])
+            } else {
+                player.pause()
+                self.updateNowPlayingInfo(rate: 0.0)
+                self.notifyListeners("pause", data: [:])
+            }
+            return .success
+        }
+        
+        commandCenter.nextTrackCommand.addTarget { [weak self] event in
+            self?.notifyListeners("nextTrack", data: [:])
+            return .success
+        }
+        
+        commandCenter.previousTrackCommand.addTarget { [weak self] event in
+            self?.notifyListeners("previousTrack", data: [:])
+            return .success
+        }
+        
+        commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
+            guard let self = self, let player = self.player,
+                  let positionEvent = event as? MPChangePlaybackPositionCommandEvent else {
+                return .commandFailed
+            }
+            let time = CMTime(seconds: positionEvent.positionTime, preferredTimescale: 1000)
+            player.seek(to: time) { [weak self] _ in
+                self?.updateNowPlayingInfo(elapsed: positionEvent.positionTime)
+                self?.notifyListeners("seeked", data: ["currentTime": positionEvent.positionTime])
+            }
+            return .success
+        }
+    }
+
+    private func updateNowPlayingInfo(elapsed: Double? = nil, rate: Float? = nil) {
+        var nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [String: Any]()
+        nowPlayingInfo[MPMediaItemPropertyTitle] = currentTitle
+        nowPlayingInfo[MPMediaItemPropertyArtist] = currentArtist
+        nowPlayingInfo[MPMediaItemPropertyAlbumTitle] = currentAlbum
+        
+        if currentDuration > 0 {
+            nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = currentDuration
+        } else if let duration = player?.currentItem?.duration.seconds, !duration.isNaN {
+            nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = duration
+        }
+        
+        let currentElapsed = elapsed ?? (player?.currentTime().seconds ?? 0.0)
+        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentElapsed.isNaN ? 0.0 : currentElapsed
+        
+        let currentRate = rate ?? (player?.rate ?? 0.0)
+        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = currentRate
+        
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+    }
+
+    private func fetchArtwork(urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+            guard let self = self, let data = data, error == nil, let image = UIImage(data: data) else { return }
+            DispatchQueue.main.async {
+                let artwork = MPMediaItemArtwork(boundsSize: image.size) { size in
+                    return image
+                }
+                var nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [String: Any]()
+                nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork
+                MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+            }
+        }.resume()
+    }
+
     @objc func initPlayer(_ call: CAPPluginCall) {
         guard let urlString = call.getString("url"),
               let url = URL(string: urlString) else {
@@ -81,10 +190,21 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
 
+        currentTitle = call.getString("title") ?? "Unknown"
+        currentArtist = call.getString("artist") ?? "Unknown"
+        currentAlbum = call.getString("album") ?? "Unknown"
+        currentDuration = call.getDouble("duration") ?? 0.0
+
         removeObservers()
 
         let playerItem = AVPlayerItem(url: url)
         player = AVPlayer(playerItem: playerItem)
+
+        updateNowPlayingInfo(elapsed: 0.0, rate: 0.0)
+
+        if let coverUrl = call.getString("coverUrl"), !coverUrl.isEmpty {
+            fetchArtwork(urlString: coverUrl)
+        }
 
         // Add observer to player item status using block KVO
         playerItemStatusObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, change in
@@ -92,6 +212,8 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             if item.status == .readyToPlay {
                 let duration = CMTimeGetSeconds(item.duration)
                 if !duration.isNaN {
+                    self.currentDuration = duration
+                    self.updateNowPlayingInfo()
                     self.notifyListeners("ready", data: ["duration": duration])
                 }
             }
@@ -115,12 +237,14 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func play(_ call: CAPPluginCall) {
         player?.play()
+        updateNowPlayingInfo(rate: 1.0)
         notifyListeners("play", data: [:])
         call.resolve()
     }
 
     @objc func pause(_ call: CAPPluginCall) {
         player?.pause()
+        updateNowPlayingInfo(rate: 0.0)
         notifyListeners("pause", data: [:])
         call.resolve()
     }
@@ -130,11 +254,15 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             call.reject("Must provide a time to seek to")
             return
         }
+        guard let player = player else {
+            self.notifyListeners("seeked", data: ["currentTime": to])
+            call.resolve()
+            return
+        }
         let time = CMTime(seconds: to, preferredTimescale: 1000)
-        player?.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
-            if finished {
-                self?.notifyListeners("seeked", data: ["currentTime": to])
-            }
+        player.seek(to: time) { [weak self] _ in
+            self?.updateNowPlayingInfo(elapsed: to)
+            self?.notifyListeners("seeked", data: ["currentTime": to])
         }
         call.resolve()
     }
