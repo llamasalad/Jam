@@ -58,11 +58,11 @@ jobs:
         run: |
           mkdir Payload
           cp -r build/Build/Products/Release-iphoneos/App.app Payload/
-          zip -r App.ipa Payload
+          zip -r Jam.ipa Payload
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ios-app-unsigned
-          path: App.ipa
+          name: Jam-iOS-unsigned
+          path: Jam.ipa
 
