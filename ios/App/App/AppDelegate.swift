@@ -139,7 +139,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                 return .commandFailed
             }
             let time = CMTime(seconds: positionEvent.positionTime, preferredTimescale: 1000)
-            player.seek(to: time) { [weak self] _ in
+            player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
                 self?.updateNowPlayingInfo(elapsed: positionEvent.positionTime)
                 self?.notifyListeners("seeked", data: ["currentTime": positionEvent.positionTime])
             }
@@ -197,7 +197,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 
         removeObservers()
 
-        let playerItem = AVPlayerItem(url: url)
+        let options = [AVURLAssetPreferPreciseDurationAndTimingKey: true]
+        let asset = AVURLAsset(url: url, options: options)
+        let playerItem = AVPlayerItem(asset: asset)
         player = AVPlayer(playerItem: playerItem)
 
         updateNowPlayingInfo(elapsed: 0.0, rate: 0.0)
@@ -260,7 +262,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
         let time = CMTime(seconds: to, preferredTimescale: 1000)
-        player.seek(to: time) { [weak self] _ in
+        player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
             self?.updateNowPlayingInfo(elapsed: to)
             self?.notifyListeners("seeked", data: ["currentTime": to])
         }

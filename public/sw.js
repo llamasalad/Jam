@@ -59,7 +59,7 @@ self.addEventListener('fetch', e => {
   }
 
   if (url.pathname.startsWith('/api/stream/') || url.pathname.endsWith('/rest/stream')) {
-    e.respondWith(fetch(requestToFetch));
+    // Let the browser handle stream requests natively to avoid iOS Safari range/seeking issues
     return;
   }
 
