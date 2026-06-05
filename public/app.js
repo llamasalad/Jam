@@ -490,7 +490,10 @@ async function loadTracks(forceRefresh = false) {
         sort();
     } catch (e) {
         if (loading) loading.style.display = 'none';
-        if (empty) empty.style.display = 'flex';
+        if (empty) {
+            empty.innerHTML = `No tracks found.<br><span style="font-size:10px;color:var(--danger);word-break:break-all">Error: ${e.message || e}</span>`;
+            empty.style.display = 'flex';
+        }
     }
 }
 
