@@ -266,7 +266,6 @@ function startAudioContextHeartbeat(ctx) {
 
 function initAudioContext(audioEl) {
     if (audioCtx) return;
-    if (window.matchMedia('(pointer: coarse)').matches) return;
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return;
     audioCtx = new AudioContext();
