@@ -1,0 +1,34 @@
+name: Build iOS App
+on: [push]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/actions-setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Sync Web App to iOS Wrapper
+        run: npx cap sync ios
+
+      - name: Compile Native iOS IPA
+        run: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -sdk iphoneos -allowProvisioningUpdates CODE_SIGNING_ALLOWED=NO ARCHS=arm64 clean build
+          mkdir -p payload
+          mv build/Debug-iphoneos/App.app payload/
+          zip -r ../../MyHomelabApp.ipa payload
+        
+      - name: Upload Finished App File
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-app
+          path: jam.ipa
