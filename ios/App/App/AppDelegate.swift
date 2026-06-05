@@ -10,9 +10,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         
-        // Register custom Capacitor plugins
-        CAPBridge.registerPlugin(AudioPlayerPlugin.self)
-        
         // Configure AVAudioSession for background playback
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
@@ -167,5 +164,12 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 
     deinit {
         removeObservers()
+    }
+}
+
+class ViewController: CAPBridgeViewController {
+    override open func capacitorDidLoad() {
+        super.capacitorDidLoad()
+        bridge?.registerPluginInstance(AudioPlayerPlugin())
     }
 }
