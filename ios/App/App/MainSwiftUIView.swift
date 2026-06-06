@@ -26,7 +26,6 @@ struct MainSwiftUIView: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                // Mini Player (only when a song is loaded)
                 if state.hasSong {
                     MiniPlayerView(showExpandedPlayer: $showExpandedPlayer)
                         .padding(.horizontal, 16)
@@ -34,7 +33,6 @@ struct MainSwiftUIView: View {
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
 
-                // Floating Dock / Search Bar
                 FloatingDockView(
                     selectedTab: $selectedTab,
                     isSearchActive: $isSearchActive,
@@ -62,6 +60,8 @@ struct MiniPlayerView: View {
     var body: some View {
         HStack(spacing: 12) {
             // Cover Art
+            // Was: .background(Color.white.opacity(0.06)) + .clipShape(...)
+            // Now: .glassEffect(in:) handles both fill and clipping in one call
             AsyncImage(url: URL(string: state.coverUrl)) { phase in
                 switch phase {
                 case .success(let image):
@@ -79,8 +79,7 @@ struct MiniPlayerView: View {
                 }
             }
             .frame(width: 44, height: 44)
-            .background(Color.white.opacity(0.06))
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .glassEffect(in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             // Song Info
             VStack(alignment: .leading, spacing: 2) {
@@ -157,7 +156,6 @@ struct FloatingDockView: View {
 
     @ViewBuilder
     private var defaultDockContent: some View {
-        // Main Tab Pill
         HStack(spacing: 0) {
             tabButton(label: "Library", icon: "music.note.house", tab: "library")
             tabButton(label: "Playlists", icon: "music.note.list", tab: "playlists")
@@ -169,7 +167,6 @@ struct FloatingDockView: View {
 
         Spacer()
 
-        // Trailing Search Circle
         Button(action: {
             withAnimation {
                 isSearchActive = true
@@ -192,11 +189,8 @@ struct FloatingDockView: View {
 
     @ViewBuilder
     private var searchActiveContent: some View {
-        // Unfocused: Show circular back/library button on leading side
         if !isSearchFieldFocused {
-            Button(action: {
-                exitSearch()
-            }) {
+            Button(action: { exitSearch() }) {
                 Image(systemName: "music.note.house.fill")
                     .imageScale(.large)
             }
@@ -205,7 +199,6 @@ struct FloatingDockView: View {
             .transition(.move(edge: .leading).combined(with: .opacity))
         }
 
-        // Search Text Field Pill
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 14, weight: .medium))
@@ -238,11 +231,8 @@ struct FloatingDockView: View {
         .glassEffect()
         .glassEffectID("searchCircle", in: namespace)
 
-        // Focused: Show circular "X" cancel button on trailing side
         if isSearchFieldFocused {
-            Button(action: {
-                exitSearch()
-            }) {
+            Button(action: { exitSearch() }) {
                 Image(systemName: "xmark")
                     .imageScale(.medium)
             }
@@ -270,7 +260,13 @@ struct FloatingDockView: View {
             }
             .foregroundStyle(selectedTab == tab ? .primary : .secondary)
             .padding()
-            .background(selectedTab == tab ? Color.white.opacity(0.1) : Color.clear, in: Capsule())
+            // Was: Color.white.opacity(0.1) background — manual imitation of glass
+            // Now: actual glass capsule that inherits the same material as its container
+            .background {
+                if selectedTab == tab {
+                    Capsule().glassEffect()
+                }
+            }
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -305,8 +301,10 @@ struct ExpandedPlayerView: View {
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                 case .failure, .empty:
+                    // Was: RoundedRectangle.fill(Color.white.opacity(0.06)) — manual dim fill
+                    // Now: glassEffect on the shape itself
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.white.opacity(0.06))
+                        .glassEffect()
                         .overlay(
                             Image(systemName: "music.note")
                                 .font(.system(size: 48, weight: .light))
@@ -354,7 +352,9 @@ struct ExpandedPlayerView: View {
                         }
                     }
                 )
-                .tint(.white)
+                // Was: .tint(.white) — hardcoded, ignores environment
+                // Now: .tint(.primary) — adapts correctly
+                .tint(.primary)
 
                 HStack {
                     Text(formatTime(isSeeking ? seekValue : state.currentTime))
@@ -371,33 +371,34 @@ struct ExpandedPlayerView: View {
             .padding(.horizontal, 24)
 
             // Playback Controls
+            // Was: .buttonStyle(.plain) + manual .foregroundStyle(.primary) on each image
+            // Now: .buttonStyle(.glass) to match mini player, foreground inherited from env
             HStack(spacing: 40) {
                 Button(action: { state.triggerPrev() }) {
                     Image(systemName: "backward.fill")
                         .font(.system(size: 28, weight: .medium))
-                        .foregroundStyle(.primary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.glass)
 
                 Button(action: { state.togglePlayPause() }) {
                     Image(systemName: state.isPlaying ? "pause.circle.fill" : "play.circle.fill")
                         .font(.system(size: 56, weight: .medium))
-                        .foregroundStyle(.primary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.glass)
 
                 Button(action: { state.triggerNext() }) {
                     Image(systemName: "forward.fill")
                         .font(.system(size: 28, weight: .medium))
-                        .foregroundStyle(.primary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.glass)
             }
 
             Spacer()
         }
         .padding(.top, 40)
-        .background(.ultraThinMaterial)
+        // Was: .background(.ultraThinMaterial) — grey/white tint washes out colour behind it
+        // Now: dark translucent — lets the mesh gradient bleed through the sheet
+        .background(Color.black.opacity(0.7))
         .preferredColorScheme(.dark)
     }
 
@@ -408,4 +409,3 @@ struct ExpandedPlayerView: View {
         return "\(mins):\(String(format: "%02d", secs))"
     }
 }
-
