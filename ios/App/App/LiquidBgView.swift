@@ -51,6 +51,3 @@ struct LiquidBgView: View {
     }
 }
 
-#Preview {
-    LiquidBgView()
-}

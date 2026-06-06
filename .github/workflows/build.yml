@@ -51,10 +51,6 @@ jobs:
               CODE_SIGNING_ALLOWED=NO \
               CODE_SIGNING_REQUIRED=NO \
               CODE_SIGN_IDENTITY="" \
-              ENABLE_BITCODE=NO \
-              STRIP_BITCODE_FROM_COPIED_FILES=NO \
-              CLANG_ENABLE_EXPLICIT_MODULES=NO \
-              SWIFT_ENABLE_EXPLICIT_MODULES=NO \
               clean build
           else
             echo "Building using xcodeproj..."
@@ -67,10 +63,6 @@ jobs:
               CODE_SIGNING_ALLOWED=NO \
               CODE_SIGNING_REQUIRED=NO \
               CODE_SIGN_IDENTITY="" \
-              ENABLE_BITCODE=NO \
-              STRIP_BITCODE_FROM_COPIED_FILES=NO \
-              CLANG_ENABLE_EXPLICIT_MODULES=NO \
-              SWIFT_ENABLE_EXPLICIT_MODULES=NO \
               clean build
           fi
 

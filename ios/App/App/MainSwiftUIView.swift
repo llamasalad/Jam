@@ -440,6 +440,3 @@ struct ExpandedPlayerView: View {
     }
 }
 
-#Preview {
-    MainSwiftUIView()
-}
