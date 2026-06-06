@@ -5,3 +5,4 @@ dont open/
 .vscode/
 /fonts/
 .dev.vars
+resources/
