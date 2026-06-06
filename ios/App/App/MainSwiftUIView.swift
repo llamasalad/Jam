@@ -104,38 +104,25 @@ struct MiniPlayerView: View {
             HStack(spacing: 4) {
                 Button(action: { state.triggerPrev() }) {
                     Image(systemName: "backward.fill")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(.primary)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
+                        .imageScale(.large)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.glass)
 
                 Button(action: { state.togglePlayPause() }) {
                     Image(systemName: state.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundStyle(.primary)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
+                        .font(.title2)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.glass)
 
                 Button(action: { state.triggerNext() }) {
                     Image(systemName: "forward.fill")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(.primary)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
+                        .imageScale(.large)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.glass)
             }
         }
-        .padding(.leading, 8)
-        .padding(.trailing, 4)
-        .padding(.vertical, 6)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(Capsule().stroke(Color.white.opacity(0.12), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.3), radius: 12, x: 0, y: 4)
+        .padding()
+        .glassEffect()
         .onTapGesture {
             showExpandedPlayer = true
         }
@@ -149,13 +136,16 @@ struct FloatingDockView: View {
     @Binding var isSearchActive: Bool
     @Binding var searchQuery: String
     @FocusState var isSearchFieldFocused: Bool
+    @Namespace private var namespace
 
     var body: some View {
-        HStack(spacing: 12) {
-            if isSearchActive {
-                searchActiveContent
-            } else {
-                defaultDockContent
+        GlassEffectContainer(spacing: 12.0) {
+            HStack(spacing: 12) {
+                if isSearchActive {
+                    searchActiveContent
+                } else {
+                    defaultDockContent
+                }
             }
         }
         .padding(.horizontal, 16)
@@ -173,9 +163,8 @@ struct FloatingDockView: View {
             tabButton(label: "Playlists", icon: "music.note.list", tab: "playlists")
         }
         .padding(4)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(Capsule().stroke(Color.white.opacity(0.12), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 2)
+        .glassEffect()
+        .glassEffectID("tabPill", in: namespace)
         .transition(.move(edge: .leading).combined(with: .opacity))
 
         Spacer()
@@ -192,14 +181,10 @@ struct FloatingDockView: View {
             }
         }) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(.primary)
-                .frame(width: 48, height: 48)
-                .background(.ultraThinMaterial, in: Circle())
-                .overlay(Circle().stroke(Color.white.opacity(0.12), lineWidth: 0.5))
-                .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 2)
+                .imageScale(.large)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.glass)
+        .glassEffectID("searchCircle", in: namespace)
         .transition(.move(edge: .trailing).combined(with: .opacity))
     }
 
@@ -213,14 +198,10 @@ struct FloatingDockView: View {
                 exitSearch()
             }) {
                 Image(systemName: "music.note.house.fill")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(.primary)
-                    .frame(width: 48, height: 48)
-                    .background(.ultraThinMaterial, in: Circle())
-                    .overlay(Circle().stroke(Color.white.opacity(0.12), lineWidth: 0.5))
-                    .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 2)
+                    .imageScale(.large)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.glass)
+            .glassEffectID("tabPill", in: namespace)
             .transition(.move(edge: .leading).combined(with: .opacity))
         }
 
@@ -253,11 +234,9 @@ struct FloatingDockView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 16)
-        .frame(height: 48)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(Capsule().stroke(Color.white.opacity(0.12), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 2)
+        .padding()
+        .glassEffect()
+        .glassEffectID("searchCircle", in: namespace)
 
         // Focused: Show circular "X" cancel button on trailing side
         if isSearchFieldFocused {
@@ -265,14 +244,9 @@ struct FloatingDockView: View {
                 exitSearch()
             }) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.primary)
-                    .frame(width: 48, height: 48)
-                    .background(.ultraThinMaterial, in: Circle())
-                    .overlay(Circle().stroke(Color.white.opacity(0.12), lineWidth: 0.5))
-                    .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 2)
+                    .imageScale(.medium)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.glass)
             .transition(.move(edge: .trailing).combined(with: .opacity))
         }
     }
@@ -294,9 +268,8 @@ struct FloatingDockView: View {
                     .font(.subheadline)
                     .fontWeight(.medium)
             }
-            .foregroundStyle(selectedTab == tab ? .white : .secondary)
-            .padding(.vertical, 10)
-            .padding(.horizontal, 16)
+            .foregroundStyle(selectedTab == tab ? .primary : .secondary)
+            .padding()
             .background(selectedTab == tab ? Color.white.opacity(0.1) : Color.clear, in: Capsule())
             .contentShape(Capsule())
         }
@@ -343,7 +316,7 @@ struct ExpandedPlayerView: View {
                     EmptyView()
                 }
             }
-            .frame(width: UIScreen.main.bounds.width - 64, height: UIScreen.main.bounds.width - 64)
+            .backgroundExtensionEffect()
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .shadow(color: .black.opacity(0.3), radius: 24, x: 0, y: 16)
 
@@ -403,8 +376,6 @@ struct ExpandedPlayerView: View {
                     Image(systemName: "backward.fill")
                         .font(.system(size: 28, weight: .medium))
                         .foregroundStyle(.primary)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
 
@@ -412,8 +383,6 @@ struct ExpandedPlayerView: View {
                     Image(systemName: state.isPlaying ? "pause.circle.fill" : "play.circle.fill")
                         .font(.system(size: 56, weight: .medium))
                         .foregroundStyle(.primary)
-                        .frame(width: 64, height: 64)
-                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
 
@@ -421,8 +390,6 @@ struct ExpandedPlayerView: View {
                     Image(systemName: "forward.fill")
                         .font(.system(size: 28, weight: .medium))
                         .foregroundStyle(.primary)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
