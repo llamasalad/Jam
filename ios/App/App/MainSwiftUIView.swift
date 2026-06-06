@@ -287,7 +287,8 @@ struct FloatingDockView: View {
             }
         }) {
             HStack(spacing: 6) {
-                Image(systemName: selectedTab == tab ? "\(icon).fill" : icon)
+                let activeIcon = icon == "music.note.list" ? "music.note.list" : "\(icon).fill"
+                Image(systemName: selectedTab == tab ? activeIcon : icon)
                     .font(.system(size: 14, weight: .medium))
                 Text(label)
                     .font(.subheadline)
@@ -329,7 +330,7 @@ struct ExpandedPlayerView: View {
                 case .success(let image):
                     image
                         .resizable()
-                        .aspectRatio(contentMode: .fit)
+                        .aspectRatio(contentMode: .fill)
                 case .failure, .empty:
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .fill(Color.white.opacity(0.06))
@@ -342,9 +343,9 @@ struct ExpandedPlayerView: View {
                     EmptyView()
                 }
             }
-            .frame(maxWidth: 320, maxHeight: 320)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .shadow(color: .black.opacity(0.4), radius: 20, x: 0, y: 8)
+            .frame(width: UIScreen.main.bounds.width - 64, height: UIScreen.main.bounds.width - 64)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .shadow(color: .black.opacity(0.3), radius: 24, x: 0, y: 16)
 
             // Song Info
             VStack(spacing: 4) {
@@ -355,7 +356,8 @@ struct ExpandedPlayerView: View {
                     .lineLimit(1)
 
                 Text(state.artist.isEmpty ? " " : state.artist)
-                    .font(.subheadline)
+                    .font(.title3)
+                    .fontWeight(.medium)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
@@ -428,7 +430,7 @@ struct ExpandedPlayerView: View {
             Spacer()
         }
         .padding(.top, 40)
-        .background(Color(uiColor: .systemBackground))
+        .background(.ultraThinMaterial)
         .preferredColorScheme(.dark)
     }
 

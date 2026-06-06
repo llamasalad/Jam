@@ -4064,4 +4064,12 @@ if ('serviceWorker' in navigator) {
     }
 }
 
+// Expose functions for native iOS shell bridging
+window.nextTrack = nextTrack;
+window.prevTrack = prevTrack;
+window.applyFilter = applyFilter;
+Object.defineProperty(window, 'audio', {
+    get: function () { return audio; }
+});
+
 (async () => { const ok = await checkAuth(); if (ok) init() })();

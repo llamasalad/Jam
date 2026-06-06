@@ -3854,6 +3854,6 @@ body.ios-native-shell {
 
 @media (max-width: 768px) {
   body.ios-native-shell #main {
-    padding-bottom: 160px;
+    padding-bottom: 100px;
   }
 }
