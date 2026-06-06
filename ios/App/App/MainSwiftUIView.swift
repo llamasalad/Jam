@@ -5,7 +5,6 @@ struct MainSwiftUIView: View {
     @State private var selectedTab: String = "library"
     @State private var isSearchActive: Bool = false
     @State private var searchQuery: String = ""
-    @FocusState private var isSearchFieldFocused: Bool
     @State private var showExpandedPlayer: Bool = false
 
     var body: some View {
@@ -39,8 +38,7 @@ struct MainSwiftUIView: View {
                 FloatingDockView(
                     selectedTab: $selectedTab,
                     isSearchActive: $isSearchActive,
-                    searchQuery: $searchQuery,
-                    isSearchFieldFocused: _isSearchFieldFocused
+                    searchQuery: $searchQuery
                 )
                 .padding(.bottom, 8)
             }
