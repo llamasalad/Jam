@@ -6,7 +6,7 @@ struct CapacitorWebViewRepresentable: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> ViewController {
         let vc = ViewController()
-        // Store reference so PlaybackStateManager can evaluate JS
+        // Store reference so PdlaybackStateManager can evaluate JS
         PlaybackStateManager.shared.webViewController = vc
         return vc
     }

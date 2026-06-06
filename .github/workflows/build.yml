@@ -20,7 +20,7 @@ on:
 
 jobs:
   build-ios:
-    runs-on: macos-26
+    runs-on: macos-latest
 
     steps:
       - name: Checkout repository
@@ -34,6 +34,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Show Xcode versions
+        run: |
+          ls /Applications | grep Xcode
+          xcodebuild -version
+          swift --version
 
       - name: Sync Capacitor
         run: npx cap sync ios
