@@ -20,7 +20,7 @@ on:
 
 jobs:
   build-ios:
-    runs-on: macos-latest
+    runs-on: macos-26
 
     steps:
       - name: Checkout repository
@@ -38,8 +38,8 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync ios
 
-      - name: Select Xcode 17 (iOS 26 SDK)
-        run: sudo xcode-select -s /Applications/Xcode_17.0.app/Contents/Developer || sudo xcode-select -s /Applications/Xcode_17.app/Contents/Developer || echo "Could not select Xcode 17"
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
       - name: Build iOS App (Unsigned)
         run: |
@@ -80,4 +80,3 @@ jobs:
         with:
           name: Jam-iOS-unsigned
           path: Jam.ipa
-
