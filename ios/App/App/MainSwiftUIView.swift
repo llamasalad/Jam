@@ -150,12 +150,6 @@ struct FloatingDockView: View {
     @Binding var searchQuery: String
     @FocusState var isSearchFieldFocused: Bool
 
-    init(selectedTab: Binding<String>, isSearchActive: Binding<Bool>, searchQuery: Binding<String>) {
-        self._selectedTab = selectedTab
-        self._isSearchActive = isSearchActive
-        self._searchQuery = searchQuery
-    }
-
     var body: some View {
         HStack(spacing: 12) {
             if isSearchActive {

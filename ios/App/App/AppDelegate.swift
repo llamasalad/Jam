@@ -368,7 +368,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 }
 
 class ViewController: CAPBridgeViewController {
-    override open func capacitorDidLoad() {
+    override func capacitorDidLoad() {
         super.capacitorDidLoad()
         bridge?.registerPluginInstance(AudioPlayerPlugin())
     }
