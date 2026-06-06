@@ -41,11 +41,21 @@ jobs:
           xcodebuild -version
           swift --version
 
+      - name: Select Xcode 26.3
+        run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
+
       - name: Sync Capacitor
         run: npx cap sync ios
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+      - name: Fix generated Package.swift
+        run: |
+          sed -i '' 's/swift-tools-version: 5.9/swift-tools-version: 6.2/' ios/App/CapApp-SPM/Package.swift
+
+      - name: Verify toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          head -10 ios/App/CapApp-SPM/Package.swift
 
       - name: Build iOS App (Unsigned)
         run: |
