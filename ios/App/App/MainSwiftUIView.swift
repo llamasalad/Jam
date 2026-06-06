@@ -398,7 +398,9 @@ struct ExpandedPlayerView: View {
         .padding(.top, 40)
         // Was: .background(.ultraThinMaterial) — grey/white tint washes out colour behind it
         // Now: dark translucent — lets the mesh gradient bleed through the sheet
-        .background(Color.black.opacity(0.7))
+        .background {
+            Color.black.opacity(0.7)
+        }
         .preferredColorScheme(.dark)
     }
 
