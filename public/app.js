@@ -366,6 +366,8 @@ class CapacitorAudioPlayerShim {
 let audio;
 if (window.Capacitor && window.Capacitor.getPlatform() === 'ios') {
     audio = new CapacitorAudioPlayerShim();
+    // Mark the body for the native SwiftUI shell
+    document.body.classList.add('ios-native-shell');
 } else {
     audio = document.getElementById('audio');
     if (audio) audio.preload = 'auto';
@@ -579,6 +581,16 @@ function switchTab(name) {
 document.querySelectorAll('.tab').forEach(tab => { tab.onclick = () => switchTab(tab.dataset.tab); });
 document.querySelectorAll('.sidebar-item[data-tab]').forEach(item => { item.onclick = () => switchTab(item.dataset.tab); });
 document.querySelectorAll('.dock-item[data-tab]').forEach(item => { item.onclick = () => switchTab(item.dataset.tab); });
+
+// Native SwiftUI shell can call this to switch tabs from the native dock
+window.onNativeTabSelected = function (tabName) {
+    if (tabName === 'search') {
+        switchTab('library');
+        // Search is driven by the native text field via direct JS evaluation
+    } else {
+        switchTab(tabName);
+    }
+};
 
 async function loadTracks(forceRefresh = false) {
     libraryCardsBuilt = false;
@@ -924,6 +936,12 @@ function applyTheme() {
     document.querySelectorAll('.sidebar-theme-option').forEach(o => {
         o.classList.toggle('active', o.dataset.theme === currentTheme);
     });
+
+    // Notify native SwiftUI shell of theme change
+    const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
+    if (plugin && typeof plugin.setTheme === 'function') {
+        plugin.setTheme({ theme: currentTheme });
+    }
 }
 
 function updateStatusBar(overrideColor) {

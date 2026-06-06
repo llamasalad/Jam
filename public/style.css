@@ -3825,3 +3825,35 @@ body.liquid-glass-theme #view-library.active:has(#library-cards.show) {
 body.liquid-glass-theme #exp-adaptive-btn {
   display: none !important;
 }
+
+/* === iOS Native SwiftUI Shell Overrides === */
+body.ios-native-shell #player {
+  display: none !important;
+}
+
+body.ios-native-shell #mobile-dock {
+  display: none !important;
+}
+
+body.ios-native-shell .liquid-bg-container {
+  display: none !important;
+}
+
+body.ios-native-shell #floating-search-wrap {
+  display: none !important;
+}
+
+body.ios-native-shell #app {
+  background: transparent !important;
+}
+
+body.ios-native-shell body,
+body.ios-native-shell {
+  background: transparent !important;
+}
+
+@media (max-width: 768px) {
+  body.ios-native-shell #main {
+    padding-bottom: 160px;
+  }
+}

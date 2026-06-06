@@ -1,4 +1,5 @@
 import UIKit
+import SwiftUI
 import Capacitor
 import AVFoundation
 import MediaPlayer
@@ -9,8 +10,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
-        
         // Configure AVAudioSession for background playback
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
@@ -18,7 +17,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         } catch {
             print("Failed to set audio session category: \(error)")
         }
-        
+
+        // Programmatically boot the SwiftUI shell instead of Main.storyboard
+        let hostingController = UIHostingController(rootView: MainSwiftUIView())
+        hostingController.view.backgroundColor = .black
+
+        let window = UIWindow(frame: UIScreen.main.bounds)
+        window.rootViewController = hostingController
+        window.makeKeyAndVisible()
+        self.window = window
+
         return true
     }
 
@@ -68,7 +76,8 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "play", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "pause", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "seek", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "setVolume", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "setVolume", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setTheme", returnType: CAPPluginReturnPromise)
     ]
 
     private var player: AVPlayer?
@@ -82,6 +91,10 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 
     override public func load() {
         setupRemoteCommands()
+        // Register this plugin with PlaybackStateManager for SwiftUI bridging
+        Task { @MainActor in
+            PlaybackStateManager.shared.audioPlayerPlugin = self
+        }
     }
 
     private func setupRemoteCommands() {
@@ -194,7 +207,24 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         currentArtist = call.getString("artist") ?? "Unknown"
         currentAlbum = call.getString("album") ?? "Unknown"
         currentDuration = call.getDouble("duration") ?? 0.0
+        let coverUrl = call.getString("coverUrl") ?? ""
         let suffix = call.getString("suffix") ?? "flac"
+
+        // Update SwiftUI state
+        let title = currentTitle
+        let artist = currentArtist
+        let album = currentAlbum
+        let duration = currentDuration
+        Task { @MainActor in
+            let mgr = PlaybackStateManager.shared
+            mgr.title = title
+            mgr.artist = artist
+            mgr.album = album
+            mgr.duration = duration
+            mgr.currentTime = 0
+            mgr.isPlaying = false
+            mgr.coverUrl = coverUrl
+        }
 
         removeObservers()
 
@@ -221,7 +251,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 
         updateNowPlayingInfo(elapsed: 0.0, rate: 0.0)
 
-        if let coverUrl = call.getString("coverUrl"), !coverUrl.isEmpty {
+        if !coverUrl.isEmpty {
             fetchArtwork(urlString: coverUrl)
         }
 
@@ -229,11 +259,14 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         playerItemStatusObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, change in
             guard let self = self else { return }
             if item.status == .readyToPlay {
-                let duration = CMTimeGetSeconds(item.duration)
-                if !duration.isNaN {
-                    self.currentDuration = duration
+                let dur = CMTimeGetSeconds(item.duration)
+                if !dur.isNaN {
+                    self.currentDuration = dur
                     self.updateNowPlayingInfo()
-                    self.notifyListeners("ready", data: ["duration": duration])
+                    self.notifyListeners("ready", data: ["duration": dur])
+                    Task { @MainActor in
+                        PlaybackStateManager.shared.duration = dur
+                    }
                 }
             }
         }
@@ -242,9 +275,12 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         timeObserverToken = player?.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             guard let self = self else { return }
-            let currentTime = CMTimeGetSeconds(time)
-            if !currentTime.isNaN {
-                self.notifyListeners("timeupdate", data: ["currentTime": currentTime])
+            let ct = CMTimeGetSeconds(time)
+            if !ct.isNaN {
+                self.notifyListeners("timeupdate", data: ["currentTime": ct])
+                Task { @MainActor in
+                    PlaybackStateManager.shared.currentTime = ct
+                }
             }
         }
 
@@ -258,6 +294,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         player?.play()
         updateNowPlayingInfo(rate: 1.0)
         notifyListeners("play", data: [:])
+        Task { @MainActor in
+            PlaybackStateManager.shared.isPlaying = true
+        }
         call.resolve()
     }
 
@@ -265,6 +304,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         player?.pause()
         updateNowPlayingInfo(rate: 0.0)
         notifyListeners("pause", data: [:])
+        Task { @MainActor in
+            PlaybackStateManager.shared.isPlaying = false
+        }
         call.resolve()
     }
 
@@ -297,6 +339,17 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func playerItemDidReachEnd(notification: Notification) {
         notifyListeners("ended", data: [:])
+        Task { @MainActor in
+            PlaybackStateManager.shared.isPlaying = false
+        }
+    }
+
+    @objc func setTheme(_ call: CAPPluginCall) {
+        let theme = call.getString("theme") ?? "default"
+        Task { @MainActor in
+            PlaybackStateManager.shared.isLiquidThemeActive = (theme == "liquid-glass-theme")
+        }
+        call.resolve()
     }
 
     private func removeObservers() {
