@@ -12,7 +12,7 @@ struct CapacitorWebViewRepresentable: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ uiViewController: ViewController, context: Context) {
-        // Make the web view transparent so native background shows through
+        // Make the web viw transparent so native background shows through
         if let webView = uiViewController.webView {
             webView.isOpaque = false
             webView.backgroundColor = .clear
