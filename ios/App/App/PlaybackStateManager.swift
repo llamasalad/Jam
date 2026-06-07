@@ -127,6 +127,22 @@ class PlaybackStateManager: ObservableObject {
         evaluateJS("if(typeof playQueueIndex==='function')playQueueIndex(\(index))")
     }
 
+    func moveQueueItem(from source: IndexSet, to destination: Int) {
+        queue.move(fromOffsets: source, toOffset: destination)
+        
+        if let sourceIdx = source.first {
+            let actualDest = sourceIdx < destination ? destination - 1 : destination
+            if queueIndex == sourceIdx {
+                queueIndex = actualDest
+            } else if queueIndex > sourceIdx && queueIndex <= actualDest {
+                queueIndex -= 1
+            } else if queueIndex < sourceIdx && queueIndex >= actualDest {
+                queueIndex += 1
+            }
+            evaluateJS("if(typeof window.moveQueueItem==='function')window.moveQueueItem(\(sourceIdx), \(actualDest))")
+        }
+    }
+
     // MARK: - Private
 
     private func evaluateJS(_ js: String) {

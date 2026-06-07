@@ -4097,6 +4097,17 @@ window.playQueueIndex = function (idx) {
     renderQueue();
 };
 
+window.moveQueueItem = function (from, to) {
+    if (from === to) return;
+    const item = queue.splice(from, 1)[0];
+    queue.splice(to, 0, item);
+    if (qIdx === from) qIdx = to;
+    else if (qIdx > from && qIdx <= to) qIdx--;
+    else if (qIdx < from && qIdx >= to) qIdx++;
+    saveQueueState();
+    if (queueOpen) renderQueue();
+};
+
 function notifyNativePlaybackState() {
     const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
     if (plugin && typeof plugin.setPlaybackState === 'function') {

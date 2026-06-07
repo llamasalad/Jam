@@ -37,7 +37,7 @@ struct MainSwiftUIView: View {
                         Image(systemName: "arrow.up.arrow.down")
                     }
                 }
-                
+
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         ForEach([
@@ -55,7 +55,7 @@ struct MainSwiftUIView: View {
                                 PlaybackStateManager.shared.setTheme(theme.1)
                             }) {
                                 Text(theme.0)
-                                if (state.currentTheme == theme.1) {
+                                if state.currentTheme == theme.1 {
                                     Image(systemName: "checkmark")
                                 }
                             }
@@ -64,7 +64,7 @@ struct MainSwiftUIView: View {
                         Image(systemName: "paintpalette")
                     }
                 }
-                
+
                 ToolbarItemGroup(placement: .bottomBar) {
                     if isSearchActive {
                         HStack(spacing: 8) {
@@ -95,7 +95,7 @@ struct MainSwiftUIView: View {
                                 .buttonStyle(.plain)
                             }
                         }
-                        
+
                         Button(action: {
                             withAnimation {
                                 isSearchFieldFocused = false
@@ -104,6 +104,7 @@ struct MainSwiftUIView: View {
                                 PlaybackStateManager.shared.clearSearch()
                             }
                         }) {
+                            Image(systemName: "xmark")
                         }
                     } else {
                         Button(action: {
@@ -135,9 +136,9 @@ struct MainSwiftUIView: View {
                             .padding()
                         }
                         .foregroundStyle(selectedTab == "playlists" ? .primary : .secondary)
-                        
+
                         Spacer()
-                        
+
                         Button(action: {
                             withAnimation {
                                 isSearchActive = true
@@ -168,6 +169,7 @@ struct MainSwiftUIView: View {
                 .tint(.white)
         }
         .preferredColorScheme(.dark)
+        .tint(.white)
     }
 }
 
@@ -195,6 +197,7 @@ struct MiniPlayerView: View {
             }
             .frame(width: 44, height: 44)
             .glassEffect(in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
             VStack(alignment: .leading, spacing: 2) {
                 MarqueeText(text: state.title.isEmpty ? "Not Playing" : state.title, font: .subheadline)
                     .fontWeight(.semibold)
@@ -209,6 +212,7 @@ struct MiniPlayerView: View {
             }
 
             Spacer()
+
             HStack(spacing: 4) {
                 Button(action: { state.triggerPrev() }) {
                     Image(systemName: "backward.fill")
@@ -270,182 +274,181 @@ struct ExpandedPlayerView: View {
             .overlay(Color.black.opacity(0.6))
             .blur(radius: 40)
             .ignoresSafeArea()
-            
+
             VStack(spacing: 16) {
                 AsyncImage(url: URL(string: state.coverUrl)) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(1, contentMode: .fit)
-                        .frame(maxWidth: .infinity)
-                case .failure, .empty:
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .glassEffect()
-                        .aspectRatio(1, contentMode: .fit)
-                        .frame(maxWidth: .infinity)
-                        .overlay(
-                            Image(systemName: "music.note")
-                                .font(.system(size: 48, weight: .light))
-                                .foregroundStyle(.secondary)
-                        )
-                @unknown default:
-                    EmptyView()
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(1, contentMode: .fit)
+                            .frame(maxWidth: .infinity)
+                    case .failure, .empty:
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .glassEffect()
+                            .aspectRatio(1, contentMode: .fit)
+                            .frame(maxWidth: .infinity)
+                            .overlay(
+                                Image(systemName: "music.note")
+                                    .font(.system(size: 48, weight: .light))
+                                    .foregroundStyle(.secondary)
+                            )
+                    @unknown default:
+                        EmptyView()
+                    }
                 }
-            }
-            .backgroundExtensionEffect()
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .padding(.horizontal, 32)
-            .shadow(color: .black.opacity(0.3), radius: 24, x: 0, y: 16)
+                .backgroundExtensionEffect()
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .padding(.horizontal, 32)
+                .shadow(color: .black.opacity(0.3), radius: 24, x: 0, y: 16)
 
-            VStack(spacing: 4) {
-                MarqueeText(text: state.title.isEmpty ? "Not Playing" : state.title, font: .title2, alignment: .center)
-                    .fontWeight(.bold)
-                    .foregroundStyle(.primary)
-
-                MarqueeText(text: state.artist.isEmpty ? " " : state.artist, font: .title3, alignment: .center)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 24)
-
-            Button(action: { showFullLyrics = true }) {
-                VStack(spacing: 10) {
-                    Text(displayedCurrentLyric.isEmpty ? "..." : displayedCurrentLyric)
-                        .font(.body.weight(.semibold))
+                VStack(spacing: 4) {
+                    MarqueeText(text: state.title.isEmpty ? "Not Playing" : state.title, font: .title2, alignment: .center)
+                        .fontWeight(.bold)
                         .foregroundStyle(.primary)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
 
-                    Text(displayedNextLyric.isEmpty ? " " : displayedNextLyric)
-                        .font(.callout)
+                    MarqueeText(text: state.artist.isEmpty ? " " : state.artist, font: .title3, alignment: .center)
+                        .fontWeight(.medium)
                         .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 90)
-                .clipped()
-                .contentShape(Rectangle())
-                .opacity(lyricOpacity)
-                .offset(y: lyricOffset)
-            }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 24)
-            .onAppear {
-                displayedCurrentLyric = state.currentLyric
-                displayedNextLyric = state.nextLyric
-            }
-            .onChange(of: state.currentLyric) { _, _ in
-                withAnimation(.easeOut(duration: 0.1)) {
-                    lyricOpacity = 0
-                    lyricOffset = 6
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    displayedCurrentLyric = state.currentLyric
-                    displayedNextLyric = state.nextLyric
-                    withAnimation(.easeIn(duration: 0.15)) {
-                        lyricOpacity = 1
-                        lyricOffset = 0
-                    }
-                }
-            }
-            .sheet(isPresented: $showFullLyrics) {
-                FullLyricsView()
-            }
+                .padding(.horizontal, 24)
 
-            VStack(spacing: 6) {
-                Slider(
-                    value: Binding(
-                        get: { isSeeking ? seekValue : state.currentTime },
-                        set: { newValue in
-                            seekValue = newValue
-                            isSeeking = true
-                        }
-                    ),
-                    in: 0...max(state.duration, 1),
-                    onEditingChanged: { editing in
-                        if !editing {
-                            state.performSeek(to: seekValue)
-                            isSeeking = false
-                        }
+                Button(action: { showFullLyrics = true }) {
+                    VStack(spacing: 10) {
+                        Text(displayedCurrentLyric.isEmpty ? "..." : displayedCurrentLyric)
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.primary)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+
+                        Text(displayedNextLyric.isEmpty ? " " : displayedNextLyric)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
                     }
-                )
-                .tint(.primary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 90)
+                    .clipped()
+                    .contentShape(Rectangle())
+                    .opacity(lyricOpacity)
+                    .offset(y: lyricOffset)
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 24)
+                .sheet(isPresented: $showFullLyrics) {
+                    FullLyricsView()
+                }
+
+                VStack(spacing: 6) {
+                    Slider(
+                        value: Binding(
+                            get: { isSeeking ? seekValue : state.currentTime },
+                            set: { newValue in
+                                seekValue = newValue
+                                isSeeking = true
+                            }
+                        ),
+                        in: 0...max(state.duration, 1),
+                        onEditingChanged: { editing in
+                            if !editing {
+                                state.performSeek(to: seekValue)
+                                isSeeking = false
+                            }
+                        }
+                    )
+                    .tint(.primary)
+
+                    HStack {
+                        Text(formatTime(isSeeking ? seekValue : state.currentTime))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                        Spacer()
+                        Text(formatTime(state.duration))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                    }
+                }
+                .onChange(of: state.title) { _, _ in
+                    seekValue = 0
+                    isSeeking = false
+                }
+                .padding(.horizontal, 24)
+
+                HStack(spacing: 32) {
+                    Button(action: { state.toggleShuffle() }) {
+                        Image(systemName: "shuffle")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundStyle(state.shuffle ? .primary : .secondary)
+                            .opacity(state.shuffle ? 1 : 0.5)
+                    }
+
+                    Button(action: { state.triggerPrev() }) {
+                        Image(systemName: "backward.fill")
+                            .font(.system(size: 28, weight: .medium))
+                            .foregroundStyle(.primary)
+                    }
+
+                    Button(action: { state.togglePlayPause() }) {
+                        Image(systemName: state.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                            .font(.system(size: 56, weight: .medium))
+                            .foregroundStyle(.primary)
+                    }
+
+                    Button(action: { state.triggerNext() }) {
+                        Image(systemName: "forward.fill")
+                            .font(.system(size: 28, weight: .medium))
+                            .foregroundStyle(.primary)
+                    }
+
+                    Button(action: { state.cycleRepeat() }) {
+                        Image(systemName: state.repeatMode == "one" ? "repeat.1" : "repeat")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundStyle(state.repeatMode == "off" ? .secondary : .primary)
+                            .opacity(state.repeatMode == "off" ? 0.5 : 1)
+                    }
+                }
+
+                Spacer()
 
                 HStack {
-                    Text(formatTime(isSeeking ? seekValue : state.currentTime))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
                     Spacer()
-                    Text(formatTime(state.duration))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
+                    Button(action: { showQueue = true }) {
+                        Image(systemName: "list.bullet")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundStyle(.primary)
+                            .padding(12)
+                            .background(Color.white.opacity(0.1))
+                            .clipShape(Circle())
+                    }
+                }
+                .padding(.horizontal, 32)
+                .padding(.bottom, 24)
+                .sheet(isPresented: $showQueue) {
+                    QueueView()
                 }
             }
-            .onChange(of: state.title) { _, _ in   // ← here
-                seekValue = 0
-                isSeeking = false
-            }
-            .padding(.horizontal, 24)
-            HStack(spacing: 32) {
-                Button(action: { state.toggleShuffle() }) {
-                    Image(systemName: "shuffle")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundStyle(state.shuffle ? .primary : .secondary)
-                        .opacity(state.shuffle ? 1 : 0.5)
-                }
-
-                Button(action: { state.triggerPrev() }) {
-                    Image(systemName: "backward.fill")
-                        .font(.system(size: 28, weight: .medium))
-                        .foregroundStyle(.primary)
-                }
-
-                Button(action: { state.togglePlayPause() }) {
-                    Image(systemName: state.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 56, weight: .medium))
-                        .foregroundStyle(.primary)
-                }
-
-                Button(action: { state.triggerNext() }) {
-                    Image(systemName: "forward.fill")
-                        .font(.system(size: 28, weight: .medium))
-                        .foregroundStyle(.primary)
-                }
-
-                Button(action: { state.cycleRepeat() }) {
-                    Image(systemName: state.repeatMode == "one" ? "repeat.1" : "repeat")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundStyle(state.repeatMode == "off" ? .secondary : .primary)
-                        .opacity(state.repeatMode == "off" ? 0.5 : 1)
-                }
-            }
-
-            Spacer()
-
-            HStack {
-                Spacer()
-                Button(action: {
-                    showQueue = true
-                }) {
-                    Image(systemName: "list.bullet")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundStyle(.primary)
-                        .padding(12)
-                        .background(Color.white.opacity(0.1))
-                        .clipShape(Circle())
-                }
-            }
-            .padding(.horizontal, 32)
-            .padding(.bottom, 24)
-            .sheet(isPresented: $showQueue) {
-                QueueView()
-            }
+            .padding(.top, 40)
         }
-        .padding(.top, 40)
+        .onAppear {
+            displayedCurrentLyric = state.currentLyric
+            displayedNextLyric = state.nextLyric
+        }
+        .onChange(of: state.currentLyric) { _, _ in
+            withAnimation(.easeOut(duration: 0.1)) {
+                lyricOpacity = 0
+                lyricOffset = 6
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                displayedCurrentLyric = state.currentLyric
+                displayedNextLyric = state.nextLyric
+                withAnimation(.easeIn(duration: 0.15)) {
+                    lyricOpacity = 1
+                    lyricOffset = 0
+                }
+            }
         }
         .preferredColorScheme(.dark)
     }
@@ -460,7 +463,7 @@ struct ExpandedPlayerView: View {
     private func isActiveLyric(index: Int, currentTime: Double) -> Bool {
         let currentDict = state.fullLyrics[index]
         guard let time = currentDict["time"] as? Double else { return false }
-        
+
         let nextTime: Double
         if index + 1 < state.fullLyrics.count,
            let nt = state.fullLyrics[index + 1]["time"] as? Double {
@@ -468,7 +471,7 @@ struct ExpandedPlayerView: View {
         } else {
             nextTime = .infinity
         }
-        
+
         return currentTime >= time && currentTime < nextTime
     }
 
@@ -486,10 +489,10 @@ struct MarqueeText: View {
     let text: String
     let font: Font
     var alignment: Alignment = .leading
-    
+
     @State private var animate = false
     @State private var textWidth: CGFloat = 0
-    
+
     var body: some View {
         Text(text)
             .font(font)
@@ -499,7 +502,7 @@ struct MarqueeText: View {
             .overlay(
                 GeometryReader { geometry in
                     let isOversized = textWidth > geometry.size.width
-                    
+
                     Text(text)
                         .font(font)
                         .lineLimit(1)
@@ -542,7 +545,7 @@ struct FullLyricsView: View {
     @ObservedObject private var state = PlaybackStateManager.shared
     @Environment(\.dismiss) private var dismiss
     @State private var visibleLines: Set<Int> = []
-    
+
     var body: some View {
         ZStack {
             AsyncImage(url: URL(string: state.coverUrl)) { phase in
@@ -563,20 +566,18 @@ struct FullLyricsView: View {
             .overlay(Color.black.opacity(0.6))
             .blur(radius: 40)
             .ignoresSafeArea()
-            
+
             VStack {
                 HStack {
                     Spacer()
-                    Button(action: {
-                        dismiss()
-                    }) {
+                    Button(action: { dismiss() }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 28))
                             .foregroundStyle(.white.opacity(0.8))
                     }
                 }
                 .padding()
-                
+
                 ScrollViewReader { proxy in
                     ScrollView(showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 24) {
@@ -589,9 +590,9 @@ struct FullLyricsView: View {
                                 ForEach(Array(state.fullLyrics.enumerated()), id: \.offset) { index, lyricDict in
                                     if let time = lyricDict["time"] as? Double,
                                        let text = lyricDict["text"] as? String {
-                                        
+
                                         let isActive = isActiveLyric(index: index, currentTime: state.currentTime)
-                                        
+
                                         Text(text.isEmpty ? "•" : text)
                                             .font(.system(size: isActive ? 24 : 20, weight: isActive ? .bold : .medium))
                                             .foregroundStyle(isActive ? .white : .white.opacity(0.5))
@@ -639,11 +640,11 @@ struct FullLyricsView: View {
         }
         .preferredColorScheme(.dark)
     }
-    
+
     private func isActiveLyric(index: Int, currentTime: Double) -> Bool {
         let currentDict = state.fullLyrics[index]
         guard let time = currentDict["time"] as? Double else { return false }
-        
+
         let nextTime: Double
         if index + 1 < state.fullLyrics.count,
            let nt = state.fullLyrics[index + 1]["time"] as? Double {
@@ -651,7 +652,7 @@ struct FullLyricsView: View {
         } else {
             nextTime = .infinity
         }
-        
+
         return currentTime >= time && currentTime < nextTime
     }
 }
@@ -659,75 +660,78 @@ struct FullLyricsView: View {
 struct QueueView: View {
     @ObservedObject private var state = PlaybackStateManager.shared
     @Environment(\.dismiss) private var dismiss
-    
+
     var body: some View {
         ZStack {
             Color(white: 0.1).ignoresSafeArea()
-            
+
             VStack {
                 HStack {
                     Text("Up Next")
                         .font(.title2.bold())
                     Spacer()
-                    Button(action: {
-                        dismiss()
-                    }) {
+                    Button(action: { dismiss() }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 28))
                             .foregroundStyle(.white.opacity(0.8))
                     }
                 }
                 .padding()
-                
-                ScrollView {
-                    VStack(spacing: 8) {
-                        if state.queue.isEmpty {
-                            Text("Queue is empty")
-                                .foregroundStyle(.secondary)
-                                .padding(.top, 40)
-                        } else {
-                            ForEach(Array(state.queue.enumerated()), id: \.offset) { index, item in
-                                let isPlaying = index == state.queueIndex
-                                HStack(spacing: 12) {
-                                    if isPlaying {
-                                        Image(systemName: "waveform")
-                                            .foregroundStyle(.white)
-                                            .frame(width: 24)
-                                    } else {
-                                        Text("\\(index + 1)")
-                                            .font(.subheadline)
-                                            .foregroundStyle(.secondary)
-                                            .frame(width: 24)
-                                    }
+                List {
+                    if state.queue.isEmpty {
+                        Text("Queue is empty")
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 40)
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                    } else {
+                        ForEach(Array(state.queue.enumerated()), id: \.offset) { index, item in
+                            let isPlaying = index == state.queueIndex
+                            HStack(spacing: 12) {
+                                if isPlaying {
+                                    Image(systemName: "waveform")
+                                        .foregroundStyle(.white)
+                                        .frame(width: 24)
+                                } else {
+                                    Color.clear
+                                        .frame(width: 24)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(item["title"] as? String ?? "Unknown")
+                                        .font(.body)
+                                        .fontWeight(isPlaying ? .semibold : .regular)
+                                        .foregroundStyle(.primary)
+                                        .opacity(isPlaying ? 1.0 : 0.8)
+                                        .lineLimit(1)
                                     
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(item["title"] as? String ?? "Unknown")
-                                            .font(.body)
-                                            .fontWeight(isPlaying ? .semibold : .regular)
-                                            .foregroundStyle(.primary)
-                                            .opacity(isPlaying ? 1.0 : 0.8)
-                                            .lineLimit(1)
-                                        
-                                        Text(item["artist"] as? String ?? "Unknown")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                            .lineLimit(1)
-                                    }
-                                    Spacer()
+                                    Text(item["artist"] as? String ?? "Unknown")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
                                 }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
-                                .background(isPlaying ? Color.white.opacity(0.1) : Color.clear)
-                                .cornerRadius(8)
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    state.playQueueItem(at: index)
-                                }
+                                Spacer()
                             }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(isPlaying ? Color.white.opacity(0.1) : Color.clear)
+                            .cornerRadius(8)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                state.playQueueItem(at: index)
+                            }
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                         }
+                        .onMove { source, destination in
+                            state.moveQueueItem(from: source, to: destination)
+                        }
+                        .deleteDisabled(true)
                     }
-                    .padding(.bottom, 40)
                 }
+                .listStyle(.plain)
+                .environment(\.editMode, .constant(.active))
             }
         }
         .preferredColorScheme(.dark)
