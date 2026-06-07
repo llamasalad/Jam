@@ -310,25 +310,30 @@ struct ExpandedPlayerView: View {
 
             Button(action: { showFullLyrics = true }) {
                 VStack(spacing: 10) {
-                    Text(state.currentLyric.isEmpty ? "..." : state.currentLyric)
+                    Text(state.currentLyric.isEmpty ? "–" : state.currentLyric)
                         .font(.body.weight(.semibold))
                         .foregroundStyle(.primary)
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
+                        .id(state.currentLyric)
+                        .transition(.push(from: .bottom))
 
                     Text(state.nextLyric.isEmpty ? " " : state.nextLyric)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
+                        .id(state.nextLyric)
+                        .transition(.push(from: .bottom))
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 90)
+                .clipped()
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 24)
-            .animation(.easeInOut(duration: 0.35), value: state.currentLyric)
+            .animation(.easeInOut(duration: 0.4), value: state.currentLyric)
             .sheet(isPresented: $showFullLyrics) {
                 FullLyricsView()
             }
@@ -363,6 +368,10 @@ struct ExpandedPlayerView: View {
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
                 }
+            }
+            .onChange(of: state.title) { _, _ in   // ← here
+                seekValue = 0
+                isSeeking = false
             }
             .padding(.horizontal, 24)
             HStack(spacing: 40) {
