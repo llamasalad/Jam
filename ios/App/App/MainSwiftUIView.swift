@@ -316,7 +316,7 @@ struct ExpandedPlayerView: View {
                 Button(action: { showFullLyrics = true }) {
                     VStack(spacing: 10) {
                         Text(displayedCurrentLyric.isEmpty ? "..." : displayedCurrentLyric)
-                            .font(.body.weight(.semibold))
+                            .font(.system(size: 24, weight: .bold))
                             .foregroundStyle(.primary)
                             .multilineTextAlignment(.center)
                             .lineLimit(2)
@@ -580,9 +580,9 @@ struct FullLyricsView: View {
 
                 ScrollViewReader { proxy in
                     ScrollView(showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 24) {
+                        LazyVStack(alignment: .leading, spacing: 24) {
                             if state.fullLyrics.isEmpty {
-                                Text("No lyrics available")
+                                Text(state.currentLyric == "Loading lyrics..." ? "Loading lyrics..." : "No lyrics available")
                                     .font(.title2)
                                     .fontWeight(.medium)
                                     .foregroundStyle(.white.opacity(0.6))
@@ -635,10 +635,26 @@ struct FullLyricsView: View {
                             }
                         }
                     }
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            if let activeIndex = getActiveLyricIndex() {
+                                proxy.scrollTo(activeIndex, anchor: .center)
+                            }
+                        }
+                    }
                 }
             }
         }
         .preferredColorScheme(.dark)
+    }
+
+    private func getActiveLyricIndex() -> Int? {
+        for index in 0..<state.fullLyrics.count {
+            if isActiveLyric(index: index, currentTime: state.currentTime) {
+                return index
+            }
+        }
+        return nil
     }
 
     private func isActiveLyric(index: Int, currentTime: Double) -> Bool {

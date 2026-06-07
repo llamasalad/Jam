@@ -2373,7 +2373,7 @@ body.menu-open .queue-remove {
 @media (hover: hover) {
   #expand-handle:hover {
     color: var(--text);
-    transform: translateY(-1px);
+    transform: translateY(-5px);
   }
 }
 
@@ -3683,6 +3683,7 @@ body.menu-open .queue-remove {
   --text: var(--accent);
   --muted: #80809b;
   --accent: #f8f9fabf;
+  --accent2: #f8f9fabf;
   --danger: #ef4444;
   --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }

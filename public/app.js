@@ -178,6 +178,15 @@ function setLyricsMessage(msg, curMsg) {
         }
         if (expLyricNext) expLyricNext.textContent = '';
     }
+
+    const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
+    if (plugin && typeof plugin.updateLyrics === 'function') {
+        let displayCur = curMsg;
+        if (curMsg === '\u2026') displayCur = 'Loading lyrics...';
+        else if (!curMsg) displayCur = msg;
+
+        plugin.updateLyrics({ current: displayCur || '', next: '', all: [] });
+    }
 }
 
 class CapacitorAudioPlayerShim {
