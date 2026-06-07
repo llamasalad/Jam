@@ -447,9 +447,8 @@ struct ExpandedPlayerView: View {
         guard let time = currentDict["time"] as? Double else { return false }
         
         let nextTime: Double
-        if index + 1 < state.fullLyrics.count {
-            let nextDict = state.fullLyrics[index + 1]
-            if let nt = nextDict["time"] as? Double {
+        if index + 1 < state.fullLyrics.count,
+           let nt = state.fullLyrics[index + 1]["time"] as? Double {
             nextTime = nt
         } else {
             nextTime = .infinity
@@ -627,13 +626,12 @@ struct FullLyricsView: View {
     }
     
     private func isActiveLyric(index: Int, currentTime: Double) -> Bool {
-        guard let currentDict = state.fullLyrics[index] as? [String: Any],
-              let time = currentDict["time"] as? Double else { return false }
+        let currentDict = state.fullLyrics[index]
+        guard let time = currentDict["time"] as? Double else { return false }
         
         let nextTime: Double
         if index + 1 < state.fullLyrics.count,
-           let nextDict = state.fullLyrics[index + 1] as? [String: Any],
-           let nt = nextDict["time"] as? Double {
+           let nt = state.fullLyrics[index + 1]["time"] as? Double {
             nextTime = nt
         } else {
             nextTime = .infinity
