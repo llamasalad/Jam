@@ -4,6 +4,10 @@ import Combine
 
 import Observation
 
+// Explicitly disambiguate KeyPath to prevent macro expansion shadowing
+// from external C/Objective-C frameworks or plugins
+typealias KeyPath<Root, Value> = Swift.KeyPath<Root, Value>
+
 @Observable
 @MainActor
 final class PlaybackStateManager {
