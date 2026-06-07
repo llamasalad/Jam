@@ -49,8 +49,7 @@ struct MainSwiftUIView: View {
                             ("Blind", "blind-theme"),
                             ("Rosecore", "rosecore-theme"),
                             ("Abyss", "abyss-theme"),
-                            ("Glass", "liquid-glass-theme"),
-                            ("Aurielle", "aurielle-theme")
+                            ("Glass", "liquid-glass-theme")
                         ], id: \.1) { theme in
                             Button(action: {
                                 PlaybackStateManager.shared.setTheme(theme.1)
@@ -257,6 +256,8 @@ struct ExpandedPlayerView: View {
     @State private var lyricOffset: CGFloat = 0
 
     var body: some View {
+        let _ = state.currentLyric // Force Observation for SwiftUI dependency tracking
+        
         ZStack {
             // Blurred Background
             BlurredBackgroundView(url: state.coverUrl)
@@ -307,7 +308,7 @@ struct ExpandedPlayerView: View {
                 Button(action: { showFullLyrics = true }) {
                     VStack(spacing: 10) {
                         Text(displayedCurrentLyric.isEmpty ? "..." : displayedCurrentLyric)
-                            .font(.system(size: 24, weight: .bold))
+                            .font(.headline)
                             .foregroundStyle(.primary)
                             .multilineTextAlignment(.center)
                             .lineLimit(2)
@@ -321,9 +322,9 @@ struct ExpandedPlayerView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 90)
                     .clipped()
-                    .contentShape(Rectangle())
                     .opacity(lyricOpacity)
                     .offset(y: lyricOffset)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .padding(.horizontal, 24)
@@ -391,14 +392,13 @@ struct PlaybackProgressView: View {
                     get: { isSeeking ? seekValue : state.currentTime },
                     set: { newValue in
                         seekValue = newValue
-                        isSeeking = true
                     }
                 ),
                 in: 0...max(state.duration, 1),
                 onEditingChanged: { editing in
+                    isSeeking = editing
                     if !editing {
                         state.performSeek(to: seekValue)
-                        isSeeking = false
                     }
                 }
             )

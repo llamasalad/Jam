@@ -169,7 +169,7 @@ final class PlaybackStateManager {
     }
 
     func performSeek(to time: Double) {
-        evaluateJS("if(typeof audio!=='undefined'&&audio){audio.currentTime=\(time)}")
+        evaluateJS("if(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AudioPlayerPlugin) { window.Capacitor.Plugins.AudioPlayerPlugin.seek({to:\(time)}); } else if(typeof audio!=='undefined'&&audio) { audio.currentTime=\(time); }")
     }
 
     func playQueueItem(at index: Int) {
