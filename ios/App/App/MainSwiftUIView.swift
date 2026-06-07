@@ -118,7 +118,7 @@ struct MainSwiftUIView: View {
                                     .font(.system(size: 18))
                                 Text("Library").font(.system(size: 10, weight: .medium))
                             }
-                            .padding(.vertical, 6)
+                            .padding(.vertical, 8)
                             .padding(.horizontal, 12)
                         }
                         .foregroundStyle(selectedTab == "library" ? .primary : .secondary)
@@ -134,7 +134,7 @@ struct MainSwiftUIView: View {
                                     .font(.system(size: 18))
                                 Text("Playlists").font(.system(size: 10, weight: .medium))
                             }
-                            .padding(.vertical, 6)
+                            .padding(.vertical, 8)
                             .padding(.horizontal, 12)
                         }
                         .foregroundStyle(selectedTab == "playlists" ? .primary : .secondary)
@@ -309,40 +309,43 @@ struct ExpandedPlayerView: View {
             Button(action: {
                 showFullLyrics = true
             }) {
-                ScrollViewReader { proxy in
-                    ScrollView(showsIndicators: false) {
-                        VStack(spacing: 8) {
-                            if state.fullLyrics.isEmpty {
-                                Text(state.currentLyric.isEmpty ? "-" : state.currentLyric)
-                                    .font(.body.weight(.medium))
+                VStack(spacing: 8) {
+                    if state.fullLyrics.isEmpty {
+                        Text(state.currentLyric.isEmpty ? "-" : state.currentLyric)
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(.primary)
+                    } else {
+                        if let activeIndex = getActiveLyricIndex() {
+                            if let text = state.fullLyrics[activeIndex]["text"] as? String {
+                                Text(text.isEmpty ? "•" : text)
+                                    .font(.body)
+                                    .fontWeight(.bold)
                                     .foregroundStyle(.primary)
-                            } else {
-                                ForEach(Array(state.fullLyrics.enumerated()), id: \.offset) { index, lyricDict in
-                                    if let time = lyricDict["time"] as? Double, let text = lyricDict["text"] as? String {
-                                        let isActive = isActiveLyric(index: index, currentTime: state.currentTime)
-                                        Text(text.isEmpty ? "•" : text)
-                                            .font(.body)
-                                            .fontWeight(isActive ? .bold : .regular)
-                                            .foregroundStyle(isActive ? .primary : .secondary)
-                                            .multilineTextAlignment(.center)
-                                            .id(index)
-                                            .onChange(of: isActive) { _, new in
-                                                if new {
-                                                    withAnimation(.easeInOut(duration: 0.5)) {
-                                                        proxy.scrollTo(index, anchor: .center)
-                                                    }
-                                                }
-                                            }
-                                    }
-                                }
+                                    .multilineTextAlignment(.center)
+                                    .id("active-\\(activeIndex)")
                             }
+                            
+                            if activeIndex + 1 < state.fullLyrics.count,
+                               let nextText = state.fullLyrics[activeIndex + 1]["text"] as? String {
+                                Text(nextText.isEmpty ? "•" : nextText)
+                                    .font(.callout)
+                                    .fontWeight(.regular)
+                                    .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .lineLimit(2)
+                                    .id("next-\\(activeIndex + 1)")
+                            }
+                        } else {
+                            Text("•")
+                                .font(.body)
+                                .fontWeight(.bold)
+                                .foregroundStyle(.primary)
                         }
-                        .padding(.vertical, 20)
                     }
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .padding(.horizontal)
+                .animation(.easeInOut(duration: 0.3), value: getActiveLyricIndex())
+                .frame(maxWidth: .infinity, minHeight: 60)
+                .padding()
                 .glassEffect()
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
@@ -432,6 +435,15 @@ struct ExpandedPlayerView: View {
         }
         
         return currentTime >= time && currentTime < nextTime
+    }
+
+    private func getActiveLyricIndex() -> Int? {
+        for index in 0..<state.fullLyrics.count {
+            if isActiveLyric(index: index, currentTime: state.currentTime) {
+                return index
+            }
+        }
+        return nil
     }
 }
 
