@@ -443,13 +443,13 @@ struct ExpandedPlayerView: View {
     }
 
     private func isActiveLyric(index: Int, currentTime: Double) -> Bool {
-        guard let currentDict = state.fullLyrics[index] as? [String: Any],
-              let time = currentDict["time"] as? Double else { return false }
+        let currentDict = state.fullLyrics[index]
+        guard let time = currentDict["time"] as? Double else { return false }
         
         let nextTime: Double
-        if index + 1 < state.fullLyrics.count,
-           let nextDict = state.fullLyrics[index + 1] as? [String: Any],
-           let nt = nextDict["time"] as? Double {
+        if index + 1 < state.fullLyrics.count {
+            let nextDict = state.fullLyrics[index + 1]
+            if let nt = nextDict["time"] as? Double {
             nextTime = nt
         } else {
             nextTime = .infinity
@@ -691,7 +691,8 @@ struct QueueView: View {
                                         Text(item["title"] as? String ?? "Unknown")
                                             .font(.body)
                                             .fontWeight(isPlaying ? .semibold : .regular)
-                                            .foregroundStyle(isPlaying ? .primary : .primary.opacity(0.8))
+                                            .foregroundStyle(.primary)
+                                            .opacity(isPlaying ? 1.0 : 0.8)
                                             .lineLimit(1)
                                         
                                         Text(item["artist"] as? String ?? "Unknown")

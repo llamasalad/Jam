@@ -185,8 +185,8 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 
     private func fetchArtwork(urlString: String) {
         guard let url = URL(string: urlString) else { return }
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
-            guard let self = self, let data = data, error == nil, let image = UIImage(data: data) else { return }
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            guard let data = data, error == nil, let image = UIImage(data: data) else { return }
             DispatchQueue.main.async {
                 let artwork = MPMediaItemArtwork(boundsSize: image.size) { size in
                     return image
