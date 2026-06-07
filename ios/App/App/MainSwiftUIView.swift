@@ -118,7 +118,7 @@ struct MainSwiftUIView: View {
                                     .font(.system(size: 18))
                                 Text("Library").font(.system(size: 10, weight: .medium))
                             }
-                            .padding(.vertical, 8)
+                            .padding(.vertical, 10)
                             .padding(.horizontal, 12)
                         }
                         .foregroundStyle(selectedTab == "library" ? .primary : .secondary)
@@ -134,7 +134,7 @@ struct MainSwiftUIView: View {
                                     .font(.system(size: 18))
                                 Text("Playlists").font(.system(size: 10, weight: .medium))
                             }
-                            .padding(.vertical, 8)
+                            .padding(.vertical, 10)
                             .padding(.horizontal, 12)
                         }
                         .foregroundStyle(selectedTab == "playlists" ? .primary : .secondary)
@@ -168,6 +168,7 @@ struct MainSwiftUIView: View {
         .sheet(isPresented: $showExpandedPlayer) {
             ExpandedPlayerView()
                 .presentationDragIndicator(.visible)
+                .tint(.white)
         }
         .preferredColorScheme(.dark)
     }
@@ -307,52 +308,27 @@ struct ExpandedPlayerView: View {
             }
             .padding(.horizontal, 24)
 
-            Button(action: {
-                showFullLyrics = true
-            }) {
-                ScrollViewReader { proxy in
-                    ScrollView(showsIndicators: false) {
-                        VStack(spacing: 8) {
-                            if state.fullLyrics.isEmpty {
-                                Text(state.currentLyric.isEmpty ? "-" : state.currentLyric)
-                                    .font(.body.weight(.medium))
-                                    .foregroundStyle(.primary)
-                            } else {
-                                ForEach(Array(state.fullLyrics.enumerated()), id: \.offset) { index, lyricDict in
-                                    if let text = lyricDict["text"] as? String {
-                                        let isActive = isActiveLyric(index: index, currentTime: state.currentTime)
-                                        Text(text.isEmpty ? "•" : text)
-                                            .font(isActive ? .body : .callout)
-                                            .fontWeight(isActive ? .bold : .regular)
-                                            .foregroundStyle(isActive ? .primary : .secondary)
-                                            .multilineTextAlignment(.center)
-                                            .id(index)
-                                            .onChange(of: isActive) { _, new in
-                                                if new {
-                                                    withAnimation(.easeInOut(duration: 0.5)) {
-                                                        proxy.scrollTo(index, anchor: .center)
-                                                    }
-                                                }
-                                            }
-                                    }
-                                }
-                            }
-                        }
-                        .padding(.vertical, 40)
-                    }
-                    .onChange(of: state.title) { _, _ in
-                        if !state.fullLyrics.isEmpty {
-                            withAnimation {
-                                proxy.scrollTo(0, anchor: .center)
-                            }
-                        }
-                    }
+            Button(action: { showFullLyrics = true }) {
+                VStack(spacing: 10) {
+                    Text(state.currentLyric.isEmpty ? "..." : state.currentLyric)
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+
+                    Text(state.nextLyric.isEmpty ? " " : state.nextLyric)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 120)
+                .frame(height: 90)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 24)
+            .animation(.easeInOut(duration: 0.35), value: state.currentLyric)
             .sheet(isPresented: $showFullLyrics) {
                 FullLyricsView()
             }
