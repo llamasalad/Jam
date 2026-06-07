@@ -19,7 +19,7 @@ struct MainSwiftUIView: View {
                         .ignoresSafeArea()
                 }
                 CapacitorWebViewRepresentable()
-                    .ignoresSafeArea()
+                    .ignoresSafeArea(edges: [.top])
             }
             .safeAreaInset(edge: .bottom) {
                 if state.hasSong {
@@ -121,6 +121,20 @@ struct MainSwiftUIView: View {
                         }
                         .foregroundStyle(selectedTab == "library" ? .primary : .secondary)
 
+                        Button(action: {
+                            withAnimation {
+                                selectedTab = "playlists"
+                                PlaybackStateManager.shared.switchWebTab(tabName: "playlists")
+                            }
+                        }) {
+                            VStack(spacing: 4) {
+                                Image(systemName: selectedTab == "playlists" ? "music.note.list" : "music.note.list")
+                                    .font(.system(size: 20))
+                                Text("Playlists").font(.system(size: 10, weight: .medium))
+                            }
+                        }
+                        .foregroundStyle(selectedTab == "playlists" ? .primary : .secondary)
+                        
                         Spacer()
                         
                         Button(action: {
@@ -136,26 +150,9 @@ struct MainSwiftUIView: View {
                             VStack(spacing: 4) {
                                 Image(systemName: "magnifyingglass")
                                     .font(.system(size: 20))
-                                Text("Search").font(.system(size: 10, weight: .medium))
                             }
                         }
                         .foregroundStyle(.secondary)
-                        
-                        Spacer()
-                        
-                        Button(action: {
-                            withAnimation {
-                                selectedTab = "playlists"
-                                PlaybackStateManager.shared.switchWebTab(tabName: "playlists")
-                            }
-                        }) {
-                            VStack(spacing: 4) {
-                                Image(systemName: selectedTab == "playlists" ? "music.note.list" : "music.note.list")
-                                    .font(.system(size: 20))
-                                Text("Playlists").font(.system(size: 10, weight: .medium))
-                            }
-                        }
-                        .foregroundStyle(selectedTab == "playlists" ? .primary : .secondary)
                     }
                 }
             }
@@ -246,8 +243,33 @@ struct ExpandedPlayerView: View {
     @State private var showFullLyrics: Bool = false
 
     var body: some View {
-        VStack(spacing: 24) {
+        ZStack {
+            // Blurred Background
             AsyncImage(url: URL(string: state.coverUrl)) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                case .failure, .empty:
+                    Color.black
+                @unknown default:
+                    Color.black
+                }
+            }
+            .scaleEffect(1.2)
+            .ignoresSafeArea()
+            .overlay(Color.black.opacity(0.6))
+            .blur(radius: 40)
+            .ignoresSafeArea()
+            
+            VStack(spacing: 24) {
+                Capsule()
+                    .fill(Color.secondary.opacity(0.5))
+                    .frame(width: 48, height: 5)
+                    .padding(.top, 16)
+
+                AsyncImage(url: URL(string: state.coverUrl)) { phase in
                 switch phase {
                 case .success(let image):
                     image
@@ -274,7 +296,7 @@ struct ExpandedPlayerView: View {
             .shadow(color: .black.opacity(0.3), radius: 24, x: 0, y: 16)
 
             VStack(spacing: 4) {
-                MarqueeText(text: state.title.isEmpty ? "Not Playing" : state.title, font: .title3, alignment: .center)
+                MarqueeText(text: state.title.isEmpty ? "Not Playing" : state.title, font: .title2, alignment: .center)
                     .fontWeight(.bold)
                     .foregroundStyle(.primary)
 
@@ -287,32 +309,42 @@ struct ExpandedPlayerView: View {
             Button(action: {
                 showFullLyrics = true
             }) {
-                VStack(spacing: 8) {
-                    if !state.currentLyric.isEmpty {
-                        Text(state.currentLyric)
-                            .font(.body)
-                            .fontWeight(.medium)
-                            .foregroundStyle(.primary)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                            .animation(.easeInOut, value: state.currentLyric)
-                    } else {
-                        Text("-")
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                    }
-                    if !state.nextLyric.isEmpty {
-                        Text(state.nextLyric)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(1)
-                            .animation(.easeInOut, value: state.nextLyric)
+                ScrollViewReader { proxy in
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 8) {
+                            if state.fullLyrics.isEmpty {
+                                Text(state.currentLyric.isEmpty ? "-" : state.currentLyric)
+                                    .font(.body.weight(.medium))
+                                    .foregroundStyle(.primary)
+                            } else {
+                                ForEach(Array(state.fullLyrics.enumerated()), id: \.offset) { index, lyricDict in
+                                    if let time = lyricDict["time"] as? Double, let text = lyricDict["text"] as? String {
+                                        let isActive = isActiveLyric(index: index, currentTime: state.currentTime)
+                                        Text(text.isEmpty ? "•" : text)
+                                            .font(.body)
+                                            .fontWeight(isActive ? .bold : .regular)
+                                            .foregroundStyle(isActive ? .primary : .secondary)
+                                            .multilineTextAlignment(.center)
+                                            .id(index)
+                                            .onChange(of: isActive) { _, new in
+                                                if new {
+                                                    withAnimation(.easeInOut(duration: 0.5)) {
+                                                        proxy.scrollTo(index, anchor: .center)
+                                                    }
+                                                }
+                                            }
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.vertical, 20)
                     }
                 }
-                .frame(maxWidth: .infinity, minHeight: 60)
-                .padding()
+                .frame(maxWidth: .infinity)
+                .frame(height: 80)
+                .padding(.horizontal)
                 .glassEffect()
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 24)
@@ -383,6 +415,22 @@ struct ExpandedPlayerView: View {
         let mins = Int(t) / 60
         let secs = Int(t) % 60
         return "\(mins):\(String(format: "%02d", secs))"
+    }
+
+    private func isActiveLyric(index: Int, currentTime: Double) -> Bool {
+        guard let currentDict = state.fullLyrics[index] as? [String: Any],
+              let time = currentDict["time"] as? Double else { return false }
+        
+        let nextTime: Double
+        if index + 1 < state.fullLyrics.count,
+           let nextDict = state.fullLyrics[index + 1] as? [String: Any],
+           let nt = nextDict["time"] as? Double {
+            nextTime = nt
+        } else {
+            nextTime = .infinity
+        }
+        
+        return currentTime >= time && currentTime < nextTime
     }
 }
 
@@ -461,7 +509,7 @@ struct FullLyricsView: View {
                     Color.black
                 }
             }
-            .scaleEffect(1.5)
+            .scaleEffect(1.2)
             .ignoresSafeArea()
             .overlay(Color.black.opacity(0.6))
             .blur(radius: 40)
@@ -496,7 +544,7 @@ struct FullLyricsView: View {
                                         let isActive = isActiveLyric(index: index, currentTime: state.currentTime)
                                         
                                         Text(text.isEmpty ? "•" : text)
-                                            .font(.system(size: isActive ? 28 : 24, weight: isActive ? .bold : .medium))
+                                            .font(.system(size: isActive ? 24 : 20, weight: isActive ? .bold : .medium))
                                             .foregroundStyle(isActive ? .white : .white.opacity(0.5))
                                             .multilineTextAlignment(.leading)
                                             .frame(maxWidth: .infinity, alignment: .leading)

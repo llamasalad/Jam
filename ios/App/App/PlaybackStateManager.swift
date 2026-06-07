@@ -67,7 +67,19 @@ class PlaybackStateManager: ObservableObject {
     }
 
     func setTheme(_ theme: String) {
-        evaluateJS("if(typeof applyTheme==='function'){currentTheme='\(theme)';localStorage.setItem('music_theme','\(theme)');applyTheme();}")
+        let js = """
+        (function() {
+            var opt = document.querySelector('.theme-option[data-theme="\(theme)"]') || document.querySelector('.sidebar-theme-option[data-theme="\(theme)"]');
+            if (opt) {
+                opt.click();
+            } else {
+                if (typeof currentTheme !== 'undefined') currentTheme = '\(theme)';
+                localStorage.setItem('music_theme', '\(theme)');
+                if (typeof applyTheme === 'function') applyTheme();
+            }
+        })();
+        """
+        evaluateJS(js)
         self.currentTheme = theme
         self.isLiquidThemeActive = (theme == "liquid-glass-theme")
     }
