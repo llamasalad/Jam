@@ -47,17 +47,29 @@ final class PlaybackStateManager {
     private func updateActiveLyricIndex() {
         if fullLyrics.isEmpty {
             if activeLyricIndex != nil { activeLyricIndex = nil }
+            currentLyric = ""
+            nextLyric = ""
             return
         }
         for index in 0..<fullLyrics.count {
             if isActiveLyric(index: index, currentTime: currentTime) {
                 if activeLyricIndex != index {
                     activeLyricIndex = index
+                    currentLyric = (fullLyrics[index]["text"] as? String) ?? ""
+                    if index + 1 < fullLyrics.count {
+                        nextLyric = (fullLyrics[index + 1]["text"] as? String) ?? ""
+                    } else {
+                        nextLyric = ""
+                    }
                 }
                 return
             }
         }
-        if activeLyricIndex != nil { activeLyricIndex = nil }
+        if activeLyricIndex != nil { 
+            activeLyricIndex = nil 
+            currentLyric = ""
+            nextLyric = ""
+        }
     }
 
     private func isActiveLyric(index: Int, currentTime: Double) -> Bool {
@@ -169,7 +181,11 @@ final class PlaybackStateManager {
     }
 
     func performSeek(to time: Double) {
-        evaluateJS("if(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AudioPlayerPlugin) { window.Capacitor.Plugins.AudioPlayerPlugin.seek({to:\(time)}); } else if(typeof audio!=='undefined'&&audio) { audio.currentTime=\(time); }")
+        if let plugin = audioPlayerPlugin as? AudioPlayerPlugin {
+            plugin.seekNatively(to: time)
+        } else {
+            evaluateJS("if(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AudioPlayerPlugin) { window.Capacitor.Plugins.AudioPlayerPlugin.seek({to:\(time)}); } else if(typeof audio!=='undefined'&&audio) { audio.currentTime=\(time); }")
+        }
     }
 
     func playQueueItem(at index: Int) {

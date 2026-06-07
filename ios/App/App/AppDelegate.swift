@@ -331,6 +331,18 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         call.resolve()
     }
 
+    public func seekNatively(to time: Double) {
+        guard let player = player else {
+            self.notifyListeners("seeked", data: ["currentTime": time])
+            return
+        }
+        let cmTime = CMTime(seconds: time, preferredTimescale: 1000)
+        player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
+            self?.updateNowPlayingInfo(elapsed: time)
+            self?.notifyListeners("seeked", data: ["currentTime": time])
+        }
+    }
+
     @objc func setVolume(_ call: CAPPluginCall) {
         guard let volume = call.getFloat("volume") else {
             call.reject("Must provide a volume value")

@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct MainSwiftUIView: View {
-    @State private var state = PlaybackStateManager.shared
+    var state = PlaybackStateManager.shared
     @State private var selectedTab: String = "library"
     @State private var isSearchActive: Bool = false
     @State private var searchQuery: String = ""
@@ -176,7 +176,7 @@ struct MainSwiftUIView: View {
 }
 
 struct MiniPlayerView: View {
-    @State private var state = PlaybackStateManager.shared
+    var state = PlaybackStateManager.shared
     @Binding var showExpandedPlayer: Bool
 
     var body: some View {
@@ -247,7 +247,7 @@ struct MiniPlayerView: View {
 }
 
 struct ExpandedPlayerView: View {
-    @State private var state = PlaybackStateManager.shared
+    var state = PlaybackStateManager.shared
     @State private var showFullLyrics: Bool = false
     @State private var showQueue: Bool = false
     @State private var displayedCurrentLyric: String = ""
@@ -381,7 +381,7 @@ struct ExpandedPlayerView: View {
 }
 
 struct PlaybackProgressView: View {
-    @State private var state = PlaybackStateManager.shared
+    var state = PlaybackStateManager.shared
     @State private var seekValue: Double = 0
     @State private var isSeeking: Bool = false
 
@@ -491,7 +491,7 @@ class VisibleLinesTracker {
 }
 
 struct FullLyricsView: View {
-    @State private var state = PlaybackStateManager.shared
+    var state = PlaybackStateManager.shared
     @Environment(\.dismiss) private var dismiss
     @State private var visibleTracker = VisibleLinesTracker()
 
@@ -603,7 +603,7 @@ struct FullLyricsView: View {
 }
 
 struct QueueView: View {
-    @State private var state = PlaybackStateManager.shared
+    var state = PlaybackStateManager.shared
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -685,7 +685,7 @@ struct QueueView: View {
 }
 
 struct PlaybackControlsView: View {
-    @State private var state = PlaybackStateManager.shared
+    var state = PlaybackStateManager.shared
     
     var body: some View {
         GlassEffectContainer(spacing: 24) {
