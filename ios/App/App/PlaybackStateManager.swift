@@ -84,8 +84,8 @@ final class PlaybackStateManager {
     var queueIndex: Int = -1
 
     // MARK: - References
-    weak var webViewController: CAPBridgeViewController?
-    weak var audioPlayerPlugin: CAPPlugin?
+    @ObservationIgnored weak var webViewController: CAPBridgeViewController?
+    @ObservationIgnored weak var audioPlayerPlugin: CAPPlugin?
 
     var hasSong: Bool {
         !title.isEmpty
