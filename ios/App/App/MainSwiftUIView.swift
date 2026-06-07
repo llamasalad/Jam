@@ -407,6 +407,7 @@ struct ExpandedPlayerView: View {
             Spacer()
         }
         .padding(.top, 40)
+        }
         .preferredColorScheme(.dark)
     }
 
