@@ -11,11 +11,7 @@ final class PlaybackStateManager {
 
     // MARK: - Playback State
     var isPlaying: Bool = false
-    var currentTime: Double = 0 {
-        didSet {
-            updateActiveLyricIndex()
-        }
-    }
+    var currentTime: Double = 0
     var duration: Double = 0
     var title: String = ""
     var artist: String = ""
@@ -41,11 +37,7 @@ final class PlaybackStateManager {
     // MARK: - Lyrics State
     var currentLyric: String = ""
     var nextLyric: String = ""
-    var fullLyrics: [[String: Any]] = [] {
-        didSet {
-            updateActiveLyricIndex()
-        }
-    }
+    var fullLyrics: [[String: Any]] = []
     var activeLyricIndex: Int? = nil
 
     private func updateActiveLyricIndex() {
@@ -82,6 +74,16 @@ final class PlaybackStateManager {
     // MARK: - Queue State
     var queue: [[String: Any]] = []
     var queueIndex: Int = -1
+
+    func updateCurrentTime(_ time: Double) {
+        self.currentTime = time
+        self.updateActiveLyricIndex()
+    }
+
+    func updateFullLyrics(_ lyrics: [[String: Any]]) {
+        self.fullLyrics = lyrics
+        self.updateActiveLyricIndex()
+    }
 
     // MARK: - References
     @ObservationIgnored weak var webViewController: CAPBridgeViewController?

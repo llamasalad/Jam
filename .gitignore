@@ -6,6 +6,7 @@ dont open/
 /fonts/
 .dev.vars
 resources/
+errors.txt
 
 # AI Agent Configuration
 .agents/

@@ -224,7 +224,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             mgr.artist = artist
             mgr.album = album
             mgr.duration = duration
-            mgr.currentTime = 0
+            mgr.updateCurrentTime(0)
             mgr.isPlaying = false
             mgr.coverUrl = coverUrl
         }
@@ -282,7 +282,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             if !ct.isNaN {
                 self.notifyListeners("timeupdate", data: ["currentTime": ct])
                 Task { @MainActor in
-                    PlaybackStateManager.shared.currentTime = ct
+                    PlaybackStateManager.shared.updateCurrentTime(ct)
                 }
             }
         }
@@ -364,7 +364,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             mgr.currentLyric = current
             mgr.nextLyric = next
             if let all = call.getArray("all", [String: Any].self) {
-                mgr.fullLyrics = all
+                mgr.updateFullLyrics(all)
             }
         }
         call.resolve()
