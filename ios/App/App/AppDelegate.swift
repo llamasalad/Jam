@@ -77,7 +77,8 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "pause", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "seek", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setVolume", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "setTheme", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "setTheme", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "updateLyrics", returnType: CAPPluginReturnPromise)
     ]
 
     private var player: AVPlayer?
@@ -348,6 +349,21 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let theme = call.getString("theme") ?? "default"
         Task { @MainActor in
             PlaybackStateManager.shared.isLiquidThemeActive = (theme == "liquid-glass-theme")
+        }
+        call.resolve()
+    }
+
+    @objc func updateLyrics(_ call: CAPPluginCall) {
+        let current = call.getString("current") ?? ""
+        let next = call.getString("next") ?? ""
+        let all = call.getArray("all", [String: Any].self) ?? []
+        Task { @MainActor in
+            let mgr = PlaybackStateManager.shared
+            mgr.currentLyric = current
+            mgr.nextLyric = next
+            if !all.isEmpty {
+                mgr.fullLyrics = all
+            }
         }
         call.resolve()
     }

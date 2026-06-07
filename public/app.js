@@ -3476,6 +3476,17 @@ function updateSyncedLyricsState(force = false, atTime = null) {
     const curText = idx >= 0 ? (syncedLyrics[idx].text || '<span class="loading-dots"></span>') : '<span class="loading-dots"></span>';
     const nextText = idx >= 0 && syncedLyrics[idx + 1] ? (syncedLyrics[idx + 1].text || '·') : '';
 
+    const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
+    if (plugin && typeof plugin.updateLyrics === 'function') {
+        let plainCur = idx >= 0 ? (syncedLyrics[idx].text || '') : '';
+        let plainNext = idx >= 0 && syncedLyrics[idx + 1] ? (syncedLyrics[idx + 1].text || '') : '';
+        if (!syncedLyrics.length && plainLyrics) {
+            plainCur = "No synced lyrics available";
+            plainNext = "";
+        }
+        plugin.updateLyrics({ current: plainCur, next: plainNext, all: syncedLyrics });
+    }
+
     if (expLyricCur) {
         clearTimeout(lyricUpdateTimers.cur);
         if (force) {

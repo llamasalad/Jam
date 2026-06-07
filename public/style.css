@@ -3843,6 +3843,10 @@ body.ios-native-shell #floating-search-wrap {
   display: none !important;
 }
 
+body.ios-native-shell #header {
+  display: none !important;
+}
+
 body.ios-native-shell #app {
   background: transparent !important;
 }

@@ -17,6 +17,12 @@ class PlaybackStateManager: ObservableObject {
 
     // MARK: - Theme State
     @Published var isLiquidThemeActive: Bool = false
+    @Published var currentTheme: String = "default"
+
+    // MARK: - Lyrics State
+    @Published var currentLyric: String = ""
+    @Published var nextLyric: String = ""
+    @Published var fullLyrics: [[String: Any]] = []
 
     // MARK: - References
     weak var webViewController: CAPBridgeViewController?
@@ -54,6 +60,16 @@ class PlaybackStateManager: ObservableObject {
                 if(s){s.value='';if(typeof applyFilter==='function')applyFilter();}
             })()
         """)
+    }
+
+    func triggerSort() {
+        evaluateJS("if(typeof document !== 'undefined' && document.getElementById('sort-btn')){document.getElementById('sort-btn').click();}")
+    }
+
+    func setTheme(_ theme: String) {
+        evaluateJS("if(typeof applyTheme==='function'){currentTheme='\(theme)';localStorage.setItem('music_theme','\(theme)');applyTheme();}")
+        self.currentTheme = theme
+        self.isLiquidThemeActive = (theme == "liquid-glass-theme")
     }
 
     // MARK: - Playback Control Helpers

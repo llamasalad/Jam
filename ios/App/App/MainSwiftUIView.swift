@@ -22,7 +22,13 @@ struct MainSwiftUIView: View {
             CapacitorWebViewRepresentable()
                 .ignoresSafeArea()
 
-            // Layer 3: Native Bottom Overlays
+            // Layer 3: Native Header
+            VStack {
+                HeaderView()
+                Spacer()
+            }
+
+            // Layer 4: Native Bottom Overlays
             VStack(spacing: 0) {
                 Spacer()
 
@@ -41,6 +47,7 @@ struct MainSwiftUIView: View {
                 .padding(.bottom, 8)
             }
         }
+        .ignoresSafeArea(.keyboard)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: state.isLiquidThemeActive)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: state.hasSong)
         .sheet(isPresented: $showExpandedPlayer) {
@@ -83,11 +90,9 @@ struct MiniPlayerView: View {
 
             // Song Info
             VStack(alignment: .leading, spacing: 2) {
-                Text(state.title.isEmpty ? "Not Playing" : state.title)
-                    .font(.subheadline)
+                MarqueeText(text: state.title.isEmpty ? "Not Playing" : state.title, font: .subheadline)
                     .fontWeight(.semibold)
                     .foregroundStyle(.primary)
-                    .lineLimit(1)
 
                 if !state.artist.isEmpty {
                     Text(state.artist)
@@ -122,6 +127,7 @@ struct MiniPlayerView: View {
         }
         .padding()
         .glassEffect()
+        .contentShape(Rectangle())
         .onTapGesture {
             showExpandedPlayer = true
         }
@@ -179,6 +185,7 @@ struct FloatingDockView: View {
         }) {
             Image(systemName: "magnifyingglass")
                 .imageScale(.large)
+                .padding()
         }
         .buttonStyle(.glass)
         .glassEffectID("searchCircle", in: namespace)
@@ -189,16 +196,6 @@ struct FloatingDockView: View {
 
     @ViewBuilder
     private var searchActiveContent: some View {
-        if !isSearchFieldFocused {
-            Button(action: { exitSearch() }) {
-                Image(systemName: "music.note.house.fill")
-                    .imageScale(.large)
-            }
-            .buttonStyle(.glass)
-            .glassEffectID("tabPill", in: namespace)
-            .transition(.move(edge: .leading).combined(with: .opacity))
-        }
-
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 14, weight: .medium))
@@ -231,14 +228,13 @@ struct FloatingDockView: View {
         .glassEffect()
         .glassEffectID("searchCircle", in: namespace)
 
-        if isSearchFieldFocused {
-            Button(action: { exitSearch() }) {
-                Image(systemName: "xmark")
-                    .imageScale(.medium)
-            }
-            .buttonStyle(.glass)
-            .transition(.move(edge: .trailing).combined(with: .opacity))
+        Button(action: { exitSearch() }) {
+            Image(systemName: "xmark")
+                .imageScale(.medium)
+                .padding()
         }
+        .buttonStyle(.glass)
+        .transition(.move(edge: .trailing).combined(with: .opacity))
     }
 
     // MARK: - Tab Button
@@ -290,6 +286,7 @@ struct ExpandedPlayerView: View {
     @ObservedObject private var state = PlaybackStateManager.shared
     @State private var seekValue: Double = 0
     @State private var isSeeking: Bool = false
+    @State private var showFullLyrics: Bool = false
 
     var body: some View {
         VStack(spacing: 24) {
@@ -299,10 +296,8 @@ struct ExpandedPlayerView: View {
                 case .success(let image):
                     image
                         .resizable()
-                        .aspectRatio(contentMode: .fill)
+                        .aspectRatio(contentMode: .fit)
                 case .failure, .empty:
-                    // Was: RoundedRectangle.fill(Color.white.opacity(0.06)) — manual dim fill
-                    // Now: glassEffect on the shape itself
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .glassEffect()
                         .overlay(
@@ -316,25 +311,56 @@ struct ExpandedPlayerView: View {
             }
             .backgroundExtensionEffect()
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .padding(.horizontal, 32)
             .shadow(color: .black.opacity(0.3), radius: 24, x: 0, y: 16)
 
-            // Song Info
             VStack(spacing: 4) {
-                Text(state.title.isEmpty ? "Not Playing" : state.title)
-                    .font(.title3)
+                MarqueeText(text: state.title.isEmpty ? "Not Playing" : state.title, font: .title3)
                     .fontWeight(.bold)
                     .foregroundStyle(.primary)
-                    .lineLimit(1)
 
-                Text(state.artist.isEmpty ? " " : state.artist)
-                    .font(.title3)
+                MarqueeText(text: state.artist.isEmpty ? " " : state.artist, font: .title3)
                     .fontWeight(.medium)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
             }
             .padding(.horizontal, 24)
 
-            // Seeker
+            Button(action: {
+                showFullLyrics = true
+            }) {
+                VStack(spacing: 8) {
+                    if !state.currentLyric.isEmpty {
+                        Text(state.currentLyric)
+                            .font(.body)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.primary)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                            .animation(.easeInOut, value: state.currentLyric)
+                    } else {
+                        Text("-")
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                    }
+                    if !state.nextLyric.isEmpty {
+                        Text(state.nextLyric)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(1)
+                            .animation(.easeInOut, value: state.nextLyric)
+                    }
+                }
+                .frame(maxWidth: .infinity, minHeight: 60)
+                .padding()
+                .glassEffect()
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 24)
+            .sheet(isPresented: $showFullLyrics) {
+                FullLyricsView()
+            }
+
             VStack(spacing: 6) {
                 Slider(
                     value: Binding(
@@ -352,8 +378,6 @@ struct ExpandedPlayerView: View {
                         }
                     }
                 )
-                // Was: .tint(.white) — hardcoded, ignores environment
-                // Now: .tint(.primary) — adapts correctly
                 .tint(.primary)
 
                 HStack {
@@ -369,10 +393,6 @@ struct ExpandedPlayerView: View {
                 }
             }
             .padding(.horizontal, 24)
-
-            // Playback Controls
-            // Was: .buttonStyle(.plain) + manual .foregroundStyle(.primary) on each image
-            // Now: .buttonStyle(.glass) to match mini player, foreground inherited from env
             HStack(spacing: 40) {
                 Button(action: { state.triggerPrev() }) {
                     Image(systemName: "backward.fill")
@@ -396,8 +416,6 @@ struct ExpandedPlayerView: View {
             Spacer()
         }
         .padding(.top, 40)
-        // Was: .background(.ultraThinMaterial) — grey/white tint washes out colour behind it
-        // Now: dark translucent — lets the mesh gradient bleed through the sheet
         .background {
             Color.black.opacity(0.7)
         }
@@ -409,5 +427,222 @@ struct ExpandedPlayerView: View {
         let mins = Int(t) / 60
         let secs = Int(t) % 60
         return "\(mins):\(String(format: "%02d", secs))"
+    }
+}
+
+// MARK: - Header View
+
+struct HeaderView: View {
+    @ObservedObject private var state = PlaybackStateManager.shared
+    
+    let themes = [
+        ("Aurion", "default"),
+        ("Ember", "ember-theme"),
+        ("Glacier", "glacier-theme"),
+        ("Void", "void-theme"),
+        ("Blind", "blind-theme"),
+        ("Rosecore", "rosecore-theme"),
+        ("Abyss", "abyss-theme"),
+        ("Glass", "liquid-glass-theme"),
+        ("Aurielle", "aurielle-theme")
+    ]
+    
+    var body: some View {
+        HStack {
+            Spacer()
+            
+            Button(action: {
+                PlaybackStateManager.shared.triggerSort()
+            }) {
+                Image(systemName: "arrow.up.arrow.down")
+                    .imageScale(.large)
+                    .padding()
+            }
+            .buttonStyle(.glass)
+            
+            Menu {
+                ForEach(themes, id: \.1) { theme in
+                    Button(action: {
+                        PlaybackStateManager.shared.setTheme(theme.1)
+                    }) {
+                        Text(theme.0)
+                        if (state.currentTheme == theme.1) {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            } label: {
+                Image(systemName: "paintpalette")
+                    .imageScale(.large)
+                    .padding()
+            }
+            .buttonStyle(.glass)
+        }
+        .padding()
+    }
+}
+
+// MARK: - Marquee Text
+
+struct MarqueeText: View {
+    let text: String
+    let font: Font
+    
+    @State private var animate = false
+    @State private var textWidth: CGFloat = 0
+    
+    var body: some View {
+        ZStack(alignment: .leading) {
+            Text(text)
+                .font(font)
+                .lineLimit(1)
+                .opacity(0)
+            
+            GeometryReader { geometry in
+                Text(text)
+                    .font(font)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .background(GeometryReader {
+                        Color.clear.preference(key: ViewWidthKey.self, value: $0.frame(in: .local).width)
+                    })
+                    .onPreferenceChange(ViewWidthKey.self) {
+                        textWidth = $0
+                    }
+                    .offset(x: animate && textWidth > geometry.size.width ? -(textWidth - geometry.size.width) : 0)
+                    .animation(
+                        textWidth > geometry.size.width ?
+                        Animation.linear(duration: Double(textWidth) * 0.03).delay(1.0).repeatForever(autoreverses: true) :
+                        .default,
+                        value: animate
+                    )
+            }
+            .clipped()
+        }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { animate = true }
+        }
+        .onChange(of: text) { _, _ in
+            animate = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { animate = true }
+        }
+    }
+}
+
+struct ViewWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
+// MARK: - Full Lyrics View
+
+struct FullLyricsView: View {
+    @ObservedObject private var state = PlaybackStateManager.shared
+    @Environment(\.dismiss) private var dismiss
+    @State private var visibleLines: Set<Int> = []
+    
+    var body: some View {
+        ZStack {
+            // Blurred Background
+            AsyncImage(url: URL(string: state.coverUrl)) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                case .failure, .empty:
+                    Color.black
+                @unknown default:
+                    Color.black
+                }
+            }
+            .ignoresSafeArea()
+            .overlay(Color.black.opacity(0.6))
+            .blur(radius: 40)
+            .ignoresSafeArea()
+            
+            VStack {
+                // Header
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                }
+                .padding()
+                
+                ScrollViewReader { proxy in
+                    ScrollView(showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 24) {
+                            if state.fullLyrics.isEmpty {
+                                Text("No lyrics available")
+                                    .font(.title2)
+                                    .fontWeight(.medium)
+                                    .foregroundStyle(.white.opacity(0.6))
+                            } else {
+                                ForEach(Array(state.fullLyrics.enumerated()), id: \.offset) { index, lyricDict in
+                                    if let time = lyricDict["time"] as? Double,
+                                       let text = lyricDict["text"] as? String {
+                                        
+                                        let isActive = isActiveLyric(index: index, currentTime: state.currentTime)
+                                        
+                                        Text(text.isEmpty ? "•" : text)
+                                            .font(.system(size: isActive ? 28 : 24, weight: isActive ? .bold : .medium))
+                                            .foregroundStyle(isActive ? .white : .white.opacity(0.5))
+                                            .multilineTextAlignment(.leading)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .id(index)
+                                            .animation(.easeInOut(duration: 0.3), value: isActive)
+                                            .onTapGesture {
+                                                state.performSeek(to: time)
+                                            }
+                                            .onAppear {
+                                                visibleLines.insert(index)
+                                            }
+                                            .onDisappear {
+                                                visibleLines.remove(index)
+                                            }
+                                            .onChange(of: isActive) { _, new in
+                                                if new {
+                                                    // Auto-scroll ONLY when active line is visible
+                                                    if visibleLines.contains(index) || (index > 0 && visibleLines.contains(index - 1)) || visibleLines.isEmpty {
+                                                        withAnimation(.easeInOut(duration: 0.5)) {
+                                                            proxy.scrollTo(index, anchor: .center)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 120)
+                        .padding(.top, 40)
+                    }
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+    
+    private func isActiveLyric(index: Int, currentTime: Double) -> Bool {
+        guard let currentDict = state.fullLyrics[index] as? [String: Any],
+              let time = currentDict["time"] as? Double else { return false }
+        
+        let nextTime: Double
+        if index + 1 < state.fullLyrics.count,
+           let nextDict = state.fullLyrics[index + 1] as? [String: Any],
+           let nt = nextDict["time"] as? Double {
+            nextTime = nt
+        } else {
+            nextTime = .infinity
+        }
+        
+        return currentTime >= time && currentTime < nextTime
     }
 }
