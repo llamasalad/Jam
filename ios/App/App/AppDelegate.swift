@@ -358,12 +358,12 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func updateLyrics(_ call: CAPPluginCall) {
         let current = call.getString("current") ?? ""
         let next = call.getString("next") ?? ""
-        let all = call.getArray("all", [String: Any].self) ?? []
+        
         Task { @MainActor in
             let mgr = PlaybackStateManager.shared
             mgr.currentLyric = current
             mgr.nextLyric = next
-            if !all.isEmpty {
+            if let all = call.getArray("all", [String: Any].self) {
                 mgr.fullLyrics = all
             }
         }

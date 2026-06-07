@@ -6,3 +6,7 @@ dont open/
 /fonts/
 .dev.vars
 resources/
+
+# AI Agent Configuration
+.agents/
+skills-lock.json

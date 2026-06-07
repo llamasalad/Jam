@@ -2,22 +2,29 @@ import SwiftUI
 import Capacitor
 import Combine
 
+import Observation
+
+@Observable
 @MainActor
-class PlaybackStateManager: ObservableObject {
+final class PlaybackStateManager {
     static let shared = PlaybackStateManager()
 
     // MARK: - Playback State
-    @Published var isPlaying: Bool = false
-    @Published var currentTime: Double = 0
-    @Published var duration: Double = 0
-    @Published var title: String = ""
-    @Published var artist: String = ""
-    @Published var album: String = ""
-    @Published var coverUrl: String = ""
+    var isPlaying: Bool = false
+    var currentTime: Double = 0 {
+        didSet {
+            updateActiveLyricIndex()
+        }
+    }
+    var duration: Double = 0
+    var title: String = ""
+    var artist: String = ""
+    var album: String = ""
+    var coverUrl: String = ""
 
     // MARK: - Playback Mode State
-    @Published var shuffle: Bool = false
-    @Published var repeatMode: String = "off"  // "off", "all", "one"
+    var shuffle: Bool = false
+    var repeatMode: String = "off"  // "off", "all", "one"
 
     func toggleShuffle() {
         evaluateJS("if(typeof window.toggleShuffle==='function')window.toggleShuffle()")
@@ -28,17 +35,53 @@ class PlaybackStateManager: ObservableObject {
     }
 
     // MARK: - Theme State
-    @Published var isLiquidThemeActive: Bool = false
-    @Published var currentTheme: String = "default"
+    var isLiquidThemeActive: Bool = false
+    var currentTheme: String = "default"
 
     // MARK: - Lyrics State
-    @Published var currentLyric: String = ""
-    @Published var nextLyric: String = ""
-    @Published var fullLyrics: [[String: Any]] = []
+    var currentLyric: String = ""
+    var nextLyric: String = ""
+    var fullLyrics: [[String: Any]] = [] {
+        didSet {
+            updateActiveLyricIndex()
+        }
+    }
+    var activeLyricIndex: Int? = nil
+
+    private func updateActiveLyricIndex() {
+        if fullLyrics.isEmpty {
+            if activeLyricIndex != nil { activeLyricIndex = nil }
+            return
+        }
+        for index in 0..<fullLyrics.count {
+            if isActiveLyric(index: index, currentTime: currentTime) {
+                if activeLyricIndex != index {
+                    activeLyricIndex = index
+                }
+                return
+            }
+        }
+        if activeLyricIndex != nil { activeLyricIndex = nil }
+    }
+
+    private func isActiveLyric(index: Int, currentTime: Double) -> Bool {
+        let currentDict = fullLyrics[index]
+        guard let time = currentDict["time"] as? Double else { return false }
+
+        let nextTime: Double
+        if index + 1 < fullLyrics.count,
+           let nt = fullLyrics[index + 1]["time"] as? Double {
+            nextTime = nt
+        } else {
+            nextTime = .infinity
+        }
+
+        return currentTime >= time && currentTime < nextTime
+    }
 
     // MARK: - Queue State
-    @Published var queue: [[String: Any]] = []
-    @Published var queueIndex: Int = -1
+    var queue: [[String: Any]] = []
+    var queueIndex: Int = -1
 
     // MARK: - References
     weak var webViewController: CAPBridgeViewController?

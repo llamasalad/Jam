@@ -1,12 +1,13 @@
 import SwiftUI
 
 struct MainSwiftUIView: View {
-    @StateObject private var state = PlaybackStateManager.shared
+    @State private var state = PlaybackStateManager.shared
     @State private var selectedTab: String = "library"
     @State private var isSearchActive: Bool = false
     @State private var searchQuery: String = ""
     @State private var showExpandedPlayer: Bool = false
     @FocusState private var isSearchFieldFocused: Bool
+    @State private var themeChangePulse: Int = 0
 
     var body: some View {
         NavigationStack {
@@ -53,6 +54,7 @@ struct MainSwiftUIView: View {
                         ], id: \.1) { theme in
                             Button(action: {
                                 PlaybackStateManager.shared.setTheme(theme.1)
+                                themeChangePulse += 1
                             }) {
                                 Text(theme.0)
                                 if state.currentTheme == theme.1 {
@@ -62,6 +64,7 @@ struct MainSwiftUIView: View {
                         }
                     } label: {
                         Image(systemName: "paintpalette")
+                            .symbolEffect(.bounce, value: themeChangePulse)
                     }
                 }
 
@@ -174,29 +177,30 @@ struct MainSwiftUIView: View {
 }
 
 struct MiniPlayerView: View {
-    @ObservedObject private var state = PlaybackStateManager.shared
+    @State private var state = PlaybackStateManager.shared
     @Binding var showExpandedPlayer: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
-            AsyncImage(url: URL(string: state.coverUrl)) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                case .failure, .empty:
-                    Image(systemName: "music.note")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(.secondary)
-                @unknown default:
-                    Image(systemName: "music.note")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(.secondary)
+        GlassEffectContainer {
+            HStack(spacing: 12) {
+                AsyncImage(url: URL(string: state.coverUrl)) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    case .failure:
+                        Image(systemName: "music.note")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundStyle(.secondary)
+                    case .empty:
+                        ProgressView()
+                    @unknown default:
+                        ProgressView()
+                    }
                 }
-            }
-            .frame(width: 44, height: 44)
-            .glassEffect(in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .frame(width: 44, height: 44)
+                .glassEffect(in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
                 MarqueeText(text: state.title.isEmpty ? "Not Playing" : state.title, font: .subheadline)
@@ -232,20 +236,19 @@ struct MiniPlayerView: View {
                 }
                 .buttonStyle(.glass)
             }
-        }
-        .padding()
-        .glassEffect()
-        .contentShape(Rectangle())
-        .onTapGesture {
-            showExpandedPlayer = true
+            }
+            .padding()
+            .glassEffect()
+            .contentShape(Rectangle())
+            .onTapGesture {
+                showExpandedPlayer = true
+            }
         }
     }
 }
 
 struct ExpandedPlayerView: View {
-    @ObservedObject private var state = PlaybackStateManager.shared
-    @State private var seekValue: Double = 0
-    @State private var isSeeking: Bool = false
+    @State private var state = PlaybackStateManager.shared
     @State private var showFullLyrics: Bool = false
     @State private var showQueue: Bool = false
     @State private var displayedCurrentLyric: String = ""
@@ -256,24 +259,7 @@ struct ExpandedPlayerView: View {
     var body: some View {
         ZStack {
             // Blurred Background
-            AsyncImage(url: URL(string: state.coverUrl)) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                case .failure, .empty:
-                    Color.black
-                @unknown default:
-                    Color.black
-                }
-            }
-            .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-            .scaleEffect(1.2)
-            .ignoresSafeArea()
-            .overlay(Color.black.opacity(0.6))
-            .blur(radius: 40)
-            .ignoresSafeArea()
+            BlurredBackgroundView(url: state.coverUrl)
 
             VStack(spacing: 16) {
                 AsyncImage(url: URL(string: state.coverUrl)) { phase in
@@ -283,7 +269,7 @@ struct ExpandedPlayerView: View {
                             .resizable()
                             .aspectRatio(1, contentMode: .fit)
                             .frame(maxWidth: .infinity)
-                    case .failure, .empty:
+                    case .failure:
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .glassEffect()
                             .aspectRatio(1, contentMode: .fit)
@@ -293,11 +279,16 @@ struct ExpandedPlayerView: View {
                                     .font(.system(size: 48, weight: .light))
                                     .foregroundStyle(.secondary)
                             )
+                    case .empty:
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .glassEffect()
+                            .aspectRatio(1, contentMode: .fit)
+                            .frame(maxWidth: .infinity)
+                            .overlay(ProgressView())
                     @unknown default:
                         EmptyView()
                     }
                 }
-                .backgroundExtensionEffect()
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .padding(.horizontal, 32)
                 .shadow(color: .black.opacity(0.3), radius: 24, x: 0, y: 16)
@@ -340,76 +331,10 @@ struct ExpandedPlayerView: View {
                     FullLyricsView()
                 }
 
-                VStack(spacing: 6) {
-                    Slider(
-                        value: Binding(
-                            get: { isSeeking ? seekValue : state.currentTime },
-                            set: { newValue in
-                                seekValue = newValue
-                                isSeeking = true
-                            }
-                        ),
-                        in: 0...max(state.duration, 1),
-                        onEditingChanged: { editing in
-                            if !editing {
-                                state.performSeek(to: seekValue)
-                                isSeeking = false
-                            }
-                        }
-                    )
-                    .tint(.primary)
-
-                    HStack {
-                        Text(formatTime(isSeeking ? seekValue : state.currentTime))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                        Spacer()
-                        Text(formatTime(state.duration))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                    }
-                }
-                .onChange(of: state.title) { _, _ in
-                    seekValue = 0
-                    isSeeking = false
-                }
+                PlaybackProgressView()
                 .padding(.horizontal, 24)
 
-                HStack(spacing: 32) {
-                    Button(action: { state.toggleShuffle() }) {
-                        Image(systemName: "shuffle")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundStyle(state.shuffle ? .primary : .secondary)
-                            .opacity(state.shuffle ? 1 : 0.5)
-                    }
-
-                    Button(action: { state.triggerPrev() }) {
-                        Image(systemName: "backward.fill")
-                            .font(.system(size: 28, weight: .medium))
-                            .foregroundStyle(.primary)
-                    }
-
-                    Button(action: { state.togglePlayPause() }) {
-                        Image(systemName: state.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                            .font(.system(size: 56, weight: .medium))
-                            .foregroundStyle(.primary)
-                    }
-
-                    Button(action: { state.triggerNext() }) {
-                        Image(systemName: "forward.fill")
-                            .font(.system(size: 28, weight: .medium))
-                            .foregroundStyle(.primary)
-                    }
-
-                    Button(action: { state.cycleRepeat() }) {
-                        Image(systemName: state.repeatMode == "one" ? "repeat.1" : "repeat")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundStyle(state.repeatMode == "off" ? .secondary : .primary)
-                            .opacity(state.repeatMode == "off" ? 0.5 : 1)
-                    }
-                }
+                PlaybackControlsView()
 
                 Spacer()
 
@@ -453,35 +378,57 @@ struct ExpandedPlayerView: View {
         .preferredColorScheme(.dark)
     }
 
+    }
+}
+
+struct PlaybackProgressView: View {
+    @State private var state = PlaybackStateManager.shared
+    @State private var seekValue: Double = 0
+    @State private var isSeeking: Bool = false
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Slider(
+                value: Binding(
+                    get: { isSeeking ? seekValue : state.currentTime },
+                    set: { newValue in
+                        seekValue = newValue
+                        isSeeking = true
+                    }
+                ),
+                in: 0...max(state.duration, 1),
+                onEditingChanged: { editing in
+                    if !editing {
+                        state.performSeek(to: seekValue)
+                        isSeeking = false
+                    }
+                }
+            )
+            .tint(.primary)
+
+            HStack {
+                Text(formatTime(isSeeking ? seekValue : state.currentTime))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                Spacer()
+                Text(formatTime(state.duration))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+        }
+        .onChange(of: state.title) { _, _ in
+            seekValue = 0
+            isSeeking = false
+        }
+    }
+
     private func formatTime(_ t: Double) -> String {
         guard t.isFinite && t >= 0 else { return "0:00" }
         let mins = Int(t) / 60
         let secs = Int(t) % 60
         return "\(mins):\(String(format: "%02d", secs))"
-    }
-
-    private func isActiveLyric(index: Int, currentTime: Double) -> Bool {
-        let currentDict = state.fullLyrics[index]
-        guard let time = currentDict["time"] as? Double else { return false }
-
-        let nextTime: Double
-        if index + 1 < state.fullLyrics.count,
-           let nt = state.fullLyrics[index + 1]["time"] as? Double {
-            nextTime = nt
-        } else {
-            nextTime = .infinity
-        }
-
-        return currentTime >= time && currentTime < nextTime
-    }
-
-    private func getActiveLyricIndex() -> Int? {
-        for index in 0..<state.fullLyrics.count {
-            if isActiveLyric(index: index, currentTime: state.currentTime) {
-                return index
-            }
-        }
-        return nil
     }
 }
 
@@ -541,10 +488,14 @@ struct ViewWidthKey: PreferenceKey {
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }
 
+class VisibleLinesTracker {
+    var lines: Set<Int> = []
+}
+
 struct FullLyricsView: View {
-    @ObservedObject private var state = PlaybackStateManager.shared
+    @State private var state = PlaybackStateManager.shared
     @Environment(\.dismiss) private var dismiss
-    @State private var visibleLines: Set<Int> = []
+    @State private var visibleTracker = VisibleLinesTracker()
 
     var body: some View {
         ZStack {
@@ -591,7 +542,7 @@ struct FullLyricsView: View {
                                     if let time = lyricDict["time"] as? Double,
                                        let text = lyricDict["text"] as? String {
 
-                                        let isActive = isActiveLyric(index: index, currentTime: state.currentTime)
+                                        let isActive = state.activeLyricIndex == index
 
                                         Text(text.isEmpty ? "•" : text)
                                             .font(.system(size: isActive ? 24 : 20, weight: isActive ? .bold : .medium))
@@ -604,15 +555,15 @@ struct FullLyricsView: View {
                                                 state.performSeek(to: time)
                                             }
                                             .onAppear {
-                                                visibleLines.insert(index)
+                                                visibleTracker.lines.insert(index)
                                             }
                                             .onDisappear {
-                                                visibleLines.remove(index)
+                                                visibleTracker.lines.remove(index)
                                             }
                                             .onChange(of: isActive) { _, new in
                                                 if new {
-                                                    let isPreviousVisible = index > 0 && visibleLines.contains(index - 1)
-                                                    let isCurrentVisible = visibleLines.contains(index)
+                                                    let isPreviousVisible = index > 0 && visibleTracker.lines.contains(index - 1)
+                                                    let isCurrentVisible = visibleTracker.lines.contains(index)
                                                     if index == 0 || isPreviousVisible || isCurrentVisible {
                                                         withAnimation(.easeInOut(duration: 0.5)) {
                                                             proxy.scrollTo(index, anchor: .center)
@@ -628,16 +579,20 @@ struct FullLyricsView: View {
                         .padding(.bottom, 120)
                         .padding(.top, 40)
                     }
-                    .onChange(of: state.title) { _, _ in
-                        if !state.fullLyrics.isEmpty {
-                            withAnimation {
-                                proxy.scrollTo(0, anchor: .top)
+                    .onChange(of: state.fullLyrics.count) { _, newCount in
+                        if newCount > 0 {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                if let activeIndex = state.activeLyricIndex {
+                                    withAnimation(.easeInOut(duration: 0.5)) {
+                                        proxy.scrollTo(activeIndex, anchor: .center)
+                                    }
+                                }
                             }
                         }
                     }
                     .onAppear {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            if let activeIndex = getActiveLyricIndex() {
+                            if let activeIndex = state.activeLyricIndex {
                                 proxy.scrollTo(activeIndex, anchor: .center)
                             }
                         }
@@ -648,38 +603,16 @@ struct FullLyricsView: View {
         .preferredColorScheme(.dark)
     }
 
-    private func getActiveLyricIndex() -> Int? {
-        for index in 0..<state.fullLyrics.count {
-            if isActiveLyric(index: index, currentTime: state.currentTime) {
-                return index
-            }
-        }
-        return nil
-    }
-
-    private func isActiveLyric(index: Int, currentTime: Double) -> Bool {
-        let currentDict = state.fullLyrics[index]
-        guard let time = currentDict["time"] as? Double else { return false }
-
-        let nextTime: Double
-        if index + 1 < state.fullLyrics.count,
-           let nt = state.fullLyrics[index + 1]["time"] as? Double {
-            nextTime = nt
-        } else {
-            nextTime = .infinity
-        }
-
-        return currentTime >= time && currentTime < nextTime
     }
 }
 
 struct QueueView: View {
-    @ObservedObject private var state = PlaybackStateManager.shared
+    @State private var state = PlaybackStateManager.shared
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         ZStack {
-            Color(white: 0.1).ignoresSafeArea()
+            BlurredBackgroundView(url: state.coverUrl)
 
             VStack {
                 HStack {
@@ -706,6 +639,7 @@ struct QueueView: View {
                             HStack(spacing: 12) {
                                 if isPlaying {
                                     Image(systemName: "waveform")
+                                        .symbolEffect(.variableColor.iterative, options: .repeating, isActive: state.isPlaying)
                                         .foregroundStyle(.white)
                                         .frame(width: 24)
                                 } else {
@@ -730,8 +664,7 @@ struct QueueView: View {
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 10)
-                            .background(isPlaying ? Color.white.opacity(0.1) : Color.clear)
-                            .cornerRadius(8)
+                            .glassEffect(isPlaying ? .regular.tint(.white.opacity(0.1)) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 state.playQueueItem(at: index)
@@ -747,9 +680,87 @@ struct QueueView: View {
                     }
                 }
                 .listStyle(.plain)
+                .scrollContentBackground(.hidden)
                 .environment(\.editMode, .constant(.active))
             }
         }
         .preferredColorScheme(.dark)
+    }
+}
+
+struct PlaybackControlsView: View {
+    @State private var state = PlaybackStateManager.shared
+    
+    var body: some View {
+        GlassEffectContainer(spacing: 24) {
+            HStack(spacing: 24) {
+                Button(action: { state.toggleShuffle() }) {
+                    Image(systemName: "shuffle")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundStyle(state.shuffle ? .primary : .secondary)
+                        .frame(width: 44, height: 44)
+                }
+                .glassEffect(state.shuffle ? .regular.tint(.accentColor.opacity(0.4)).interactive() : .clear.interactive(), in: .circle)
+                
+                Button(action: { state.triggerPrev() }) {
+                    Image(systemName: "backward.fill")
+                        .font(.system(size: 24, weight: .medium))
+                        .foregroundStyle(.primary)
+                        .frame(width: 54, height: 54)
+                }
+                .glassEffect(.regular.interactive(), in: .circle)
+
+                Button(action: { state.togglePlayPause() }) {
+                    Image(systemName: state.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 32, weight: .bold))
+                        .foregroundStyle(.primary)
+                        .frame(width: 72, height: 72)
+                }
+                .glassEffect(.regular.interactive(), in: .circle)
+
+                Button(action: { state.triggerNext() }) {
+                    Image(systemName: "forward.fill")
+                        .font(.system(size: 24, weight: .medium))
+                        .foregroundStyle(.primary)
+                        .frame(width: 54, height: 54)
+                }
+                .glassEffect(.regular.interactive(), in: .circle)
+
+                Button(action: { state.cycleRepeat() }) {
+                    Image(systemName: state.repeatMode == "one" ? "repeat.1" : "repeat")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundStyle(state.repeatMode == "off" ? .secondary : .primary)
+                        .frame(width: 44, height: 44)
+                }
+                .glassEffect(state.repeatMode != "off" ? .regular.tint(.accentColor.opacity(0.4)).interactive() : .clear.interactive(), in: .circle)
+            }
+        }
+    }
+}
+
+struct BlurredBackgroundView: View {
+    let url: String
+    
+    var body: some View {
+        AsyncImage(url: URL(string: url)) { phase in
+            switch phase {
+            case .success(let image):
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            case .failure:
+                Color.black
+            case .empty:
+                Color.black
+            @unknown default:
+                Color.black
+            }
+        }
+        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+        .scaleEffect(1.2)
+        .ignoresSafeArea()
+        .overlay(Color.black.opacity(0.6))
+        .blur(radius: 40)
+        .ignoresSafeArea()
     }
 }
