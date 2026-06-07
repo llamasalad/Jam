@@ -15,6 +15,18 @@ class PlaybackStateManager: ObservableObject {
     @Published var album: String = ""
     @Published var coverUrl: String = ""
 
+    // MARK: - Playback Mode State
+    @Published var shuffle: Bool = false
+    @Published var repeatMode: String = "off"  // "off", "all", "one"
+
+    func toggleShuffle() {
+        evaluateJS("if(typeof window.toggleShuffle==='function')window.toggleShuffle()")
+    }
+
+    func cycleRepeat() {
+        evaluateJS("if(typeof window.toggleRepeat==='function')window.toggleRepeat()")
+    }
+
     // MARK: - Theme State
     @Published var isLiquidThemeActive: Bool = false
     @Published var currentTheme: String = "default"

@@ -104,7 +104,6 @@ struct MainSwiftUIView: View {
                                 PlaybackStateManager.shared.clearSearch()
                             }
                         }) {
-                            Text("Cancel")
                         }
                     } else {
                         Button(action: {
@@ -118,8 +117,7 @@ struct MainSwiftUIView: View {
                                     .font(.system(size: 18))
                                 Text("Library").font(.system(size: 10, weight: .medium))
                             }
-                            .padding(.vertical, 10)
-                            .padding(.horizontal, 12)
+                            .padding()
                         }
                         .foregroundStyle(selectedTab == "library" ? .primary : .secondary)
 
@@ -134,8 +132,7 @@ struct MainSwiftUIView: View {
                                     .font(.system(size: 18))
                                 Text("Playlists").font(.system(size: 10, weight: .medium))
                             }
-                            .padding(.vertical, 10)
-                            .padding(.horizontal, 12)
+                            .padding()
                         }
                         .foregroundStyle(selectedTab == "playlists" ? .primary : .secondary)
                         
@@ -247,6 +244,10 @@ struct ExpandedPlayerView: View {
     @State private var isSeeking: Bool = false
     @State private var showFullLyrics: Bool = false
     @State private var showQueue: Bool = false
+    @State private var displayedCurrentLyric: String = ""
+    @State private var displayedNextLyric: String = ""
+    @State private var lyricOpacity: Double = 1
+    @State private var lyricOffset: CGFloat = 0
 
     var body: some View {
         ZStack {
@@ -310,30 +311,45 @@ struct ExpandedPlayerView: View {
 
             Button(action: { showFullLyrics = true }) {
                 VStack(spacing: 10) {
-                    Text(state.currentLyric.isEmpty ? "–" : state.currentLyric)
+                    Text(displayedCurrentLyric.isEmpty ? "..." : displayedCurrentLyric)
                         .font(.body.weight(.semibold))
                         .foregroundStyle(.primary)
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
-                        .id(state.currentLyric)
-                        .transition(.push(from: .bottom))
 
-                    Text(state.nextLyric.isEmpty ? " " : state.nextLyric)
+                    Text(displayedNextLyric.isEmpty ? " " : displayedNextLyric)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
-                        .id(state.nextLyric)
-                        .transition(.push(from: .bottom))
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 90)
                 .clipped()
                 .contentShape(Rectangle())
+                .opacity(lyricOpacity)
+                .offset(y: lyricOffset)
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 24)
-            .animation(.easeInOut(duration: 0.4), value: state.currentLyric)
+            .onAppear {
+                displayedCurrentLyric = state.currentLyric
+                displayedNextLyric = state.nextLyric
+            }
+            .onChange(of: state.currentLyric) { _, _ in
+                withAnimation(.easeOut(duration: 0.1)) {
+                    lyricOpacity = 0
+                    lyricOffset = 6
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    displayedCurrentLyric = state.currentLyric
+                    displayedNextLyric = state.nextLyric
+                    withAnimation(.easeIn(duration: 0.15)) {
+                        lyricOpacity = 1
+                        lyricOffset = 0
+                    }
+                }
+            }
             .sheet(isPresented: $showFullLyrics) {
                 FullLyricsView()
             }
@@ -374,7 +390,14 @@ struct ExpandedPlayerView: View {
                 isSeeking = false
             }
             .padding(.horizontal, 24)
-            HStack(spacing: 40) {
+            HStack(spacing: 32) {
+                Button(action: { state.toggleShuffle() }) {
+                    Image(systemName: "shuffle")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundStyle(state.shuffle ? .primary : .secondary)
+                        .opacity(state.shuffle ? 1 : 0.5)
+                }
+
                 Button(action: { state.triggerPrev() }) {
                     Image(systemName: "backward.fill")
                         .font(.system(size: 28, weight: .medium))
@@ -391,6 +414,13 @@ struct ExpandedPlayerView: View {
                     Image(systemName: "forward.fill")
                         .font(.system(size: 28, weight: .medium))
                         .foregroundStyle(.primary)
+                }
+
+                Button(action: { state.cycleRepeat() }) {
+                    Image(systemName: state.repeatMode == "one" ? "repeat.1" : "repeat")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundStyle(state.repeatMode == "off" ? .secondary : .primary)
+                        .opacity(state.repeatMode == "off" ? 0.5 : 1)
                 }
             }
 

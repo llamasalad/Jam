@@ -2441,13 +2441,13 @@ function nextTrack() {
     const isLast = qIdx >= queue.length - 1;
     if (repeatMode === 'off' && isLast) return;
     qIdx = (qIdx + 1) % queue.length;
-    play(queue[qIdx]); updateActive();
+    play(queue[qIdx]); updateActive(); renderQueue();
 }
 
 function prevTrack() {
     if (!queue.length) return;
     qIdx = (qIdx - 1 + queue.length) % queue.length;
-    play(queue[qIdx]); updateActive();
+    play(queue[qIdx]); updateActive(); renderQueue();
 }
 
 function updateActive() {
@@ -3842,6 +3842,8 @@ async function init() {
             }
         }
     } catch (_) { }
+
+    notifyNativePlaybackState();
 }
 
 document.addEventListener('contextmenu', (e) => {
@@ -4081,9 +4083,35 @@ if ('serviceWorker' in navigator) {
 // Expose functions for native iOS shell bridging
 window.nextTrack = nextTrack;
 window.prevTrack = prevTrack;
+
 window.applyFilter = applyFilter;
 Object.defineProperty(window, 'audio', {
     get: function () { return audio; }
 });
+
+window.playQueueIndex = function (idx) {
+    if (idx < 0 || idx >= queue.length) return;
+    qIdx = idx;
+    play(queue[qIdx]);
+    updateActive();
+    renderQueue();
+};
+
+function notifyNativePlaybackState() {
+    const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
+    if (plugin && typeof plugin.setPlaybackState === 'function') {
+        plugin.setPlaybackState({ shuffle, repeatMode });
+    }
+}
+
+window.toggleShuffle = function () {
+    if (btnShuffle) btnShuffle.onclick();
+    notifyNativePlaybackState();
+};
+
+window.toggleRepeat = function () {
+    if (btnRepeat) btnRepeat.onclick();
+    notifyNativePlaybackState();
+};
 
 (async () => { const ok = await checkAuth(); if (ok) init() })();
