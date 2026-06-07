@@ -79,7 +79,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "setVolume", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setTheme", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "updateLyrics", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "updateQueue", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "updateQueue", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setPlaybackState", returnType: CAPPluginReturnPromise),
     ]
 
