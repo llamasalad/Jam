@@ -24,6 +24,10 @@ class PlaybackStateManager: ObservableObject {
     @Published var nextLyric: String = ""
     @Published var fullLyrics: [[String: Any]] = []
 
+    // MARK: - Queue State
+    @Published var queue: [[String: Any]] = []
+    @Published var queueIndex: Int = -1
+
     // MARK: - References
     weak var webViewController: CAPBridgeViewController?
     weak var audioPlayerPlugin: CAPPlugin?
@@ -105,6 +109,10 @@ class PlaybackStateManager: ObservableObject {
 
     func performSeek(to time: Double) {
         evaluateJS("if(typeof audio!=='undefined'&&audio){audio.currentTime=\(time)}")
+    }
+
+    func playQueueItem(at index: Int) {
+        evaluateJS("if(typeof playQueueIndex==='function')playQueueIndex(\(index))")
     }
 
     // MARK: - Private

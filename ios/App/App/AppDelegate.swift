@@ -78,7 +78,8 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "seek", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setVolume", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setTheme", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "updateLyrics", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "updateLyrics", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "updateQueue", returnType: CAPPluginReturnPromise)
     ]
 
     private var player: AVPlayer?
@@ -364,6 +365,16 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             if !all.isEmpty {
                 mgr.fullLyrics = all
             }
+        }
+        call.resolve()
+    }
+
+    @objc func updateQueue(_ call: CAPPluginCall) {
+        let queue = call.getArray("queue", [String: Any].self) ?? []
+        let queueIndex = call.getInt("queueIndex") ?? -1
+        Task { @MainActor in
+            PlaybackStateManager.shared.queue = queue
+            PlaybackStateManager.shared.queueIndex = queueIndex
         }
         call.resolve()
     }

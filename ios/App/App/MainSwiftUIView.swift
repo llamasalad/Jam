@@ -19,9 +19,9 @@ struct MainSwiftUIView: View {
                         .ignoresSafeArea()
                 }
                 CapacitorWebViewRepresentable()
-                    .ignoresSafeArea(edges: [.top])
+                    .ignoresSafeArea(edges: [.top, .bottom])
             }
-            .safeAreaInset(edge: .bottom) {
+            .overlay(alignment: .bottom) {
                 if state.hasSong {
                     MiniPlayerView(showExpandedPlayer: $showExpandedPlayer)
                         .padding(.horizontal, 16)
@@ -245,6 +245,7 @@ struct ExpandedPlayerView: View {
     @State private var seekValue: Double = 0
     @State private var isSeeking: Bool = false
     @State private var showFullLyrics: Bool = false
+    @State private var showQueue: Bool = false
 
     var body: some View {
         ZStack {
@@ -309,45 +310,46 @@ struct ExpandedPlayerView: View {
             Button(action: {
                 showFullLyrics = true
             }) {
-                VStack(spacing: 8) {
-                    if state.fullLyrics.isEmpty {
-                        Text(state.currentLyric.isEmpty ? "-" : state.currentLyric)
-                            .font(.body.weight(.medium))
-                            .foregroundStyle(.primary)
-                    } else {
-                        if let activeIndex = getActiveLyricIndex() {
-                            if let text = state.fullLyrics[activeIndex]["text"] as? String {
-                                Text(text.isEmpty ? "•" : text)
-                                    .font(.body)
-                                    .fontWeight(.bold)
+                ScrollViewReader { proxy in
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 8) {
+                            if state.fullLyrics.isEmpty {
+                                Text(state.currentLyric.isEmpty ? "-" : state.currentLyric)
+                                    .font(.body.weight(.medium))
                                     .foregroundStyle(.primary)
-                                    .multilineTextAlignment(.center)
-                                    .id("active-\\(activeIndex)")
+                            } else {
+                                ForEach(Array(state.fullLyrics.enumerated()), id: \.offset) { index, lyricDict in
+                                    if let text = lyricDict["text"] as? String {
+                                        let isActive = isActiveLyric(index: index, currentTime: state.currentTime)
+                                        Text(text.isEmpty ? "•" : text)
+                                            .font(isActive ? .body : .callout)
+                                            .fontWeight(isActive ? .bold : .regular)
+                                            .foregroundStyle(isActive ? .primary : .secondary)
+                                            .multilineTextAlignment(.center)
+                                            .id(index)
+                                            .onChange(of: isActive) { _, new in
+                                                if new {
+                                                    withAnimation(.easeInOut(duration: 0.5)) {
+                                                        proxy.scrollTo(index, anchor: .center)
+                                                    }
+                                                }
+                                            }
+                                    }
+                                }
                             }
-                            
-                            if activeIndex + 1 < state.fullLyrics.count,
-                               let nextText = state.fullLyrics[activeIndex + 1]["text"] as? String {
-                                Text(nextText.isEmpty ? "•" : nextText)
-                                    .font(.callout)
-                                    .fontWeight(.regular)
-                                    .foregroundStyle(.secondary)
-                                    .multilineTextAlignment(.center)
-                                    .lineLimit(2)
-                                    .id("next-\\(activeIndex + 1)")
+                        }
+                        .padding(.vertical, 40)
+                    }
+                    .onChange(of: state.title) { _, _ in
+                        if !state.fullLyrics.isEmpty {
+                            withAnimation {
+                                proxy.scrollTo(0, anchor: .center)
                             }
-                        } else {
-                            Text("•")
-                                .font(.body)
-                                .fontWeight(.bold)
-                                .foregroundStyle(.primary)
                         }
                     }
                 }
-                .animation(.easeInOut(duration: 0.3), value: getActiveLyricIndex())
-                .frame(maxWidth: .infinity, minHeight: 60)
-                .padding()
-                .glassEffect()
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .frame(maxWidth: .infinity)
+                .frame(height: 120)
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 24)
@@ -391,23 +393,42 @@ struct ExpandedPlayerView: View {
                 Button(action: { state.triggerPrev() }) {
                     Image(systemName: "backward.fill")
                         .font(.system(size: 28, weight: .medium))
+                        .foregroundStyle(.primary)
                 }
-                .buttonStyle(.glass)
 
                 Button(action: { state.togglePlayPause() }) {
                     Image(systemName: state.isPlaying ? "pause.circle.fill" : "play.circle.fill")
                         .font(.system(size: 56, weight: .medium))
+                        .foregroundStyle(.primary)
                 }
-                .buttonStyle(.glass)
 
                 Button(action: { state.triggerNext() }) {
                     Image(systemName: "forward.fill")
                         .font(.system(size: 28, weight: .medium))
+                        .foregroundStyle(.primary)
                 }
-                .buttonStyle(.glass)
             }
 
             Spacer()
+
+            HStack {
+                Spacer()
+                Button(action: {
+                    showQueue = true
+                }) {
+                    Image(systemName: "list.bullet")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundStyle(.primary)
+                        .padding(12)
+                        .background(Color.white.opacity(0.1))
+                        .clipShape(Circle())
+                }
+            }
+            .padding(.horizontal, 32)
+            .padding(.bottom, 24)
+            .sheet(isPresented: $showQueue) {
+                QueueView()
+            }
         }
         .padding(.top, 40)
         }
@@ -575,7 +596,9 @@ struct FullLyricsView: View {
                                             }
                                             .onChange(of: isActive) { _, new in
                                                 if new {
-                                                    if visibleLines.contains(index) || (index > 0 && visibleLines.contains(index - 1)) || visibleLines.isEmpty {
+                                                    let isPreviousVisible = index > 0 && visibleLines.contains(index - 1)
+                                                    let isCurrentVisible = visibleLines.contains(index)
+                                                    if index == 0 || isPreviousVisible || isCurrentVisible {
                                                         withAnimation(.easeInOut(duration: 0.5)) {
                                                             proxy.scrollTo(index, anchor: .center)
                                                         }
@@ -589,6 +612,13 @@ struct FullLyricsView: View {
                         .padding(.horizontal, 32)
                         .padding(.bottom, 120)
                         .padding(.top, 40)
+                    }
+                    .onChange(of: state.title) { _, _ in
+                        if !state.fullLyrics.isEmpty {
+                            withAnimation {
+                                proxy.scrollTo(0, anchor: .top)
+                            }
+                        }
                     }
                 }
             }
@@ -610,5 +640,82 @@ struct FullLyricsView: View {
         }
         
         return currentTime >= time && currentTime < nextTime
+    }
+}
+
+struct QueueView: View {
+    @ObservedObject private var state = PlaybackStateManager.shared
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        ZStack {
+            Color(white: 0.1).ignoresSafeArea()
+            
+            VStack {
+                HStack {
+                    Text("Up Next")
+                        .font(.title2.bold())
+                    Spacer()
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                }
+                .padding()
+                
+                ScrollView {
+                    VStack(spacing: 8) {
+                        if state.queue.isEmpty {
+                            Text("Queue is empty")
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 40)
+                        } else {
+                            ForEach(Array(state.queue.enumerated()), id: \.offset) { index, item in
+                                let isPlaying = index == state.queueIndex
+                                HStack(spacing: 12) {
+                                    if isPlaying {
+                                        Image(systemName: "waveform")
+                                            .foregroundStyle(.white)
+                                            .frame(width: 24)
+                                    } else {
+                                        Text("\\(index + 1)")
+                                            .font(.subheadline)
+                                            .foregroundStyle(.secondary)
+                                            .frame(width: 24)
+                                    }
+                                    
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(item["title"] as? String ?? "Unknown")
+                                            .font(.body)
+                                            .fontWeight(isPlaying ? .semibold : .regular)
+                                            .foregroundStyle(isPlaying ? .primary : .primary.opacity(0.8))
+                                            .lineLimit(1)
+                                        
+                                        Text(item["artist"] as? String ?? "Unknown")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                                .background(isPlaying ? Color.white.opacity(0.1) : Color.clear)
+                                .cornerRadius(8)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    state.playQueueItem(at: index)
+                                }
+                            }
+                        }
+                    }
+                    .padding(.bottom, 40)
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
     }
 }

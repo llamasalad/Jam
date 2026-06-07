@@ -3858,5 +3858,5 @@ body.ios-native-shell {
 
 body.ios-native-shell #main {
   padding-top: env(safe-area-inset-top, 0px) !important;
-  padding-bottom: 0 !important;
+  padding-bottom: 120px !important;
 }

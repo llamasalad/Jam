@@ -2841,6 +2841,9 @@ if (queuePanel) {
 }
 
 function renderQueue(skipScroll = false) {
+    if (window.Capacitor?.Plugins?.AudioPlayerPlugin) {
+        window.Capacitor.Plugins.AudioPlayerPlugin.updateQueue({ queue: queue, queueIndex: qIdx });
+    }
     if (!queueScrollArea) return;
     queueScrollArea.querySelectorAll('.queue-item').forEach(e => e.remove());
     const oldEmpty = queueScrollArea.querySelector('[style*="padding:40px"]');
