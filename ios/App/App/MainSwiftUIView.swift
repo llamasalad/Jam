@@ -377,8 +377,6 @@ struct ExpandedPlayerView: View {
         }
         .preferredColorScheme(.dark)
     }
-
-    }
 }
 
 struct PlaybackProgressView: View {
@@ -601,8 +599,6 @@ struct FullLyricsView: View {
             }
         }
         .preferredColorScheme(.dark)
-    }
-
     }
 }
 
