@@ -115,9 +115,11 @@ struct MainSwiftUIView: View {
                         }) {
                             VStack(spacing: 4) {
                                 Image(systemName: selectedTab == "library" ? "music.note.house.fill" : "music.note.house")
-                                    .font(.system(size: 20))
+                                    .font(.system(size: 18))
                                 Text("Library").font(.system(size: 10, weight: .medium))
                             }
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 12)
                         }
                         .foregroundStyle(selectedTab == "library" ? .primary : .secondary)
 
@@ -129,9 +131,11 @@ struct MainSwiftUIView: View {
                         }) {
                             VStack(spacing: 4) {
                                 Image(systemName: selectedTab == "playlists" ? "music.note.list" : "music.note.list")
-                                    .font(.system(size: 20))
+                                    .font(.system(size: 18))
                                 Text("Playlists").font(.system(size: 10, weight: .medium))
                             }
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 12)
                         }
                         .foregroundStyle(selectedTab == "playlists" ? .primary : .secondary)
                         
@@ -257,18 +261,14 @@ struct ExpandedPlayerView: View {
                     Color.black
                 }
             }
+            .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
             .scaleEffect(1.2)
             .ignoresSafeArea()
             .overlay(Color.black.opacity(0.6))
             .blur(radius: 40)
             .ignoresSafeArea()
             
-            VStack(spacing: 24) {
-                Capsule()
-                    .fill(Color.secondary.opacity(0.5))
-                    .frame(width: 48, height: 5)
-                    .padding(.top, 16)
-
+            VStack(spacing: 16) {
                 AsyncImage(url: URL(string: state.coverUrl)) { phase in
                 switch phase {
                 case .success(let image):
@@ -341,7 +341,7 @@ struct ExpandedPlayerView: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 80)
+                .frame(height: 52)
                 .padding(.horizontal)
                 .glassEffect()
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -510,6 +510,7 @@ struct FullLyricsView: View {
                     Color.black
                 }
             }
+            .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
             .scaleEffect(1.2)
             .ignoresSafeArea()
             .overlay(Color.black.opacity(0.6))

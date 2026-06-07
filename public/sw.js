@@ -1,4 +1,4 @@
-const CACHE = 'jam-v44';
+const CACHE = 'jam-v45';
 const ASSETS = [
   '/', '/index.html', '/style.css', '/app.js', '/manifest.json',
   '/fonts/subset-SFProDisplay-Regular.woff2',
