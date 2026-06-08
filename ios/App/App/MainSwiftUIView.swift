@@ -241,6 +241,8 @@ struct MiniPlayerView: View {
             }
             }
 
+            .glassEffect()
+            .padding()
             .contentShape(Rectangle())
             .onTapGesture {
                 showExpandedPlayer = true
