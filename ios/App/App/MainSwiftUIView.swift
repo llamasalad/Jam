@@ -10,16 +10,17 @@ struct MainSwiftUIView: View {
     @State private var themeChangePulse: Int = 0
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                if state.isLiquidThemeActive {
-                    LiquidBgView()
-                        .ignoresSafeArea()
-                        .transition(.opacity)
-                } else {
-                    Color.black
-                        .ignoresSafeArea()
-                }
+        ZStack {
+            if state.isLiquidThemeActive {
+                LiquidBgView()
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+            } else {
+                Color.black
+                    .ignoresSafeArea()
+            }
+
+            NavigationStack {
                 CapacitorWebViewRepresentable()
                     .ignoresSafeArea(edges: .top)
             }
@@ -132,7 +133,7 @@ struct MainSwiftUIView: View {
                             }
                         }) {
                             VStack(spacing: 4) {
-                                Image(systemName: selectedTab == "playlists" ? "list.triangle" : "list.triangle")
+                                Image(systemName: "list.triangle")
                                     .font(.system(size: 16))
                                 Text("Playlists").font(.system(size: 10, weight: .medium))
                             }
@@ -161,6 +162,9 @@ struct MainSwiftUIView: View {
                     }
                 }
             }
+            .toolbarBackground(.hidden, for: .bottomBar)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
         }
         .ignoresSafeArea(.keyboard)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: state.isLiquidThemeActive)
