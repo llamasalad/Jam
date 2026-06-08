@@ -3851,6 +3851,7 @@ async function init() {
         }
     } catch (_) { }
 
+    renderQueue(true);
     notifyNativePlaybackState();
 }
 

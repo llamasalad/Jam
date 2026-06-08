@@ -25,7 +25,7 @@ struct MainSwiftUIView: View {
             .overlay(alignment: .bottom) {
                 if state.hasSong {
                     MiniPlayerView(showExpandedPlayer: $showExpandedPlayer)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal)
                         .padding(.bottom, 8)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
@@ -120,7 +120,8 @@ struct MainSwiftUIView: View {
                                     .font(.system(size: 18))
                                 Text("Library").font(.system(size: 10, weight: .medium))
                             }
-                            .padding()
+                            .padding(.vertical, 8)
+                            .padding(.trailing, 8)
                         }
                         .foregroundStyle(selectedTab == "library" ? .primary : .secondary)
 
@@ -135,7 +136,8 @@ struct MainSwiftUIView: View {
                                     .font(.system(size: 18))
                                 Text("Playlists").font(.system(size: 10, weight: .medium))
                             }
-                            .padding()
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 8)
                         }
                         .foregroundStyle(selectedTab == "playlists" ? .primary : .secondary)
 
@@ -311,16 +313,16 @@ struct ExpandedPlayerView: View {
                             .font(.system(size: 18, weight: .bold))
                             .foregroundStyle(.primary)
                             .multilineTextAlignment(.center)
-                            .lineLimit(2)
+                            .lineLimit(nil)
 
                         Text(displayedNextLyric.isEmpty ? " " : displayedNextLyric)
                             .font(.callout)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
-                            .lineLimit(2)
+                            .lineLimit(nil)
                     }
                     .frame(maxWidth: .infinity)
-                    .frame(height: 90)
+                    .frame(height: 130)
                     .clipped()
                     .opacity(lyricOpacity)
                     .offset(y: lyricOffset)
