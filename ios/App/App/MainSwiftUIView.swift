@@ -120,8 +120,7 @@ struct MainSwiftUIView: View {
                                     .font(.system(size: 18))
                                 Text("Library").font(.system(size: 10, weight: .medium))
                             }
-                            .padding(.vertical, 8)
-                            .padding(.trailing, 8)
+                            .padding()
                         }
                         .foregroundStyle(selectedTab == "library" ? .primary : .secondary)
 
@@ -136,8 +135,7 @@ struct MainSwiftUIView: View {
                                     .font(.system(size: 18))
                                 Text("Playlists").font(.system(size: 10, weight: .medium))
                             }
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 8)
+                            .padding()
                         }
                         .foregroundStyle(selectedTab == "playlists" ? .primary : .secondary)
 
