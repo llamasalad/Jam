@@ -696,7 +696,7 @@ struct PlaybackControlsView: View {
                         .foregroundStyle(state.shuffle ? .primary : .secondary)
                         .frame(width: 44, height: 44)
                 }
-                .glassEffect(state.shuffle ? .regular.tint(.accentColor.opacity(0.4)).interactive() : .clear.interactive(), in: .circle)
+                .glassEffect(state.shuffle ? .regular.interactive() : .clear.interactive(), in: .circle)
                 
                 Button(action: { state.triggerPrev() }) {
                     Image(systemName: "backward.fill")
@@ -728,7 +728,7 @@ struct PlaybackControlsView: View {
                         .foregroundStyle(state.repeatMode == "off" ? .secondary : .primary)
                         .frame(width: 44, height: 44)
                 }
-                .glassEffect(state.repeatMode != "off" ? .regular.tint(.accentColor.opacity(0.4)).interactive() : .clear.interactive(), in: .circle)
+                .glassEffect(state.repeatMode != "off" ? .regular.interactive() : .clear.interactive(), in: .circle)
             }
         }
     }
