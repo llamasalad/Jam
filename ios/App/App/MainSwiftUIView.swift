@@ -675,25 +675,26 @@ struct QueueView: View {
                         }
                         .deleteDisabled(true)
                     }
-                    .listStyle(.plain)
-                    .scrollContentBackground(.hidden)
-                    .environment(\.editMode, .constant(.active))
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            if state.queueIndex >= 0 && state.queueIndex < state.queue.count {
-                                withAnimation {
-                                    proxy.scrollTo(state.queueIndex, anchor: .center)
-                                }
-                            }
-                        }
-                    }
-                    .onChange(of: state.queueIndex) { _, newIndex in
-                        if newIndex >= 0 && newIndex < state.queue.count {
+                }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .environment(\.editMode, .constant(.active))
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        if state.queueIndex >= 0 && state.queueIndex < state.queue.count {
                             withAnimation {
-                                proxy.scrollTo(newIndex, anchor: .center)
+                                proxy.scrollTo(state.queueIndex, anchor: .center)
                             }
                         }
                     }
+                }
+                .onChange(of: state.queueIndex) { _, newIndex in
+                    if newIndex >= 0 && newIndex < state.queue.count {
+                        withAnimation {
+                            proxy.scrollTo(newIndex, anchor: .center)
+                        }
+                    }
+                }
                 }
             }
         }
