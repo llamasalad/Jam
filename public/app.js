@@ -2906,13 +2906,12 @@ function renderQueue(skipScroll = false) {
     if (!skipScroll) {
         const scrollToActive = () => {
             const activeEl = queueScrollArea.querySelector('.queue-item.active');
-            if (activeEl) {
+            if (activeEl && queueScrollArea.clientHeight > 0) {
                 const top = activeEl.offsetTop - queueScrollArea.clientHeight / 2 + activeEl.offsetHeight / 2;
                 queueScrollArea.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
             }
         };
-        if (isMobile()) setTimeout(scrollToActive, 380);
-        else scrollToActive();
+        setTimeout(scrollToActive, 350);
     }
 }
 

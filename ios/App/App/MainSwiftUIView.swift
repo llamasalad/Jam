@@ -308,7 +308,7 @@ struct ExpandedPlayerView: View {
                 Button(action: { showFullLyrics = true }) {
                     VStack(spacing: 10) {
                         Text(displayedCurrentLyric.isEmpty ? "..." : displayedCurrentLyric)
-                            .font(.headline)
+                            .font(.system(size: 18, weight: .bold))
                             .foregroundStyle(.primary)
                             .multilineTextAlignment(.center)
                             .lineLimit(2)
@@ -382,30 +382,30 @@ struct ExpandedPlayerView: View {
 
 struct PlaybackProgressView: View {
     var state = PlaybackStateManager.shared
-    @State private var seekValue: Double = 0
-    @State private var isSeeking: Bool = false
+    @State private var localTime: Double = 0
+    @State private var isDragging: Bool = false
 
     var body: some View {
         VStack(spacing: 6) {
             Slider(
-                value: Binding(
-                    get: { isSeeking ? seekValue : state.currentTime },
-                    set: { newValue in
-                        seekValue = newValue
-                    }
-                ),
+                value: $localTime,
                 in: 0...max(state.duration, 1),
                 onEditingChanged: { editing in
-                    isSeeking = editing
+                    isDragging = editing
                     if !editing {
-                        state.performSeek(to: seekValue)
+                        state.performSeek(to: localTime)
                     }
                 }
             )
             .tint(.primary)
+            .onChange(of: state.currentTime, initial: true) { _, newTime in
+                if !isDragging {
+                    localTime = newTime
+                }
+            }
 
             HStack {
-                Text(formatTime(isSeeking ? seekValue : state.currentTime))
+                Text(formatTime(localTime))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
@@ -417,8 +417,8 @@ struct PlaybackProgressView: View {
             }
         }
         .onChange(of: state.title) { _, _ in
-            seekValue = 0
-            isSeeking = false
+            localTime = 0
+            isDragging = false
         }
     }
 
@@ -622,7 +622,8 @@ struct QueueView: View {
                     }
                 }
                 .padding()
-                List {
+                ScrollViewReader { proxy in
+                    List {
                     if state.queue.isEmpty {
                         Text("Queue is empty")
                             .foregroundStyle(.secondary)
@@ -658,6 +659,7 @@ struct QueueView: View {
                                 }
                                 Spacer()
                             }
+                            .id(index)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 10)
                             .glassEffect(isPlaying ? .regular.tint(.white.opacity(0.1)) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -667,17 +669,32 @@ struct QueueView: View {
                             }
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                         }
                         .onMove { source, destination in
                             state.moveQueueItem(from: source, to: destination)
                         }
                         .deleteDisabled(true)
                     }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
+                    .environment(\.editMode, .constant(.active))
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            if state.queueIndex >= 0 && state.queueIndex < state.queue.count {
+                                withAnimation {
+                                    proxy.scrollTo(state.queueIndex, anchor: .center)
+                                }
+                            }
+                        }
+                    }
+                    .onChange(of: state.queueIndex) { _, newIndex in
+                        if newIndex >= 0 && newIndex < state.queue.count {
+                            withAnimation {
+                                proxy.scrollTo(newIndex, anchor: .center)
+                            }
+                        }
+                    }
                 }
-                .listStyle(.plain)
-                .scrollContentBackground(.hidden)
-                .environment(\.editMode, .constant(.active))
             }
         }
         .preferredColorScheme(.dark)

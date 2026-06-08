@@ -22,7 +22,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let hostingController = UIHostingController(rootView: MainSwiftUIView())
         hostingController.view.backgroundColor = .black
 
-        let window = UIWindow(frame: UIScreen.main.bounds)
+        let window: UIWindow
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            window = UIWindow(windowScene: windowScene)
+            window.frame = windowScene.screen.bounds
+        } else {
+            window = UIWindow()
+            window.frame = window.screen.bounds
+        }
         window.rootViewController = hostingController
         window.makeKeyAndVisible()
         self.window = window
@@ -52,6 +59,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
 
+    @available(iOS, deprecated: 26.0)
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
         // Called when the app was launched with a url. Feel free to add additional processing here,
         // but if you want the App API to support tracking app url opens, make sure to keep this call
