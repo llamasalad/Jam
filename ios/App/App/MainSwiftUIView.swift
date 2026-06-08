@@ -216,22 +216,25 @@ struct MiniPlayerView: View {
 
             Spacer()
 
-            HStack(spacing: 10) {
+            HStack(spacing: 16) {
                 Button(action: { state.triggerPrev() }) {
                     Image(systemName: "backward.fill")
                         .imageScale(.large)
+                        .frame(width: 44, height: 44)
                 }
                 .buttonStyle(.plain)
 
                 Button(action: { state.togglePlayPause() }) {
                     Image(systemName: state.isPlaying ? "pause.fill" : "play.fill")
                         .font(.title2)
+                        .frame(width: 44, height: 44)
                 }
                 .buttonStyle(.plain)
 
                 Button(action: { state.triggerNext() }) {
                     Image(systemName: "forward.fill")
                         .imageScale(.large)
+                        .frame(width: 44, height: 44)
                 }
                 .buttonStyle(.plain)
             }
