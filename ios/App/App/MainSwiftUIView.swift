@@ -1,4 +1,24 @@
 import SwiftUI
+import UIKit
+
+struct ClearNavigationBackground: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        DispatchQueue.main.async {
+            var responder: UIResponder? = view
+            while let r = responder {
+                if let nav = r as? UINavigationController {
+                    nav.view.backgroundColor = .clear
+                    break
+                }
+                responder = r.next
+            }
+        }
+        return view
+    }
+    
+    func updateUIView(_ uiView: UIView, context: Context) {}
+}
 
 struct MainSwiftUIView: View {
     var state = PlaybackStateManager.shared
@@ -23,6 +43,7 @@ struct MainSwiftUIView: View {
             NavigationStack {
                 CapacitorWebViewRepresentable()
                     .ignoresSafeArea(edges: .top)
+                    .background(ClearNavigationBackground()) 
             }
             .safeAreaInset(edge: .bottom) {
                 if state.hasSong {
@@ -206,7 +227,7 @@ struct MiniPlayerView: View {
                 .frame(width: 44, height: 44)
                 .glassEffect(in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 2) {
                 MarqueeText(text: state.title.isEmpty ? "Not Playing" : state.title, font: .headline)
                     .fontWeight(.semibold)
 
@@ -240,9 +261,8 @@ struct MiniPlayerView: View {
                 .buttonStyle(.plain)
             }
             }
-
-            .glassEffect()
             .padding()
+            .glassEffect()
             .contentShape(Rectangle())
             .onTapGesture {
                 showExpandedPlayer = true
