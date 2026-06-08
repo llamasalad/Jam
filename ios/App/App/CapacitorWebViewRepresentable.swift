@@ -4,15 +4,20 @@ import Capacitor
 
 struct CapacitorWebViewRepresentable: UIViewControllerRepresentable {
 
-    func makeUIViewController(context: Context) -> ViewController {
+    // Created exactly once for the lifetime of the app
+    private static let sharedViewController: ViewController = {
         let vc = ViewController()
-        // Store reference so PdlaybackStateManager can evaluate JS
-        PlaybackStateManager.shared.webViewController = vc
+        Task { @MainActor in
+            PlaybackStateManager.shared.webViewController = vc
+        }
         return vc
+    }()
+
+    func makeUIViewController(context: Context) -> ViewController {
+        return Self.sharedViewController
     }
 
     func updateUIViewController(_ uiViewController: ViewController, context: Context) {
-        // Make the web viw transparent so native background shows through
         if let webView = uiViewController.webView {
             webView.isOpaque = false
             webView.backgroundColor = .clear

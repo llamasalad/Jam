@@ -2,169 +2,40 @@ import SwiftUI
 
 struct MainSwiftUIView: View {
     var state = PlaybackStateManager.shared
-    @State private var selectedTab: String = "library"
-    @State private var isSearchActive: Bool = false
+    @State private var selectedTab: Int = 0
     @State private var searchQuery: String = ""
     @State private var showExpandedPlayer: Bool = false
-    @FocusState private var isSearchFieldFocused: Bool
     @State private var themeChangePulse: Int = 0
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                if state.isLiquidThemeActive {
-                    LiquidBgView()
-                        .transition(.opacity)
-                } else {
-                    Color.black
-                        .ignoresSafeArea()
-                }
-                CapacitorWebViewRepresentable()
-                    .ignoresSafeArea(edges: [.top, .bottom])
+        TabView(selection: $selectedTab) {
+            Tab("Library", systemImage: "music.house.fill", value: 0) {
+                webShell
             }
-            .overlay(alignment: .bottom) {
-                if state.hasSong {
-                    MiniPlayerView(showExpandedPlayer: $showExpandedPlayer)
-                        .padding(.horizontal)
-                        .padding(.bottom, 8)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
+            Tab("Playlists", systemImage: "list.triangle", value: 1) {
+                webShell
             }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: {
-                        PlaybackStateManager.shared.triggerSort()
-                    }) {
-                        Image(systemName: "arrow.up.arrow.down")
-                    }
-                }
-
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        ForEach([
-                            ("Aurion", "default"),
-                            ("Ember", "ember-theme"),
-                            ("Glacier", "glacier-theme"),
-                            ("Void", "void-theme"),
-                            ("Blind", "blind-theme"),
-                            ("Rosecore", "rosecore-theme"),
-                            ("Abyss", "abyss-theme"),
-                            ("Glass", "liquid-glass-theme")
-                        ], id: \.1) { theme in
-                            Button(action: {
-                                PlaybackStateManager.shared.setTheme(theme.1)
-                                themeChangePulse += 1
-                            }) {
-                                Text(theme.0)
-                                if state.currentTheme == theme.1 {
-                                    Image(systemName: "checkmark")
-                                }
-                            }
-                        }
-                    } label: {
-                        Image(systemName: "paintpalette")
-                            .symbolEffect(.bounce, value: themeChangePulse)
-                    }
-                }
-
-                ToolbarItemGroup(placement: .bottomBar) {
-                    if isSearchActive {
-                        HStack(spacing: 8) {
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundStyle(.secondary)
-
-                            TextField("Search", text: $searchQuery)
-                                .focused($isSearchFieldFocused)
-                                .font(.body)
-                                .foregroundStyle(.primary)
-                                .autocorrectionDisabled()
-                                .textInputAutocapitalization(.never)
-                                .submitLabel(.search)
-                                .onChange(of: searchQuery) { _, newValue in
-                                    PlaybackStateManager.shared.updateSearchQuery(newValue)
-                                }
-
-                            if !searchQuery.isEmpty {
-                                Button(action: {
-                                    searchQuery = ""
-                                    PlaybackStateManager.shared.clearSearch()
-                                }) {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .font(.system(size: 16))
-                                        .foregroundStyle(.secondary)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-
-                        Button(action: {
-                            withAnimation {
-                                isSearchFieldFocused = false
-                                isSearchActive = false
-                                searchQuery = ""
-                                PlaybackStateManager.shared.clearSearch()
-                            }
-                        }) {
-                            Image(systemName: "xmark")
-                        }
-                    } else {
-                        Button(action: {
-                            withAnimation {
-                                selectedTab = "library"
-                                PlaybackStateManager.shared.switchWebTab(tabName: "library")
-                            }
-                        }) {
-                            VStack(spacing: 4) {
-                                Image(systemName: selectedTab == "library" ? "music.note.house.fill" : "music.note.house")
-                                    .font(.system(size: 18))
-                                Text("Library").font(.system(size: 10, weight: .medium))
-                            }
-                            .padding()
-                        }
-                        .foregroundStyle(selectedTab == "library" ? .primary : .secondary)
-
-                        Button(action: {
-                            withAnimation {
-                                selectedTab = "playlists"
-                                PlaybackStateManager.shared.switchWebTab(tabName: "playlists")
-                            }
-                        }) {
-                            VStack(spacing: 4) {
-                                Image(systemName: selectedTab == "playlists" ? "music.note.list" : "music.note.list")
-                                    .font(.system(size: 18))
-                                Text("Playlists").font(.system(size: 10, weight: .medium))
-                            }
-                            .padding()
-                        }
-                        .foregroundStyle(selectedTab == "playlists" ? .primary : .secondary)
-
-                        Spacer()
-
-                        Button(action: {
-                            withAnimation {
-                                isSearchActive = true
-                                selectedTab = "library"
-                                PlaybackStateManager.shared.switchWebTab(tabName: "library")
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                                isSearchFieldFocused = true
-                            }
-                        }) {
-                            VStack(spacing: 4) {
-                                Image(systemName: "magnifyingglass")
-                                    .font(.system(size: 20))
-                            }
-                        }
-                        .foregroundStyle(.secondary)
-                    }
-                }
+            Tab("Search", systemImage: "magnifyingglass", value: 2) {
+                searchShell
             }
         }
-        .ignoresSafeArea(.keyboard)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: state.isLiquidThemeActive)
+        .onChange(of: selectedTab) { _, newTab in
+            let names = ["library", "playlists", "search"]
+            PlaybackStateManager.shared.switchWebTab(tabName: names[newTab])
+            if newTab != 2 {
+                searchQuery = ""
+                PlaybackStateManager.shared.clearSearch()
+            }
+        }
+        .tabViewBottomAccessory {
+            if state.hasSong {
+                MiniPlayerView(showExpandedPlayer: $showExpandedPlayer)
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: state.hasSong)
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: isSearchActive)
         .sheet(isPresented: $showExpandedPlayer) {
             ExpandedPlayerView()
                 .presentationDragIndicator(.visible)
@@ -173,6 +44,83 @@ struct MainSwiftUIView: View {
         .preferredColorScheme(.dark)
         .tint(.white)
     }
+
+    @ViewBuilder
+    private var webShell: some View {
+        NavigationStack {
+            webContent
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button { PlaybackStateManager.shared.triggerSort() } label: {
+                            Image(systemName: "line.horizontal.3.decrease")
+                        }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) { themePicker }
+                }
+        }
+        .ignoresSafeArea(.keyboard)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: state.isLiquidThemeActive)
+    }
+
+    @ViewBuilder
+    private var searchShell: some View {
+        NavigationStack {
+            webContent
+                .searchable(
+                    text: $searchQuery,
+                    placement: .navigationBarDrawer(displayMode: .always),
+                    prompt: "Search library"
+                )
+                .onChange(of: searchQuery) { _, new in
+                    new.isEmpty
+                        ? PlaybackStateManager.shared.clearSearch()
+                        : PlaybackStateManager.shared.updateSearchQuery(new)
+                }
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) { themePicker }
+                }
+        }
+        .ignoresSafeArea(.keyboard)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: state.isLiquidThemeActive)
+    }
+
+    @ViewBuilder
+    private var webContent: some View {
+        ZStack {
+            if state.isLiquidThemeActive {
+                LiquidBgView()
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+            } else {
+                Color.black.ignoresSafeArea()
+            }
+            CapacitorWebViewRepresentable()
+                .ignoresSafeArea(edges: .top)
+        }
+    }
+
+    @ViewBuilder
+    private var themePicker: some View {
+        Menu {
+            ForEach([
+                ("Aurion", "default"), ("Ember", "ember-theme"),
+                ("Glacier", "glacier-theme"), ("Void", "void-theme"),
+                ("Blind", "blind-theme"), ("Rosecore", "rosecore-theme"),
+                ("Abyss", "abyss-theme"), ("Glass", "liquid-glass-theme")
+            ], id: \.1) { name, id in
+                Button {
+                    PlaybackStateManager.shared.setTheme(id)
+                    themeChangePulse += 1
+                } label: {
+                    Text(name)
+                    if state.currentTheme == id { Image(systemName: "checkmark") }
+                }
+            }
+        } label: {
+            Image(systemName: "paintpalette")
+                .symbolEffect(.bounce, value: themeChangePulse)
+        }
+    }
 }
 
 struct MiniPlayerView: View {
@@ -180,7 +128,6 @@ struct MiniPlayerView: View {
     @Binding var showExpandedPlayer: Bool
 
     var body: some View {
-        GlassEffectContainer {
             HStack(spacing: 12) {
                 AsyncImage(url: URL(string: state.coverUrl)) { phase in
                     switch phase {
@@ -198,17 +145,16 @@ struct MiniPlayerView: View {
                         ProgressView()
                     }
                 }
-                .frame(width: 44, height: 44)
+                .frame(width: 48, height: 48)
                 .glassEffect(in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
-            VStack(alignment: .leading, spacing: 2) {
-                MarqueeText(text: state.title.isEmpty ? "Not Playing" : state.title, font: .subheadline)
+            VStack(alignment: .leading) {
+                MarqueeText(text: state.title.isEmpty ? "Not Playing" : state.title, font: .headline)
                     .fontWeight(.semibold)
-                    .foregroundStyle(.primary)
 
                 if !state.artist.isEmpty {
                     Text(state.artist)
-                        .font(.caption)
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
@@ -236,13 +182,11 @@ struct MiniPlayerView: View {
                 .buttonStyle(.glass)
             }
             }
-            .padding()
-            .glassEffect()
+
             .contentShape(Rectangle())
             .onTapGesture {
                 showExpandedPlayer = true
             }
-        }
     }
 }
 
@@ -342,16 +286,12 @@ struct ExpandedPlayerView: View {
                 HStack {
                     Spacer()
                     Button(action: { showQueue = true }) {
-                        Image(systemName: "list.bullet")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundStyle(.primary)
-                            .padding(12)
-                            .background(Color.white.opacity(0.1))
-                            .clipShape(Circle())
+                        Image(systemName: "list.dash")
+                            .imageScale(.large)
                     }
+                    .buttonStyle(.glass)
                 }
-                .padding(.horizontal, 32)
-                .padding(.bottom, 24)
+                padding()
                 .sheet(isPresented: $showQueue) {
                     QueueView()
                 }
@@ -660,7 +600,7 @@ struct QueueView: View {
                                 Spacer()
                             }
                             .id(index)
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal)
                             .padding(.vertical, 10)
                             .glassEffect(isPlaying ? .regular.tint(.white.opacity(0.1)) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                             .contentShape(Rectangle())
