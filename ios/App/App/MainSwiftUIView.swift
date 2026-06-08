@@ -1,25 +1,6 @@
 import SwiftUI
 import UIKit
 
-struct ClearNavigationBackground: UIViewRepresentable {
-    func makeUIView(context: Context) -> UIView {
-        let view = UIView()
-        DispatchQueue.main.async {
-            var responder: UIResponder? = view
-            while let r = responder {
-                if let nav = r as? UINavigationController {
-                    nav.view.backgroundColor = .clear
-                    break
-                }
-                responder = r.next
-            }
-        }
-        return view
-    }
-    
-    func updateUIView(_ uiView: UIView, context: Context) {}
-}
-
 struct MainSwiftUIView: View {
     var state = PlaybackStateManager.shared
     @State private var selectedTab: String = "library"
@@ -43,13 +24,12 @@ struct MainSwiftUIView: View {
             NavigationStack {
                 CapacitorWebViewRepresentable()
                     .ignoresSafeArea(edges: .top)
-                    .background(ClearNavigationBackground()) 
             }
             .safeAreaInset(edge: .bottom) {
                 if state.hasSong {
                     MiniPlayerView(showExpandedPlayer: $showExpandedPlayer)
                         .padding(.horizontal)
-                        .padding(.vertical, 8)
+                        .padding(.vertical, 6)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
@@ -183,9 +163,6 @@ struct MainSwiftUIView: View {
                     }
                 }
             }
-            .toolbarBackground(.hidden, for: .bottomBar)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
         }
         .ignoresSafeArea(.keyboard)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: state.isLiquidThemeActive)
@@ -241,7 +218,7 @@ struct MiniPlayerView: View {
 
             Spacer()
 
-            HStack(spacing: 4) {
+            HStack(spacing: 8) {
                 Button(action: { state.triggerPrev() }) {
                     Image(systemName: "backward.fill")
                         .imageScale(.large)
