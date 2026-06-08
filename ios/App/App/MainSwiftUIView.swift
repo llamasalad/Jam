@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 struct MainSwiftUIView: View {
     var state = PlaybackStateManager.shared
@@ -11,17 +10,16 @@ struct MainSwiftUIView: View {
     @State private var themeChangePulse: Int = 0
 
     var body: some View {
-        ZStack {
-            if state.isLiquidThemeActive {
-                LiquidBgView()
-                    .ignoresSafeArea()
-                    .transition(.opacity)
-            } else {
-                Color.black
-                    .ignoresSafeArea()
-            }
-
-            NavigationStack {
+        NavigationStack {
+            ZStack {
+                if state.isLiquidThemeActive {
+                    LiquidBgView()
+                        .ignoresSafeArea()
+                        .transition(.opacity)
+                } else {
+                    Color.black
+                        .ignoresSafeArea()
+                }
                 CapacitorWebViewRepresentable()
                     .ignoresSafeArea(edges: .top)
             }
@@ -29,7 +27,7 @@ struct MainSwiftUIView: View {
                 if state.hasSong {
                     MiniPlayerView(showExpandedPlayer: $showExpandedPlayer)
                         .padding(.horizontal)
-                        .padding(.vertical, 6)
+                        .padding(.vertical, 4)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
@@ -218,7 +216,7 @@ struct MiniPlayerView: View {
 
             Spacer()
 
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 Button(action: { state.triggerPrev() }) {
                     Image(systemName: "backward.fill")
                         .imageScale(.large)
