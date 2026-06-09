@@ -222,9 +222,9 @@ struct MiniPlayerView: View {
                 .buttonStyle(.plain)
             }
         }
+        .glassEffect()
         .padding(.horizontal)
         .padding(.vertical, 4)
-        .glassEffect()
         .contentShape(Rectangle())
         .onTapGesture {
             showExpandedPlayer = true
