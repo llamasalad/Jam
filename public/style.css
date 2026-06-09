@@ -348,10 +348,10 @@ body.ios-native-shell #header-top-row {
 }
 
 body.ios-native-shell,
+body.ios-native-shell body,
 body.ios-native-shell #app {
   background: transparent !important;
 }
-
 
 body.ios-native-shell #main {
   padding-top: env(safe-area-inset-top, 0px) !important;

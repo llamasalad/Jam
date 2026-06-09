@@ -16,6 +16,7 @@ struct MainSwiftUIView: View {
                 .safeAreaInset(edge: .bottom) {
                     if state.hasSong {
                         MiniPlayerView(showExpandedPlayer: $showExpandedPlayer)
+                            .padding()
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                 }
@@ -228,7 +229,6 @@ struct MiniPlayerView: View {
         .padding(.horizontal)
         .padding(.vertical, 4)
         .glassEffect()
-        .padding()
         .contentShape(Rectangle())
         .onTapGesture {
             showExpandedPlayer = true
@@ -362,6 +362,7 @@ struct ExpandedPlayerView: View {
                 }
             }
         }
+        .preferredColorScheme(.dark)
     }
 }
 
