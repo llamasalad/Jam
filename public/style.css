@@ -204,15 +204,6 @@ textarea {
   transition: opacity 0.8s ease;
 }
 
-body.liquid-glass-theme .liquid-bg-container {
-  opacity: 1;
-}
-
-body.liquid-glass-theme #app {
-  position: relative;
-  background: transparent !important;
-}
-
 .liquid-bg-container .blob {
   position: absolute;
   border-radius: 50%;
@@ -311,12 +302,24 @@ body.liquid-glass-theme #view-library.active:has(#library-cards.show) {
   -webkit-backdrop-filter: blur(25px) !important;
 }
 
-body.liquid-glass-theme .sidebar-item.active .sidebar-label {
+body.liquid-glass-theme .sidebar-item.active .sidebar-label,
+body.liquid-glass-theme .sidebar-item:hover .sidebar-label {
   display: none;
 }
 
-body.liquid-glass-theme .sidebar-item:hover .sidebar-label {
-  display: none;
+body.liquid-glass-theme .liquid-bg-container {
+  opacity: 1;
+}
+
+body.liquid-glass-theme #app {
+  background: transparent !important;
+}
+
+body.liquid-glass-theme #progress-row input::-webkit-slider-runnable-track,
+body.liquid-glass-theme #exp-progress::-webkit-slider-runnable-track,
+body.liquid-glass-theme #volume-row input,
+body.liquid-glass-theme #exp-volume-row input {
+  background: var(--muted);
 }
 
 body.liquid-glass-theme .group-header {
@@ -343,20 +346,9 @@ body.ios-native-shell #floating-search-wrap {
   display: none !important;
 }
 
-body.ios-native-shell #header {
+body.ios-native-shell #header,
+body.ios-native-shell #header-top-row {
   display: none !important;
-}
-
-body.ios-native-shell #app {
-  background: transparent !important;
-}
-
-body.ios-native-shell #group-header {
-  background: transparent !important;
-}
-
-body.ios-native-shell {
-  background: transparent !important;
 }
 
 body.ios-native-shell #main {
@@ -2899,7 +2891,6 @@ body.menu-open .queue-remove {
     grid-template-columns: 180px 1fr;
     grid-template-rows: auto 1fr auto;
     padding-bottom: calc(var(--player-h));
-    background: var(--bg);
   }
 
   #header {
