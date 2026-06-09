@@ -16,9 +16,6 @@ struct MainSwiftUIView: View {
                     LiquidBgView()
                         .ignoresSafeArea()
                         .transition(.opacity)
-                } else {
-                    Color.black
-                        .ignoresSafeArea()
                 }
                 CapacitorWebViewRepresentable()
                     .ignoresSafeArea(edges: .top)
