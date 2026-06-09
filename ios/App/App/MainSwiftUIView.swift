@@ -21,107 +21,11 @@ struct MainSwiftUIView: View {
                     .ignoresSafeArea(edges: .top)
             }
             .safeAreaInset(edge: .bottom) {
-                VStack(spacing: 0) {
-                    if state.hasSong {
-                        MiniPlayerView(showExpandedPlayer: $showExpandedPlayer)
-                            .padding(.horizontal)
-                            .padding(.vertical, 4)
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
-
-                    if isSearchActive {
-                        HStack(spacing: 8) {
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundStyle(.secondary)
-
-                            TextField("Search", text: $searchQuery)
-                                .focused($isSearchFieldFocused)
-                                .font(.body)
-                                .foregroundStyle(.primary)
-                                .autocorrectionDisabled()
-                                .textInputAutocapitalization(.never)
-                                .submitLabel(.search)
-                                .onChange(of: searchQuery) { _, newValue in
-                                    PlaybackStateManager.shared.updateSearchQuery(newValue)
-                                }
-
-                            if !searchQuery.isEmpty {
-                                Button(action: {
-                                    searchQuery = ""
-                                    PlaybackStateManager.shared.clearSearch()
-                                }) {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 14))
-                                        .foregroundStyle(.secondary)
-                                }
-                                .buttonStyle(.glass)
-                            }
-
-                            Button(action: {
-                                withAnimation {
-                                    isSearchFieldFocused = false
-                                    isSearchActive = false
-                                    searchQuery = ""
-                                    PlaybackStateManager.shared.clearSearch()
-                                }
-                            }) {
-                                Image(systemName: "xmark")
-                            }
-                        }
+                if state.hasSong {
+                    MiniPlayerView(showExpandedPlayer: $showExpandedPlayer)
                         .padding(.horizontal)
-                        .padding(.vertical, 12)
-                    } else {
-                        HStack {
-                            Button(action: {
-                                withAnimation {
-                                    selectedTab = "library"
-                                    PlaybackStateManager.shared.switchWebTab(tabName: "library")
-                                }
-                            }) {
-                                VStack(spacing: 4) {
-                                    Image(systemName: selectedTab == "library" ? "music.house.fill" : "music.house")
-                                        .font(.system(size: 16))
-                                    Text("Library").font(.system(size: 10, weight: .medium))
-                                }
-                                .padding()
-                            }
-                            .foregroundStyle(selectedTab == "library" ? .primary : .secondary)
-
-                            Button(action: {
-                                withAnimation {
-                                    selectedTab = "playlists"
-                                    PlaybackStateManager.shared.switchWebTab(tabName: "playlists")
-                                }
-                            }) {
-                                VStack(spacing: 4) {
-                                    Image(systemName: "list.triangle")
-                                        .font(.system(size: 16))
-                                    Text("Playlists").font(.system(size: 10, weight: .medium))
-                                }
-                                .padding()
-                            }
-                            .foregroundStyle(selectedTab == "playlists" ? .primary : .secondary)
-
-                            Spacer()
-
-                            Button(action: {
-                                withAnimation {
-                                    isSearchActive = true
-                                    selectedTab = "library"
-                                    PlaybackStateManager.shared.switchWebTab(tabName: "library")
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                                    isSearchFieldFocused = true
-                                }
-                            }) {
-                                Image(systemName: "magnifyingglass")
-                                    .font(.system(size: 20))
-                            }
-                            .foregroundStyle(.secondary)
-                            .padding()
-                        }
-                    }
+                        .padding(.vertical, 4)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
             .toolbar {
@@ -160,7 +64,102 @@ struct MainSwiftUIView: View {
                             .symbolEffect(.bounce, value: themeChangePulse)
                     }
                 }
+
+                ToolbarItemGroup(placement: .bottomBar) {
+                    if isSearchActive {
+                        HStack(spacing: 8) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(.secondary)
+
+                            TextField("Search", text: $searchQuery)
+                                .focused($isSearchFieldFocused)
+                                .font(.body)
+                                .foregroundStyle(.primary)
+                                .autocorrectionDisabled()
+                                .textInputAutocapitalization(.never)
+                                .submitLabel(.search)
+                                .onChange(of: searchQuery) { _, newValue in
+                                    PlaybackStateManager.shared.updateSearchQuery(newValue)
+                                }
+
+                            if !searchQuery.isEmpty {
+                                Button(action: {
+                                    searchQuery = ""
+                                    PlaybackStateManager.shared.clearSearch()
+                                }) {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(.secondary)
+                                }
+                                .buttonStyle(.glass)
+                            }
+                        }
+
+                        Button(action: {
+                            withAnimation {
+                                isSearchFieldFocused = false
+                                isSearchActive = false
+                                searchQuery = ""
+                                PlaybackStateManager.shared.clearSearch()
+                            }
+                        }) {
+                            Image(systemName: "xmark")
+                        }
+                    } else {
+                        Button(action: {
+                            withAnimation {
+                                selectedTab = "library"
+                                PlaybackStateManager.shared.switchWebTab(tabName: "library")
+                            }
+                        }) {
+                            VStack(spacing: 4) {
+                                Image(systemName: selectedTab == "library" ? "music.house.fill" : "music.house")
+                                    .font(.system(size: 16))
+                                Text("Library").font(.system(size: 10, weight: .medium))
+                            }
+                            .padding()
+                        }
+                        .foregroundStyle(selectedTab == "library" ? .primary : .secondary)
+
+                        Button(action: {
+                            withAnimation {
+                                selectedTab = "playlists"
+                                PlaybackStateManager.shared.switchWebTab(tabName: "playlists")
+                            }
+                        }) {
+                            VStack(spacing: 4) {
+                                Image(systemName: "list.triangle")
+                                    .font(.system(size: 16))
+                                Text("Playlists").font(.system(size: 10, weight: .medium))
+                            }
+                            .padding()
+                        }
+                        .foregroundStyle(selectedTab == "playlists" ? .primary : .secondary)
+
+                        Spacer()
+
+                        Button(action: {
+                            withAnimation {
+                                isSearchActive = true
+                                selectedTab = "library"
+                                PlaybackStateManager.shared.switchWebTab(tabName: "library")
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                isSearchFieldFocused = true
+                            }
+                        }) {
+                            VStack(spacing: 4) {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.system(size: 20))
+                            }
+                        }
+                        .foregroundStyle(.secondary)
+                    }
+                }
             }
+            .toolbarBackground(.hidden, for: .bottomBar)
+            .toolbarBackground(.hidden, for: .navigationBar)
         }
         .ignoresSafeArea(.keyboard)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: state.isLiquidThemeActive)
