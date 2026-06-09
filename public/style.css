@@ -348,7 +348,6 @@ body.ios-native-shell #header-top-row {
 }
 
 body.ios-native-shell,
-body.ios-native-shell body,
 body.ios-native-shell #app {
   background: transparent !important;
 }
