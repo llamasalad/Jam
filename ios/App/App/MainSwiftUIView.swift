@@ -149,6 +149,8 @@ struct MainSwiftUIView: View {
                     }
                 }
             }
+            .toolbarBackground(.clear, for: .bottomBar)
+            .toolbarBackground(.visible, for: .bottomBar)
         }
         .ignoresSafeArea(.keyboard)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: state.hasSong)
@@ -183,6 +185,7 @@ struct MiniPlayerView: View {
                 }
             }
             .frame(width: 44, height: 44)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .glassEffect(in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
@@ -222,9 +225,10 @@ struct MiniPlayerView: View {
                 .buttonStyle(.plain)
             }
         }
-        .glassEffect()
         .padding(.horizontal)
         .padding(.vertical, 4)
+        .glassEffect()
+        .padding()
         .contentShape(Rectangle())
         .onTapGesture {
             showExpandedPlayer = true
