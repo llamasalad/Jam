@@ -315,6 +315,14 @@ body.liquid-glass-theme .sidebar-item.active .sidebar-label {
   display: none;
 }
 
+body.liquid-glass-theme .sidebar-item:hover .sidebar-label {
+  display: none;
+}
+
+body.liquid-glass-theme .group-header {
+  border: none;
+}
+
 body.liquid-glass-theme #exp-adaptive-btn {
   display: none !important;
 }

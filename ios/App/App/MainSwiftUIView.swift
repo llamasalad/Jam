@@ -216,7 +216,7 @@ struct MiniPlayerView: View {
 
             Spacer()
 
-            HStack(spacing: 16) {
+            HStack(spacing: 4) {
                 Button(action: { state.triggerPrev() }) {
                     Image(systemName: "backward.fill")
                         .imageScale(.large)
