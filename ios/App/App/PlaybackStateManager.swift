@@ -35,7 +35,6 @@ final class PlaybackStateManager {
     }
 
     // MARK: - Theme State
-    var isLiquidThemeActive: Bool = false
     var currentTheme: String = "default"
 
     // MARK: - Lyrics State
@@ -158,7 +157,6 @@ final class PlaybackStateManager {
         """
         evaluateJS(js)
         self.currentTheme = theme
-        self.isLiquidThemeActive = (theme == "liquid-glass-theme")
     }
 
     // MARK: - Playback Control Helpers

@@ -369,9 +369,6 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func setTheme(_ call: CAPPluginCall) {
         let theme = call.getString("theme") ?? "default"
-        Task { @MainActor in
-            PlaybackStateManager.shared.isLiquidThemeActive = (theme == "liquid-glass-theme")
-        }
         call.resolve()
     }
 

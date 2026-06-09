@@ -11,20 +11,9 @@ struct MainSwiftUIView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                if state.isLiquidThemeActive {
-                    LiquidBgView()
-                        .ignoresSafeArea()
-                        .transition(.opacity)
-                }
-                CapacitorWebViewRepresentable()
-                    .ignoresSafeArea(edges: .top)
-            }
             .safeAreaInset(edge: .bottom) {
                 if state.hasSong {
                     MiniPlayerView(showExpandedPlayer: $showExpandedPlayer)
-                        .padding(.horizontal)
-                        .padding(.vertical, 4)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
@@ -158,20 +147,14 @@ struct MainSwiftUIView: View {
                     }
                 }
             }
-            .toolbarBackground(.hidden, for: .bottomBar)
-            .toolbarBackground(.hidden, for: .navigationBar)
         }
         .ignoresSafeArea(.keyboard)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: state.isLiquidThemeActive)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: state.hasSong)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: isSearchActive)
         .sheet(isPresented: $showExpandedPlayer) {
             ExpandedPlayerView()
                 .presentationDragIndicator(.visible)
-                .tint(.white)
         }
-        .preferredColorScheme(.dark)
-        .tint(.white)
     }
 }
 
@@ -180,26 +163,25 @@ struct MiniPlayerView: View {
     @Binding var showExpandedPlayer: Bool
 
     var body: some View {
-        GlassEffectContainer {
-            HStack(spacing: 12) {
-                AsyncImage(url: URL(string: state.coverUrl)) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    case .failure:
-                        Image(systemName: "music.note")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundStyle(.secondary)
-                    case .empty:
-                        ProgressView()
-                    @unknown default:
-                        ProgressView()
-                    }
+        HStack(spacing: 12) {
+            AsyncImage(url: URL(string: state.coverUrl)) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                case .failure:
+                    Image(systemName: "music.note")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(.secondary)
+                case .empty:
+                    ProgressView()
+                @unknown default:
+                    ProgressView()
                 }
-                .frame(width: 44, height: 44)
-                .glassEffect(in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+            .frame(width: 44, height: 44)
+            .glassEffect(in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
                 MarqueeText(text: state.title.isEmpty ? "Not Playing" : state.title, font: .headline)
@@ -237,13 +219,13 @@ struct MiniPlayerView: View {
                 }
                 .buttonStyle(.plain)
             }
-            }
-            .padding()
-            .glassEffect()
-            .contentShape(Rectangle())
-            .onTapGesture {
-                showExpandedPlayer = true
-            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 4)
+        .glassEffect()
+        .contentShape(Rectangle())
+        .onTapGesture {
+            showExpandedPlayer = true
         }
     }
 }
@@ -374,7 +356,6 @@ struct ExpandedPlayerView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
     }
 }
 
@@ -596,7 +577,6 @@ struct FullLyricsView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
     }
 }
 
@@ -696,56 +676,53 @@ struct QueueView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
     }
 }
 
 struct PlaybackControlsView: View {
     var state = PlaybackStateManager.shared
-    
+
     var body: some View {
-        GlassEffectContainer(spacing: 24) {
-            HStack(spacing: 24) {
-                Button(action: { state.toggleShuffle() }) {
-                    Image(systemName: "shuffle")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundStyle(state.shuffle ? .primary : .secondary)
-                        .frame(width: 44, height: 44)
-                }
-                .glassEffect(state.shuffle ? .regular.interactive() : .clear.interactive(), in: .circle)
-                
-                Button(action: { state.triggerPrev() }) {
-                    Image(systemName: "backward.fill")
-                        .font(.system(size: 24, weight: .medium))
-                        .foregroundStyle(.primary)
-                        .frame(width: 54, height: 54)
-                }
-                .glassEffect(.regular.interactive(), in: .circle)
-
-                Button(action: { state.togglePlayPause() }) {
-                    Image(systemName: state.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundStyle(.primary)
-                        .frame(width: 72, height: 72)
-                }
-                .glassEffect(.regular.interactive(), in: .circle)
-
-                Button(action: { state.triggerNext() }) {
-                    Image(systemName: "forward.fill")
-                        .font(.system(size: 24, weight: .medium))
-                        .foregroundStyle(.primary)
-                        .frame(width: 54, height: 54)
-                }
-                .glassEffect(.regular.interactive(), in: .circle)
-
-                Button(action: { state.cycleRepeat() }) {
-                    Image(systemName: state.repeatMode == "one" ? "repeat.1" : "repeat")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundStyle(state.repeatMode == "off" ? .secondary : .primary)
-                        .frame(width: 44, height: 44)
-                }
-                .glassEffect(state.repeatMode != "off" ? .regular.interactive() : .clear.interactive(), in: .circle)
+        HStack(spacing: 24) {
+            Button(action: { state.toggleShuffle() }) {
+                Image(systemName: "shuffle")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(state.shuffle ? .primary : .secondary)
+                    .frame(width: 44, height: 44)
             }
+            .glassEffect(state.shuffle ? .regular.interactive() : .clear.interactive(), in: .circle)
+                
+            Button(action: { state.triggerPrev() }) {
+                Image(systemName: "backward.fill")
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundStyle(.primary)
+                    .frame(width: 54, height: 54)
+                }
+            .glassEffect(.regular.interactive(), in: .circle)
+
+            Button(action: { state.togglePlayPause() }) {
+                Image(systemName: state.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 32, weight: .bold))
+                    .foregroundStyle(.primary)
+                    .frame(width: 72, height: 72)
+            }
+            .glassEffect(.regular.interactive(), in: .circle)
+
+            Button(action: { state.triggerNext() }) {
+                Image(systemName: "forward.fill")
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundStyle(.primary)
+                    .frame(width: 54, height: 54)
+            }
+            .glassEffect(.regular.interactive(), in: .circle)
+
+            Button(action: { state.cycleRepeat() }) {
+                Image(systemName: state.repeatMode == "one" ? "repeat.1" : "repeat")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(state.repeatMode == "off" ? .secondary : .primary)
+                    .frame(width: 44, height: 44)
+            }
+            .glassEffect(state.repeatMode != "off" ? .regular.interactive() : .clear.interactive(), in: .circle)
         }
     }
 }
