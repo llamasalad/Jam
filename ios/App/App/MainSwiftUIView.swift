@@ -150,8 +150,6 @@ struct MainSwiftUIView: View {
                     }
                 }
             }
-            .toolbarBackground(.clear, for: .bottomBar)
-            .toolbarBackground(.visible, for: .bottomBar)
         }
         .ignoresSafeArea(.keyboard)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: state.hasSong)
