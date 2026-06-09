@@ -369,6 +369,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func setTheme(_ call: CAPPluginCall) {
         let theme = call.getString("theme") ?? "default"
+        Task { @MainActor in
+            PlaybackStateManager.shared.setTheme(theme)
+        }
         call.resolve()
     }
 

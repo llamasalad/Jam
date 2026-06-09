@@ -11,13 +11,15 @@ struct MainSwiftUIView: View {
 
     var body: some View {
         NavigationStack {
-            .safeAreaInset(edge: .bottom) {
-                if state.hasSong {
-                    MiniPlayerView(showExpandedPlayer: $showExpandedPlayer)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+            CapacitorWebViewRepresentable()
+                .ignoresSafeArea(edges: .top)
+                .safeAreaInset(edge: .bottom) {
+                    if state.hasSong {
+                        MiniPlayerView(showExpandedPlayer: $showExpandedPlayer)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
                 }
-            }
-            .toolbar {
+                .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: {
                         PlaybackStateManager.shared.triggerSort()
