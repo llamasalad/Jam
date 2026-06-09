@@ -12,7 +12,7 @@ struct MainSwiftUIView: View {
     var body: some View {
         NavigationStack {
             CapacitorWebViewRepresentable()
-                .ignoresSafeArea(edges: .top)
+                .ignoresSafeArea(edges: [.top, .bottom])
                 .safeAreaInset(edge: .bottom) {
                     if state.hasSong {
                         MiniPlayerView(showExpandedPlayer: $showExpandedPlayer)
@@ -360,7 +360,6 @@ struct ExpandedPlayerView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
     }
 }
 
@@ -695,6 +694,7 @@ struct PlaybackControlsView: View {
                     .foregroundStyle(state.shuffle ? .primary : .secondary)
                     .frame(width: 44, height: 44)
             }
+            .buttonStyle(.plain)
             .glassEffect(state.shuffle ? .regular.interactive() : .clear.interactive(), in: .circle)
                 
             Button(action: { state.triggerPrev() }) {
@@ -702,7 +702,8 @@ struct PlaybackControlsView: View {
                     .font(.system(size: 24, weight: .medium))
                     .foregroundStyle(.primary)
                     .frame(width: 54, height: 54)
-                }
+            }
+            .buttonStyle(.plain)
             .glassEffect(.regular.interactive(), in: .circle)
 
             Button(action: { state.togglePlayPause() }) {
@@ -711,6 +712,7 @@ struct PlaybackControlsView: View {
                     .foregroundStyle(.primary)
                     .frame(width: 72, height: 72)
             }
+            .buttonStyle(.plain)
             .glassEffect(.regular.interactive(), in: .circle)
 
             Button(action: { state.triggerNext() }) {
@@ -719,6 +721,7 @@ struct PlaybackControlsView: View {
                     .foregroundStyle(.primary)
                     .frame(width: 54, height: 54)
             }
+            .buttonStyle(.plain)
             .glassEffect(.regular.interactive(), in: .circle)
 
             Button(action: { state.cycleRepeat() }) {
@@ -727,6 +730,7 @@ struct PlaybackControlsView: View {
                     .foregroundStyle(state.repeatMode == "off" ? .secondary : .primary)
                     .frame(width: 44, height: 44)
             }
+            .buttonStyle(.plain)
             .glassEffect(state.repeatMode != "off" ? .regular.interactive() : .clear.interactive(), in: .circle)
         }
     }
