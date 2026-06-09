@@ -20,7 +20,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         // Programmatically boot the SwiftUI shell instead of Main.storyboard
         let hostingController = UIHostingController(rootView: MainSwiftUIView())
-        hostingController.view.backgroundColor = .black
+        hostingController.view.backgroundColor = .clear
 
         let window: UIWindow
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
