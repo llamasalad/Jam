@@ -261,6 +261,8 @@ struct ExpandedPlayerView: View {
                             .aspectRatio(1, contentMode: .fill)
                             .frame(maxWidth: .infinity)
                     case .failure:
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .glassEffect()
                             .aspectRatio(1, contentMode: .fill)
                             .frame(maxWidth: .infinity)
                             .overlay(
@@ -269,6 +271,8 @@ struct ExpandedPlayerView: View {
                                     .foregroundStyle(.secondary)
                             )
                     case .empty:
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .glassEffect()
                             .aspectRatio(1, contentMode: .fill)
                             .frame(maxWidth: .infinity)
                             .overlay(ProgressView())
