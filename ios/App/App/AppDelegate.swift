@@ -477,13 +477,6 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         call.resolve()
     }
 
-    @objc func playerItemDidReachEnd(notification: Notification) {
-        notifyListeners("ended", data: [:])
-        Task { @MainActor in
-            PlaybackStateManager.shared.isPlaying = false
-        }
-    }
-
     @objc func setTheme(_ call: CAPPluginCall) {
         let theme = call.getString("theme") ?? "default"
         Task { @MainActor in
