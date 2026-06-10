@@ -258,12 +258,11 @@ struct ExpandedPlayerView: View {
                     case .success(let image):
                         image
                             .resizable()
-                            .aspectRatio(1, contentMode: .fit)
+                            .aspectRatio(1, contentMode: .fill)
                             .frame(maxWidth: .infinity)
                     case .failure:
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
                             .glassEffect()
-                            .aspectRatio(1, contentMode: .fit)
+                            .aspectRatio(1, contentMode: .fill)
                             .frame(maxWidth: .infinity)
                             .overlay(
                                 Image(systemName: "music.note")
@@ -271,9 +270,8 @@ struct ExpandedPlayerView: View {
                                     .foregroundStyle(.secondary)
                             )
                     case .empty:
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
                             .glassEffect()
-                            .aspectRatio(1, contentMode: .fit)
+                            .aspectRatio(1, contentMode: .fill)
                             .frame(maxWidth: .infinity)
                             .overlay(ProgressView())
                     @unknown default:
@@ -330,7 +328,6 @@ struct ExpandedPlayerView: View {
                 Spacer()
 
                 HStack {
-                    Spacer()
                     Button(action: { showQueue = true }) {
                         Image(systemName: "list.dash")
                             .font(.system(size: 20, weight: .medium))
