@@ -250,6 +250,12 @@ class CapacitorAudioPlayerShim {
                     prevTrack();
                 }
             });
+            plugin.addListener('trackAdvancedNatively', () => {
+                this._currentTime = 0;
+                this._lastNativeTime = 0;
+                this._lastSyncTime = performance.now();
+                this.dispatchEvent('trackAdvancedNatively');
+            });
         }
     }
 
@@ -2198,6 +2204,66 @@ function play(t) {
     updateExpandedNowPlaying(t);
     updateAdaptiveBackground();
     startHeartbeat();
+    preloadNextTrack();
+}
+
+let nextAudio = null;
+function preloadNextTrack() {
+    if (qIdx + 1 < queue.length) {
+        let t = queue[qIdx + 1];
+        let streamUrl = t.streamUrl || Navidrome.getStreamUrl(t.id);
+        if (isNative() && window.Capacitor?.Plugins?.AudioPlayerPlugin) {
+            window.Capacitor.Plugins.AudioPlayerPlugin.preloadNext({
+                url: streamUrl,
+                title: t.title || '',
+                artist: t.artist || '',
+                album: t.album || '',
+                duration: t.duration || 0,
+                coverUrl: Navidrome.getCoverUrl(t.id),
+                suffix: t.suffix || 'flac'
+            });
+        } else {
+            if (!nextAudio) {
+                nextAudio = new Audio();
+                nextAudio.preload = 'auto';
+            }
+            nextAudio.src = streamUrl;
+            nextAudio.load();
+        }
+    }
+}
+
+function syncGaplessNextTrack() {
+    if (qIdx < queue.length - 1) {
+        qIdx++;
+        let t = queue[qIdx];
+
+        seeking = false;
+        lyricsOffset = 0;
+        updateStatusBar();
+        updateLyricsOffsetUI();
+        updateMediaSession(t);
+
+        if (player) { player.classList.remove('hidden'); updatePlayerHeight(); }
+        updatePlayerMetadata(t);
+        const pt = document.getElementById('player-thumb');
+        if (pt) { pt.src = FALLBACK; loadCover(t.id, pt); }
+        document.title = (t.title || '?') + ' \u00B7 ' + (t.artist || '?');
+        if (timeTot) timeTot.textContent = '-';
+        localStorage.setItem('music_last', JSON.stringify({ id: t.id, title: t.title, artist: t.artist, album: t.album, duration: t.duration, suffix: t.suffix || 'flac' }));
+        saveQueueState();
+        loadLyrics(t);
+        updateExpandedNowPlaying(t);
+        updateAdaptiveBackground();
+        startHeartbeat();
+
+        const trs = document.querySelectorAll('.track-row');
+        trs.forEach(r => r.classList.remove('playing'));
+        const playingRow = document.querySelector(`.track-row[data-index="${qIdx}"]`);
+        if (playingRow) playingRow.classList.add('playing');
+
+        preloadNextTrack();
+    }
 }
 
 function adjustExpTitleMarquee() {
@@ -3590,6 +3656,14 @@ if (audio) {
         }
         rafId = requestAnimationFrame(tickProgress);
     };
+
+    audio.addEventListener('error', (e) => {
+        console.error("Audio error", e);
+    });
+    audio.addEventListener('trackAdvancedNatively', () => {
+        if (_trackTransition) return;
+        syncGaplessNextTrack();
+    });
 
     audio.addEventListener('play', () => {
         cancelAnimationFrame(rafId);

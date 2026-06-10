@@ -18,8 +18,17 @@ struct MainSwiftUIView: View {
                         MiniPlayerView(showExpandedPlayer: $showExpandedPlayer)
                             .padding(.horizontal, 12)
                             .padding(.bottom, 8)
+                            .background(GeometryReader { geo in
+                                Color.clear.preference(key: MiniPlayerHeightPreferenceKey.self, value: geo.size.height)
+                            })
                             .transition(.move(edge: .bottom).combined(with: .opacity))
+                    } else {
+                        Color.clear.frame(height: 0)
+                            .preference(key: MiniPlayerHeightPreferenceKey.self, value: 0)
                     }
+                }
+                .onPreferenceChange(MiniPlayerHeightPreferenceKey.self) { height in
+                    PlaybackStateManager.shared.updateMiniPlayerHeight(height)
                 }
                 .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -360,15 +369,15 @@ struct ExpandedPlayerView: View {
             displayedCurrentLyric = state.currentLyric
             displayedNextLyric = state.nextLyric
         }
-        .onChange(of: state.currentLyric) { _, _ in
-            withAnimation(.easeOut(duration: 0.1)) {
+        .onChange(of: state.activeLyricIndex) { _, _ in
+            withAnimation(.snappy(duration: 0.15)) {
                 lyricOpacity = 0
                 lyricOffset = 6
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            } completion: {
                 displayedCurrentLyric = state.currentLyric
                 displayedNextLyric = state.nextLyric
-                withAnimation(.easeIn(duration: 0.15)) {
+                
+                withAnimation(.bouncy(duration: 0.25)) {
                     lyricOpacity = 1
                     lyricOffset = 0
                 }
@@ -774,5 +783,12 @@ struct BlurredBackgroundView: View {
         .overlay(Color.black.opacity(0.6))
         .blur(radius: 40)
         .ignoresSafeArea()
+    }
+}
+
+struct MiniPlayerHeightPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }

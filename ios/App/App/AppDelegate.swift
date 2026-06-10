@@ -90,11 +90,23 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "updateQueue", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setPlaybackState", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "updateDetailView", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "preloadNext", returnType: CAPPluginReturnPromise),
     ]
 
-    private var player: AVPlayer?
+    struct TrackMetadata {
+        let title: String
+        let artist: String
+        let album: String
+        let duration: Double
+        let coverUrl: String
+    }
+
+    private var player: AVQueuePlayer?
     private var timeObserverToken: Any?
-    private var playerItemStatusObserver: NSKeyValueObservation?
+    private var playerItemStatusObservers: [Int: NSKeyValueObservation] = [:]
+    private var currentItemObserver: NSKeyValueObservation?
+    private var metadataMap: [Int: TrackMetadata] = [:]
+    private var isManuallyChangingItem = false
 
     private var currentTitle: String = ""
     private var currentArtist: String = ""
@@ -215,6 +227,8 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
 
+        isManuallyChangingItem = true
+
         currentTitle = call.getString("title") ?? "Unknown"
         currentArtist = call.getString("artist") ?? "Unknown"
         currentAlbum = call.getString("album") ?? "Unknown"
@@ -239,6 +253,8 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         }
 
         removeObservers()
+        metadataMap.removeAll()
+        playerItemStatusObservers.removeAll()
 
         var mimeType = "audio/flac"
         let lowerSuffix = suffix.lowercased()
@@ -259,7 +275,10 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         ]
         let asset = AVURLAsset(url: url, options: options)
         let playerItem = AVPlayerItem(asset: asset)
-        player = AVPlayer(playerItem: playerItem)
+        
+        metadataMap[playerItem.hash] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl)
+        
+        player = AVQueuePlayer(playerItem: playerItem)
 
         updateNowPlayingInfo(elapsed: 0.0, rate: 0.0)
 
@@ -268,9 +287,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         }
 
         // Add observer to player item status using block KVO
-        playerItemStatusObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, change in
+        let statusObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, change in
             guard let self = self else { return }
-            if item.status == .readyToPlay {
+            if item.status == .readyToPlay, self.player?.currentItem == item {
                 let dur = CMTimeGetSeconds(item.duration)
                 if !dur.isNaN {
                     self.currentDuration = dur
@@ -282,6 +301,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                 }
             }
         }
+        playerItemStatusObservers[playerItem.hash] = statusObserver
 
         // Add periodic time observer for timeupdate events
         let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
@@ -296,9 +316,105 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             }
         }
 
+        // Observe current item for gapless transitions
+        currentItemObserver = player?.observe(\.currentItem, options: [.new]) { [weak self] player, change in
+            guard let self = self else { return }
+            if self.isManuallyChangingItem { return }
+            if let newItem = change.newValue as? AVPlayerItem, let meta = self.metadataMap[newItem.hash] {
+                self.currentTitle = meta.title
+                self.currentArtist = meta.artist
+                self.currentAlbum = meta.album
+                self.currentDuration = meta.duration
+                Task { @MainActor in
+                    let mgr = PlaybackStateManager.shared
+                    mgr.title = meta.title
+                    mgr.artist = meta.artist
+                    mgr.album = meta.album
+                    mgr.duration = meta.duration
+                    mgr.coverUrl = meta.coverUrl
+                    mgr.updateCurrentTime(0)
+                    mgr.isPlaying = true
+                }
+                self.updateNowPlayingInfo(elapsed: 0.0, rate: 1.0)
+                if !meta.coverUrl.isEmpty { self.fetchArtwork(urlString: meta.coverUrl) }
+                self.notifyListeners("trackAdvancedNatively", data: [:])
+                
+                let dur = CMTimeGetSeconds(newItem.duration)
+                if !dur.isNaN {
+                    self.currentDuration = dur
+                    self.updateNowPlayingInfo()
+                    Task { @MainActor in PlaybackStateManager.shared.duration = dur }
+                }
+            }
+        }
+
         // Add end observer
         NotificationCenter.default.addObserver(self, selector: #selector(playerItemDidReachEnd), name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
 
+        isManuallyChangingItem = false
+        call.resolve()
+    }
+
+    @objc func preloadNext(_ call: CAPPluginCall) {
+        guard let queuePlayer = player,
+              let urlString = call.getString("url"),
+              let url = URL(string: urlString) else {
+            call.resolve()
+            return
+        }
+
+        let title = call.getString("title") ?? "Unknown"
+        let artist = call.getString("artist") ?? "Unknown"
+        let album = call.getString("album") ?? "Unknown"
+        let duration = call.getDouble("duration") ?? 0.0
+        let coverUrl = call.getString("coverUrl") ?? ""
+        let suffix = call.getString("suffix") ?? "flac"
+
+        var mimeType = "audio/flac"
+        let lowerSuffix = suffix.lowercased()
+        if lowerSuffix == "mp3" {
+            mimeType = "audio/mpeg"
+        } else if lowerSuffix == "m4a" || lowerSuffix == "mp4" {
+            mimeType = "audio/mp4"
+        } else if lowerSuffix == "wav" {
+            mimeType = "audio/wav"
+        } else if lowerSuffix == "ogg" || lowerSuffix == "oga" {
+            mimeType = "audio/ogg"
+        }
+
+        let options: [String: Any] = [
+            AVURLAssetPreferPreciseDurationAndTimingKey: true,
+            "AVURLAssetOutOfBandMIMETypeKey": mimeType,
+            "AVURLAssetOverrideMIMETypeKey": mimeType
+        ]
+        let asset = AVURLAsset(url: url, options: options)
+        let playerItem = AVPlayerItem(asset: asset)
+
+        metadataMap[playerItem.hash] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl)
+
+        // Ensure we only have 1 queued item ahead
+        if queuePlayer.items().count > 1 {
+            for item in queuePlayer.items().dropFirst() {
+                queuePlayer.remove(item)
+            }
+        }
+
+        let statusObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, change in
+            guard let self = self else { return }
+            if item.status == .readyToPlay, self.player?.currentItem == item {
+                let dur = CMTimeGetSeconds(item.duration)
+                if !dur.isNaN {
+                    self.currentDuration = dur
+                    self.updateNowPlayingInfo()
+                    Task { @MainActor in PlaybackStateManager.shared.duration = dur }
+                }
+            }
+        }
+        playerItemStatusObservers[playerItem.hash] = statusObserver
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(playerItemDidReachEnd), name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
+
+        queuePlayer.insert(playerItem, after: nil)
         call.resolve()
     }
 
@@ -400,15 +516,27 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         }
         call.resolve()
     }
-
     private func removeObservers() {
         if let token = timeObserverToken {
             player?.removeTimeObserver(token)
             timeObserverToken = nil
         }
-        playerItemStatusObserver?.invalidate()
-        playerItemStatusObserver = nil
-        NotificationCenter.default.removeObserver(self)
+        playerItemStatusObservers.removeAll()
+        currentItemObserver?.invalidate()
+        currentItemObserver = nil
+        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: nil)
+    }
+
+    @objc func playerItemDidReachEnd(_ notification: Notification) {
+        // If AVQueuePlayer has more items, it will advance automatically.
+        if let player = player, player.items().count > 1 {
+            return
+        }
+        // Otherwise, playback actually finished
+        notifyListeners("ended", data: [:])
+        Task { @MainActor in
+            PlaybackStateManager.shared.isPlaying = false
+        }
     }
 
     deinit {

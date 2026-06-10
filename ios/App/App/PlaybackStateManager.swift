@@ -181,6 +181,10 @@ final class PlaybackStateManager {
         }
     }
 
+    func updateMiniPlayerHeight(_ height: CGFloat) {
+        evaluateJS("document.documentElement.style.setProperty('--native-bottom-inset', '\(height)px')")
+    }
+
     // MARK: - Playback Control Helpers
 
     func togglePlayPause() {
