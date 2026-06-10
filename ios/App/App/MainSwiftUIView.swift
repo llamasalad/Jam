@@ -16,7 +16,7 @@ struct MainSwiftUIView: View {
                 .safeAreaInset(edge: .bottom) {
                     if state.hasSong {
                         MiniPlayerView(showExpandedPlayer: $showExpandedPlayer)
-                            .padding()
+                            .padding(.bottom, 8)
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                 }
@@ -106,11 +106,11 @@ struct MainSwiftUIView: View {
                             }
                         }) {
                             VStack(spacing: 4) {
-                                Image(systemName: selectedTab == "library" ? "music.house.fill" : "music.house")
+                                Image(systemName: selectedTab == "library" ? "house.fill" : "house")
                                     .font(.system(size: 16))
                                 Text("Library").font(.system(size: 10, weight: .medium))
                             }
-                            .padding()
+                            .padding(.horizontal, 6)
                         }
                         .foregroundStyle(selectedTab == "library" ? .primary : .secondary)
 
@@ -125,7 +125,7 @@ struct MainSwiftUIView: View {
                                     .font(.system(size: 16))
                                 Text("Playlists").font(.system(size: 10, weight: .medium))
                             }
-                            .padding()
+                            .padding(.horizontal, 6)
                         }
                         .foregroundStyle(selectedTab == "playlists" ? .primary : .secondary)
 
@@ -199,7 +199,7 @@ struct MiniPlayerView: View {
                 }
             }
 
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             HStack(spacing: 4) {
                 Button(action: { state.triggerPrev() }) {
@@ -223,6 +223,7 @@ struct MiniPlayerView: View {
                 }
                 .buttonStyle(.plain)
             }
+            .fixedSize()
         }
         .padding(.horizontal)
         .padding(.vertical, 4)
