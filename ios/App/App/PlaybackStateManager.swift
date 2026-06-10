@@ -37,6 +37,10 @@ final class PlaybackStateManager {
     // MARK: - Theme State
     var currentTheme: String = "default"
 
+    // MARK: - Detail View Navigation State
+    var isInDetailView: Bool = false
+    var detailViewTitle: String = ""
+
     // MARK: - Lyrics State
     var currentLyric: String = ""
     var nextLyric: String = ""
@@ -157,6 +161,24 @@ final class PlaybackStateManager {
         """
         evaluateJS(js)
         self.currentTheme = theme
+    }
+
+    // MARK: - Navigation
+
+    func navigateBack() {
+        evaluateJS("if(typeof window.navigateBack==='function')window.navigateBack()")
+    }
+
+    func openAlbumDetail() {
+        if !album.isEmpty {
+            evaluateJS("if(typeof window.openAlbumDetail==='function')window.openAlbumDetail('\(album.replacingOccurrences(of: "'", with: "\\'"))')")
+        }
+    }
+
+    func openArtistDetail() {
+        if !artist.isEmpty {
+            evaluateJS("if(typeof window.openArtistDetail==='function')window.openArtistDetail('\(artist.replacingOccurrences(of: "'", with: "\\'"))')")
+        }
     }
 
     // MARK: - Playback Control Helpers

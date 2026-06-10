@@ -22,6 +22,17 @@ struct MainSwiftUIView: View {
                     }
                 }
                 .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if state.isInDetailView {
+                        Button(action: {
+                            PlaybackStateManager.shared.navigateBack()
+                        }) {
+                            Image(systemName: "chevron.left")
+                                .frame(width: 44, height: 44)
+                        }
+                    }
+                }
+
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: {
                         PlaybackStateManager.shared.triggerSort()
@@ -224,6 +235,7 @@ struct MiniPlayerView: View {
 
 struct ExpandedPlayerView: View {
     var state = PlaybackStateManager.shared
+    @Environment(\.dismiss) private var dismiss
     @State private var showFullLyrics: Bool = false
     @State private var showQueue: Bool = false
     @State private var displayedCurrentLyric: String = ""
@@ -272,13 +284,25 @@ struct ExpandedPlayerView: View {
                 .shadow(color: .black.opacity(0.3), radius: 24, x: 0, y: 16)
 
                 VStack(spacing: 4) {
-                    MarqueeText(text: state.title.isEmpty ? "Not Playing" : state.title, font: .title2, alignment: .center)
-                        .fontWeight(.bold)
-                        .foregroundStyle(.primary)
+                    Button(action: {
+                        state.openAlbumDetail()
+                        dismiss()
+                    }) {
+                        MarqueeText(text: state.title.isEmpty ? "Not Playing" : state.title, font: .title2, alignment: .center)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.primary)
+                    }
+                    .buttonStyle(.plain)
 
-                    MarqueeText(text: state.artist.isEmpty ? " " : state.artist, font: .title3, alignment: .center)
-                        .fontWeight(.medium)
-                        .foregroundStyle(.secondary)
+                    Button(action: {
+                        state.openArtistDetail()
+                        dismiss()
+                    }) {
+                        MarqueeText(text: state.artist.isEmpty ? " " : state.artist, font: .title3, alignment: .center)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 24)
 

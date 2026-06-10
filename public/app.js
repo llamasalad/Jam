@@ -888,6 +888,7 @@ function openDetail(type, name) {
     filtered = tracks.filter(t => t[type] === name);
     renderList();
     restoreScroll();
+    notifyNativeDetailView(true, name);
 }
 
 function openArtistDetail(artist) { openDetail('artist', artist); }
@@ -923,6 +924,7 @@ function closeDetailView() {
     filtered = [...tracks];
     sort();
     restoreScroll();
+    notifyNativeDetailView(false);
 }
 
 function cycleSort() {
@@ -1733,6 +1735,7 @@ async function openPlaylistDetail(pl) {
 
     renderPlaylistDetail(pl);
     restoreScroll();
+    notifyNativeDetailView(true, pl.name);
 
     try {
         const fullPl = await fetchPlaylist(pl.id);
@@ -1761,6 +1764,7 @@ function closePlaylistDetail() {
     const headerTitle = document.getElementById('header-title');
     if (headerTitle) headerTitle.textContent = 'Jam!';
     restoreScroll();
+    notifyNativeDetailView(false);
 }
 
 function renderPlaylistDetail(pl) {
@@ -4104,6 +4108,9 @@ if ('serviceWorker' in navigator) {
 window.nextTrack = nextTrack;
 window.prevTrack = prevTrack;
 
+window.openArtistDetail = openArtistDetail;
+window.openAlbumDetail = openAlbumDetail;
+
 window.applyFilter = applyFilter;
 Object.defineProperty(window, 'audio', {
     get: function () { return audio; }
@@ -4143,6 +4150,21 @@ window.toggleShuffle = function () {
 window.toggleRepeat = function () {
     if (btnRepeat) btnRepeat.onclick();
     notifyNativePlaybackState();
+};
+
+function notifyNativeDetailView(isActive, title) {
+    const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
+    if (plugin && typeof plugin.updateDetailView === 'function') {
+        plugin.updateDetailView({ isActive: !!isActive, title: title || '' });
+    }
+}
+
+window.navigateBack = function () {
+    if (currentDetailView) {
+        closeDetailView();
+    } else if (currentPlaylist) {
+        closePlaylistDetail();
+    }
 };
 
 (async () => { const ok = await checkAuth(); if (ok) init() })();

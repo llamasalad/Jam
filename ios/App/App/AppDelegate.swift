@@ -89,6 +89,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "updateLyrics", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "updateQueue", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setPlaybackState", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "updateDetailView", returnType: CAPPluginReturnPromise),
     ]
 
     private var player: AVPlayer?
@@ -420,6 +421,16 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         Task { @MainActor in
             PlaybackStateManager.shared.shuffle = shuffleVal
             PlaybackStateManager.shared.repeatMode = repeatVal
+        }
+        call.resolve()
+    }
+
+    @objc func updateDetailView(_ call: CAPPluginCall) {
+        let isActive = call.getBool("isActive") ?? false
+        let title = call.getString("title") ?? ""
+        Task { @MainActor in
+            PlaybackStateManager.shared.isInDetailView = isActive
+            PlaybackStateManager.shared.detailViewTitle = title
         }
         call.resolve()
     }
