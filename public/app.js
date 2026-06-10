@@ -2212,7 +2212,7 @@ function preloadNextTrack() {
     if (qIdx + 1 < queue.length) {
         let t = queue[qIdx + 1];
         let streamUrl = t.streamUrl || Navidrome.getStreamUrl(t.id);
-        if (isNative() && window.Capacitor?.Plugins?.AudioPlayerPlugin) {
+        if (window.Capacitor?.Plugins?.AudioPlayerPlugin) {
             window.Capacitor.Plugins.AudioPlayerPlugin.preloadNext({
                 url: streamUrl,
                 title: t.title || '',
@@ -2256,11 +2256,8 @@ function syncGaplessNextTrack() {
         updateExpandedNowPlaying(t);
         updateAdaptiveBackground();
         startHeartbeat();
-
-        const trs = document.querySelectorAll('.track-row');
-        trs.forEach(r => r.classList.remove('playing'));
-        const playingRow = document.querySelector(`.track-row[data-index="${qIdx}"]`);
-        if (playingRow) playingRow.classList.add('playing');
+        updateActive();
+        renderQueue();
 
         preloadNextTrack();
     }

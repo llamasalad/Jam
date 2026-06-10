@@ -103,6 +103,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 
     private var player: AVQueuePlayer?
     private var timeObserverToken: Any?
+    private var uiTimeObserverToken: Any?
     private var playerItemStatusObservers: [Int: NSKeyValueObservation] = [:]
     private var currentItemObserver: NSKeyValueObservation?
     private var metadataMap: [Int: TrackMetadata] = [:]
@@ -303,13 +304,21 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         }
         playerItemStatusObservers[playerItem.hash] = statusObserver
 
-        // Add periodic time observer for timeupdate events
+        // Add periodic time observer for JS (0.5s)
         let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         timeObserverToken = player?.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             guard let self = self else { return }
             let ct = CMTimeGetSeconds(time)
             if !ct.isNaN {
                 self.notifyListeners("timeupdate", data: ["currentTime": ct])
+            }
+        }
+
+        // Add fast periodic time observer for Native UI (20fps)
+        let uiInterval = CMTime(seconds: 0.05, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        uiTimeObserverToken = player?.addPeriodicTimeObserver(forInterval: uiInterval, queue: .main) { [weak self] time in
+            let ct = CMTimeGetSeconds(time)
+            if !ct.isNaN {
                 Task { @MainActor in
                     PlaybackStateManager.shared.updateCurrentTime(ct)
                 }
@@ -513,6 +522,10 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         if let token = timeObserverToken {
             player?.removeTimeObserver(token)
             timeObserverToken = nil
+        }
+        if let uiToken = uiTimeObserverToken {
+            player?.removeTimeObserver(uiToken)
+            uiTimeObserverToken = nil
         }
         playerItemStatusObservers.removeAll()
         currentItemObserver?.invalidate()
