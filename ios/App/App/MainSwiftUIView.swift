@@ -261,7 +261,6 @@ struct ExpandedPlayerView: View {
                             .aspectRatio(1, contentMode: .fill)
                             .frame(maxWidth: .infinity)
                     case .failure:
-                            .glassEffect()
                             .aspectRatio(1, contentMode: .fill)
                             .frame(maxWidth: .infinity)
                             .overlay(
@@ -270,7 +269,6 @@ struct ExpandedPlayerView: View {
                                     .foregroundStyle(.secondary)
                             )
                     case .empty:
-                            .glassEffect()
                             .aspectRatio(1, contentMode: .fill)
                             .frame(maxWidth: .infinity)
                             .overlay(ProgressView())
