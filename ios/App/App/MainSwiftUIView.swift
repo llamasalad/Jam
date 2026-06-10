@@ -109,6 +109,7 @@ struct MainSwiftUIView: View {
                             VStack(spacing: 4) {
                                 Image(systemName: selectedTab == "library" ? "house.fill" : "house")
                                     .font(.system(size: 16))
+                                    .frame(width: 44, height: 44)
                                 Text("Library").font(.system(size: 10, weight: .medium))
                             }
                             .padding(.horizontal, 6)
@@ -124,6 +125,7 @@ struct MainSwiftUIView: View {
                             VStack(spacing: 4) {
                                 Image(systemName: "list.triangle")
                                     .font(.system(size: 16))
+                                    .frame(width: 44, height: 44)
                                 Text("Playlists").font(.system(size: 10, weight: .medium))
                             }
                             .padding(.horizontal, 6)
@@ -227,7 +229,7 @@ struct MiniPlayerView: View {
             .fixedSize()
         }
         .padding(.horizontal)
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
         .glassEffect()
         .contentShape(Rectangle())
         .onTapGesture {
@@ -249,10 +251,11 @@ struct ExpandedPlayerView: View {
         let _ = state.currentLyric // Force Observation for SwiftUI dependency tracking
         
         ZStack {
-            // Blurred Background
+
             BlurredBackgroundView(url: state.coverUrl)
 
             VStack(spacing: 16) {
+                Spacer()
                 AsyncImage(url: URL(string: state.coverUrl)) { phase in
                     switch phase {
                     case .success(let image):
@@ -646,7 +649,7 @@ struct QueueView: View {
                             }
                             .id(index)
                             .padding(.horizontal)
-                            .padding(.vertical, 10)
+                            .padding(.vertical, 6)
                             .glassEffect(isPlaying ? .regular.tint(.white.opacity(0.1)) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                             .contentShape(Rectangle())
                             .onTapGesture {

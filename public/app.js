@@ -845,13 +845,23 @@ function getViewState() {
     return `tab:${activeTab}`;
 }
 
-function saveScroll() { viewScrolls[lastViewState] = window.scrollY; }
+function saveScroll() {
+    viewScrolls[lastViewState] = window.scrollY;
+    const cards = document.getElementById('library-cards');
+    if (cards) viewScrolls[lastViewState + ':cardsY'] = cards.scrollTop;
+}
 
 function restoreScroll() {
     const newState = getViewState();
     lastViewState = newState;
     const targetY = viewScrolls[newState] || 0;
-    requestAnimationFrame(() => { requestAnimationFrame(() => { window.scrollTo(0, targetY); }); });
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            window.scrollTo(0, targetY);
+            const cards = document.getElementById('library-cards');
+            if (cards) cards.scrollTop = viewScrolls[newState + ':cardsY'] || 0;
+        });
+    });
 }
 
 function openDetail(type, name) {
@@ -2139,7 +2149,7 @@ function playTrack(t, list) {
     document.querySelectorAll('.track.active').forEach(e => e.classList.remove('active'));
     const row = document.querySelector('.track[data-id="' + t.id + '"]');
     if (row) row.classList.add('active');
-    if (queueOpen) renderQueue();
+    renderQueue();
 }
 
 function setAudioMetadata(t) {
