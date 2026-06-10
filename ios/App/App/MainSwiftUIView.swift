@@ -16,7 +16,7 @@ struct MainSwiftUIView: View {
                 .safeAreaInset(edge: .bottom) {
                     if state.hasSong {
                         MiniPlayerView(showExpandedPlayer: $showExpandedPlayer)
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, 12)
                             .padding(.bottom, 8)
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
@@ -50,6 +50,7 @@ struct MainSwiftUIView: View {
                                 Text(theme.0)
                                 if state.currentTheme == theme.1 {
                                     Image(systemName: "checkmark")
+                                        .frame(width: 44, height: 44)
                                 }
                             }
                         }
@@ -79,14 +80,16 @@ struct MainSwiftUIView: View {
 
                             if !searchQuery.isEmpty {
                                 Button(action: {
+                                    isSearchFieldFocused = false
+                                    isSearchActive = false
                                     searchQuery = ""
                                     PlaybackStateManager.shared.clearSearch()
                                 }) {
                                     Image(systemName: "xmark")
-                                        .font(.system(size: 14))
+                                        .font(.system(size: 14, weight: .medium))
                                         .foregroundStyle(.secondary)
                                 }
-                                .buttonStyle(.glass)
+                                .buttonStyle(.plain)
                             }
                         }
 
@@ -97,12 +100,12 @@ struct MainSwiftUIView: View {
                                 PlaybackStateManager.shared.switchWebTab(tabName: "library")
                             }
                         }) {
-                            VStack(spacing: 4) {
+                            VStack {
                                 Image(systemName: selectedTab == "library" ? "house.fill" : "house")
                                     .font(.system(size: 16))
                                 Text("Library").font(.system(size: 10, weight: .medium))
                             }
-                            .frame(minWidth: 44, minHeight: 44)
+                            .frame(width: 44, height: 44)
                             .padding(.horizontal, 6)
                         }
                         .foregroundStyle(selectedTab == "library" ? .primary : .secondary)
@@ -113,12 +116,12 @@ struct MainSwiftUIView: View {
                                 PlaybackStateManager.shared.switchWebTab(tabName: "playlists")
                             }
                         }) {
-                            VStack(spacing: 4) {
+                            VStack {
                                 Image(systemName: "list.triangle")
                                     .font(.system(size: 16))
                                 Text("Playlists").font(.system(size: 10, weight: .medium))
                             }
-                            .frame(minWidth: 44, minHeight: 44)
+                            .frame(width: 44, height: 44)
                             .padding(.horizontal, 6)
                         }
                         .foregroundStyle(selectedTab == "playlists" ? .primary : .secondary)
