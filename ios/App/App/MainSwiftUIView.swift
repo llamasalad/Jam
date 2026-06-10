@@ -27,6 +27,7 @@ struct MainSwiftUIView: View {
                         PlaybackStateManager.shared.triggerSort()
                     }) {
                         Image(systemName: "line.horizontal.3.decrease")
+                            .frame(width: 44, height: 44)
                     }
                 }
 
@@ -89,16 +90,6 @@ struct MainSwiftUIView: View {
                             }
                         }
 
-                        Button(action: {
-                            withAnimation {
-                                isSearchFieldFocused = false
-                                isSearchActive = false
-                                searchQuery = ""
-                                PlaybackStateManager.shared.clearSearch()
-                            }
-                        }) {
-                            Image(systemName: "xmark")
-                        }
                     } else {
                         Button(action: {
                             withAnimation {
@@ -111,7 +102,7 @@ struct MainSwiftUIView: View {
                                     .font(.system(size: 16))
                                 Text("Library").font(.system(size: 10, weight: .medium))
                             }
-                            .frame(width: 44, height: 44)
+                            .frame(minWidth: 44, minHeight: 44)
                             .padding(.horizontal, 6)
                         }
                         .foregroundStyle(selectedTab == "library" ? .primary : .secondary)
@@ -127,7 +118,7 @@ struct MainSwiftUIView: View {
                                     .font(.system(size: 16))
                                 Text("Playlists").font(.system(size: 10, weight: .medium))
                             }
-                            .frame(width: 44, height: 44)
+                            .frame(minWidth: 44, minHeight: 44)
                             .padding(.horizontal, 6)
                         }
                         .foregroundStyle(selectedTab == "playlists" ? .primary : .secondary)
@@ -621,7 +612,7 @@ struct QueueView: View {
                     } else {
                         ForEach(Array(state.queue.enumerated()), id: \.offset) { index, item in
                             let isPlaying = index == state.queueIndex
-                            HStack(spacing: 12) {
+                            HStack(spacing: 6) {
                                 if isPlaying {
                                     Image(systemName: "waveform")
                                         .symbolEffect(.variableColor.iterative, options: .repeating, isActive: state.isPlaying)
