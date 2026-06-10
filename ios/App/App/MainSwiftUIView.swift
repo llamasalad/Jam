@@ -50,13 +50,13 @@ struct MainSwiftUIView: View {
                                 Text(theme.0)
                                 if state.currentTheme == theme.1 {
                                     Image(systemName: "checkmark")
-                                        .frame(width: 44, height: 44)
                                 }
                             }
                         }
                     } label: {
                         Image(systemName: "paintpalette")
                             .symbolEffect(.bounce, value: themeChangePulse)
+                            .frame(width: 44, height: 44)
                     }
                 }
 
@@ -78,7 +78,6 @@ struct MainSwiftUIView: View {
                                     PlaybackStateManager.shared.updateSearchQuery(newValue)
                                 }
 
-                            if !searchQuery.isEmpty {
                                 Button(action: {
                                     isSearchFieldFocused = false
                                     isSearchActive = false
@@ -86,11 +85,10 @@ struct MainSwiftUIView: View {
                                     PlaybackStateManager.shared.clearSearch()
                                 }) {
                                     Image(systemName: "xmark")
-                                        .font(.system(size: 14, weight: .medium))
                                         .foregroundStyle(.secondary)
+                                        .frame(width: 44, height: 44)
                                 }
                                 .buttonStyle(.plain)
-                            }
                         }
 
                     } else {
@@ -100,13 +98,10 @@ struct MainSwiftUIView: View {
                                 PlaybackStateManager.shared.switchWebTab(tabName: "library")
                             }
                         }) {
-                            VStack {
-                                Image(systemName: selectedTab == "library" ? "house.fill" : "house")
-                                    .font(.system(size: 16))
-                                Text("Library").font(.system(size: 10, weight: .medium))
-                            }
-                            .frame(width: 44, height: 44)
-                            .padding(.horizontal, 6)
+                            Image(systemName: selectedTab == "library" ? "house.fill" : "house")
+                                .imageScale(.large)
+                                .frame(width: 44, height: 44)
+                                .padding(.horizontal, 6)
                         }
                         .foregroundStyle(selectedTab == "library" ? .primary : .secondary)
 
@@ -116,13 +111,10 @@ struct MainSwiftUIView: View {
                                 PlaybackStateManager.shared.switchWebTab(tabName: "playlists")
                             }
                         }) {
-                            VStack {
-                                Image(systemName: "list.triangle")
-                                    .font(.system(size: 16))
-                                Text("Playlists").font(.system(size: 10, weight: .medium))
-                            }
-                            .frame(width: 44, height: 44)
-                            .padding(.horizontal, 6)
+                            Image(systemName: "list.triangle")
+                                .imageScale(.large)
+                                .frame(width: 44, height: 44)
+                                .padding(.horizontal, 6)
                         }
                         .foregroundStyle(selectedTab == "playlists" ? .primary : .secondary)
 
@@ -138,10 +130,8 @@ struct MainSwiftUIView: View {
                                 isSearchFieldFocused = true
                             }
                         }) {
-                            VStack(spacing: 4) {
-                                Image(systemName: "magnifyingglass")
-                                    .font(.system(size: 20))
-                            }
+                            Image(systemName: "magnifyingglass")
+                                .frame(width: 44, height: 44)
                         }
                         .foregroundStyle(.secondary)
                     }
