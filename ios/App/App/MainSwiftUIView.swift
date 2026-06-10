@@ -109,9 +109,9 @@ struct MainSwiftUIView: View {
                             VStack(spacing: 4) {
                                 Image(systemName: selectedTab == "library" ? "house.fill" : "house")
                                     .font(.system(size: 16))
-                                    .frame(width: 44, height: 44)
                                 Text("Library").font(.system(size: 10, weight: .medium))
                             }
+                            .frame(width: 44, height: 44)
                             .padding(.horizontal, 6)
                         }
                         .foregroundStyle(selectedTab == "library" ? .primary : .secondary)
@@ -125,9 +125,9 @@ struct MainSwiftUIView: View {
                             VStack(spacing: 4) {
                                 Image(systemName: "list.triangle")
                                     .font(.system(size: 16))
-                                    .frame(width: 44, height: 44)
                                 Text("Playlists").font(.system(size: 10, weight: .medium))
                             }
+                            .frame(width: 44, height: 44)
                             .padding(.horizontal, 6)
                         }
                         .foregroundStyle(selectedTab == "playlists" ? .primary : .secondary)

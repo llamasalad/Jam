@@ -7,7 +7,6 @@ dont open/
 .dev.vars
 resources/
 errors.txt
-
-# AI Agent Configuration
 .agents/
 skills-lock.json
+resources/ios/**/*

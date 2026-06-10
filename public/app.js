@@ -846,20 +846,21 @@ function getViewState() {
 }
 
 function saveScroll() {
-    viewScrolls[lastViewState] = window.scrollY;
-    const cards = document.getElementById('library-cards');
-    if (cards) viewScrolls[lastViewState + ':cardsY'] = cards.scrollTop;
+    if (searchEl?.value) return;
+    const main = document.getElementById('main');
+    viewScrolls[lastViewState] = main ? main.scrollTop : window.scrollY;
 }
 
 function restoreScroll() {
     const newState = getViewState();
     lastViewState = newState;
+    if (searchEl?.value) return;
     const targetY = viewScrolls[newState] || 0;
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-            window.scrollTo(0, targetY);
-            const cards = document.getElementById('library-cards');
-            if (cards) cards.scrollTop = viewScrolls[newState + ':cardsY'] || 0;
+            const main = document.getElementById('main');
+            if (main) main.scrollTop = targetY;
+            else window.scrollTo(0, targetY);
         });
     });
 }
@@ -1449,7 +1450,7 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
                     queue.splice(qIdx + 1, 0, t);
                     showToast(`Added "${t.title}" to play next`);
                     saveQueueState();
-                    if (queueOpen) renderQueue();
+                    renderQueue();
                 },
                 icon: SWIPE_ICONS.queue
             };
@@ -1623,7 +1624,7 @@ function openCtxMenu(e, t) {
             queue.splice(qIdx + 1, 0, ...targetTracks);
             showToast(`Playing ${targetTracks.length} track(s) next`);
             saveQueueState();
-            if (queueOpen) renderQueue();
+            renderQueue();
             closeCtxMenu();
         };
     }
@@ -1634,7 +1635,7 @@ function openCtxMenu(e, t) {
             queue.splice(qIdx + 1, 0, ...targetTracks);
             showToast(`Added ${targetTracks.length} track(s) to play next`);
             saveQueueState();
-            if (queueOpen) renderQueue();
+            renderQueue();
             closeCtxMenu();
         };
     }
