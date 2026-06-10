@@ -16,6 +16,7 @@ struct MainSwiftUIView: View {
                 .safeAreaInset(edge: .bottom) {
                     if state.hasSong {
                         MiniPlayerView(showExpandedPlayer: $showExpandedPlayer)
+                            .padding(.horizontal, 16)
                             .padding(.bottom, 8)
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
