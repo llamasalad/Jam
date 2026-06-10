@@ -261,7 +261,7 @@ struct ExpandedPlayerView: View {
                             .aspectRatio(1, contentMode: .fit)
                             .frame(maxWidth: .infinity)
                     case .failure:
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
                             .glassEffect()
                             .aspectRatio(1, contentMode: .fit)
                             .frame(maxWidth: .infinity)
@@ -271,7 +271,7 @@ struct ExpandedPlayerView: View {
                                     .foregroundStyle(.secondary)
                             )
                     case .empty:
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
                             .glassEffect()
                             .aspectRatio(1, contentMode: .fit)
                             .frame(maxWidth: .infinity)
@@ -280,7 +280,7 @@ struct ExpandedPlayerView: View {
                         EmptyView()
                     }
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                 .padding(.horizontal, 32)
                 .shadow(color: .black.opacity(0.3), radius: 24, x: 0, y: 16)
 
@@ -333,9 +333,11 @@ struct ExpandedPlayerView: View {
                     Spacer()
                     Button(action: { showQueue = true }) {
                         Image(systemName: "list.dash")
-                            .imageScale(.large)
+                            .font(.system(size: 20, weight: .medium))
+                            .frame(width: 44, height: 44)
                     }
-                    .buttonStyle(.glass)
+                    .buttonStyle(.plain)
+                    .glassEffect(.regular.interactive(), in: .circle)
                 }
                 .padding()
                 .sheet(isPresented: $showQueue) {
