@@ -23,7 +23,7 @@ struct MainSwiftUIView: View {
                                 Color.clear.preference(key: MiniPlayerHeightPreferenceKey.self, value: geo.size.height)
                             })
                             .transition(.move(edge: .bottom).combined(with: .opacity))
-                            .navigationTransitionSource(id: "expandedPlayer", namespace: playerNamespace)
+                            .matchedTransitionSource(id: "expandedPlayer", in: playerNamespace)
                     } else {
                         Color.clear.frame(height: 0)
                             .preference(key: MiniPlayerHeightPreferenceKey.self, value: 0)
@@ -165,7 +165,7 @@ struct MainSwiftUIView: View {
         .sheet(isPresented: $showExpandedPlayer) {
             ExpandedPlayerView()
                 .presentationDragIndicator(.visible)
-                .navigationTransitionDestination(id: "expandedPlayer", namespace: playerNamespace)
+                .navigationTransition(.zoom(sourceID: "expandedPlayer", in: playerNamespace))
         }
     }
 }
