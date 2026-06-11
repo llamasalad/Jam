@@ -330,7 +330,7 @@ struct ExpandedPlayerView: View {
                             .lineLimit(nil)
                     }
                     .frame(maxWidth: .infinity)
-                    .frame(height: 130)
+                    .frame(height: 100)
                     .clipped()
                     .opacity(lyricOpacity)
                     .offset(y: lyricOffset)
@@ -363,7 +363,7 @@ struct ExpandedPlayerView: View {
                     QueueView()
                 }
             }
-            .padding(.top, 40)
+            .padding(.top, 50)
         }
         .onAppear {
             displayedCurrentLyric = state.currentLyric
