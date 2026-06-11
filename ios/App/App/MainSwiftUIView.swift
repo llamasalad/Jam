@@ -87,6 +87,7 @@ struct MainSwiftUIView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "magnifyingglass")
                                 .frame(width: 44, height: 44)
+                                .foregroundStyle(.secondary)
 
                             TextField("Search", text: $searchQuery)
                                 .focused($isSearchFieldFocused)
@@ -271,12 +272,10 @@ struct ExpandedPlayerView: View {
 
                 PlaybackControlsView()
 
-                Spacer()
-
                 HStack {
                     Button(action: { showQueue = true }) {
                         Image(systemName: "list.dash")
-                            .font(.system(size: 20, weight: .medium))
+                            .imageScale(.large)
                             .frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)
