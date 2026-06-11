@@ -1,13 +1,14 @@
 import SwiftUI
 
 struct MainSwiftUIView: View {
-    var state = PlaybackStateManager.shared
+    private var state: PlaybackStateManager { .shared }
     @State private var selectedTab: String = "library"
     @State private var isSearchActive: Bool = false
     @State private var searchQuery: String = ""
     @State private var showExpandedPlayer: Bool = false
     @FocusState private var isSearchFieldFocused: Bool
     @State private var themeChangePulse: Int = 0
+    @Namespace private var playerNamespace
 
     var body: some View {
         NavigationStack {
@@ -22,6 +23,7 @@ struct MainSwiftUIView: View {
                                 Color.clear.preference(key: MiniPlayerHeightPreferenceKey.self, value: geo.size.height)
                             })
                             .transition(.move(edge: .bottom).combined(with: .opacity))
+                            .navigationTransitionSource(id: "expandedPlayer", namespace: playerNamespace)
                     } else {
                         Color.clear.frame(height: 0)
                             .preference(key: MiniPlayerHeightPreferenceKey.self, value: 0)
@@ -163,188 +165,106 @@ struct MainSwiftUIView: View {
         .sheet(isPresented: $showExpandedPlayer) {
             ExpandedPlayerView()
                 .presentationDragIndicator(.visible)
+                .navigationTransitionDestination(id: "expandedPlayer", namespace: playerNamespace)
         }
     }
 }
 
 struct MiniPlayerView: View {
-    var state = PlaybackStateManager.shared
+    private var state: PlaybackStateManager { .shared }
     @Binding var showExpandedPlayer: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
-            AsyncImage(url: URL(string: state.coverUrl)) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                case .failure:
-                    Image(systemName: "music.note")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(.secondary)
-                case .empty:
-                    ProgressView()
-                @unknown default:
-                    ProgressView()
-                }
-            }
-            .frame(width: 44, height: 44)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .glassEffect(in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-            VStack(alignment: .leading, spacing: 2) {
-                MarqueeText(text: state.title.isEmpty ? "Not Playing" : state.title, font: .headline)
-                    .fontWeight(.semibold)
-
-                if !state.artist.isEmpty {
-                    Text(state.artist)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            HStack(spacing: 4) {
-                Button(action: { state.triggerPrev() }) {
-                    Image(systemName: "backward.fill")
-                        .imageScale(.large)
-                        .frame(width: 44, height: 44)
-                }
-                .buttonStyle(.plain)
-
-                Button(action: { state.togglePlayPause() }) {
-                    Image(systemName: state.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.title2)
-                        .frame(width: 44, height: 44)
-                }
-                .buttonStyle(.plain)
-
-                Button(action: { state.triggerNext() }) {
-                    Image(systemName: "forward.fill")
-                        .imageScale(.large)
-                        .frame(width: 44, height: 44)
-                }
-                .buttonStyle(.plain)
-            }
-            .fixedSize()
-        }
-        .padding(.horizontal)
-        .padding(.vertical, 6)
-        .glassEffect()
-        .contentShape(Rectangle())
-        .onTapGesture {
+        Button {
             showExpandedPlayer = true
-        }
-    }
-}
-
-struct ExpandedPlayerView: View {
-    var state = PlaybackStateManager.shared
-    @Environment(\.dismiss) private var dismiss
-    @State private var showFullLyrics: Bool = false
-    @State private var showQueue: Bool = false
-    @State private var displayedCurrentLyric: String = ""
-    @State private var displayedNextLyric: String = ""
-    @State private var lyricOpacity: Double = 1
-    @State private var lyricOffset: CGFloat = 0
-
-    var body: some View {
-        let _ = state.currentLyric
-        
-        ZStack {
-
-            BlurredBackgroundView(url: state.coverUrl)
-
-            VStack(spacing: 16) {
+        } label: {
+            HStack(spacing: 12) {
                 AsyncImage(url: URL(string: state.coverUrl)) { phase in
                     switch phase {
                     case .success(let image):
                         image
                             .resizable()
-                            .aspectRatio(1, contentMode: .fill)
-                            .frame(maxWidth: .infinity)
+                            .aspectRatio(contentMode: .fill)
                     case .failure:
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .glassEffect()
-                            .aspectRatio(1, contentMode: .fill)
-                            .frame(maxWidth: .infinity)
-                            .overlay(
-                                Image(systemName: "music.note")
-                                    .font(.system(size: 48, weight: .light))
-                                    .foregroundStyle(.secondary)
-                            )
+                        Image(systemName: "music.note")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundStyle(.secondary)
                     case .empty:
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .glassEffect()
-                            .aspectRatio(1, contentMode: .fill)
-                            .frame(maxWidth: .infinity)
-                            .overlay(ProgressView())
+                        ProgressView()
                     @unknown default:
-                        EmptyView()
+                        ProgressView()
                     }
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                .padding(.horizontal, 32)
-                .shadow(color: .black.opacity(0.3), radius: 24, x: 0, y: 16)
+                .frame(width: 44, height: 44)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .glassEffect(in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
-                VStack(spacing: 4) {
-                    Button(action: {
-                        state.openAlbumDetail()
-                        dismiss()
-                    }) {
-                        MarqueeText(text: state.title.isEmpty ? "Not Playing" : state.title, font: .title2, alignment: .center)
-                            .fontWeight(.bold)
-                            .foregroundStyle(.primary)
+                VStack(alignment: .leading, spacing: 2) {
+                    MarqueeText(text: state.title.isEmpty ? "Not Playing" : state.title, font: .headline)
+                        .fontWeight(.semibold)
+
+                    if !state.artist.isEmpty {
+                        Text(state.artist)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                HStack(spacing: 4) {
+                    Button(action: { state.triggerPrev() }) {
+                        Image(systemName: "backward.fill")
+                            .imageScale(.large)
+                            .frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)
 
-                    Button(action: {
-                        state.openArtistDetail()
-                        dismiss()
-                    }) {
-                        MarqueeText(text: state.artist.isEmpty ? " " : state.artist, font: .title3, alignment: .center)
-                            .fontWeight(.medium)
-                            .foregroundStyle(.secondary)
+                    Button(action: { state.togglePlayPause() }) {
+                        Image(systemName: state.isPlaying ? "pause.fill" : "play.fill")
+                            .font(.title2)
+                            .frame(width: 44, height: 44)
+                    }
+                    .buttonStyle(.plain)
+
+                    Button(action: { state.triggerNext() }) {
+                        Image(systemName: "forward.fill")
+                            .imageScale(.large)
+                            .frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 24)
+                .fixedSize()
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 6)
+            .glassEffect()
+        }
+        .buttonStyle(.plain)
+    }
+}
 
-                Button(action: { showFullLyrics = true }) {
-                    VStack(spacing: 10) {
-                        Text(displayedCurrentLyric.isEmpty ? "..." : displayedCurrentLyric)
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundStyle(.primary)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(nil)
+struct ExpandedPlayerView: View {
+    private var state: PlaybackStateManager { .shared }
+    @Environment(\.dismiss) private var dismiss
+    @State private var showQueue: Bool = false
 
-                        Text(displayedNextLyric.isEmpty ? " " : displayedNextLyric)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(nil)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 100)
-                    .clipped()
-                    .opacity(lyricOpacity)
-                    .offset(y: lyricOffset)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 24)
-                .sheet(isPresented: $showFullLyrics) {
-                    FullLyricsView()
-                }
+    var body: some View {
+        ZStack {
+            BlurredBackgroundView(url: state.coverUrl)
+
+            VStack(spacing: 16) {
+                Spacer()
+                AlbumArtView()
+                TrackInfoView()
+                LyricSnippetView()
 
                 PlaybackProgressView()
-                .padding(.horizontal, 24)
+                    .padding(.horizontal, 24)
 
                 PlaybackControlsView()
-                .padding(.horizontal, 24)
+
+                Spacer()
 
                 HStack {
                     Button(action: { showQueue = true }) {
@@ -362,7 +282,112 @@ struct ExpandedPlayerView: View {
             }
             .padding(.top, 50)
         }
-        .onAppear {
+    }
+}
+
+private struct AlbumArtView: View {
+    private var state: PlaybackStateManager { .shared }
+
+    var body: some View {
+        AsyncImage(url: URL(string: state.coverUrl)) { phase in
+            switch phase {
+            case .success(let image):
+                image
+                    .resizable()
+                    .aspectRatio(1, contentMode: .fill)
+                    .frame(maxWidth: .infinity)
+            case .failure:
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .glassEffect()
+                    .aspectRatio(1, contentMode: .fill)
+                    .frame(maxWidth: .infinity)
+                    .overlay(
+                        Image(systemName: "music.note")
+                            .font(.system(size: 48, weight: .light))
+                            .foregroundStyle(.secondary)
+                    )
+            case .empty:
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .glassEffect()
+                    .aspectRatio(1, contentMode: .fill)
+                    .frame(maxWidth: .infinity)
+                    .overlay(ProgressView())
+            @unknown default:
+                EmptyView()
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .padding(.horizontal, 32)
+        .shadow(color: .black.opacity(0.3), radius: 24, x: 0, y: 16)
+    }
+}
+
+private struct TrackInfoView: View {
+    private var state: PlaybackStateManager { .shared }
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Button(action: {
+                state.openAlbumDetail()
+                dismiss()
+            }) {
+                MarqueeText(text: state.title.isEmpty ? "Not Playing" : state.title, font: .title2, alignment: .center)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.primary)
+            }
+            .buttonStyle(.plain)
+
+            Button(action: {
+                state.openArtistDetail()
+                dismiss()
+            }) {
+                MarqueeText(text: state.artist.isEmpty ? " " : state.artist, font: .title3, alignment: .center)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 24)
+    }
+}
+
+private struct LyricSnippetView: View {
+    private var state: PlaybackStateManager { .shared }
+    @State private var showFullLyrics: Bool = false
+    @State private var displayedCurrentLyric: String = ""
+    @State private var displayedNextLyric: String = ""
+    @State private var lyricOpacity: Double = 1
+    @State private var lyricOffset: CGFloat = 0
+
+    var body: some View {
+        Button(action: { showFullLyrics = true }) {
+            VStack(spacing: 10) {
+                Text(displayedCurrentLyric.isEmpty ? "..." : displayedCurrentLyric)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(.primary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(nil)
+
+                Text(displayedNextLyric.isEmpty ? " " : displayedNextLyric)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(nil)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 100)
+            .clipped()
+            .opacity(lyricOpacity)
+            .offset(y: lyricOffset)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 24)
+        .sheet(isPresented: $showFullLyrics) {
+            FullLyricsView()
+        }
+        .task {
             displayedCurrentLyric = state.currentLyric
             displayedNextLyric = state.nextLyric
         }
@@ -373,7 +398,7 @@ struct ExpandedPlayerView: View {
             } completion: {
                 displayedCurrentLyric = state.currentLyric
                 displayedNextLyric = state.nextLyric
-                
+
                 withAnimation(.bouncy(duration: 0.25)) {
                     lyricOpacity = 1
                     lyricOffset = 0
@@ -384,7 +409,7 @@ struct ExpandedPlayerView: View {
 }
 
 struct PlaybackProgressView: View {
-    var state = PlaybackStateManager.shared
+    private var state: PlaybackStateManager { .shared }
     @State private var localTime: Double = 0
     @State private var isDragging: Bool = false
 
@@ -494,7 +519,7 @@ class VisibleLinesTracker {
 }
 
 struct FullLyricsView: View {
-    var state = PlaybackStateManager.shared
+    private var state: PlaybackStateManager { .shared }
     @Environment(\.dismiss) private var dismiss
     @State private var visibleTracker = VisibleLinesTracker()
 
@@ -524,7 +549,7 @@ struct FullLyricsView: View {
                     Spacer()
                     Button(action: { dismiss() }) {
                         Image(systemName: "xmark")
-                            .font(.system(size: 20, weight: .medium))
+                            .font(.system(size: 20))
                             .frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)
@@ -606,7 +631,7 @@ struct FullLyricsView: View {
 }
 
 struct QueueView: View {
-    var state = PlaybackStateManager.shared
+    private var state: PlaybackStateManager { .shared }
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -620,7 +645,7 @@ struct QueueView: View {
                     Spacer()
                     Button(action: { dismiss() }) {
                         Image(systemName: "xmark")
-                            .font(.system(size: 20, weight: .medium))
+                            .font(.system(size: 20))
                             .frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)
@@ -706,7 +731,7 @@ struct QueueView: View {
 }
 
 struct PlaybackControlsView: View {
-    var state = PlaybackStateManager.shared
+    private var state: PlaybackStateManager { .shared }
 
     var body: some View {
         HStack(spacing: 24) {

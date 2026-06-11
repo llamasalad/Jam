@@ -39,7 +39,7 @@ final class PlaybackStateManager {
     var fullLyrics: [[String: Any]] = []
     var activeLyricIndex: Int? = nil
 
-    private func updateActiveLyricIndex() {
+    private func updateActiveLyricIndex(for time: Double) {
         if fullLyrics.isEmpty {
             if activeLyricIndex != nil { activeLyricIndex = nil }
             currentLyric = ""
@@ -47,7 +47,7 @@ final class PlaybackStateManager {
             return
         }
         for index in 0..<fullLyrics.count {
-            if isActiveLyric(index: index, currentTime: currentTime) {
+            if isActiveLyric(index: index, currentTime: time) {
                 if activeLyricIndex != index {
                     activeLyricIndex = index
                     currentLyric = (fullLyrics[index]["text"] as? String) ?? ""
@@ -60,11 +60,16 @@ final class PlaybackStateManager {
                 return
             }
         }
-        if activeLyricIndex != nil { 
-            activeLyricIndex = nil 
+        if activeLyricIndex != nil {
+            activeLyricIndex = nil
             currentLyric = ""
             nextLyric = ""
         }
+    }
+
+    /// Called at full 20 Hz from AVPlayer observer — updates lyric index without writing currentTime.
+    func updateActiveLyricIndexOnly(_ time: Double) {
+        updateActiveLyricIndex(for: time)
     }
 
     private func isActiveLyric(index: Int, currentTime: Double) -> Bool {
@@ -87,12 +92,12 @@ final class PlaybackStateManager {
 
     func updateCurrentTime(_ time: Double) {
         self.currentTime = time
-        self.updateActiveLyricIndex()
+        self.updateActiveLyricIndex(for: time)
     }
 
     func updateFullLyrics(_ lyrics: [[String: Any]]) {
         self.fullLyrics = lyrics
-        self.updateActiveLyricIndex()
+        self.updateActiveLyricIndex(for: self.currentTime)
     }
 
     @ObservationIgnored weak var webViewController: CAPBridgeViewController?

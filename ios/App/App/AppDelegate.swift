@@ -99,6 +99,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     private var currentArtist: String = ""
     private var currentAlbum: String = ""
     private var currentDuration: Double = 0.0
+    private var uiTimeTickCount = 0
 
     override public func load() {
         setupRemoteCommands()
@@ -235,6 +236,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             mgr.isPlaying = false
             mgr.coverUrl = coverUrl
         }
+        uiTimeTickCount = 0
 
         removeObservers()
         metadataMap.removeAll()
@@ -297,10 +299,17 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 
         let uiInterval = CMTime(seconds: 0.05, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         uiTimeObserverToken = player?.addPeriodicTimeObserver(forInterval: uiInterval, queue: .main) { [weak self] time in
+            guard let self = self else { return }
             let ct = CMTimeGetSeconds(time)
             if !ct.isNaN {
                 Task { @MainActor in
-                    PlaybackStateManager.shared.updateCurrentTime(ct)
+                    // Always update lyric index at full 20 Hz for accurate line detection
+                    PlaybackStateManager.shared.updateActiveLyricIndexOnly(ct)
+                    // Throttle @Observable currentTime writes to ~4 Hz to reduce SwiftUI re-renders
+                    self.uiTimeTickCount += 1
+                    if self.uiTimeTickCount % 5 == 0 {
+                        PlaybackStateManager.shared.currentTime = ct
+                    }
                 }
             }
         }
@@ -504,6 +513,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             player?.removeTimeObserver(uiToken)
             uiTimeObserverToken = nil
         }
+        uiTimeTickCount = 0
         playerItemStatusObservers.removeAll()
         currentItemObserver?.invalidate()
         currentItemObserver = nil
