@@ -300,7 +300,6 @@ class CapacitorAudioPlayerShim {
     }
 
     load() {
-        // Handled during src setting
     }
 
     play() {
@@ -353,7 +352,7 @@ class CapacitorAudioPlayerShim {
 
     get duration() { return this._duration; }
 
-    get readyState() { return 4; } // Always ready/loaded
+    get readyState() { return 4; }
     get error() { return null; }
     get preload() { return 'auto'; }
     set preload(val) { }
@@ -381,7 +380,6 @@ class CapacitorAudioPlayerShim {
 let audio;
 if (window.Capacitor && window.Capacitor.getPlatform() === 'ios') {
     audio = new CapacitorAudioPlayerShim();
-    // Mark the body for the native SwiftUI shell
     document.body.classList.add('ios-native-shell');
 } else {
     audio = document.getElementById('audio');
@@ -597,11 +595,9 @@ document.querySelectorAll('.tab').forEach(tab => { tab.onclick = () => switchTab
 document.querySelectorAll('.sidebar-item[data-tab]').forEach(item => { item.onclick = () => switchTab(item.dataset.tab); });
 document.querySelectorAll('.dock-item[data-tab]').forEach(item => { item.onclick = () => switchTab(item.dataset.tab); });
 
-// Native SwiftUI shell can call this to switch tabs from the native dock
 window.onNativeTabSelected = function (tabName) {
     if (tabName === 'search') {
         switchTab('library');
-        // Search is driven by the native text field via direct JS evaluation
     } else {
         switchTab(tabName);
     }
@@ -965,7 +961,6 @@ function applyTheme() {
         o.classList.toggle('active', o.dataset.theme === currentTheme);
     });
 
-    // Notify native SwiftUI shell of theme change
     const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
     if (plugin && typeof plugin.setTheme === 'function') {
         plugin.setTheme({ theme: currentTheme });
@@ -4175,7 +4170,6 @@ if ('serviceWorker' in navigator) {
     }
 }
 
-// Expose functions for native iOS shell bridging
 window.nextTrack = nextTrack;
 window.prevTrack = prevTrack;
 

@@ -252,7 +252,7 @@ struct ExpandedPlayerView: View {
     @State private var lyricOffset: CGFloat = 0
 
     var body: some View {
-        let _ = state.currentLyric // Force Observation for SwiftUI dependency tracking
+        let _ = state.currentLyric
         
         ZStack {
 

@@ -10,7 +10,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Configure AVAudioSessionsfor background playback
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
             try AVAudioSession.sharedInstance().setActive(true)
@@ -18,7 +17,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             print("Failed to set audio session category: \(error)")
         }
 
-        // Programmatically boot the SwiftUI shell instead of Main.storyboard
         let hostingController = UIHostingController(rootView: MainSwiftUIView())
         hostingController.view.backgroundColor = .clear
 
@@ -38,38 +36,26 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
-        // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
-        // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks. Games should use this method to pause the game.
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
-        // Use this method to release sared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
-        // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
     }
 
     func applicationWillEnterForeground(_ application: UIApplication) {
-        // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
-        // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
 
     @available(iOS, deprecated: 26.0)
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-        // Called when the app was launched with a url. Feel free to add additional processing here,
-        // but if you want the App API to support tracking app url opens, make sure to keep this call
         return ApplicationDelegateProxy.shared.application(app, open: url, options: options)
     }
 
     func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
-        // Called when the app was launched with an activity, including Universal Links.
-        // Feel free to add additional processing here, but if you want the App API to support
-        // tracking app url opens, make sure to keep this call
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
@@ -116,7 +102,6 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 
     override public func load() {
         setupRemoteCommands()
-        // Register this plugin with PlaybackStateManager for SwiftUI bridging
         Task { @MainActor in
             PlaybackStateManager.shared.audioPlayerPlugin = self
         }
@@ -125,7 +110,6 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     private func setupRemoteCommands() {
         let commandCenter = MPRemoteCommandCenter.shared()
         
-        // Remove existing targets to avoid duplicates
         commandCenter.playCommand.removeTarget(nil)
         commandCenter.pauseCommand.removeTarget(nil)
         commandCenter.togglePlayPauseCommand.removeTarget(nil)
@@ -237,7 +221,6 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let coverUrl = call.getString("coverUrl") ?? ""
         let suffix = call.getString("suffix") ?? "flac"
 
-        // Update SwiftUI state
         let title = currentTitle
         let artist = currentArtist
         let album = currentAlbum
@@ -287,7 +270,6 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             fetchArtwork(urlString: coverUrl)
         }
 
-        // Add observer to player item status using block KVO
         let statusObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, change in
             guard let self = self else { return }
             if item.status == .readyToPlay, self.player?.currentItem == item {
@@ -304,7 +286,6 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         }
         playerItemStatusObservers[playerItem.hash] = statusObserver
 
-        // Add periodic time observer for JS (0.5s)
         let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         timeObserverToken = player?.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             guard let self = self else { return }
@@ -314,7 +295,6 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             }
         }
 
-        // Add fast periodic time observer for Native UI (20fps)
         let uiInterval = CMTime(seconds: 0.05, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         uiTimeObserverToken = player?.addPeriodicTimeObserver(forInterval: uiInterval, queue: .main) { [weak self] time in
             let ct = CMTimeGetSeconds(time)
@@ -325,7 +305,6 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             }
         }
 
-        // Observe current item for gapless transitions
         currentItemObserver = player?.observe(\.currentItem, options: [.new]) { [weak self] player, change in
             guard let self = self else { return }
             if self.isManuallyChangingItem { return }
@@ -357,7 +336,6 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             }
         }
 
-        // Add end observer
         NotificationCenter.default.addObserver(self, selector: #selector(playerItemDidReachEnd), name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
 
         isManuallyChangingItem = false
@@ -401,7 +379,6 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 
         metadataMap[playerItem.hash] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl)
 
-        // Ensure we only have 1 queued item ahead
         if queuePlayer.items().count > 1 {
             for item in queuePlayer.items().dropFirst() {
                 queuePlayer.remove(item)
@@ -534,11 +511,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc func playerItemDidReachEnd(_ notification: Notification) {
-        // If AVQueuePlayer has more items, it will advance automatically.
         if let player = player, player.items().count > 1 {
             return
         }
-        // Otherwise, playback actually finished
         notifyListeners("ended", data: [:])
         Task { @MainActor in
             PlaybackStateManager.shared.isPlaying = false

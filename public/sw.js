@@ -1,4 +1,4 @@
-const CACHE = 'jam-v65';
+const CACHE = 'jam-v66';
 const ASSETS = [
   '/', '/index.html', '/style.css', '/app.js', '/manifest.json',
   '/fonts/subset-SFProDisplay-Regular.woff2',
@@ -59,7 +59,6 @@ self.addEventListener('fetch', e => {
   }
 
   if (url.pathname.startsWith('/api/stream/') || url.pathname.endsWith('/rest/stream')) {
-    // Let the browser handle stream requests natively to avoid iOS Safari range/seeking issues
     return;
   }
 

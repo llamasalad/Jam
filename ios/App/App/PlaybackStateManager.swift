@@ -13,7 +13,6 @@ typealias KeyPath<Root, Value> = Swift.KeyPath<Root, Value>
 final class PlaybackStateManager {
     static let shared = PlaybackStateManager()
 
-    // MARK: - Playback State
     var isPlaying: Bool = false
     var currentTime: Double = 0
     var duration: Double = 0
@@ -21,8 +20,6 @@ final class PlaybackStateManager {
     var artist: String = ""
     var album: String = ""
     var coverUrl: String = ""
-
-    // MARK: - Playback Mode State
     var shuffle: Bool = false
     var repeatMode: String = "off"  // "off", "all", "one"
 
@@ -34,14 +31,9 @@ final class PlaybackStateManager {
         evaluateJS("if(typeof window.toggleRepeat==='function')window.toggleRepeat()")
     }
 
-    // MARK: - Theme State
     var currentTheme: String = "default"
-
-    // MARK: - Detail View Navigation State
     var isInDetailView: Bool = false
     var detailViewTitle: String = ""
-
-    // MARK: - Lyrics State
     var currentLyric: String = ""
     var nextLyric: String = ""
     var fullLyrics: [[String: Any]] = []
@@ -90,7 +82,6 @@ final class PlaybackStateManager {
         return currentTime >= time && currentTime < nextTime
     }
 
-    // MARK: - Queue State
     var queue: [[String: Any]] = []
     var queueIndex: Int = -1
 
@@ -104,7 +95,6 @@ final class PlaybackStateManager {
         self.updateActiveLyricIndex()
     }
 
-    // MARK: - References
     @ObservationIgnored weak var webViewController: CAPBridgeViewController?
     @ObservationIgnored weak var audioPlayerPlugin: CAPPlugin?
 
@@ -113,8 +103,6 @@ final class PlaybackStateManager {
     }
 
     private init() {}
-
-    // MARK: - Web View JavaScript Evaluation
 
     func switchWebTab(tabName: String) {
         evaluateJS("if(typeof window.onNativeTabSelected==='function'){window.onNativeTabSelected('\(tabName)')}")
@@ -163,8 +151,6 @@ final class PlaybackStateManager {
         self.currentTheme = theme
     }
 
-    // MARK: - Navigation
-
     func navigateBack() {
         evaluateJS("if(typeof window.navigateBack==='function')window.navigateBack()")
     }
@@ -184,8 +170,6 @@ final class PlaybackStateManager {
     func updateMiniPlayerHeight(_ height: CGFloat) {
         evaluateJS("document.documentElement.style.setProperty('--native-bottom-inset', '\(height)px')")
     }
-
-    // MARK: - Playback Control Helpers
 
     func togglePlayPause() {
         evaluateJS("if(typeof audio!=='undefined'&&audio){audio.paused?audio.play():audio.pause()}")
@@ -231,8 +215,6 @@ final class PlaybackStateManager {
             evaluateJS("if(typeof window.moveQueueItem==='function')window.moveQueueItem(\(sourceIdx), \(actualDest))")
         }
     }
-
-    // MARK: - Private
 
     private func evaluateJS(_ js: String) {
         DispatchQueue.main.async { [weak self] in
