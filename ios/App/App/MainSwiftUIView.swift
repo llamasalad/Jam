@@ -260,7 +260,6 @@ struct ExpandedPlayerView: View {
             BlurredBackgroundView(url: state.coverUrl)
 
             VStack(spacing: 16) {
-                Spacer()
                 AsyncImage(url: URL(string: state.coverUrl)) { phase in
                     switch phase {
                     case .success(let image):
@@ -346,8 +345,7 @@ struct ExpandedPlayerView: View {
                 .padding(.horizontal, 24)
 
                 PlaybackControlsView()
-
-                Spacer()
+                .padding(.horizontal, 24)
 
                 HStack {
                     Button(action: { showQueue = true }) {
