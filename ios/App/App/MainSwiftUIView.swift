@@ -175,72 +175,79 @@ struct MiniPlayerView: View {
     @Binding var showExpandedPlayer: Bool
 
     var body: some View {
-        Button {
-            showExpandedPlayer = true
-        } label: {
-            HStack(spacing: 12) {
-                AsyncImage(url: URL(string: state.coverUrl)) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    case .failure:
-                        Image(systemName: "music.note")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundStyle(.secondary)
-                    case .empty:
-                        ProgressView()
-                    @unknown default:
-                        ProgressView()
+        HStack(spacing: 12) {
+            Button {
+                showExpandedPlayer = true
+            } label: {
+                HStack(spacing: 12) {
+                    AsyncImage(url: URL(string: state.coverUrl)) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        case .failure:
+                            Image(systemName: "music.note")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundStyle(.secondary)
+                        case .empty:
+                            ProgressView()
+                        @unknown default:
+                            ProgressView()
+                        }
                     }
+                    .frame(width: 44, height: 44)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .glassEffect(in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        MarqueeText(text: state.title.isEmpty ? "Not Playing" : state.title, font: .headline)
+                            .fontWeight(.semibold)
+
+                        if !state.artist.isEmpty {
+                            Text(state.artist)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(width: 44, height: 44)
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .glassEffect(in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                VStack(alignment: .leading, spacing: 2) {
-                    MarqueeText(text: state.title.isEmpty ? "Not Playing" : state.title, font: .headline)
-                        .fontWeight(.semibold)
-
-                    if !state.artist.isEmpty {
-                        Text(state.artist)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                HStack(spacing: 4) {
-                    Button(action: { state.triggerPrev() }) {
-                        Image(systemName: "backward.fill")
-                            .imageScale(.large)
-                            .frame(width: 44, height: 44)
-                    }
-                    .buttonStyle(.plain)
-
-                    Button(action: { state.togglePlayPause() }) {
-                        Image(systemName: state.isPlaying ? "pause.fill" : "play.fill")
-                            .font(.title2)
-                            .frame(width: 44, height: 44)
-                    }
-                    .buttonStyle(.plain)
-
-                    Button(action: { state.triggerNext() }) {
-                        Image(systemName: "forward.fill")
-                            .imageScale(.large)
-                            .frame(width: 44, height: 44)
-                    }
-                    .buttonStyle(.plain)
-                }
-                .fixedSize()
+                .contentShape(Rectangle())
             }
-            .padding(.horizontal)
-            .padding(.vertical, 6)
-            .glassEffect()
+            .buttonStyle(.plain)
+
+            HStack(spacing: 4) {
+                Button(action: { state.triggerPrev() }) {
+                    Image(systemName: "backward.fill")
+                        .imageScale(.large)
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.plain)
+
+                Button(action: { state.togglePlayPause() }) {
+                    Image(systemName: state.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.title2)
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.plain)
+
+                Button(action: { state.triggerNext() }) {
+                    Image(systemName: "forward.fill")
+                        .imageScale(.large)
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.plain)
+            }
+            .fixedSize()
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal)
+        .padding(.vertical, 6)
+        .glassEffect()
+        .contentShape(Rectangle())
+        .onTapGesture {
+            showExpandedPlayer = true
+        }
     }
 }
 
