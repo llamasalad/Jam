@@ -84,8 +84,7 @@ struct MainSwiftUIView: View {
                     if isSearchActive {
                         HStack(spacing: 8) {
                             Image(systemName: "magnifyingglass")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundStyle(.secondary)
+                                .frame(width: 44, height: 44)
 
                             TextField("Search", text: $searchQuery)
                                 .focused($isSearchFieldFocused)
@@ -524,10 +523,11 @@ struct FullLyricsView: View {
                 HStack {
                     Spacer()
                     Button(action: { dismiss() }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundStyle(.white.opacity(0.8))
+                        Image(systemName: "xmark")
+                            .font(.system(size: 20, weight: .medium))
+                            .frame(width: 44, height: 44)
                     }
+                    .buttonStyle(.plain)
                 }
                 .padding()
 
@@ -619,10 +619,11 @@ struct QueueView: View {
                         .font(.title2.bold())
                     Spacer()
                     Button(action: { dismiss() }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundStyle(.white.opacity(0.8))
+                        Image(systemName: "xmark")
+                            .font(.system(size: 20, weight: .medium))
+                            .frame(width: 44, height: 44)
                     }
+                    .buttonStyle(.plain)
                 }
                 .padding()
                 ScrollViewReader { proxy in
