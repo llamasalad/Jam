@@ -174,7 +174,6 @@ final class PlaybackStateManager {
     }
 
     @ObservationIgnored private var lastKnownInset: CGFloat = 0
-    @ObservationIgnored private var insetUserScript: WKUserScript?
 
     private var insetJS: String {
         "document.documentElement.style.setProperty('--native-bottom-inset', '\(lastKnownInset)px');"
@@ -184,18 +183,9 @@ final class PlaybackStateManager {
         guard height != lastKnownInset else { return }
         lastKnownInset = height
         evaluateJS(insetJS)
-        guard insetUserScript == nil,
-              let wv = webViewController?.webView else { return }
-        DispatchQueue.main.async {
-            guard self.insetUserScript == nil else { return }
-            let script = WKUserScript(source: self.insetJS, injectionTime: .atDocumentStart, forMainFrameOnly: true)
-            self.insetUserScript = script
-            wv.configuration.userContentController.addUserScript(script)
-        }
     }
 
     func reapplyInset() {
-        guard lastKnownInset > 0 else { return }
         evaluateJS(insetJS)
     }
 

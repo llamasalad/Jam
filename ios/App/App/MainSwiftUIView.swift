@@ -34,7 +34,9 @@ struct MainSwiftUIView: View {
                         .compactMap { $0 as? UIWindowScene }
                         .first?.windows.first { $0.isKeyWindow }?
                         .safeAreaInsets.bottom) ?? 0
-                    PlaybackStateManager.shared.updateMiniPlayerHeight(height > 0 ? height + bottomSafeArea : 0)
+                    let bottomBarHeight: CGFloat = 49 + bottomSafeArea
+                    let totalInset = height > 0 ? height + bottomBarHeight : bottomBarHeight
+                    PlaybackStateManager.shared.updateMiniPlayerHeight(totalInset)
                 }
                 .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
