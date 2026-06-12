@@ -184,22 +184,16 @@ final class PlaybackStateManager {
         guard height != lastKnownInset else { return }
         lastKnownInset = height
         evaluateJS(insetJS)
-        // Keep a persistent user script so the variable is set at document start
-        // on every future navigation before CSS is parsed. Only replace our own
-        // script — do NOT call removeAllUserScripts(), which would nuke Capacitor's
-        // bridge scripts.
-        guard let wv = webViewController?.webView else { return }
-        let ucc = wv.configuration.userContentController
+        guard insetUserScript == nil,
+              let wv = webViewController?.webView else { return }
         DispatchQueue.main.async {
-            if let old = self.insetUserScript { ucc.remove(old) }
+            guard self.insetUserScript == nil else { return }
             let script = WKUserScript(source: self.insetJS, injectionTime: .atDocumentStart, forMainFrameOnly: true)
             self.insetUserScript = script
-            ucc.addUserScript(script)
+            wv.configuration.userContentController.addUserScript(script)
         }
     }
 
-    /// Re-applies the last known inset value. Called by the navigation delegate
-    /// after a page finishes loading to recover from any timing gap.
     func reapplyInset() {
         guard lastKnownInset > 0 else { return }
         evaluateJS(insetJS)
