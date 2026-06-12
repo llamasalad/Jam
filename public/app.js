@@ -117,6 +117,7 @@ function renderArtistAlbumSub(parentEl, t, viewType) {
             artistSpan.classList.add('interactable');
             artistSpan.onclick = (e) => {
                 e.stopPropagation();
+                saveScroll();
                 if (typeof closeExpandedPlayer === 'function') closeExpandedPlayer();
                 closeCtxMenu();
                 openArtistDetail(artist);
@@ -139,6 +140,7 @@ function renderArtistAlbumSub(parentEl, t, viewType) {
             albumSpan.classList.add('interactable');
             albumSpan.onclick = (e) => {
                 e.stopPropagation();
+                saveScroll();
                 if (typeof closeExpandedPlayer === 'function') closeExpandedPlayer();
                 closeCtxMenu();
                 openAlbumDetail(album);
