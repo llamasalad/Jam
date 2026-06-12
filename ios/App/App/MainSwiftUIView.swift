@@ -30,7 +30,11 @@ struct MainSwiftUIView: View {
                     }
                 }
                 .onPreferenceChange(MiniPlayerHeightPreferenceKey.self) { height in
-                    PlaybackStateManager.shared.updateMiniPlayerHeight(height)
+                    let bottomSafeArea = (UIApplication.shared.connectedScenes
+                        .compactMap { $0 as? UIWindowScene }
+                        .first?.windows.first { $0.isKeyWindow }?
+                        .safeAreaInsets.bottom) ?? 0
+                    PlaybackStateManager.shared.updateMiniPlayerHeight(height > 0 ? height + bottomSafeArea : 0)
                 }
                 .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
