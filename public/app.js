@@ -383,6 +383,7 @@ let audio;
 if (window.Capacitor && window.Capacitor.getPlatform() === 'ios') {
     audio = new CapacitorAudioPlayerShim();
     document.body.classList.add('ios-native-shell');
+    window.webkit?.messageHandlers?.jamNativeReady?.postMessage(null);
 } else {
     audio = document.getElementById('audio');
     if (audio) audio.preload = 'auto';

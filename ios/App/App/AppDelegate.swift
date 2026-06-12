@@ -555,14 +555,17 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 }
 
-class ViewController: CAPBridgeViewController, WKNavigationDelegate {
+class ViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         super.capacitorDidLoad()
         bridge?.registerPluginInstance(AudioPlayerPlugin())
-        webView?.navigationDelegate = self
+        webView?.configuration.userContentController.add(self, name: "jamNativeReady")
     }
+}
 
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+extension ViewController: WKScriptMessageHandler {
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.name == "jamNativeReady" else { return }
         PlaybackStateManager.shared.reapplyInset()
     }
 }
