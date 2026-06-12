@@ -8,18 +8,25 @@ async function fetchDeezerArtist(name) {
     if (!r.ok) return null;
     const d = await r.json();
     if (d.data && d.data.length > 0) {
-      const normalizedQuery = cleanName.toLowerCase().trim();
+      const normalize = (str) => (str || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^\p{L}\p{N}\p{M}]/gu, '');
+
+      const normalizedQuery = normalize(cleanName);
       const sorted = d.data.sort((a, b) => (b.nb_fan || 0) - (a.nb_fan || 0));
 
-      const exactMatch = sorted.find(a => {
-        const normalizedArtist = a.name.toLowerCase().trim();
-        return normalizedArtist === normalizedQuery;
-      });
+      const exactMatch = normalizedQuery
+        ? sorted.find(a => normalize(a.name) === normalizedQuery)
+        : null;
 
-      const substringMatch = sorted.find(a => {
-        const normalizedArtist = a.name.toLowerCase().trim();
-        return normalizedArtist.includes(normalizedQuery) || normalizedQuery.includes(normalizedArtist);
-      });
+      const substringMatch = normalizedQuery
+        ? sorted.find(a => {
+          const normalizedArtist = normalize(a.name);
+          return normalizedArtist.includes(normalizedQuery) || normalizedQuery.includes(normalizedArtist);
+        })
+        : null;
 
       const match = exactMatch || substringMatch || sorted[0];
       return {
