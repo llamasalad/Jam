@@ -555,9 +555,14 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 }
 
-class ViewController: CAPBridgeViewController {
+class ViewController: CAPBridgeViewController, WKNavigationDelegate {
     override func capacitorDidLoad() {
         super.capacitorDidLoad()
         bridge?.registerPluginInstance(AudioPlayerPlugin())
+        webView?.navigationDelegate = self
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        PlaybackStateManager.shared.reapplyInset()
     }
 }
