@@ -2294,39 +2294,6 @@ try {
     artistImageCache = {};
 }
 const artistImageRequests = {};
-const artistQueue = [];
-let artistQueueProcessing = false;
-
-function queueArtistImageFetch(name, callback) {
-    artistQueue.push({ name, callback });
-    processArtistQueue();
-}
-
-async function processArtistQueue() {
-    if (artistQueueProcessing || artistQueue.length === 0) return;
-    artistQueueProcessing = true;
-
-    const item = artistQueue.shift();
-    const cached = artistImageCache[item.name];
-    if (cached && cached.expires > Date.now()) {
-        item.callback(cached.url);
-        artistQueueProcessing = false;
-        processArtistQueue();
-        return;
-    }
-
-    try {
-        const pictureUrl = await performArtistImageFetch(item.name);
-        item.callback(pictureUrl);
-    } catch (e) {
-        item.callback(null);
-    }
-
-    setTimeout(() => {
-        artistQueueProcessing = false;
-        processArtistQueue();
-    }, 1500);
-}
 
 async function performArtistImageFetch(name) {
     if (!artistImageRequests[name]) {
@@ -2370,10 +2337,12 @@ async function loadArtistImage(name, imgEl) {
     const cached = artistImageCache[name];
     if (cached && cached.expires > Date.now()) { applyImage(cached.url); return; }
 
-    queueArtistImageFetch(name, (pictureUrl) => {
-        if (pictureUrl) applyImage(pictureUrl);
-        else imgEl.style.display = 'none';
-    });
+    const pictureUrl = await performArtistImageFetch(name);
+    if (pictureUrl) {
+        applyImage(pictureUrl);
+    } else {
+        imgEl.style.display = 'none';
+    }
 }
 
 function setCover(el, url) {
