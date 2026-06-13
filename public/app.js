@@ -4175,9 +4175,9 @@ if ('serviceWorker' in navigator) {
 
 window.nextTrack = nextTrack;
 window.prevTrack = prevTrack;
-
 window.openArtistDetail = openArtistDetail;
 window.openAlbumDetail = openAlbumDetail;
+window.removeFromQueue = removeFromQueue;
 
 window.applyFilter = applyFilter;
 Object.defineProperty(window, 'audio', {

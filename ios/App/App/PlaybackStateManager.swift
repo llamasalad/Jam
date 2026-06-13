@@ -234,6 +234,17 @@ final class PlaybackStateManager {
         }
     }
 
+    func removeQueueItem(at index: Int) {
+        guard index >= 0 && index < queue.count else { return }
+        queue.remove(at: index)
+        if index < queueIndex {
+            queueIndex -= 1
+        } else if index == queueIndex && queueIndex >= queue.count {
+            queueIndex = queue.count - 1
+        }
+        evaluateJS("if(typeof window.removeFromQueue==='function')window.removeFromQueue(\(index))")
+    }
+
     private func evaluateJS(_ js: String) {
         DispatchQueue.main.async { [weak self] in
             self?.webViewController?.webView?.evaluateJavaScript(js, completionHandler: nil)

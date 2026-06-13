@@ -681,33 +681,44 @@ struct QueueView: View {
                                         .foregroundStyle(.white)
                                         .frame(width: 24)
                                 } else {
-                                    Color.clear
-                                        .frame(width: 24)
+                                    Button(action: {
+                                        state.removeQueueItem(at: index)
+                                    }) {
+                                        Image(systemName: "xmark")
+                                            .font(.footnote)
+                                            .foregroundStyle(.secondary)
+                                            .frame(width: 24, height: 24)
+                                            .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel("Remove from queue")
                                 }
                                 
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(item["title"] as? String ?? "Unknown")
-                                        .font(.body)
-                                        .fontWeight(isPlaying ? .semibold : .regular)
-                                        .foregroundStyle(.primary)
-                                        .opacity(isPlaying ? 1.0 : 0.8)
-                                        .lineLimit(1)
-                                    
-                                    Text(item["artist"] as? String ?? "Unknown")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(1)
+                                HStack(spacing: 6) {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(item["title"] as? String ?? "Unknown")
+                                            .font(.body)
+                                            .fontWeight(isPlaying ? .semibold : .regular)
+                                            .foregroundStyle(.primary)
+                                            .opacity(isPlaying ? 1.0 : 0.8)
+                                            .lineLimit(1)
+                                        
+                                        Text(item["artist"] as? String ?? "Unknown")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                    Spacer()
                                 }
-                                Spacer()
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    state.playQueueItem(at: index)
+                                }
                             }
                             .id(index)
                             .padding(.horizontal)
-                            .padding(.vertical, 6)
+                            .padding(.vertical, 4)
                             .glassEffect(isPlaying ? .regular.tint(.white.opacity(0.1)) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                state.playQueueItem(at: index)
-                            }
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
                         }
