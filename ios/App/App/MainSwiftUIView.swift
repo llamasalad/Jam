@@ -375,11 +375,18 @@ private struct LyricSnippetView: View {
     var body: some View {
         Button(action: { showFullLyrics = true }) {
             VStack(spacing: 10) {
-                Text(displayedCurrentLyric.isEmpty ? "..." : displayedCurrentLyric)
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(.primary)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(nil)
+                if displayedCurrentLyric.isEmpty {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(.primary)
+                        .symbolEffect(.bounce, options: .repeating)
+                } else {
+                    Text(displayedCurrentLyric)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(.primary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(nil)
+                }
 
                 Text(displayedNextLyric.isEmpty ? " " : displayedNextLyric)
                     .font(.callout)
@@ -677,7 +684,7 @@ struct QueueView: View {
                             HStack(spacing: 6) {
                                 if isPlaying {
                                     Image(systemName: "waveform")
-                                        .symbolEffect(.variableColor.iterative, options: .repeating, isActive: state.isPlaying)
+                                        .symbolEffect(.breathe, options: .repeating, isActive: state.isPlaying)
                                         .foregroundStyle(.white)
                                         .frame(width: 24)
                                 } else {

@@ -109,6 +109,14 @@ function renderArtistAlbumSub(parentEl, t, viewType) {
     const isTouchScreen = window.matchMedia("(pointer: coarse)").matches;
     const isInteractionDisabled = isTouchScreen && (viewType !== 'player' && viewType !== 'expanded-player');
 
+    let targetEl = parentEl;
+    if (viewType === 'player' && parentEl.id === 'player-artist') {
+        const marqueeInner = document.createElement('span');
+        marqueeInner.className = 'marquee-inner';
+        parentEl.appendChild(marqueeInner);
+        targetEl = marqueeInner;
+    }
+
     if (artist) {
         const artistSpan = document.createElement('span');
         artistSpan.className = 'interactive-artist';
@@ -123,13 +131,13 @@ function renderArtistAlbumSub(parentEl, t, viewType) {
                 openArtistDetail(artist);
             };
         }
-        parentEl.appendChild(artistSpan);
+        targetEl.appendChild(artistSpan);
     }
 
     if (artist && album) {
         const dot = document.createElement('span');
         dot.textContent = ' \u00B7 ';
-        parentEl.appendChild(dot);
+        targetEl.appendChild(dot);
     }
 
     if (album) {
@@ -146,7 +154,7 @@ function renderArtistAlbumSub(parentEl, t, viewType) {
                 openAlbumDetail(album);
             };
         }
-        parentEl.appendChild(albumSpan);
+        targetEl.appendChild(albumSpan);
     }
 }
 
@@ -156,9 +164,21 @@ function updatePlayerMetadata(t) {
     const mobTitle = document.querySelector('#player-meta-mobile .title');
     const mobArtist = document.querySelector('#player-meta-mobile .artist');
     const fullTitle = t.title || 'Unknown';
-    if (plTitle) plTitle.textContent = fullTitle;
+    if (plTitle) {
+        plTitle.innerHTML = '';
+        const inner = document.createElement('span');
+        inner.className = 'marquee-inner';
+        inner.textContent = fullTitle;
+        plTitle.appendChild(inner);
+        setTimeout(() => adjustMarquee(plTitle), 50);
+        setTimeout(() => adjustMarquee(plTitle), 400);
+    }
     if (mobTitle) mobTitle.textContent = fullTitle;
     renderArtistAlbumSub(plArtist, t, 'player');
+    if (plArtist) {
+        setTimeout(() => adjustMarquee(plArtist), 50);
+        setTimeout(() => adjustMarquee(plArtist), 400);
+    }
     renderArtistAlbumSub(mobArtist, t, 'player');
 }
 
@@ -2475,26 +2495,37 @@ function syncGaplessNextTrack() {
     }
 }
 
-function adjustExpTitleMarquee() {
-    if (!expTitle) return;
-    const inner = expTitle.querySelector('.marquee-inner');
+function adjustMarquee(el) {
+    if (!el) return;
+    const inner = el.querySelector('.marquee-inner');
     if (!inner) return;
-    expTitle.classList.remove('marquee-bouncy');
-    expTitle.style.removeProperty('--scroll-amount');
-    expTitle.style.removeProperty('--scroll-duration');
-    const containerWidth = expTitle.clientWidth;
+    el.classList.remove('marquee-bouncy');
+    el.style.removeProperty('--scroll-amount');
+    el.style.removeProperty('--scroll-duration');
+    const containerWidth = el.clientWidth;
     const textWidth = inner.offsetWidth;
     if (textWidth > containerWidth) {
         const diff = textWidth - containerWidth;
         const speed = 40;
         const duration = Math.max(4, diff / speed) + 2;
-        expTitle.style.setProperty('--scroll-amount', `${diff}px`);
-        expTitle.style.setProperty('--scroll-duration', `${duration}s`);
-        expTitle.classList.add('marquee-bouncy');
+        el.style.setProperty('--scroll-amount', `${diff}px`);
+        el.style.setProperty('--scroll-duration', `${duration}s`);
+        el.classList.add('marquee-bouncy');
     }
 }
 
-window.addEventListener('resize', () => { if (playerExpanded) adjustExpTitleMarquee(); });
+function adjustExpTitleMarquee() {
+    adjustMarquee(expTitle);
+}
+
+window.addEventListener('resize', () => {
+    if (playerExpanded) {
+        adjustExpTitleMarquee();
+    } else {
+        adjustMarquee(document.getElementById('player-title'));
+        adjustMarquee(document.getElementById('player-artist'));
+    }
+});
 
 function updateExpandedNowPlaying(t) {
     if (!t) return;
