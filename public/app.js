@@ -690,7 +690,7 @@ function renderLibraryCards() {
             if (name) loadArtistImage(name, img);
             _artistImgObserver.unobserve(img);
         });
-    }, { rootMargin: '1500px' });
+    }, { rootMargin: '200px' });
 
     const fragA = document.createDocumentFragment();
     Array.from(artists.entries())
@@ -882,7 +882,7 @@ function openDetail(type, name) {
     if (viewLibrary) viewLibrary.classList.add('active');
     if (libraryCards) libraryCards.classList.remove('show');
     if (trackList) trackList.style.display = 'block';
-    if (headerTitle) headerTitle.textContent = name;
+    if (headerTitle) headerTitle.textContent = '';
 
     const artistsSection = document.getElementById('artists-section');
     const albumsSection = document.getElementById('albums-section');
@@ -1149,6 +1149,173 @@ function renderList() {
     if (trackList) trackList.innerHTML = '';
     if (!filtered.length) { if (empty) empty.style.display = 'flex'; return }
     if (empty) empty.style.display = 'none';
+
+    if (currentDetailView) {
+        const headerContainer = document.createElement('div');
+        headerContainer.id = 'playlist-detail';
+        headerContainer.className = 'active';
+
+        let coverHtml = '';
+        let title = currentDetailView.name;
+        let countText = '';
+        let buttonsHtml = '';
+
+        if (currentDetailView.type === 'album') {
+            countText = `${filtered.length} song${filtered.length !== 1 ? 's' : ''}`;
+            const albumTrack = filtered[0];
+            const artistName = albumTrack?.artist || 'Unknown Artist';
+            coverHtml = `<img id="detail-album-cover-img" />`;
+
+            buttonsHtml = `
+                <div class="playlist-detail-buttons">
+                    <button id="playlist-play-btn">▶ play</button>
+                </div>
+            `;
+
+            headerContainer.innerHTML = `
+                <div id="playlist-detail-header">
+                    <div id="playlist-detail-cover" class="playlist-icon">
+                        ${coverHtml}
+                    </div>
+                    <div class="playlist-detail-info">
+                        <h2 id="playlist-detail-name">${escHtml(title)}</h2>
+                        <div class="playlist-detail-artist">${escHtml(artistName)}</div>
+                        <div id="playlist-detail-count">${countText}</div>
+                    </div>
+                </div>
+                ${buttonsHtml}
+            `;
+
+            if (albumTrack) {
+                setTimeout(() => {
+                    const imgEl = headerContainer.querySelector('#detail-album-cover-img');
+                    if (imgEl) {
+                        imgEl.onload = () => { imgEl.style.opacity = '1'; };
+                        loadCover(albumTrack.id, imgEl);
+                        if (imgEl.complete) imgEl.style.opacity = '1';
+                    }
+                }, 0);
+            }
+
+            setTimeout(() => {
+                const playBtn = headerContainer.querySelector('#playlist-play-btn');
+                if (playBtn) {
+                    playBtn.onclick = () => {
+                        if (filtered.length > 0) playTrack(filtered[0], filtered);
+                    };
+                }
+                const shuffleBtn = headerContainer.querySelector('#playlist-edit-btn');
+                if (shuffleBtn) {
+                    shuffleBtn.onclick = () => {
+                        if (filtered.length > 0) {
+                            const list = [...filtered];
+                            for (let idx = list.length - 1; idx > 0; idx--) {
+                                const j = Math.floor(Math.random() * (idx + 1));
+                                [list[idx], list[j]] = [list[j], list[idx]];
+                            }
+                            playTrack(list[0], list);
+                        }
+                    };
+                }
+            }, 0);
+
+        } else if (currentDetailView.type === 'artist') {
+            countText = `${filtered.length} song${filtered.length !== 1 ? 's' : ''}`;
+            coverHtml = `<img id="detail-artist-image" />`;
+
+            buttonsHtml = `
+                <div class="playlist-detail-buttons">
+                    <button id="playlist-edit-btn">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="16 3 21 3 21 8"></polyline>
+                            <line x1="4" y1="20" x2="21" y2="3"></line>
+                            <polyline points="21 16 21 21 16 21"></polyline>
+                            <line x1="15" y1="15" x2="21" y2="21"></line>
+                            <line x1="4" y1="4" x2="9" y2="9"></line>
+                        </svg>
+                        shuffle all
+                    </button>
+                </div>
+            `;
+
+            headerContainer.innerHTML = `
+                <div id="playlist-detail-header">
+                    <div id="playlist-detail-cover" class="playlist-icon">
+                        ${coverHtml}
+                    </div>
+                    <div class="playlist-detail-info">
+                        <h2 id="playlist-detail-name">${escHtml(title)}</h2>
+                        <div id="playlist-detail-count">${countText}</div>
+                    </div>
+                </div>
+                ${buttonsHtml}
+            `;
+
+            setTimeout(() => {
+                const imgEl = headerContainer.querySelector('#detail-artist-image');
+                if (imgEl) loadArtistImage(currentDetailView.name, imgEl);
+            }, 0);
+
+            setTimeout(() => {
+                const shuffleBtn = headerContainer.querySelector('#playlist-edit-btn');
+                if (shuffleBtn) {
+                    shuffleBtn.onclick = () => {
+                        if (filtered.length > 0) {
+                            const list = [...filtered];
+                            for (let idx = list.length - 1; idx > 0; idx--) {
+                                const j = Math.floor(Math.random() * (idx + 1));
+                                [list[idx], list[j]] = [list[j], list[idx]];
+                            }
+                            playTrack(list[0], list);
+                        }
+                    };
+                }
+            }, 0);
+        }
+
+        trackList.appendChild(headerContainer);
+
+        if (currentDetailView.type === 'artist') {
+            const artistAlbums = new Map();
+            filtered.forEach(t => {
+                if (t.album) {
+                    if (!artistAlbums.has(t.album)) {
+                        artistAlbums.set(t.album, { artwork: t.id });
+                    }
+                }
+            });
+
+            if (artistAlbums.size > 0) {
+                const albumsSection = document.createElement('div');
+                albumsSection.className = 'artist-albums-section';
+                albumsSection.innerHTML = `
+                    <div id="suggested-container"></div>
+                `;
+                const cardsContainer = albumsSection.querySelector('#suggested-container');
+
+                Array.from(artistAlbums.entries())
+                    .sort((a, b) => a[0].localeCompare(b[0]))
+                    .forEach(([albumName, data]) => {
+                        const card = document.createElement('div');
+                        card.className = 'album-card';
+                        if (data.artwork) card.dataset.artworkId = data.artwork;
+
+                        const overlay = document.createElement('div');
+                        const label = document.createElement('span');
+                        label.textContent = albumName;
+
+                        card.append(overlay, label);
+                        card.onclick = () => openAlbumDetail(albumName);
+
+                        if (data.artwork) _coverObserver.observe(card);
+                        cardsContainer.appendChild(card);
+                    });
+
+                trackList.appendChild(albumsSection);
+            }
+        }
+    }
+
     const CHUNK = 50;
     let i = 0, lastGroup = '';
     function renderChunk() {
@@ -1158,7 +1325,7 @@ function renderList() {
         for (; i < end; i++) {
             const t = filtered[i];
             const g = groupKey(t);
-            if (g !== lastGroup) {
+            if (!currentDetailView && g !== lastGroup) {
                 lastGroup = g;
                 const h = document.createElement('div');
                 h.className = 'group-header';
@@ -2079,12 +2246,72 @@ const trackCoverObserver = new IntersectionObserver((entries) => {
     });
 }, { rootMargin: '400px' });
 
-const MAX_ARTIST_IMAGE_CACHE = 100;
-const artistImageCache = {};
+let artistImageCache = {};
+try {
+    artistImageCache = JSON.parse(localStorage.getItem('jam_artist_image_cache') || '{}');
+} catch (e) {
+    artistImageCache = {};
+}
 const artistImageRequests = {};
+const artistQueue = [];
+let artistQueueProcessing = false;
+
+function queueArtistImageFetch(name, callback) {
+    artistQueue.push({ name, callback });
+    processArtistQueue();
+}
+
+async function processArtistQueue() {
+    if (artistQueueProcessing || artistQueue.length === 0) return;
+    artistQueueProcessing = true;
+
+    const item = artistQueue.shift();
+    const cached = artistImageCache[item.name];
+    if (cached && cached.expires > Date.now()) {
+        item.callback(cached.url);
+        artistQueueProcessing = false;
+        processArtistQueue();
+        return;
+    }
+
+    try {
+        const pictureUrl = await performArtistImageFetch(item.name);
+        item.callback(pictureUrl);
+    } catch (e) {
+        item.callback(null);
+    }
+
+    setTimeout(() => {
+        artistQueueProcessing = false;
+        processArtistQueue();
+    }, 1500);
+}
+
+async function performArtistImageFetch(name) {
+    if (!artistImageRequests[name]) {
+        artistImageRequests[name] = fetch('/api/artist-image?name=' + encodeURIComponent(name), { headers: hget() })
+            .then(r => r.ok ? r.json() : null)
+            .then(d => {
+                if (d && d.picture) {
+                    artistImageCache[name] = { url: d.picture, expires: Date.now() + 7 * 86400000 };
+                    try {
+                        localStorage.setItem('jam_artist_image_cache', JSON.stringify(artistImageCache));
+                    } catch (e) { }
+                    return d.picture;
+                }
+                return null;
+            })
+            .catch(() => null)
+            .finally(() => { delete artistImageRequests[name]; });
+    }
+    return artistImageRequests[name];
+}
 
 function clearArtistImageCache() {
     Object.keys(artistImageCache).forEach(k => delete artistImageCache[k]);
+    try {
+        localStorage.removeItem('jam_artist_image_cache');
+    } catch (e) { }
     console.log('Artist image cache cleared');
 }
 
@@ -2102,23 +2329,10 @@ async function loadArtistImage(name, imgEl) {
     const cached = artistImageCache[name];
     if (cached && cached.expires > Date.now()) { applyImage(cached.url); return; }
 
-    if (!artistImageRequests[name]) {
-        artistImageRequests[name] = fetch('/api/artist-image?name=' + encodeURIComponent(name), { headers: hget() })
-            .then(r => r.ok ? r.json() : null)
-            .then(d => {
-                if (d && d.picture) {
-                    artistImageCache[name] = { url: d.picture, expires: Date.now() + 86400000 };
-                    return d.picture;
-                }
-                return null;
-            })
-            .catch(() => null)
-            .finally(() => { delete artistImageRequests[name]; });
-    }
-
-    const pictureUrl = await artistImageRequests[name];
-    if (pictureUrl) applyImage(pictureUrl);
-    else imgEl.style.display = 'none';
+    queueArtistImageFetch(name, (pictureUrl) => {
+        if (pictureUrl) applyImage(pictureUrl);
+        else imgEl.style.display = 'none';
+    });
 }
 
 function setCover(el, url) {

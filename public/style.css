@@ -1121,15 +1121,99 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
+#playlist-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+}
+
+#playlist-detail-cover {
+  width: 160px;
+  height: 160px;
+  font-size: 28px;
+  border-radius: 8px;
+  background: var(--surface3);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.playlist-detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
 #playlist-detail-name {
-  font-size: 18px;
-  font-weight: 500;
+  margin: 0;
+  font-size: 30px;
+  font-weight: 600;
+  text-wrap: auto;
+}
+
+.playlist-detail-artist {
+  font-size: 14px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #playlist-detail-count {
-  padding: 0 16px 12px;
+  padding: 0;
   font-size: 12px;
   color: var(--muted);
+  margin-top: 2px;
+}
+
+.playlist-detail-buttons {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  align-items: center;
+}
+
+.playlist-detail-buttons #playlist-play-btn,
+.playlist-detail-buttons #playlist-edit-btn {
+  margin: 0;
+}
+
+.playlist-detail-buttons #playlist-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#detail-album-cover-img,
+#detail-artist-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+#suggested-container .album-card {
+  flex: 0 0 120px;
+  height: 120px;
+  border-radius: var(--radius-s);
+  scroll-snap-align: start;
+}
+
+.artist-albums-section {
+  margin-top: 10px;
+  margin-bottom: 24px;
+  margin-left: 16px;
+}
+
+#track-list .section-title {
+  padding: 0 16px;
 }
 
 #playlist-tracks {
@@ -2002,7 +2086,6 @@ body.player-open #main {
 #suggested-container {
   display: flex;
   gap: 16px;
-  padding: 0 16px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   touch-action: pan-x;
@@ -2645,6 +2728,10 @@ body.menu-open .queue-remove {
     display: none !important;
   }
 
+  .playlist-detail-buttons {
+    padding: 0;
+  }
+
   #exp-offset-controls {
     display: flex;
   }
@@ -3169,8 +3256,11 @@ body.menu-open .queue-remove {
   }
 
   #suggested-container {
-    padding: 0;
     flex-wrap: wrap;
+  }
+
+  .artist-albums-section {
+    margin-left: 0;
   }
 
   #sidebar-update .sidebar-label {
