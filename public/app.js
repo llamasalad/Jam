@@ -604,7 +604,7 @@ function switchTab(name) {
     if (sortBtn) sortBtn.style.display = name === 'library' ? '' : 'none';
     if (themeToggle) themeToggle.style.display = '';
 
-    closeDetailView();
+    closeDetailView(true);
 
     currentPlaylist = null;
     if (playlistDetail) playlistDetail.classList.remove('active');
@@ -856,6 +856,7 @@ const sortSVGs = [
 ];
 let sortModeIdx = 0;
 let currentDetailView = null;
+let detailViewHistory = [];
 
 let viewScrolls = {};
 let lastViewState = 'tab:library:sort:title';
@@ -890,8 +891,11 @@ function restoreScroll() {
     });
 }
 
-function openDetail(type, name) {
+function openDetail(type, name, isGoingBack = false) {
     saveScroll();
+    if (!isGoingBack && currentDetailView) {
+        detailViewHistory.push(currentDetailView);
+    }
     currentDetailView = { type, name };
     document.body.classList.add('detail-view');
     const viewLibrary = document.getElementById('view-library');
@@ -910,7 +914,16 @@ function openDetail(type, name) {
     if (albumsSection) albumsSection.style.display = 'none';
 
     searchEl.value = '';
-    filtered = tracks.filter(t => t[type] === name);
+    if (type === 'artist') {
+        const escapedName = name.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        const artistRegex = new RegExp('\\b' + escapedName + '\\b', 'i');
+        filtered = tracks.filter(t =>
+            (t.artist && artistRegex.test(t.artist)) ||
+            (t.title && artistRegex.test(t.title))
+        );
+    } else {
+        filtered = tracks.filter(t => t[type] === name);
+    }
     renderList();
     restoreScroll();
     notifyNativeDetailView(true, name);
@@ -919,8 +932,16 @@ function openDetail(type, name) {
 function openArtistDetail(artist) { openDetail('artist', artist); }
 function openAlbumDetail(album) { openDetail('album', album); }
 
-function closeDetailView() {
+function closeDetailView(force = false) {
     saveScroll();
+    if (force) {
+        detailViewHistory = [];
+    }
+    if (detailViewHistory.length > 0) {
+        const prev = detailViewHistory.pop();
+        openDetail(prev.type, prev.name, true);
+        return;
+    }
     if (currentDetailView?.type === 'playlist') { closePlaylistDetail(); return; }
     currentDetailView = null;
     document.body.classList.remove('detail-view');
@@ -1298,7 +1319,7 @@ function renderList() {
         if (currentDetailView.type === 'artist') {
             const artistAlbums = new Map();
             filtered.forEach(t => {
-                if (t.album) {
+                if (t.album && t.artist === currentDetailView.name) {
                     if (!artistAlbums.has(t.album)) {
                         artistAlbums.set(t.album, { artwork: t.id });
                     }
