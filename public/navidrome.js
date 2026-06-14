@@ -158,7 +158,12 @@ export async function renamePlaylist(id, newName) {
 }
 
 export function getStreamUrl(id) {
-  return `${NAVIDROME_URL}/rest/stream?id=${id}&${getAuthParams()}`;
+  const bitrate = localStorage.getItem('jam_bitrate') || 'original';
+  const params = getAuthParams();
+  if (bitrate !== 'original') {
+    params.set('maxBitRate', bitrate);
+  }
+  return `${NAVIDROME_URL}/rest/stream?id=${id}&${params}`;
 }
 
 export function getCoverUrl(id) {

@@ -8,6 +8,7 @@ struct MainSwiftUIView: View {
     @State private var showExpandedPlayer: Bool = false
     @FocusState private var isSearchFieldFocused: Bool
     @State private var themeChangePulse: Int = 0
+    @State private var qualityChangePulse: Int = 0
     @Namespace private var playerNamespace
 
     var body: some View {
@@ -84,6 +85,29 @@ struct MainSwiftUIView: View {
                     } label: {
                         Image(systemName: "paintpalette")
                             .symbolEffect(.bounce, value: themeChangePulse)
+                            .frame(width: 44, height: 44)
+                    }
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        ForEach([
+                            ("Lossless", "original"),
+                            ("Data Saver", "320")
+                        ], id: \.1) { quality in
+                            Button(action: {
+                                PlaybackStateManager.shared.setQuality(quality.1)
+                                qualityChangePulse += 1
+                            }) {
+                                Text(quality.0)
+                                if state.currentQuality == quality.1 {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "slider.horizontal.3")
+                            .symbolEffect(.bounce, value: qualityChangePulse)
                             .frame(width: 44, height: 44)
                     }
                 }

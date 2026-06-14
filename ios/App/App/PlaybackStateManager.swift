@@ -33,6 +33,7 @@ final class PlaybackStateManager {
     }
 
     var currentTheme: String = "default"
+    var currentQuality: String = "original"
     var isInDetailView: Bool = false
     var detailViewTitle: String = ""
     var currentLyric: String = ""
@@ -155,6 +156,23 @@ final class PlaybackStateManager {
         """
         evaluateJS(js)
         self.currentTheme = theme
+    }
+
+    func setQuality(_ quality: String) {
+        let js = """
+        (function() {
+            var opt = document.querySelector('.quality-option[data-quality="\(quality)"]');
+            if (opt) {
+                opt.click();
+            } else {
+                if (typeof currentQuality !== 'undefined') currentQuality = '\(quality)';
+                localStorage.setItem('jam_bitrate', '\(quality)');
+                if (typeof applyQuality === 'function') applyQuality();
+            }
+        })();
+        """
+        evaluateJS(js)
+        self.currentQuality = quality
     }
 
     func navigateBack() {

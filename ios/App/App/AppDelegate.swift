@@ -77,6 +77,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "setPlaybackState", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "updateDetailView", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "preloadNext", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setQuality", returnType: CAPPluginReturnPromise),
     ]
 
     struct TrackMetadata {
@@ -476,6 +477,14 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let theme = call.getString("theme") ?? "default"
         Task { @MainActor in
             PlaybackStateManager.shared.currentTheme = theme
+        }
+        call.resolve()
+    }
+
+    @objc func setQuality(_ call: CAPPluginCall) {
+        let quality = call.getString("quality") ?? "original"
+        Task { @MainActor in
+            PlaybackStateManager.shared.currentQuality = quality
         }
         call.resolve()
     }

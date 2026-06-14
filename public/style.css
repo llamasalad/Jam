@@ -452,6 +452,7 @@ body {
 }
 
 #theme-toggle,
+#settings-toggle,
 #sort-btn,
 #new-playlist-btn,
 #playlist-edit-btn,
@@ -472,6 +473,7 @@ body {
 }
 
 #theme-toggle.active,
+#settings-toggle.active,
 #sort-btn.active,
 #queue-btn.active,
 #lyrics-btn.active {
@@ -978,11 +980,13 @@ body {
   -webkit-user-select: none;
 }
 
-#theme-wrap {
+#theme-wrap,
+#settings-wrap {
   position: relative;
 }
 
-#theme-menu {
+#theme-menu,
+#settings-menu {
   position: absolute;
   top: 100%;
   right: 0;
@@ -1007,14 +1011,21 @@ body {
   -ms-overflow-style: none;
 }
 
-#theme-menu::-webkit-scrollbar {
+#theme-menu::-webkit-scrollbar,
+#settings-menu::-webkit-scrollbar {
   display: none;
 }
 
-#theme-menu.open {
+#theme-menu.open,
+#settings-menu.open {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
+}
+
+.quality-option.active {
+  color: var(--accent);
+  font-weight: 500;
 }
 
 .theme-option {
@@ -3100,12 +3111,12 @@ body.menu-open .queue-remove {
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 4px;
     flex-shrink: 1;
     min-height: 0;
   }
 
-  .sidebar-theme-dropdown {
+  .sidebar-theme-dropdown,
+  .sidebar-quality-dropdown {
     list-style: none;
     max-height: 0;
     overflow-y: auto;
@@ -3116,15 +3127,18 @@ body.menu-open .queue-remove {
     min-height: 0;
   }
 
-  .sidebar-theme-dropdown::-webkit-scrollbar {
+  .sidebar-theme-dropdown::-webkit-scrollbar,
+  .sidebar-quality-dropdown::-webkit-scrollbar {
     display: none;
   }
 
-  .sidebar-theme-dropdown.open {
+  .sidebar-theme-dropdown.open,
+  .sidebar-quality-dropdown.open {
     max-height: 300px;
   }
 
-  .sidebar-theme-option {
+  .sidebar-theme-option,
+  .sidebar-quality-option {
     padding: 8px 22px;
     font-size: 11px;
     letter-spacing: 0.06em;
@@ -3134,11 +3148,13 @@ body.menu-open .queue-remove {
     transition: color 0.15s;
   }
 
-  .sidebar-theme-option:hover {
+  .sidebar-theme-option:hover,
+  .sidebar-quality-option:hover {
     color: var(--text);
   }
 
-  .sidebar-theme-option.active {
+  .sidebar-theme-option.active,
+  .sidebar-quality-option.active {
     color: var(--accent);
   }
 
@@ -3767,7 +3783,8 @@ body.menu-open .queue-remove {
   }
 
   #header-top-actions #sort-btn,
-  #header-top-actions #theme-toggle {
+  #header-top-actions #theme-toggle,
+  #header-top-actions #settings-toggle {
     font-size: 20px;
     color: var(--muted);
     border: 1px solid var(--border);

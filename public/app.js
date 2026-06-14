@@ -416,6 +416,8 @@ const searchEl = document.getElementById('search');
 const sortBtn = document.getElementById('sort-btn');
 const themeToggle = document.getElementById('theme-toggle');
 const themeMenu = document.getElementById('theme-menu');
+const settingsToggle = document.getElementById('settings-toggle');
+const settingsMenu = document.getElementById('settings-menu');
 const btnPlay = document.getElementById('btn-play');
 const btnPrev = document.getElementById('btn-prev');
 const btnNext = document.getElementById('btn-next');
@@ -1031,6 +1033,7 @@ function updateStatusBar(overrideColor) {
 
 function showThemeMenu() {
     if (!themeMenu) return;
+    hideSettingsMenu();
     themeMenu.style.left = '';
     themeMenu.style.top = '';
     themeMenu.classList.add('open');
@@ -1041,6 +1044,30 @@ function hideThemeMenu() {
     if (themeMenu) themeMenu.classList.remove('open');
     document.body.classList.remove('theme-menu-open');
     if (menuBackdrop) menuBackdrop.style.display = '';
+}
+
+let currentQuality = localStorage.getItem('jam_bitrate') || 'original';
+function applyQuality() {
+    document.querySelectorAll('.quality-option').forEach(option => {
+        option.classList.toggle('active', option.dataset.quality === currentQuality);
+    });
+    document.querySelectorAll('.sidebar-quality-option').forEach(option => {
+        option.classList.toggle('active', option.dataset.quality === currentQuality);
+    });
+    const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
+    if (plugin && typeof plugin.setQuality === 'function') {
+        plugin.setQuality({ quality: currentQuality });
+    }
+}
+
+function showSettingsMenu() {
+    if (!settingsMenu) return;
+    hideThemeMenu();
+    settingsMenu.classList.add('open');
+}
+
+function hideSettingsMenu() {
+    if (settingsMenu) settingsMenu.classList.remove('open');
 }
 
 if (themeToggle) {
@@ -1063,13 +1090,37 @@ if (themeMenu) {
     });
 }
 
+if (settingsToggle) {
+    settingsToggle.onclick = (e) => {
+        e.stopPropagation();
+        if (settingsMenu.classList.contains('open')) hideSettingsMenu();
+        else showSettingsMenu();
+    };
+}
+
+if (settingsMenu) {
+    document.querySelectorAll('.quality-option').forEach(option => {
+        option.onclick = () => {
+            triggerHaptic('SUCCESS');
+            currentQuality = option.dataset.quality;
+            localStorage.setItem('jam_bitrate', currentQuality);
+            applyQuality();
+            hideSettingsMenu();
+        };
+    });
+}
+
 document.addEventListener('click', (e) => {
     if (themeMenu?.classList.contains('open') && !themeMenu.contains(e.target) && !themeToggle.contains(e.target)) {
         hideThemeMenu();
     }
+    if (settingsMenu?.classList.contains('open') && !settingsMenu.contains(e.target) && !settingsToggle.contains(e.target)) {
+        hideSettingsMenu();
+    }
 });
 
 applyTheme();
+applyQuality();
 
 const sidebarSortItem = document.getElementById('sidebar-sort-item');
 const sidebarSortLabel = document.getElementById('sidebar-sort-label');
@@ -1106,6 +1157,24 @@ document.querySelectorAll('.sidebar-theme-option').forEach(opt => {
             o.classList.toggle('active', o.dataset.theme === currentTheme);
         });
         sidebarThemeDropdown.classList.remove('open');
+    };
+});
+
+const sidebarQualityItem = document.getElementById('sidebar-quality-item');
+const sidebarQualityDropdown = document.getElementById('sidebar-quality-dropdown');
+
+if (sidebarQualityItem) {
+    sidebarQualityItem.onclick = () => { sidebarQualityDropdown.classList.toggle('open'); };
+}
+
+document.querySelectorAll('.sidebar-quality-option').forEach(opt => {
+    opt.classList.toggle('active', opt.dataset.quality === currentQuality);
+    opt.onclick = () => {
+        triggerHaptic('SUCCESS');
+        currentQuality = opt.dataset.quality;
+        localStorage.setItem('jam_bitrate', currentQuality);
+        applyQuality();
+        sidebarQualityDropdown.classList.remove('open');
     };
 });
 
@@ -2410,7 +2479,7 @@ function play(t) {
         if (audioCtx?.state === 'suspended') audioCtx.resume();
         _trackTransition = true;
         setAudioMetadata(t);
-        audio.src = t.streamUrl || Navidrome.getStreamUrl(t.id);
+        audio.src = Navidrome.getStreamUrl(t.id);
         audio.load();
         audio.play().catch(e => console.error("Playback failed", e));
     }
@@ -2433,7 +2502,7 @@ let nextAudio = null;
 function preloadNextTrack() {
     if (qIdx + 1 < queue.length) {
         let t = queue[qIdx + 1];
-        let streamUrl = t.streamUrl || Navidrome.getStreamUrl(t.id);
+        let streamUrl = Navidrome.getStreamUrl(t.id);
         if (window.Capacitor?.Plugins?.AudioPlayerPlugin) {
             window.Capacitor.Plugins.AudioPlayerPlugin.preloadNext({
                 url: streamUrl,
@@ -2581,7 +2650,18 @@ if (audio) {
         if (!_trackTransition) syncPlayPause(false);
     });
     audio.addEventListener('ended', () => { if (_trackTransition) return; nextTrack(); });
-    audio.addEventListener('error', () => { _trackTransition = false; console.error('Audio error on:', audio.src, audio.error?.message); });
+    audio.addEventListener('error', () => {
+        _trackTransition = false;
+        console.error('Audio error on:', audio.src, audio.error?.message);
+        const currentSrc = audio.src;
+        if (currentSrc && currentSrc.includes('maxBitRate=')) {
+            console.warn('Transcoding failed on server. Falling back to lossless stream...');
+            const fallbackSrc = currentSrc.replace(/&maxBitRate=\d+/, '');
+            audio.src = fallbackSrc;
+            audio.load();
+            audio.play().catch(e => console.error("Playback fallback failed:", e));
+        }
+    });
     audio.addEventListener('seeked', () => { seeking = false; updateSyncedLyricsState(true, audio.currentTime); });
 }
 
@@ -4100,7 +4180,7 @@ async function init() {
         if (audio) {
             audio.preload = 'auto';
             setAudioMetadata(lastTrackData);
-            audio.src = lastTrackData.streamUrl || Navidrome.getStreamUrl(lastTrackData.id);
+            audio.src = Navidrome.getStreamUrl(lastTrackData.id);
             audio.load();
         }
     }
@@ -4149,7 +4229,7 @@ async function init() {
                 if (!alreadyBuffering) {
                     audio.preload = 'auto';
                     setAudioMetadata(t);
-                    audio.src = t.streamUrl || Navidrome.getStreamUrl(t.id);
+                    audio.src = Navidrome.getStreamUrl(t.id);
                     audio.load();
                 }
                 updateMediaSession(t);
