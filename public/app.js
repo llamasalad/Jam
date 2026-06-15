@@ -2286,7 +2286,7 @@ function showToast(msg) {
     if (!t) {
         t = document.createElement('div');
         t.id = 'toast';
-        t.style.cssText = 'position:fixed;bottom:calc(var(--player-h) + 16px);left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:8px 16px;border-radius:8px;font-size:13px;z-index:500;transition:opacity .3s;max-width:calc(100vw - 32px)';
+        t.style.cssText = 'position:fixed;bottom:calc(var(--native-bottom-inset, var(--player-h, 0px)) + 16px);left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:8px 16px;border-radius:8px;font-size:13px;z-index:500;transition:opacity .3s;max-width:calc(100vw - 32px)';
         document.body.appendChild(t);
     }
     t.textContent = msg;
@@ -4519,10 +4519,23 @@ function hideUpdateUI() {
 }
 
 async function checkForUpdate() {
-    if (!swRegistration) return;
-    await swRegistration.update();
-    if (swRegistration.waiting) showUpdateUI();
-    else showToast('No updates available');
+    if (!swRegistration) {
+        console.log('[SW] No active service worker registration found');
+        return;
+    }
+    console.log('[SW] Checking for service worker updates...');
+    try {
+        await swRegistration.update();
+        if (swRegistration.waiting) {
+            console.log('[SW] Update found and is waiting. Showing update UI.');
+            showUpdateUI();
+        } else {
+            console.log('[SW] No updates found. Already running the latest version.');
+            showToast('No updates available');
+        }
+    } catch (e) {
+        console.error('[SW] Manual update check failed:', e);
+    }
 }
 
 if ('serviceWorker' in navigator) {
@@ -4563,6 +4576,7 @@ window.prevTrack = prevTrack;
 window.openArtistDetail = openArtistDetail;
 window.openAlbumDetail = openAlbumDetail;
 window.removeFromQueue = removeFromQueue;
+window.checkForUpdate = checkForUpdate;
 
 window.applyFilter = applyFilter;
 Object.defineProperty(window, 'audio', {
