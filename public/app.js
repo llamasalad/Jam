@@ -2468,7 +2468,12 @@ function setAudioMetadata(t) {
 }
 
 let _trackTransition = false;
+let _lastKnownTime = 0;
+let _retryCount = 0;
+
 function play(t) {
+    _lastKnownTime = 0;
+    _retryCount = 0;
     seeking = false;
     lyricsOffset = 0;
     updateStatusBar();
@@ -2529,6 +2534,8 @@ function syncGaplessNextTrack() {
         qIdx++;
         let t = queue[qIdx];
 
+        _lastKnownTime = 0;
+        _retryCount = 0;
         seeking = false;
         lyricsOffset = 0;
         updateStatusBar();
@@ -2637,6 +2644,7 @@ if (audio) {
         if (expIconPause) expIconPause.style.display = playing ? 'block' : 'none';
     }
 
+    audio.addEventListener('timeupdate', () => { _lastKnownTime = audio.currentTime; });
     audio.addEventListener('play', () => {
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
         syncPlayPause(true);
@@ -2649,20 +2657,59 @@ if (audio) {
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
         if (!_trackTransition) syncPlayPause(false);
     });
-    audio.addEventListener('ended', () => { if (_trackTransition) return; nextTrack(); });
+    audio.addEventListener('ended', () => {
+        if (_trackTransition) return;
+        const dur = getRealDuration();
+        const cur = _lastKnownTime;
+        if (dur > 10 && cur < dur * 0.9) {
+            if (_retryCount < 3) {
+                _retryCount++;
+                console.warn('[Audio] Premature stream end at', Math.round(cur) + 's', '/', Math.round(dur) + 's — retrying stream (attempt ' + _retryCount + '/3)');
+                const savedPos = cur;
+                const currentSrc = audio.src;
+                audio.src = currentSrc;
+                _trackTransition = true;
+                audio.load();
+                audio.addEventListener('loadedmetadata', () => {
+                    try { audio.currentTime = savedPos; } catch (e) { }
+                    audio.play().catch(e => console.error("Playback retry failed:", e));
+                }, { once: true });
+                return;
+            } else {
+                console.warn('[Audio] Premature stream end retry limit reached. Advancing track.');
+            }
+        }
+        nextTrack();
+    });
     audio.addEventListener('error', () => {
         _trackTransition = false;
         console.error('Audio error on:', audio.src, audio.error?.message);
-        const currentSrc = audio.src;
-        if (currentSrc && currentSrc.includes('maxBitRate=')) {
-            console.warn('Transcoding failed on server. Falling back to lossless stream...');
-            const fallbackSrc = currentSrc.replace(/&maxBitRate=\d+/, '');
-            audio.src = fallbackSrc;
-            audio.load();
-            audio.play().catch(e => console.error("Playback fallback failed:", e));
+        const dur = getRealDuration();
+        const cur = _lastKnownTime;
+        if (dur > 10 && cur < dur * 0.9) {
+            if (_retryCount < 3) {
+                _retryCount++;
+                console.warn('[Audio] Error mid-stream. Retrying stream (attempt ' + _retryCount + '/3)...');
+                const savedPos = cur;
+                const prevVol = gainNode ? gainNode.gain.value : audio.volume;
+                applyVolume(0);
+                const currentSrc = audio.src;
+                audio.src = currentSrc;
+                _trackTransition = true;
+                audio.load();
+                audio.addEventListener('loadedmetadata', () => {
+                    try { audio.currentTime = savedPos; } catch (e) { }
+                    setTimeout(() => applyVolume(prevVol), 80);
+                    audio.play().catch(e => console.error("Playback retry failed:", e));
+                }, { once: true });
+                return;
+            } else {
+                console.warn('[Audio] Error retry limit reached. Advancing track.');
+            }
         }
+        nextTrack();
     });
-    audio.addEventListener('seeked', () => { seeking = false; updateSyncedLyricsState(true, audio.currentTime); });
+    audio.addEventListener('seeked', () => { seeking = false; _lastKnownTime = audio.currentTime; updateSyncedLyricsState(true, audio.currentTime); });
 }
 
 function getRealDuration() {
@@ -3972,6 +4019,26 @@ if (audio) {
     });
     audio.addEventListener('trackAdvancedNatively', () => {
         if (_trackTransition) return;
+        const dur = getRealDuration();
+        const cur = _lastKnownTime;
+        if (dur > 10 && cur < dur * 0.9) {
+            if (_retryCount < 3) {
+                _retryCount++;
+                console.warn('[Audio] Premature native advance at', Math.round(cur) + 's', '/', Math.round(dur) + 's — retrying stream (attempt ' + _retryCount + '/3)');
+                const savedPos = cur;
+                const currentSrc = audio.src;
+                audio.src = currentSrc;
+                _trackTransition = true;
+                audio.load();
+                audio.addEventListener('loadedmetadata', () => {
+                    try { audio.currentTime = savedPos; } catch (e) { }
+                    audio.play().catch(e => console.error("Playback retry failed:", e));
+                }, { once: true });
+                return;
+            } else {
+                console.warn('[Audio] Premature native advance retry limit reached. Advancing track.');
+            }
+        }
         syncGaplessNextTrack();
     });
 
