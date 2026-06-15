@@ -3465,6 +3465,10 @@ body.menu-open .queue-remove {
     margin: 12px;
   }
 
+  #toast {
+    left: 57%;
+  }
+
   @keyframes update-pulse {
 
     0%,
