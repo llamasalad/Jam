@@ -79,7 +79,6 @@ let queueOpen = false, lyricsTrackId = null, lyricsOpen = false;
 let isSelecting = false;
 let toggleMode = true;
 let lastSavedSec = -1;
-let lyricsOffset = 0;
 let lyricUpdateTimers = { cur: null, next: null };
 let lastHeartbeatPos = 0;
 let playerExpanded = false;
@@ -135,9 +134,10 @@ function renderArtistAlbumSub(parentEl, t, viewType) {
     }
 
     if (artist && album) {
-        const dot = document.createElement('span');
-        dot.textContent = ' \u00B7 ';
-        targetEl.appendChild(dot);
+        const dotSpan = document.createElement('span');
+        dotSpan.className = 'interactive-separator';
+        dotSpan.textContent = ' \u00B7 ';
+        targetEl.appendChild(dotSpan);
     }
 
     if (album) {
@@ -1230,24 +1230,6 @@ function sort() {
     }
 
     if (sortMode === 'title') renderList();
-}
-
-function formatLyricsOffsetLabel() {
-    if (Math.abs(lyricsOffset) < 0.001) return 'default';
-    const amount = Math.abs(lyricsOffset).toFixed(1) + 's';
-    return lyricsOffset > 0 ? `${amount} early` : `${amount} late`;
-}
-
-function updateLyricsOffsetUI() {
-    const hasOffset = Math.abs(lyricsOffset) >= 0.001;
-    document.querySelectorAll('.lyrics-offset-display').forEach(el => el.textContent = formatLyricsOffsetLabel());
-    document.querySelectorAll('.lyrics-timing').forEach(el => el.classList.toggle('has-offset', hasOffset));
-}
-
-function adjustLyricsOffset(delta) {
-    lyricsOffset = Math.round((lyricsOffset + delta) * 10) / 10;
-    updateLyricsOffsetUI();
-    updateSyncedLyricsState(true);
 }
 
 function groupKey(t) {
@@ -2480,9 +2462,7 @@ function play(t) {
     _lastKnownTime = 0;
     _retryCount = 0;
     seeking = false;
-    lyricsOffset = 0;
     updateStatusBar();
-    updateLyricsOffsetUI();
     updateMediaSession(t);
     if (audio) {
         initAudioContext(audio);
@@ -2553,9 +2533,7 @@ function syncGaplessNextTrack() {
         _lastKnownTime = 0;
         _retryCount = 0;
         seeking = false;
-        lyricsOffset = 0;
         updateStatusBar();
-        updateLyricsOffsetUI();
         updateMediaSession(t);
 
         if (player) { player.classList.remove('hidden'); updatePlayerHeight(); }
@@ -3494,20 +3472,6 @@ function getLyricScrollEls() {
 
 function invalidateLyricScrollCache() { _lyricScrollEls = null; }
 
-document.querySelectorAll('[data-offset-action]').forEach(btn => {
-    btn.addEventListener('click', e => {
-        e.stopPropagation();
-        const action = btn.dataset.offsetAction;
-        if (action === 'earlier') adjustLyricsOffset(LYRICS_OFFSET_STEP);
-        else if (action === 'later') adjustLyricsOffset(-LYRICS_OFFSET_STEP);
-        else if (action === 'reset') {
-            lyricsOffset = 0;
-            updateLyricsOffsetUI();
-            updateSyncedLyricsState(true);
-        }
-    });
-});
-
 function applyLyricsFontSize() {
     const val = lyricsFontSize + 'px';
     getLyricScrollEls().forEach(el => { el.style.fontSize = val; });
@@ -3528,8 +3492,6 @@ bindLyricsFontChange('lyrics-font-up', 1);
 bindLyricsFontChange('lyrics-font-down', -1);
 bindLyricsFontChange('lyrics-font-up-desktop', 1);
 bindLyricsFontChange('lyrics-font-down-desktop', -1);
-
-updateLyricsOffsetUI();
 
 const expLyricsCard = document.getElementById('exp-lyrics-card');
 const expLyricsCardHeader = document.getElementById('exp-lyrics-card-header');
@@ -3883,7 +3845,7 @@ function renderSyncedLyrics() {
             div.className = 'lyric-line';
             div.textContent = l.text || '\u00b7';
             div.dataset.idx = j;
-            div.onclick = (function (t) { return function () { if (audio) { seeking = true; audio.currentTime = t - lyricsOffset; updateSyncedLyricsState(true, t - lyricsOffset); } }; })(l.time);
+            div.onclick = (function (t) { return function () { if (audio) { seeking = true; audio.currentTime = t; updateSyncedLyricsState(true, t); } }; })(l.time);
             scroll.appendChild(div);
         }
     }
@@ -3918,7 +3880,7 @@ function updateSyncedLyricsState(force = false, atTime = null) {
 
     if (!anyVisible && !force && syncedLyrics.length) {
         const baseTime = atTime !== null ? atTime : (audio?.currentTime || 0);
-        const t = baseTime + lyricsOffset;
+        const t = baseTime;
         lastExpLyricIdx = syncedLyrics.findIndex((l, i) => {
             const n = syncedLyrics[i + 1];
             return t >= l.time && (!n || t < n.time);
@@ -3944,7 +3906,7 @@ function updateSyncedLyricsState(force = false, atTime = null) {
 
     const FADE_LOOKAHEAD = force ? 0 : 0.10;
     const baseTime = atTime !== null ? atTime : (audio?.currentTime || 0);
-    const t = baseTime + FADE_LOOKAHEAD + lyricsOffset;
+    const t = baseTime + FADE_LOOKAHEAD;
     const idx = syncedLyrics.findIndex((l, i) => { const n = syncedLyrics[i + 1]; return t >= l.time && (!n || t < n.time) });
     if (!force && idx === lastExpLyricIdx) return;
     lastExpLyricIdx = idx;

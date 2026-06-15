@@ -1568,19 +1568,6 @@ body {
   display: none;
 }
 
-.lyrics-timing.has-offset .lyrics-timing-btn.reset {
-  display: inline-flex;
-  margin-left: 8px;
-}
-
-.lyrics-offset-display {
-  font-size: 11px;
-  color: var(--muted);
-  min-width: 60px;
-  text-align: center;
-  white-space: nowrap;
-}
-
 #expanded-player {
   position: fixed;
   inset: 0;
@@ -2585,6 +2572,12 @@ body.detail-view .group-header {
   display: none;
 }
 
+body:has(#detail-album-cover-img) #track-list .interactive-album,
+body:has(#detail-album-cover-img) #track-list .interactive-artist,
+body:has(#detail-album-cover-img) #track-list .interactive-separator {
+  display: none;
+}
+
 body.detail-view #suggested-section {
   display: none !important;
 }
@@ -2879,10 +2872,6 @@ body.menu-open .queue-remove {
     padding: 0;
   }
 
-  #exp-offset-controls {
-    display: flex;
-  }
-
   #exp-cover-wrap {
     margin-top: 0 !important;
   }
@@ -2978,13 +2967,8 @@ body.menu-open .queue-remove {
     background: none;
     border: none;
     color: var(--muted);
-    cursor: pointer;
-    font-size: 11px;
-    padding: 2px 4px;
-    border-radius: 4px;
-    line-height: 1;
-    opacity: .6;
-    transition: opacity .15s;
+    font-size: 14px;
+    padding: 0 4px;
   }
 
   #lyrics-picker-btn:hover,
@@ -3681,10 +3665,6 @@ body.menu-open .queue-remove {
     scrollbar-width: none !important;
   }
 
-  #exp-offset-controls {
-    display: none !important;
-  }
-
   #exp-utils {
     width: 100%;
     justify-content: center;
@@ -3763,10 +3743,11 @@ body.menu-open .queue-remove {
   }
 
   #exp-lyrics-card-chevron {
+    background: none;
+    border: none;
     color: var(--muted);
-    transition: transform 0.25s ease;
     font-size: 14px;
-    line-height: 1;
+    padding: 0 4px;
   }
 
   #exp-lyrics-card.open #exp-lyrics-card-chevron {
