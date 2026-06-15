@@ -3001,7 +3001,8 @@ body.menu-open .queue-remove {
     grid-template-rows: auto 1fr auto;
   }
 
-  #header {
+  #header,
+  #header h1 {
     display: none;
   }
 
