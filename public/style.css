@@ -317,8 +317,8 @@ body.liquid-glass-theme #app {
 
 body.liquid-glass-theme #progress-row input::-webkit-slider-runnable-track,
 body.liquid-glass-theme #exp-progress::-webkit-slider-runnable-track,
-body.liquid-glass-theme #volume-row input,
-body.liquid-glass-theme #exp-volume-row input {
+body.liquid-glass-theme #volume-row input::-webkit-slider-runnable-track,
+body.liquid-glass-theme #exp-volume-row input::-webkit-slider-runnable-track {
   background: var(--muted);
 }
 
@@ -1382,24 +1382,53 @@ body {
 #volume-row input {
   -webkit-appearance: none;
   appearance: none;
-  border-radius: var(--radius-s);
-  background: var(--surface3);
+  background: transparent;
+  outline: none;
+  cursor: pointer;
   flex: 1;
   min-width: 0;
-  height: 4px;
-  margin-top: 2px;
+  height: 20px;
 }
 
-.blind-theme #volume-row input {
+#volume-row input::-webkit-slider-runnable-track {
+  height: 6px;
+  background: var(--surface3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.blind-theme #volume-row input::-webkit-slider-runnable-track {
   background: var(--muted);
 }
 
 #volume-row input::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+  appearance: none;
+  width: 1px;
+  height: 6px;
   background: var(--accent);
+  box-shadow: -100vw 0 0 100vw var(--accent);
+  cursor: pointer;
+}
+
+#volume-row input::-moz-range-track {
+  height: 6px;
+  background: var(--surface3);
+  border-radius: 3px;
+}
+
+#volume-row input::-moz-range-progress {
+  background: var(--accent);
+  height: 6px;
+  border-radius: 3px 0 0 3px;
+}
+
+#volume-row input::-moz-range-thumb {
+  width: 0;
+  height: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
 }
 
 #volume-icon {
@@ -1438,24 +1467,44 @@ body {
 }
 
 #progress-row input::-webkit-slider-runnable-track {
-  height: 4px;
-  border-radius: 2px;
+  height: 6px;
+  border-radius: 3px;
   background: var(--surface3);
+  overflow: hidden;
 }
 
 .blind-theme #progress-row input::-webkit-slider-runnable-track {
-  background: var(--muted)
+  background: var(--muted);
 }
 
 #progress-row input::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
+  appearance: none;
+  width: 1px;
+  height: 6px;
   background: var(--accent);
+  box-shadow: -100vw 0 0 100vw var(--accent);
   cursor: pointer;
-  margin-top: -4px;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+}
+
+#progress-row input::-moz-range-track {
+  height: 6px;
+  background: var(--surface3);
+  border-radius: 3px;
+}
+
+#progress-row input::-moz-range-progress {
+  background: var(--accent);
+  height: 6px;
+  border-radius: 3px 0 0 3px;
+}
+
+#progress-row input::-moz-range-thumb {
+  width: 0;
+  height: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
 }
 
 .time-label {
@@ -1769,23 +1818,53 @@ body.player-open #main {
 #exp-volume-row input {
   -webkit-appearance: none;
   appearance: none;
-  border-radius: var(--radius-s);
-  background: var(--surface3);
+  background: transparent;
+  outline: none;
+  cursor: pointer;
   flex: 1;
   min-width: 0;
-  height: 4px;
+  height: 20px;
 }
 
-.blind-theme #exp-volume-row input {
-  background: var(--muted)
+#exp-volume-row input::-webkit-slider-runnable-track {
+  height: 6px;
+  background: var(--surface3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.blind-theme #exp-volume-row input::-webkit-slider-runnable-track {
+  background: var(--muted);
 }
 
 #exp-volume-row input::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+  appearance: none;
+  width: 1px;
+  height: 6px;
   background: var(--accent);
+  box-shadow: -100vw 0 0 100vw var(--accent);
+  cursor: pointer;
+}
+
+#exp-volume-row input::-moz-range-track {
+  height: 6px;
+  background: var(--surface3);
+  border-radius: 3px;
+}
+
+#exp-volume-row input::-moz-range-progress {
+  background: var(--accent);
+  height: 6px;
+  border-radius: 3px 0 0 3px;
+}
+
+#exp-volume-row input::-moz-range-thumb {
+  width: 0;
+  height: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
 }
 
 #exp-lyrics-toggle {
@@ -1904,9 +1983,10 @@ body.player-open #main {
 }
 
 #exp-progress::-webkit-slider-runnable-track {
-  height: 4px;
-  border-radius: 2px;
+  height: 6px;
+  border-radius: 3px;
   background: var(--surface3);
+  overflow: hidden;
 }
 
 .blind-theme #exp-progress::-webkit-slider-runnable-track {
@@ -1915,13 +1995,32 @@ body.player-open #main {
 
 #exp-progress::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
+  appearance: none;
+  width: 1px;
+  height: 6px;
   background: var(--accent);
+  box-shadow: -100vw 0 0 100vw var(--accent);
   cursor: pointer;
-  margin-top: -5px;
-  box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
+}
+
+#exp-progress::-moz-range-track {
+  height: 6px;
+  background: var(--surface3);
+  border-radius: 3px;
+}
+
+#exp-progress::-moz-range-progress {
+  background: var(--accent);
+  height: 6px;
+  border-radius: 3px 0 0 3px;
+}
+
+#exp-progress::-moz-range-thumb {
+  width: 0;
+  height: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
 }
 
 #queue-resizer {
@@ -3414,12 +3513,7 @@ body.menu-open .queue-remove {
     right: 5%;
   }
 
-  #progress-row input::-webkit-slider-thumb {
-    width: 16px !important;
-    height: 16px !important;
-    margin-top: -6px !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .5) !important;
-  }
+
 
   #progress-row input {
     height: 28px !important;
@@ -3594,11 +3688,7 @@ body.menu-open .queue-remove {
     height: 34px !important;
   }
 
-  #exp-progress::-webkit-slider-thumb {
-    width: 20px !important;
-    height: 20px !important;
-    margin-top: -8px !important;
-  }
+
 
   #exp-progress {
     height: 36px !important;
