@@ -24,7 +24,7 @@ export async function onRequestGet({ request, env }) {
         'Accept': 'application/json'
       }
     })
-    if (!r.ok) return jsonResponse([], { headers: { 'Cache-Control': 'public, max-age=300' } })
+    if (!r.ok) return jsonResponse([], { headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' } })
 
     const results = await r.json()
     const items = (Array.isArray(results) ? results : []).map(item => ({
@@ -44,6 +44,6 @@ export async function onRequestGet({ request, env }) {
       headers: { 'Cache-Control': 'public, max-age=1800, s-maxage=86400' }
     })
   } catch (_) {
-    return jsonResponse([], { headers: { 'Cache-Control': 'public, max-age=300' } })
+    return jsonResponse([], { headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' } })
   }
 }

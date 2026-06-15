@@ -920,8 +920,9 @@ function openDetail(type, name, isGoingBack = false) {
         const escapedName = name.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
         const artistRegex = new RegExp('(?<!\\w)' + escapedName + '(?!\\w)', 'i');
         filtered = tracks.filter(t =>
-            (t.artist && artistRegex.test(t.artist)) ||
-            (t.title && artistRegex.test(t.title))
+            ((t.artist && artistRegex.test(t.artist)) ||
+                (t.title && artistRegex.test(t.title))) &&
+            !(name.toLowerCase() === 'future' && t.title && t.title.toLowerCase().includes('future nostalgia'))
         );
     } else {
         filtered = tracks.filter(t => t[type] === name);
