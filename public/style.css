@@ -66,9 +66,15 @@ textarea {
   --danger: #e05252;
   --radius: 12px;
   --radius-s: 6px;
-  --player-h: 85px;
+  --player-h: 0px;
+  --player-h-active: 0px;
+  --mobile-dock-h-active: 0px;
   --adaptive-color: #1e1e24;
   --shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+body:has(#player:not(.hidden)) {
+  --player-h-active: var(--player-h);
 }
 
 .ember-theme {
@@ -2456,6 +2462,28 @@ body.player-open #main {
   display: none;
 }
 
+#toast {
+  position: fixed;
+  bottom: calc(var(--native-bottom-inset, calc(var(--player-h-active, 0px) + var(--mobile-dock-h-active, 0px))) + 20px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 500;
+  transition: opacity .3s;
+  max-width: calc(100vw - 32px);
+  pointer-events: none;
+}
+
+#toast.clickable {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -3451,6 +3479,13 @@ body.menu-open .queue-remove {
 }
 
 @media (max-width: 768px) {
+  :root {
+    --mobile-dock-h-active: 60px;
+  }
+
+  body.player-open {
+    --mobile-dock-h-active: 0px;
+  }
 
   #sidebar {
     display: none;
@@ -3512,8 +3547,6 @@ body.menu-open .queue-remove {
     left: 5%;
     right: 5%;
   }
-
-
 
   #progress-row input {
     height: 28px !important;
