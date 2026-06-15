@@ -359,16 +359,11 @@ class CapacitorAudioPlayerShim {
     }
 
     get currentTime() {
-        if (this._paused || this._lastSyncTime === 0) {
-            return this._currentTime;
-        }
+        if (this._paused || this._lastSyncTime === 0) return this._currentTime;
         const now = performance.now();
-        const elapsedSeconds = (now - this._lastSyncTime) / 1000;
+        const elapsedSeconds = Math.min((now - this._lastSyncTime) / 1000, 1.5);
         const interpolated = this._lastNativeTime + elapsedSeconds;
-        if (this._duration > 0) {
-            return Math.min(interpolated, this._duration);
-        }
-        return interpolated;
+        return this._duration > 0 ? Math.min(interpolated, this._duration) : interpolated;
     }
     set currentTime(val) {
         this._currentTime = val;
@@ -2672,7 +2667,11 @@ if (audio) {
         const ct = queue && queue[qIdx];
         if (ct) updateMediaSession(ct);
     });
-    audio.addEventListener('playing', () => { _trackTransition = false; _pendingBackgroundPlay = false; });
+    audio.addEventListener('playing', () => {
+        _trackTransition = false;
+        _pendingBackgroundPlay = false;
+        _retryCount = 0;
+    });
     audio.addEventListener('pause', () => {
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
         if (!_trackTransition) syncPlayPause(false);
@@ -2681,14 +2680,15 @@ if (audio) {
         if (_trackTransition) return;
         const dur = getRealDuration();
         const cur = _lastKnownTime;
-        if (dur > 10 && cur < dur * 0.9) {
+        if (dur > 10 && cur < dur * 0.95) {
             if (_retryCount < 3) {
                 _retryCount++;
                 console.warn('[Audio] Premature stream end at', Math.round(cur) + 's', '/', Math.round(dur) + 's — retrying stream (attempt ' + _retryCount + '/3)');
                 const savedPos = cur;
-                const currentSrc = audio.src;
-                audio.src = currentSrc;
+                const baseUrl = Navidrome.getStreamUrl(queue[qIdx].id);
+                const retryUrl = `${baseUrl}&_r=${Date.now()}`;
                 _trackTransition = true;
+                audio.src = retryUrl;
                 audio.load();
                 audio.addEventListener('loadedmetadata', () => {
                     try { audio.currentTime = savedPos; } catch (e) { }
@@ -2706,18 +2706,22 @@ if (audio) {
         console.error('Audio error on:', audio.src, audio.error?.message);
         const dur = getRealDuration();
         const cur = _lastKnownTime;
-        if (dur > 10 && cur < dur * 0.9) {
+        if (dur > 10 && cur < dur * 0.95) {
             if (_retryCount < 3) {
                 _retryCount++;
                 console.warn('[Audio] Error mid-stream. Retrying stream (attempt ' + _retryCount + '/3)...');
                 const savedPos = cur;
                 const prevVol = gainNode ? gainNode.gain.value : audio.volume;
                 applyVolume(0);
-                const currentSrc = audio.src;
-                audio.src = currentSrc;
+                const baseUrl = Navidrome.getStreamUrl(queue[qIdx].id);
+                const retryUrl = `${baseUrl}&_r=${Date.now()}`;
                 _trackTransition = true;
+                audio.src = retryUrl;
                 audio.load();
+
+                const volRestoreTimer = setTimeout(() => applyVolume(prevVol), 5000);
                 audio.addEventListener('loadedmetadata', () => {
+                    clearTimeout(volRestoreTimer);
                     try { audio.currentTime = savedPos; } catch (e) { }
                     setTimeout(() => applyVolume(prevVol), 80);
                     audio.play().catch(e => console.error("Playback retry failed:", e));
@@ -2733,9 +2737,11 @@ if (audio) {
 }
 
 function getRealDuration() {
-    if (audio && audio.duration && isFinite(audio.duration)) return audio.duration;
-    const t = queue && queue[qIdx];
-    return (t && t.duration) ? t.duration : 0;
+    const shimDur = audio?._duration;
+    if (shimDur && shimDur > 0) return shimDur;
+    if (audio?.duration && isFinite(audio.duration) && audio.duration > 0) return audio.duration;
+    const t = queue?.[qIdx];
+    return t?.duration ?? 0;
 }
 
 function setupSeekBar(el) {
@@ -4036,26 +4042,6 @@ if (audio) {
 
     audio.addEventListener('trackAdvancedNatively', () => {
         if (_trackTransition) return;
-        const dur = getRealDuration();
-        const cur = _lastKnownTime;
-        if (dur > 10 && cur < dur * 0.9) {
-            if (_retryCount < 3) {
-                _retryCount++;
-                console.warn('[Audio] Premature native advance at', Math.round(cur) + 's', '/', Math.round(dur) + 's — retrying stream (attempt ' + _retryCount + '/3)');
-                const savedPos = cur;
-                const currentSrc = audio.src;
-                audio.src = currentSrc;
-                _trackTransition = true;
-                audio.load();
-                audio.addEventListener('loadedmetadata', () => {
-                    try { audio.currentTime = savedPos; } catch (e) { }
-                    audio.play().catch(e => console.error("Playback retry failed:", e));
-                }, { once: true });
-                return;
-            } else {
-                console.warn('[Audio] Premature native advance retry limit reached. Advancing track.');
-            }
-        }
         syncGaplessNextTrack();
     });
 
