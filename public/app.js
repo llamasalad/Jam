@@ -918,7 +918,7 @@ function openDetail(type, name, isGoingBack = false) {
     searchEl.value = '';
     if (type === 'artist') {
         const escapedName = name.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-        const artistRegex = new RegExp('\\b' + escapedName + '\\b', 'i');
+        const artistRegex = new RegExp('(?<!\\w)' + escapedName + '(?!\\w)', 'i');
         filtered = tracks.filter(t =>
             (t.artist && artistRegex.test(t.artist)) ||
             (t.title && artistRegex.test(t.title))
