@@ -301,6 +301,14 @@ class CapacitorAudioPlayerShim {
         this._metadata = meta;
     }
 
+    syncSourceNatively(src, metadata) {
+        this._src = src;
+        this._metadata = metadata;
+        this._currentTime = 0;
+        this._lastNativeTime = 0;
+        this._lastSyncTime = performance.now();
+    }
+
     get src() { return this._src; }
     set src(val) {
         this._src = val;
@@ -2535,6 +2543,17 @@ function syncGaplessNextTrack() {
         qIdx++;
         let t = queue[qIdx];
 
+        if (audio && typeof audio.syncSourceNatively === 'function') {
+            audio.syncSourceNatively(Navidrome.getStreamUrl(t.id), {
+                title: t.title,
+                artist: t.artist,
+                album: t.album,
+                coverUrl: t.coverUrl || Navidrome.getCoverUrl(t.id),
+                duration: t.duration,
+                suffix: t.suffix || 'flac'
+            });
+        }
+
         _lastKnownTime = 0;
         _retryCount = 0;
         seeking = false;
@@ -4015,9 +4034,6 @@ if (audio) {
         rafId = requestAnimationFrame(tickProgress);
     };
 
-    audio.addEventListener('error', (e) => {
-        console.error("Audio error", e);
-    });
     audio.addEventListener('trackAdvancedNatively', () => {
         if (_trackTransition) return;
         const dur = getRealDuration();
