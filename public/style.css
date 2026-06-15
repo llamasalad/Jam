@@ -3017,6 +3017,7 @@ body.menu-open .queue-remove {
   }
 
   body.detail-view #theme-toggle,
+  body.detail-view #settings-toggle,
   body.detail-view #sort-btn {
     display: none;
   }
