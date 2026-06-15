@@ -2573,7 +2573,6 @@ body.detail-view .group-header {
 }
 
 body:has(#detail-album-cover-img) #track-list .interactive-album,
-body:has(#detail-album-cover-img) #track-list .interactive-artist,
 body:has(#detail-album-cover-img) #track-list .interactive-separator {
   display: none;
 }
