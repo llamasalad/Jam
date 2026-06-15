@@ -1400,7 +1400,6 @@ body {
   height: 10px;
   border-radius: 50%;
   background: var(--accent);
-  margin-bottom: 2px;
 }
 
 #volume-icon {
@@ -1775,7 +1774,6 @@ body.player-open #main {
   flex: 1;
   min-width: 0;
   height: 4px;
-  margin-top: 2px;
 }
 
 .blind-theme #exp-volume-row input {
@@ -1788,7 +1786,6 @@ body.player-open #main {
   height: 10px;
   border-radius: 50%;
   background: var(--accent);
-  margin-bottom: 2px;
 }
 
 #exp-lyrics-toggle {
