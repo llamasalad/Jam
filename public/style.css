@@ -2184,6 +2184,7 @@ body.player-open #main {
 #suggested-section {
   margin-top: 16px;
   margin-bottom: 24px;
+  padding-left: 10px;
 }
 
 .section-title {
@@ -3104,7 +3105,7 @@ body.menu-open .queue-remove {
 
   #app {
     display: grid;
-    grid-template-columns: 180px 1fr;
+    grid-template-columns: 160px 1fr;
     grid-template-rows: auto 1fr auto;
   }
 
@@ -3195,7 +3196,7 @@ body.menu-open .queue-remove {
     overflow: hidden;
     position: fixed;
     height: 100%;
-    width: auto;
+    width: 160px;
   }
 
   #tabs {
@@ -3370,11 +3371,12 @@ body.menu-open .queue-remove {
   }
 
   .group-header {
-    padding: 10px 0 6px;
+    padding: 10px 10px 6px;
   }
 
   .track-content {
     padding: 8px 0;
+    padding-left: 10px;
   }
 
   #sidebar-update {
