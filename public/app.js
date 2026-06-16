@@ -822,7 +822,10 @@ function renderLibraryCards() {
         suggestedTracks.forEach(t => {
             const card = document.createElement('div');
             card.className = 'suggested-card';
-            if (t.id) card.dataset.artworkId = t.id;
+            if (t.id) {
+                card.dataset.id = t.id;
+                card.dataset.artworkId = t.id;
+            }
 
             const overlay = document.createElement('div');
             const info = document.createElement('div');
@@ -839,7 +842,9 @@ function renderLibraryCards() {
             info.append(titleLabel, artistLabel);
             card.append(overlay, info);
 
-            card.onclick = () => playTrack(t, tracks);
+            bindTapActivation(card, () => playTrack(t, tracks), {
+                onLongPress: e => openCtxMenu({ clientX: e.clientX, clientY: e.clientY, stopPropagation() { } }, t)
+            });
             fragS.appendChild(card);
             if (t.id) _coverObserver.observe(card);
         });
@@ -1735,6 +1740,17 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
 
         let rowHandlers = {};
         const isSmartPlaylist = currentPlaylist && currentPlaylist.id && currentPlaylist.id.startsWith('smart:');
+
+        rowHandlers.right = {
+            action: () => {
+                queue.splice(qIdx + 1, 0, t);
+                showToast(`Added "${t.title}" to play next`);
+                saveQueueState();
+                renderQueue();
+            },
+            icon: SWIPE_ICONS.queue
+        };
+
         if (inPlaylist && !isSmartPlaylist) {
             rowHandlers.left = {
                 action: () => {
@@ -1748,15 +1764,6 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
                 icon: SWIPE_ICONS.trash
             };
         } else if (!inPlaylist) {
-            rowHandlers.right = {
-                action: () => {
-                    queue.splice(qIdx + 1, 0, t);
-                    showToast(`Added "${t.title}" to play next`);
-                    saveQueueState();
-                    renderQueue();
-                },
-                icon: SWIPE_ICONS.queue
-            };
             rowHandlers.left = {
                 action: () => openQuickPlaylistMenu(div, t),
                 icon: SWIPE_ICONS.playlist
@@ -2181,6 +2188,19 @@ if (plPlayBtn) {
         } else {
             playTrack(list[0], list);
         }
+    };
+}
+
+const plAddQueueBtn = document.getElementById('playlist-add-queue-btn');
+if (plAddQueueBtn) {
+    plAddQueueBtn.onclick = () => {
+        if (!currentPlaylist || !currentPlaylist.tracks.length) return;
+        const list = currentPlaylist.tracks.map(pt => tracks.find(x => x.id === pt.trackId) || { id: pt.trackId, title: pt.title, artist: pt.artist, album: pt.album, suffix: pt.suffix || 'flac' });
+        if (!list.length) return;
+        queue.push(...list);
+        showToast(`Added ${list.length} song(s) to queue`);
+        saveQueueState();
+        renderQueue();
     };
 }
 
@@ -4557,8 +4577,13 @@ document.addEventListener('contextmenu', (e) => {
     e.preventDefault();
     const trackRow = e.target.closest('.track');
     const playlistCard = e.target.closest('.playlist-card');
+    const suggestedCard = e.target.closest('.suggested-card');
     if (trackRow) {
         const trackId = trackRow.dataset.id;
+        const trackData = tracks.find(x => x.id === trackId);
+        if (trackData) openCtxMenu(e, trackData);
+    } else if (suggestedCard) {
+        const trackId = suggestedCard.dataset.id;
         const trackData = tracks.find(x => x.id === trackId);
         if (trackData) openCtxMenu(e, trackData);
     } else if (playlistCard) {

@@ -465,6 +465,7 @@ body {
 #sort-btn,
 #new-playlist-btn,
 #playlist-edit-btn,
+#playlist-add-queue-btn,
 #playlist-play-btn,
 #library-back {
   background: none;
@@ -1200,6 +1201,7 @@ body {
 }
 
 .playlist-detail-buttons #playlist-play-btn,
+.playlist-detail-buttons #playlist-add-queue-btn,
 .playlist-detail-buttons #playlist-edit-btn {
   margin: 0;
 }
@@ -1241,10 +1243,13 @@ body {
 }
 
 #playlist-play-btn,
+#playlist-add-queue-btn,
 #playlist-edit-btn {
-  margin: 0 8px 12px 16px;
+  margin: 0 8px 10px 16px;
+  height: 30px;
 }
 
+#playlist-add-queue-btn,
 #playlist-edit-btn {
   margin-left: 0;
 }
@@ -3472,12 +3477,7 @@ body.menu-open .queue-remove {
   }
 
   #playlist-play-btn {
-    margin: 0 10px 10px 10px;
-  }
-
-  #playlist-edit-btn {
-    padding: 0.49em 10px !important;
-    margin: 0 10px 10px 0;
+    margin-left: 10px;
   }
 
   #exp-lyrics-wrap {
