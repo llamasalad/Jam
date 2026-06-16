@@ -302,10 +302,19 @@ struct ExpandedPlayerView: View {
 
                 PlaybackControlsView()
 
-                HStack {
+                HStack(spacing: 20) {
                     Button(action: { showQueue = true }) {
                         Image(systemName: "list.dash")
                             .imageScale(.large)
+                            .frame(width: 44, height: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .glassEffect(.regular.interactive(), in: .circle)
+
+                    Button(action: { state.toggleStar() }) {
+                        Image(systemName: state.starred ? "star.fill" : "star")
+                            .imageScale(.large)
+                            .foregroundStyle(state.starred ? .yellow : .primary)
                             .frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)

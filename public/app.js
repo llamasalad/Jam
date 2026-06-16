@@ -324,7 +324,8 @@ class CapacitorAudioPlayerShim {
                 album: this._metadata?.album || 'Unknown',
                 coverUrl: this._metadata?.coverUrl || '',
                 duration: this._metadata?.duration || 0,
-                suffix: this._metadata?.suffix || 'flac'
+                suffix: this._metadata?.suffix || 'flac',
+                starred: !!this._metadata?.starred
             });
         }
     }
@@ -469,6 +470,7 @@ const expTimeTot = document.getElementById('exp-time-tot');
 const expIconPlay = document.getElementById('exp-icon-play');
 const expIconPause = document.getElementById('exp-icon-pause');
 const expLyricsToggle = document.getElementById('exp-lyrics-toggle');
+const expHeartBtn = document.getElementById('exp-heart-btn');
 const expAdaptiveBtn = document.getElementById('exp-adaptive-btn');
 const expDesktopLyricsPanel = document.getElementById('exp-desktop-lyrics-panel');
 const expDesktopLyricsScroll = document.getElementById('exp-desktop-lyrics-scroll');
@@ -476,6 +478,37 @@ const menuBackdrop = document.getElementById('menu-backdrop');
 
 let adaptiveMode = localStorage.getItem('adaptive_mode') === 'true';
 let heartbeatInterval = null;
+
+const SMART_PLAYLISTS = [
+    { id: 'smart:favorites', name: 'Favorites', image: '', tracks: [] },
+    { id: 'smart:recent', name: 'Recently Played', image: '', tracks: [] },
+    { id: 'smart:newest', name: 'Recently Added', image: '', tracks: [] },
+    { id: 'smart:random', name: 'For You', image: '', tracks: [] }
+];
+
+function updateHeartUI(starred) {
+    if (!expHeartBtn) return;
+    const svg = expHeartBtn.querySelector('svg');
+    if (svg) {
+        if (starred) {
+            svg.setAttribute('fill', 'currentColor');
+            expHeartBtn.style.color = 'var(--accent)';
+        } else {
+            svg.setAttribute('fill', 'none');
+            expHeartBtn.style.color = 'var(--muted)';
+        }
+    }
+}
+
+function syncStarredStateNatively(starred) {
+    if (window.Capacitor?.Plugins?.AudioPlayerPlugin) {
+        window.Capacitor.Plugins.AudioPlayerPlugin.setPlaybackState({
+            shuffle,
+            repeatMode,
+            starred: starred
+        });
+    }
+}
 
 if (menuBackdrop) {
     menuBackdrop.onclick = () => {
@@ -1701,7 +1734,8 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
         });
 
         let rowHandlers = {};
-        if (inPlaylist) {
+        const isSmartPlaylist = currentPlaylist && currentPlaylist.id && currentPlaylist.id.startsWith('smart:');
+        if (inPlaylist && !isSmartPlaylist) {
             rowHandlers.left = {
                 action: () => {
                     if (currentPlaylist) {
@@ -1713,7 +1747,7 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
                 },
                 icon: SWIPE_ICONS.trash
             };
-        } else {
+        } else if (!inPlaylist) {
             rowHandlers.right = {
                 action: () => {
                     queue.splice(qIdx + 1, 0, t);
@@ -1774,6 +1808,7 @@ async function openQuickPlaylistMenu(trackRow, track) {
         menu.appendChild(emptyEl);
     } else {
         playlists.forEach(pl => {
+            if (pl.id.startsWith('smart:')) return;
             const item = document.createElement('div');
             item.className = 'quick-pl-item';
             item.style.cssText = 'padding:8px 10px;font-size:13px;cursor:pointer;border-radius:6px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
@@ -1830,7 +1865,7 @@ function openPlaylistCtxMenu(e, pl) {
     const trackNameLabel = document.getElementById('ctx-track-name');
     if (trackNameLabel) trackNameLabel.textContent = pl.name || 'Playlist';
 
-    const trackItems = ['ctx-add-queue', 'ctx-remove-sep', 'ctx-remove-from-playlist', 'ctx-edit-metadata', 'ctx-new-playlist'];
+    const trackItems = ['ctx-add-queue', 'ctx-remove-sep', 'ctx-remove-from-playlist', 'ctx-edit-metadata', 'ctx-new-playlist', 'ctx-favorite', 'ctx-unfavorite'];
     trackItems.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
 
     if (ctxPlaylists) ctxPlaylists.style.display = 'none';
@@ -1861,8 +1896,10 @@ function openCtxMenu(e, t) {
     const row = document.querySelector(`.track[data-id="${t.id}"]`);
     if (row) row.classList.add('long-press');
 
-    const trackItems = ['ctx-add-queue', 'ctx-new-playlist'];
+    const trackItems = ['ctx-add-queue', 'ctx-new-playlist', t.starred ? 'ctx-unfavorite' : 'ctx-favorite'];
     trackItems.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'flex'; });
+    const hideItems = t.starred ? ['ctx-favorite'] : ['ctx-unfavorite'];
+    hideItems.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
 
     if (ctxPlaylists) ctxPlaylists.style.display = 'block';
 
@@ -1912,7 +1949,7 @@ function openCtxMenu(e, t) {
     const ctxRemoveFromPlaylist = document.getElementById('ctx-remove-from-playlist');
     const ctxRemoveSep = document.getElementById('ctx-remove-sep');
     if (ctxRemoveFromPlaylist && ctxRemoveSep) {
-        if (currentPlaylist) {
+        if (currentPlaylist && !currentPlaylist.id.startsWith('smart:')) {
             ctxRemoveSep.style.display = 'block';
             ctxRemoveFromPlaylist.style.display = 'flex';
             ctxRemoveFromPlaylist.onclick = async () => {
@@ -1932,6 +1969,7 @@ function openCtxMenu(e, t) {
         ctxPlaylists.innerHTML = '';
         if (playlists.length) {
             playlists.forEach(pl => {
+                if (pl.id.startsWith('smart:')) return;
                 const item = document.createElement('div');
                 item.className = 'ctx-item';
                 item.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 12H3"/><path d="M16 6H3"/><path d="M16 18H3"/><path d="M18 9v6"/><path d="M15 12h6"/></svg>${pl.name}`;
@@ -1957,7 +1995,8 @@ if (ctxNewPlaylist) ctxNewPlaylist.onclick = () => { pendingPlaylistTrack = ctxT
 
 async function loadPlaylists() {
     try {
-        playlists = await Navidrome.getPlaylists();
+        const customPlaylists = await Navidrome.getPlaylists();
+        playlists = [...SMART_PLAYLISTS, ...customPlaylists];
         renderPlaylists();
     } catch (e) { console.error("Failed to load playlists", e); }
 }
@@ -1970,14 +2009,35 @@ function renderPlaylists() {
         return;
     }
     playlists.forEach(pl => {
+        const isSmart = pl.id.startsWith('smart:');
         const card = document.createElement('div');
-        card.className = 'playlist-card';
+        card.className = 'playlist-card' + (isSmart ? ' smart-playlist-card' : '');
         card.dataset.id = pl.id;
-        const playlistIconHtml = pl.image ? `<img src="${pl.image}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;" />` : '\u266B';
-        card.innerHTML = '<div class="playlist-icon">' + playlistIconHtml + '</div><div class="playlist-info"><div class="playlist-name">' + pl.name + '</div><div class="playlist-count">' + pl.tracks.length + ' song' + (pl.tracks.length !== 1 ? 's' : '') + '</div></div><button class="playlist-del" title="Delete">\u2715</button>';
-        card.querySelector('.playlist-del').onclick = e => { e.stopPropagation(); deletePlaylist(pl.id) };
+
+        let playlistIconHtml = '\u266B';
+        if (isSmart) {
+            if (pl.id === 'smart:favorites') playlistIconHtml = '<span style="font-size:20px;color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="m5.825 21l1.625-7.025L2 9.25l7.2-.625L12 2l2.8 6.625l7.2.625l-5.45 4.725L18.175 21L12 17.275z"/></svg></span>';
+            else if (pl.id === 'smart:recent') playlistIconHtml = '<span style="font-size:20px;color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="M13.5 8H12v5l4.28 2.54l.72-1.21l-3.5-2.08zM13 3a9 9 0 0 0-9 9H1l3.96 4.03L9 12H6a7 7 0 0 1 7-7a7 7 0 0 1 7 7a7 7 0 0 1-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.9 8.9 0 0 0 13 21a9 9 0 0 0 9-9a9 9 0 0 0-9-9"/></svg></span>';
+            else if (pl.id === 'smart:newest') playlistIconHtml = '<span style="font-size:20px;color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="m21.45 11.11l-3-1.5l-2.7-1.35l-1.35-2.7l-1.5-3c-.34-.68-1.45-.68-1.79 0l-1.5 3l-1.35 2.7l-2.7 1.35l-3 1.5c-.34.17-.55.52-.55.89s.21.72.55.89l3 1.5l2.7 1.35l1.35 2.7l1.5 3c.17.34.52.55.89.55s.73-.21.89-.55l1.5-3l1.35-2.7l2.7-1.35l3-1.5c.34-.17.55-.52.55-.89s-.21-.72-.55-.89Zm-3.89 1.5l-.84.42l-2.16 1.08l-.3.15l-.15.3L12 18.77l-2.11-4.21l-.15-.3l-.3-.15l-2.16-1.08l-.84-.42L5.23 12l1.21-.61l.84-.42l2.16-1.08l.3-.15l.15-.3L12 5.23l2.11 4.21l.15.3l.3.15l2.16 1.08l.84.42l1.21.61z"/></svg></span>';
+            else if (pl.id === 'smart:random') playlistIconHtml = '<span style="font-size:20px;color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512"><path d="M0 0h512v512H0z" fill="none"/><path fill="currentColor" fill-rule="evenodd" d="M465.023 135.32L376.68 465.023L46.977 376.68L135.32 46.977zM317.08 316.538c-17.071-4.574-34.618 5.557-39.192 22.627c-4.574 17.07 5.556 34.618 22.627 39.192s34.618-5.556 39.192-22.627s-5.557-34.618-22.627-39.192m-52.798-91.448c-17.07-4.574-34.617 5.557-39.192 22.628c-4.574 17.07 5.557 34.618 22.628 39.192s34.617-5.557 39.192-22.628c4.574-17.07-5.557-34.617-22.628-39.192m-52.797-91.447c-17.071-4.574-34.618 5.556-39.192 22.627s5.557 34.618 22.627 39.192c17.071 4.574 34.618-5.556 39.192-22.627s-5.556-34.618-22.627-39.192"/></svg></span>';
+        } else if (pl.image) {
+            playlistIconHtml = `<img src="${pl.image}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;" />`;
+        }
+
+        const deleteBtnHtml = isSmart ? '' : '<button class="playlist-del" title="Delete">\u2715</button>';
+        const countHtml = isSmart ? '' : `<div class="playlist-count">${pl.tracks.length} song${pl.tracks.length !== 1 ? 's' : ''}</div>`;
+
+        card.innerHTML = '<div class="playlist-icon">' + playlistIconHtml + '</div><div class="playlist-info"><div class="playlist-name">' + pl.name + '</div>' + countHtml + '</div>' + deleteBtnHtml;
+
+        if (!isSmart) {
+            card.querySelector('.playlist-del').onclick = e => { e.stopPropagation(); deletePlaylist(pl.id) };
+        }
         bindTapActivation(card, () => openPlaylistDetail(pl), {
-            onLongPress: (e) => openPlaylistCtxMenu({ clientX: e.clientX, clientY: e.clientY, stopPropagation() { } }, pl)
+            onLongPress: (e) => {
+                if (!isSmart) {
+                    openPlaylistCtxMenu({ clientX: e.clientX, clientY: e.clientY, stopPropagation() { } }, pl);
+                }
+            }
         });
         playlistsContainer.appendChild(card);
     });
@@ -1995,7 +2055,20 @@ async function openPlaylistDetail(pl) {
     if (plName) plName.textContent = pl.name;
 
     const plCover = document.getElementById('playlist-detail-cover');
-    if (plCover) plCover.innerHTML = pl.image ? `<img src="${pl.image}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />` : '\u266B';
+    let iconSymbol = '♫';
+    if (pl.id === 'smart:favorites') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="m5.825 21l1.625-7.025L2 9.25l7.2-.625L12 2l2.8 6.625l7.2.625l-5.45 4.725L18.175 21L12 17.275z"/></svg>';
+    else if (pl.id === 'smart:recent') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="M13.5 8H12v5l4.28 2.54l.72-1.21l-3.5-2.08zM13 3a9 9 0 0 0-9 9H1l3.96 4.03L9 12H6a7 7 0 0 1 7-7a7 7 0 0 1 7 7a7 7 0 0 1-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.9 8.9 0 0 0 13 21a9 9 0 0 0 9-9a9 9 0 0 0-9-9"/></svg>';
+    else if (pl.id === 'smart:newest') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="m21.45 11.11l-3-1.5l-2.7-1.35l-1.35-2.7l-1.5-3c-.34-.68-1.45-.68-1.79 0l-1.5 3l-1.35 2.7l-2.7 1.35l-3 1.5c-.34.17-.55.52-.55.89s.21.72.55.89l3 1.5l2.7 1.35l1.35 2.7l1.5 3c.17.34.52.55.89.55s.73-.21.89-.55l1.5-3l1.35-2.7l2.7-1.35l3-1.5c.34-.17.55-.52.55-.89s-.21-.72-.55-.89Zm-3.89 1.5l-.84.42l-2.16 1.08l-.3.15l-.15.3L12 18.77l-2.11-4.21l-.15-.3l-.3-.15l-2.16-1.08l-.84-.42L5.23 12l1.21-.61l.84-.42l2.16-1.08l.3-.15l.15-.3L12 5.23l2.11 4.21l.15.3l.3.15l2.16 1.08l.84.42l1.21.61z"/></svg>';
+    else if (pl.id === 'smart:random') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512"><path d="M0 0h512v512H0z" fill="none"/><path fill="currentColor" fill-rule="evenodd" d="M465.023 135.32L376.68 465.023L46.977 376.68L135.32 46.977zM317.08 316.538c-17.071-4.574-34.618 5.557-39.192 22.627c-4.574 17.07 5.556 34.618 22.627 39.192s34.618-5.556 39.192-22.627s-5.557-34.618-22.627-39.192m-52.798-91.448c-17.07-4.574-34.617 5.557-39.192 22.628c-4.574 17.07 5.557 34.618 22.628 39.192s34.617-5.557 39.192-22.628c4.574-17.07-5.557-34.617-22.628-39.192m-52.797-91.447c-17.071-4.574-34.618 5.556-39.192 22.627s5.557 34.618 22.627 39.192c17.071 4.574 34.618-5.556 39.192-22.627s-5.556-34.618-22.627-39.192"/></svg>';
+
+    if (plCover) {
+        plCover.innerHTML = pl.id.startsWith('smart:') ? `<span style="font-size:72px;color:var(--accent);display:flex;align-items:center;justify-content:center;">${iconSymbol}</span>` : (pl.image ? `<img src="${pl.image}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />` : '\u266B');
+    }
+
+    const plEditBtn = document.getElementById('playlist-edit-btn');
+    if (plEditBtn) {
+        plEditBtn.style.display = pl.id.startsWith('smart:') ? 'none' : 'inline-block';
+    }
 
     const headerTitle = document.getElementById('header-title');
     if (headerTitle) headerTitle.textContent = pl.name;
@@ -2005,7 +2078,23 @@ async function openPlaylistDetail(pl) {
     notifyNativeDetailView(true, pl.name);
 
     try {
-        const fullPl = await fetchPlaylist(pl.id);
+        let fullPl;
+        if (pl.id === 'smart:favorites') {
+            const tracksList = await Navidrome.getFavorites();
+            fullPl = { ...pl, tracks: tracksList.map(t => ({ trackId: t.id, title: t.title, artist: t.artist, album: t.album })) };
+        } else if (pl.id === 'smart:recent') {
+            const tracksList = await Navidrome.getRecentlyPlayed();
+            fullPl = { ...pl, tracks: tracksList.map(t => ({ trackId: t.id, title: t.title, artist: t.artist, album: t.album })) };
+        } else if (pl.id === 'smart:newest') {
+            const tracksList = await Navidrome.getRecentlyAdded();
+            fullPl = { ...pl, tracks: tracksList.map(t => ({ trackId: t.id, title: t.title, artist: t.artist, album: t.album })) };
+        } else if (pl.id === 'smart:random') {
+            const tracksList = await Navidrome.getRandomDiscovery();
+            fullPl = { ...pl, tracks: tracksList.map(t => ({ trackId: t.id, title: t.title, artist: t.artist, album: t.album })) };
+        } else {
+            fullPl = await fetchPlaylist(pl.id);
+        }
+
         if (fullPl) {
             currentPlaylist = fullPl;
             const idx = playlists.findIndex(p => p.id === pl.id);
@@ -2199,6 +2288,22 @@ if (editPlConfirm) {
 }
 
 async function addToPlaylist(playlistId, t) {
+    if (playlistId === 'smart:favorites') {
+        if (!t.starred) {
+            t.starred = true;
+            try {
+                const ok = await Navidrome.starTrack(t.id, true);
+                if (ok) {
+                    const currentTrack = queue[qIdx];
+                    if (currentTrack && currentTrack.id === t.id) {
+                        updateHeartUI(true);
+                        syncStarredStateNatively(true);
+                    }
+                }
+            } catch (e) { console.error(e); }
+        }
+        return;
+    }
     try {
         const updated = await Navidrome.addTrackToPlaylist(playlistId, t.id);
         if (updated) {
@@ -2475,11 +2580,19 @@ function play(t) {
     }
     if (player) { player.classList.remove('hidden'); updatePlayerHeight(); }
     updatePlayerMetadata(t);
+    updateHeartUI(t.starred);
     const pt = document.getElementById('player-thumb');
     if (pt) { pt.src = FALLBACK; loadCover(t.id, pt); }
     document.title = (t.title || '?') + ' \u00B7 ' + (t.artist || '?');
     if (timeTot) timeTot.textContent = '-';
     localStorage.setItem('music_last', JSON.stringify({ id: t.id, title: t.title, artist: t.artist, album: t.album, duration: t.duration, suffix: t.suffix || 'flac' }));
+    try {
+        let recent = JSON.parse(localStorage.getItem('jam_recently_played') || '[]');
+        recent = recent.filter(id => id !== t.id);
+        recent.unshift(t.id);
+        if (recent.length > 50) recent = recent.slice(0, 50);
+        localStorage.setItem('jam_recently_played', JSON.stringify(recent));
+    } catch (_) { }
     saveQueueState();
     loadLyrics(t);
     updateExpandedNowPlaying(t);
@@ -2501,7 +2614,8 @@ function preloadNextTrack() {
                 album: t.album || '',
                 duration: t.duration || 0,
                 coverUrl: Navidrome.getCoverUrl(t.id),
-                suffix: t.suffix || 'flac'
+                suffix: t.suffix || 'flac',
+                starred: !!t.starred
             });
         } else {
             if (!nextAudio) {
@@ -2596,6 +2710,7 @@ function updateExpandedNowPlaying(t) {
     }
     if (expArtist) renderArtistAlbumSub(expArtist, t, 'expanded-player');
     if (expCover) expCover.style.display = 'block';
+    updateHeartUI(t.starred);
     if (expCoverIcon) expCoverIcon.style.display = 'none';
     if (expCover) {
         loadCover(t.id, expCover);
@@ -2822,6 +2937,156 @@ if (expVolumeSlider) {
     });
 }
 if (expVolumeIcon) expVolumeIcon.addEventListener('click', toggleMute);
+
+if (expHeartBtn) {
+    expHeartBtn.onclick = async () => {
+        const t = queue[qIdx];
+        if (!t) return;
+        triggerHaptic('IMPACT_MEDIUM');
+        const nextStarredState = !t.starred;
+        t.starred = nextStarredState;
+        updateHeartUI(nextStarredState);
+        syncStarredStateNatively(nextStarredState);
+
+        try {
+            const ok = await Navidrome.starTrack(t.id, nextStarredState);
+            if (ok) {
+                showToast(nextStarredState ? 'Added to Favorites' : 'Removed from Favorites');
+                if (currentPlaylist && currentPlaylist.id === 'smart:favorites') {
+                    const tracksList = await Navidrome.getFavorites();
+                    currentPlaylist.tracks = tracksList.map(x => ({ trackId: x.id, title: x.title, artist: x.artist, album: x.album }));
+                    renderPlaylistDetail(currentPlaylist);
+                }
+            } else {
+                t.starred = !nextStarredState;
+                updateHeartUI(!nextStarredState);
+                syncStarredStateNatively(!nextStarredState);
+                showToast('Failed to update favorite status');
+            }
+        } catch (e) {
+            console.error(e);
+            t.starred = !nextStarredState;
+            updateHeartUI(!nextStarredState);
+            syncStarredStateNatively(!nextStarredState);
+            showToast('Error updating favorite status');
+        }
+    };
+}
+
+const ctxFavorite = document.getElementById('ctx-favorite');
+const ctxUnfavorite = document.getElementById('ctx-unfavorite');
+
+if (ctxFavorite) {
+    ctxFavorite.onclick = async () => {
+        if (!ctxTrack) return;
+        const t = ctxTrack;
+        closeCtxMenu();
+        t.starred = true;
+
+        const currentTrack = queue[qIdx];
+        if (currentTrack && currentTrack.id === t.id) {
+            updateHeartUI(true);
+            syncStarredStateNatively(true);
+        }
+
+        try {
+            const ok = await Navidrome.starTrack(t.id, true);
+            if (ok) {
+                showToast('Added to Favorites');
+                if (currentPlaylist && currentPlaylist.id === 'smart:favorites') {
+                    const tracksList = await Navidrome.getFavorites();
+                    currentPlaylist.tracks = tracksList.map(x => ({ trackId: x.id, title: x.title, artist: x.artist, album: x.album }));
+                    renderPlaylistDetail(currentPlaylist);
+                }
+            } else {
+                t.starred = false;
+                if (currentTrack && currentTrack.id === t.id) {
+                    updateHeartUI(false);
+                    syncStarredStateNatively(false);
+                }
+                showToast('Failed to update favorite status');
+            }
+        } catch (e) {
+            console.error(e);
+            t.starred = false;
+            if (currentTrack && currentTrack.id === t.id) {
+                updateHeartUI(false);
+                syncStarredStateNatively(false);
+            }
+            showToast('Error updating favorite status');
+        }
+    };
+}
+
+if (ctxUnfavorite) {
+    ctxUnfavorite.onclick = async () => {
+        if (!ctxTrack) return;
+        const t = ctxTrack;
+        closeCtxMenu();
+        t.starred = false;
+
+        const currentTrack = queue[qIdx];
+        if (currentTrack && currentTrack.id === t.id) {
+            updateHeartUI(false);
+            syncStarredStateNatively(false);
+        }
+
+        try {
+            const ok = await Navidrome.starTrack(t.id, false);
+            if (ok) {
+                showToast('Removed from Favorites');
+                if (currentPlaylist && currentPlaylist.id === 'smart:favorites') {
+                    const tracksList = await Navidrome.getFavorites();
+                    currentPlaylist.tracks = tracksList.map(x => ({ trackId: x.id, title: x.title, artist: x.artist, album: x.album }));
+                    renderPlaylistDetail(currentPlaylist);
+                }
+            } else {
+                t.starred = true;
+                if (currentTrack && currentTrack.id === t.id) {
+                    updateHeartUI(true);
+                    syncStarredStateNatively(true);
+                }
+                showToast('Failed to update favorite status');
+            }
+        } catch (e) {
+            console.error(e);
+            t.starred = true;
+            if (currentTrack && currentTrack.id === t.id) {
+                updateHeartUI(true);
+                syncStarredStateNatively(true);
+            }
+            showToast('Error updating favorite status');
+        }
+    };
+}
+
+window.toggleStarCurrent = async function () {
+    const t = queue[qIdx];
+    if (!t) return;
+    const nextStarredState = !t.starred;
+    t.starred = nextStarredState;
+    updateHeartUI(nextStarredState);
+    syncStarredStateNatively(nextStarredState);
+    try {
+        const ok = await Navidrome.starTrack(t.id, nextStarredState);
+        if (ok) {
+            showToast(nextStarredState ? 'Added to Favorites' : 'Removed from Favorites');
+            if (currentPlaylist && currentPlaylist.id === 'smart:favorites') {
+                const tracksList = await Navidrome.getFavorites();
+                currentPlaylist.tracks = tracksList.map(x => ({ trackId: x.id, title: x.title, artist: x.artist, album: x.album }));
+                renderPlaylistDetail(currentPlaylist);
+            }
+        } else {
+            t.starred = !nextStarredState;
+            updateHeartUI(!nextStarredState);
+            syncStarredStateNatively(!nextStarredState);
+        }
+    } catch (e) {
+        t.starred = !nextStarredState;
+        updateHeartUI(!nextStarredState);
+        syncStarredStateNatively(!nextStarredState);
+    }
+};
 
 if (btnPlay) btnPlay.onclick = () => { triggerHaptic('IMPACT_MEDIUM'); audio && (audio.paused ? audio.play() : audio.pause()); };
 if (btnPrev) btnPrev.onclick = () => { triggerHaptic('IMPACT_LIGHT'); if (audio && audio.currentTime > 3) audio.currentTime = 0; else prevTrack(); };
@@ -4237,6 +4502,7 @@ async function init() {
             }
             if (player) { player.classList.remove('hidden'); updatePlayerHeight(); }
             updatePlayerMetadata(t);
+            updateHeartUI(t.starred);
             const pt = document.getElementById('player-thumb');
             if (pt) { pt.src = FALLBACK; loadCover(t.id, pt); }
             document.title = (t.title || '?') + ' \u00B7 ' + (t.artist || '?');
@@ -4568,7 +4834,12 @@ window.moveQueueItem = function (from, to) {
 function notifyNativePlaybackState() {
     const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
     if (plugin && typeof plugin.setPlaybackState === 'function') {
-        plugin.setPlaybackState({ shuffle, repeatMode });
+        const currentTrack = queue[qIdx];
+        plugin.setPlaybackState({
+            shuffle,
+            repeatMode,
+            starred: currentTrack ? !!currentTrack.starred : false
+        });
     }
 }
 

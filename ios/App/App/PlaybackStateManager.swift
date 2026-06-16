@@ -23,6 +23,7 @@ final class PlaybackStateManager {
     var coverUrl: String = ""
     var shuffle: Bool = false
     var repeatMode: String = "off"  // "off", "all", "one"
+    var starred: Bool = false
 
     func toggleShuffle() {
         evaluateJS("if(typeof window.toggleShuffle==='function')window.toggleShuffle()")
@@ -30,6 +31,10 @@ final class PlaybackStateManager {
 
     func cycleRepeat() {
         evaluateJS("if(typeof window.toggleRepeat==='function')window.toggleRepeat()")
+    }
+
+    func toggleStar() {
+        evaluateJS("if(typeof window.toggleStarCurrent==='function')window.toggleStarCurrent()")
     }
 
     var currentTheme: String = "default"

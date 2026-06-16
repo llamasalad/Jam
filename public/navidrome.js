@@ -5,6 +5,7 @@ const PASSWORD = 'bobert';
 const CLIENT_NAME = 'Jam';
 
 let cachedParams = null;
+let allTracksCache = null;
 
 function getAuthParams() {
   if (!cachedParams) {
@@ -31,6 +32,9 @@ async function fetchWithBypass(url, options = {}) {
 }
 
 export async function getTracks(forceRefresh = false) {
+  if (allTracksCache && !forceRefresh) {
+    return allTracksCache;
+  }
   const params = getAuthParams();
   params.set('query', '');
   params.set('songCount', '50000');
@@ -40,7 +44,7 @@ export async function getTracks(forceRefresh = false) {
   const res = await fetchWithBypass(`${NAVIDROME_URL}/rest/search3?${params}`);
   const data = await res.json();
   const songs = data['subsonic-response']?.searchResult3?.song || [];
-  return songs.map(song => {
+  allTracksCache = songs.map(song => {
     return {
       id: song.id,
       title: song.title || '',
@@ -48,10 +52,12 @@ export async function getTracks(forceRefresh = false) {
       album: song.album,
       duration: song.duration,
       suffix: song.suffix || 'flac',
+      starred: !!song.starred,
       coverUrl: `${NAVIDROME_URL}/rest/getCoverArt?id=${song.coverArt}&${getAuthParams()}`,
       streamUrl: `${NAVIDROME_URL}/rest/stream?id=${song.id}&${getAuthParams()}`,
     };
   });
+  return allTracksCache;
 }
 
 export async function getPlaylists() {
@@ -168,4 +174,117 @@ export function getStreamUrl(id) {
 
 export function getCoverUrl(id) {
   return `${NAVIDROME_URL}/rest/getCoverArt?id=${id}&${getAuthParams()}`;
+}
+
+export async function starTrack(id, isStarred) {
+  const params = getAuthParams();
+  params.set('id', id);
+  const endpoint = isStarred ? 'star' : 'unstar';
+  const res = await fetchWithBypass(`${NAVIDROME_URL}/rest/${endpoint}?${params}`);
+  if (res.ok && allTracksCache) {
+    const track = allTracksCache.find(t => t.id === id);
+    if (track) {
+      track.starred = isStarred;
+    }
+  }
+  return res.ok;
+}
+
+export async function getFavorites() {
+  const params = getAuthParams();
+  const res = await fetchWithBypass(`${NAVIDROME_URL}/rest/getStarred2?${params}`);
+  const data = await res.json();
+  const songs = data['subsonic-response']?.starred2?.song || [];
+  const songArray = Array.isArray(songs) ? songs : [songs];
+  return songArray.filter(Boolean).map(song => ({
+    id: song.id,
+    title: song.title || '',
+    artist: song.artist || '',
+    album: song.album,
+    duration: song.duration,
+    suffix: song.suffix || 'flac',
+    starred: true,
+    coverUrl: `${NAVIDROME_URL}/rest/getCoverArt?id=${song.coverArt}&${getAuthParams()}`,
+    streamUrl: `${NAVIDROME_URL}/rest/stream?id=${song.id}&${getAuthParams()}`,
+  }));
+}
+
+export async function getRecentlyPlayed() {
+  let recentIds = [];
+  try {
+    recentIds = JSON.parse(localStorage.getItem('jam_recently_played') || '[]');
+  } catch (_) { }
+
+  if (!recentIds.length) {
+    return [];
+  }
+
+  try {
+    const tracksList = await getTracks();
+    const tracksMap = new Map(tracksList.map(t => [t.id, t]));
+    return recentIds.map(id => tracksMap.get(id)).filter(Boolean);
+  } catch (e) {
+    console.error("Failed to load tracks for recently played", e);
+    return [];
+  }
+}
+
+async function getAlbumTracks(albumId) {
+  const params = getAuthParams();
+  params.set('id', albumId);
+  const res = await fetchWithBypass(`${NAVIDROME_URL}/rest/getAlbum?${params}`);
+  const data = await res.json();
+  const songs = data['subsonic-response']?.album?.song || [];
+  const songArray = Array.isArray(songs) ? songs : [songs];
+  return songArray.filter(Boolean).map(song => ({
+    id: song.id,
+    title: song.title || '',
+    artist: song.artist || '',
+    album: song.album,
+    duration: song.duration,
+    suffix: song.suffix || 'flac',
+    starred: !!song.starred,
+    coverUrl: `${NAVIDROME_URL}/rest/getCoverArt?id=${song.coverArt}&${getAuthParams()}`,
+    streamUrl: `${NAVIDROME_URL}/rest/stream?id=${song.id}&${getAuthParams()}`,
+  }));
+}
+
+export async function getRecentlyAdded() {
+  const params = getAuthParams();
+  params.set('type', 'newest');
+  params.set('size', '10');
+  const res = await fetchWithBypass(`${NAVIDROME_URL}/rest/getAlbumList2?${params}`);
+  const data = await res.json();
+  const albums = data['subsonic-response']?.albumList2?.album || [];
+  const albumArray = Array.isArray(albums) ? albums : [albums];
+
+  let allTracks = [];
+  for (const album of albumArray.filter(Boolean)) {
+    if (!album.id) continue;
+    try {
+      const tracks = await getAlbumTracks(album.id);
+      allTracks = allTracks.concat(tracks);
+    } catch (_) { }
+  }
+  return allTracks.slice(0, 50);
+}
+
+export async function getRandomDiscovery() {
+  const params = getAuthParams();
+  params.set('size', '50');
+  const res = await fetchWithBypass(`${NAVIDROME_URL}/rest/getRandomSongs?${params}`);
+  const data = await res.json();
+  const songs = data['subsonic-response']?.randomSongs?.song || [];
+  const songArray = Array.isArray(songs) ? songs : [songs];
+  return songArray.filter(Boolean).map(song => ({
+    id: song.id,
+    title: song.title || '',
+    artist: song.artist || '',
+    album: song.album,
+    duration: song.duration,
+    suffix: song.suffix || 'flac',
+    starred: !!song.starred,
+    coverUrl: `${NAVIDROME_URL}/rest/getCoverArt?id=${song.coverArt}&${getAuthParams()}`,
+    streamUrl: `${NAVIDROME_URL}/rest/stream?id=${song.id}&${getAuthParams()}`,
+  }));
 }
