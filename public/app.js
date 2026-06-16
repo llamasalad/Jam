@@ -483,7 +483,7 @@ const SMART_PLAYLISTS = [
     { id: 'smart:favorites', name: 'Favorites', image: '', tracks: [] },
     { id: 'smart:recent', name: 'Recently Played', image: '', tracks: [] },
     { id: 'smart:newest', name: 'Recently Added', image: '', tracks: [] },
-    { id: 'smart:random', name: 'For You', image: '', tracks: [] }
+    { id: 'smart:random', name: 'Discover', image: '', tracks: [] }
 ];
 
 function updateHeartUI(starred) {
