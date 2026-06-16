@@ -3895,7 +3895,7 @@ async function loadLyrics(t) {
         if (cr.ok) {
             const cData = await cr.json();
             if (cData.exists && cData.lrclibId) {
-                const sq = new URLSearchParams({ title: rawTitle, artist: t.artist || '' });
+                const sq = new URLSearchParams({ id: cData.lrclibId });
                 const sr = await fetch(`/api/lyrics/search?${sq}`, { headers: token ? { 'x-auth-token': token } : {} });
                 if (sr.ok) {
                     const sItems = await sr.json();

@@ -1861,11 +1861,12 @@ body.player-open #main {
 }
 
 #exp-lyrics-toggle {
-  font-size: 30px;
+  font-size: 28px;
   color: var(--muted);
   background: transparent;
   display: flex;
-  border: none;
+  border: 1px solid;
+  border-radius: var(--radius-s);
 }
 
 #exp-volume-icon {
@@ -1876,32 +1877,34 @@ body.player-open #main {
 }
 
 #exp-queue-btn {
-  font-size: 35px;
+  font-size: 28px;
   color: var(--muted);
   background: none;
   display: flex;
-  border: none;
+  border: 1px solid;
+  border-radius: var(--radius-s);
 }
 
 #exp-heart-btn {
-  font-size: 30px;
-  color: var(--muted);
+  font-size: 28px;
   background: transparent;
   display: flex;
-  border: none;
+  border: 1px solid;
   cursor: pointer;
   align-items: center;
   justify-content: center;
   transition: color 0.15s ease, transform 0.15s ease;
+  border-radius: var(--radius-s);
 }
 
 #exp-adaptive-btn {
-  font-size: 30px;
+  font-size: 28px;
   color: var(--muted);
   background: transparent;
   transition: transform 0.2s ease;
   display: flex;
-  border: none;
+  border: 1px solid;
+  border-radius: var(--radius-s);
 }
 
 #exp-adaptive-btn.active svg {
@@ -2776,8 +2779,13 @@ body.menu-open .queue-remove {
 }
 
 @media (hover:hover) {
-  #exp-adaptive-btn:hover {
-    transform: scale(1.1);
+
+  #exp-adaptive-btn:hover,
+  #exp-lyrics-toggle:hover,
+  #exp-heart-btn:hover,
+  #exp-queue-btn:hover,
+  #desktop-exp-collapse:hover {
+    transform: scale(1.04);
   }
 }
 
@@ -3444,11 +3452,12 @@ body.menu-open .queue-remove {
   }
 
   #desktop-exp-collapse {
-    font-size: 30px;
+    font-size: 28px;
     color: var(--muted);
     background: transparent;
     display: flex;
-    border: none;
+    border: 1px solid;
+    border-radius: var(--radius-s);
   }
 
   #exp-collapse {
@@ -3728,7 +3737,11 @@ body.menu-open .queue-remove {
     height: 34px !important;
   }
 
-
+  #exp-adaptive-btn,
+  #exp-queue-btn,
+  #exp-heart-btn {
+    font-size: 35px;
+  }
 
   #exp-progress {
     height: 36px !important;

@@ -6,6 +6,40 @@ function jsonResponse(body, init = {}) {
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url)
+  const id = url.searchParams.get('id') || ''
+
+  if (id) {
+    try {
+      const r = await fetch(`https://lrclib.net/api/get/${id}`, {
+        headers: {
+          'User-Agent': 'jam/1.0',
+          'Accept': 'application/json'
+        }
+      })
+      if (!r.ok) return jsonResponse([], { headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' } })
+
+      const item = await r.json()
+      const mapped = {
+        id: item.id,
+        trackName: item.trackName || item.name || '',
+        artistName: item.artistName || '',
+        albumName: item.albumName || '',
+        duration: item.duration || 0,
+        instrumental: !!item.instrumental,
+        hasSynced: !!item.syncedLyrics,
+        hasPlain: !!item.plainLyrics,
+        syncedLyrics: item.syncedLyrics || null,
+        plainLyrics: item.plainLyrics || null
+      }
+
+      return jsonResponse([mapped], {
+        headers: { 'Cache-Control': 'public, max-age=1800, s-maxage=86400' }
+      })
+    } catch (_) {
+      return jsonResponse([], { headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' } })
+    }
+  }
+
   const rawTitle = url.searchParams.get('title') || ''
   const title = rawTitle.split('(')[0].trim()
   const artist = url.searchParams.get('artist') || ''
