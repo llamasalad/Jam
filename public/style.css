@@ -1153,7 +1153,7 @@ body {
 .artist-albums-section {
   margin-top: 10px;
   margin-bottom: 24px;
-  margin-left: 16px;
+  margin-left: 10px;
 }
 
 #track-list .section-title {
@@ -3074,7 +3074,7 @@ body.menu-open .queue-remove {
 
   body.detail-view #header-top-row {
     display: flex;
-    padding: 10px 0 0 10px;
+    padding: 10px;
   }
 
   body.detail-view #header,
@@ -4016,6 +4016,10 @@ body.menu-open .queue-remove {
   #suggested-container {
     scrollbar-width: none;
     -ms-overflow-style: none;
+  }
+
+  .artist-albums-section {
+    margin-left: 16px;
   }
 
   #suggested-container::-webkit-scrollbar {
