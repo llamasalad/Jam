@@ -219,6 +219,7 @@ body:has(#player:not(.hidden)) {
   will-change: transform;
   backface-visibility: hidden;
   transform: translate3d(0, 0, 0);
+  animation-play-state: paused;
 }
 
 .liquid-bg-container .blob-1 {
@@ -318,6 +319,10 @@ body.liquid-glass-theme .sidebar-item:hover .sidebar-label {
 
 body.liquid-glass-theme .liquid-bg-container {
   opacity: 1;
+}
+
+body.liquid-glass-theme .liquid-bg-container .blob {
+  animation-play-state: running;
 }
 
 body.liquid-glass-theme #app {
@@ -527,7 +532,6 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   transform: translateZ(0);
-  will-change: transform;
 }
 
 #main::-webkit-scrollbar {
@@ -655,7 +659,6 @@ body {
   position: relative;
   z-index: 5;
   transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), background 0.4s ease;
-  will-change: transform;
 }
 
 .track.swiping .track-content,
