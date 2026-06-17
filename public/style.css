@@ -2205,9 +2205,7 @@ body.player-open #main {
 }
 
 #suggested-section {
-  margin-top: 16px;
-  margin-bottom: 24px;
-  padding-left: 10px;
+  margin: 16px;
 }
 
 .section-title {
@@ -2907,7 +2905,7 @@ body.menu-open .queue-remove {
   }
 
   .playlist-detail-buttons {
-    padding: 0;
+    padding: 10px;
   }
 
   #exp-cover-wrap {
@@ -3426,12 +3424,12 @@ body.menu-open .queue-remove {
     justify-self: center;
   }
 
-  #suggested-container {
-    flex-wrap: wrap;
+  #suggested-section {
+    margin: 10px;
   }
 
-  .artist-albums-section {
-    margin-left: 0;
+  #suggested-container {
+    flex-wrap: wrap;
   }
 
   #sidebar-update .sidebar-label {
@@ -4011,10 +4009,6 @@ body.menu-open .queue-remove {
 
   .dock-item.active {
     color: var(--text);
-  }
-
-  #suggested-section {
-    margin-left: 10px;
   }
 
   #floating-search-wrap {
