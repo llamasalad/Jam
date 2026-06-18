@@ -290,11 +290,13 @@ body.ios-native-shell #main {
   padding-bottom: var(--native-bottom-inset, 0px) !important;
 }
 
-body.ios-native-shell.theme-menu-open #header,
-body.ios-native-shell.theme-menu-open #header-top-row,
-body.ios-native-shell.theme-menu-open #header-top-actions,
-body.ios-native-shell.theme-menu-open #theme-wrap {
-  display: block !important;
+body.ios-native-shell #header,
+body.ios-native-shell #header-top-row,
+body.ios-native-shell #header-top-actions,
+body.ios-native-shell #theme-wrap {
+  display: flex !important;
+  visibility: hidden !important;
+  pointer-events: none;
   height: 0 !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -302,23 +304,18 @@ body.ios-native-shell.theme-menu-open #theme-wrap {
   overflow: visible !important;
 }
 
-body.ios-native-shell.theme-menu-open #header-top-row>*:not(#header-top-actions) {
-  display: none !important;
+body.ios-native-shell #theme-wrap {
+  visibility: visible !important;
+  pointer-events: auto;
 }
 
-body.ios-native-shell.theme-menu-open #header-top-actions>*:not(#theme-wrap) {
-  display: none !important;
-}
-
-body.ios-native-shell.theme-menu-open #theme-toggle {
-  display: none !important;
+body.ios-native-shell #theme-toggle {
+  visibility: hidden !important;
 }
 
 body.ios-native-shell #theme-menu {
-  position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 50px);
-  right: 12px;
-  z-index: 9999;
+  position: absolute !important;
+  z-index: 600;
 }
 
 html,

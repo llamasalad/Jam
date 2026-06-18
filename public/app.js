@@ -1097,6 +1097,15 @@ function hideThemeMenu() {
     if (menuBackdrop) menuBackdrop.style.display = '';
 }
 
+function toggleThemeMenu() {
+    if (!themeMenu) return;
+    if (themeMenu.classList.contains('open')) {
+        hideThemeMenu();
+    } else {
+        showThemeMenu();
+    }
+}
+
 let currentQuality = localStorage.getItem('jam_bitrate') || 'original';
 function applyQuality() {
     document.querySelectorAll('.quality-option').forEach(option => {
@@ -4836,6 +4845,7 @@ if ('serviceWorker' in navigator) {
 
 window.nextTrack = nextTrack;
 window.showThemeMenu = showThemeMenu;
+window.toggleThemeMenu = toggleThemeMenu;
 window.prevTrack = prevTrack;
 window.openArtistDetail = openArtistDetail;
 window.openAlbumDetail = openAlbumDetail;

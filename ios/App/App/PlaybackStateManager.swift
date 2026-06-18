@@ -147,7 +147,7 @@ final class PlaybackStateManager {
     }
 
     func showWebThemeMenu() {
-        evaluateJS("if(typeof window.showThemeMenu==='function')window.showThemeMenu()")
+        evaluateJS("if(typeof window.toggleThemeMenu==='function') { window.toggleThemeMenu() } else if(typeof window.showThemeMenu==='function') { window.showThemeMenu() }")
     }
 
     func setTheme(_ theme: String) {
