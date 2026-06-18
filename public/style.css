@@ -321,8 +321,8 @@ body.ios-native-shell #theme-toggle {
 }
 
 body.ios-native-shell #theme-menu {
-  position: fixed !important;
-  top: calc(env(safe-area-inset-top, 0px) + 52px) !important;
+  position: absolute !important;
+  top: calc(env(safe-area-inset-top, 0px)) !important;
   z-index: 600;
 }
 
