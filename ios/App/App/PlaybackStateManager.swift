@@ -146,6 +146,10 @@ final class PlaybackStateManager {
         evaluateJS("if(typeof document !== 'undefined' && document.getElementById('sort-btn')){document.getElementById('sort-btn').click();}")
     }
 
+    func showWebThemeMenu() {
+        evaluateJS("if(typeof window.showThemeMenu==='function')window.showThemeMenu()")
+    }
+
     func setTheme(_ theme: String) {
         let js = """
         (function() {

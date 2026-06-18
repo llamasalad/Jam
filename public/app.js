@@ -2078,7 +2078,7 @@ async function openPlaylistDetail(pl) {
     else if (pl.id === 'smart:random') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512"><path d="M0 0h512v512H0z" fill="none"/><path fill="currentColor" fill-rule="evenodd" d="M465.023 135.32L376.68 465.023L46.977 376.68L135.32 46.977zM317.08 316.538c-17.071-4.574-34.618 5.557-39.192 22.627c-4.574 17.07 5.556 34.618 22.627 39.192s34.618-5.556 39.192-22.627s-5.557-34.618-22.627-39.192m-52.798-91.448c-17.07-4.574-34.617 5.557-39.192 22.628c-4.574 17.07 5.557 34.618 22.628 39.192s34.617-5.557 39.192-22.628c4.574-17.07-5.557-34.617-22.628-39.192m-52.797-91.447c-17.071-4.574-34.618 5.556-39.192 22.627s5.557 34.618 22.627 39.192c17.071 4.574 34.618-5.556 39.192-22.627s-5.556-34.618-22.627-39.192"/></svg>';
 
     if (plCover) {
-        plCover.innerHTML = pl.id.startsWith('smart:') ? `<span style="font-size:72px;color:var(--accent);display:flex;align-items:center;justify-content:center;">${iconSymbol}</span>` : (pl.image ? `<img src="${pl.image}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />` : '\u266B');
+        plCover.innerHTML = pl.id.startsWith('smart:') ? `<span style="font-size:100px;color:var(--accent);display:flex;align-items:center;justify-content:center;">${iconSymbol}</span>` : (pl.image ? `<img src="${pl.image}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />` : '\u266B');
     }
 
     const plEditBtn = document.getElementById('playlist-edit-btn');
@@ -4835,6 +4835,7 @@ if ('serviceWorker' in navigator) {
 }
 
 window.nextTrack = nextTrack;
+window.showThemeMenu = showThemeMenu;
 window.prevTrack = prevTrack;
 window.openArtistDetail = openArtistDetail;
 window.openAlbumDetail = openAlbumDetail;

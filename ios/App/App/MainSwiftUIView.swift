@@ -61,28 +61,10 @@ struct MainSwiftUIView: View {
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        ForEach([
-                            ("Aurion", "default"),
-                            ("Ember", "ember-theme"),
-                            ("Glacier", "glacier-theme"),
-                            ("Void", "void-theme"),
-                            ("Blind", "blind-theme"),
-                            ("Rosecore", "rosecore-theme"),
-                            ("Abyss", "abyss-theme"),
-                            ("Glass", "liquid-glass-theme")
-                        ], id: \.1) { theme in
-                            Button(action: {
-                                PlaybackStateManager.shared.setTheme(theme.1)
-                                themeChangePulse += 1
-                            }) {
-                                Text(theme.0)
-                                if state.currentTheme == theme.1 {
-                                    Image(systemName: "checkmark")
-                                }
-                            }
-                        }
-                    } label: {
+                    Button(action: {
+                        PlaybackStateManager.shared.showWebThemeMenu()
+                        themeChangePulse += 1
+                    }) {
                         Image(systemName: "paintpalette")
                             .symbolEffect(.bounce, value: themeChangePulse)
                             .frame(width: 44, height: 44)

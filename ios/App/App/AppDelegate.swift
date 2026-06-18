@@ -96,6 +96,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     private var currentItemObserver: NSKeyValueObservation?
     private var metadataMap: [Int: TrackMetadata] = [:]
     private var isManuallyChangingItem = false
+    private var artworkGeneration: Int = 0
 
     private var currentTitle: String = ""
     private var currentArtist: String = ""
@@ -195,9 +196,11 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 
     private func fetchArtwork(urlString: String) {
         guard let url = URL(string: urlString) else { return }
+        let expectedGeneration = self.artworkGeneration
         URLSession.shared.dataTask(with: url) { data, response, error in
             guard let data = data, error == nil, let image = UIImage(data: data) else { return }
-            DispatchQueue.main.async {
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self, self.artworkGeneration == expectedGeneration else { return }
                 let artwork = MPMediaItemArtwork(boundsSize: image.size) { size in
                     return image
                 }
@@ -216,6 +219,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         }
 
         isManuallyChangingItem = true
+        artworkGeneration += 1
 
         currentTitle = call.getString("title") ?? "Unknown"
         currentArtist = call.getString("artist") ?? "Unknown"
@@ -337,6 +341,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                     mgr.isPlaying = true
                     mgr.starred = meta.starred
                 }
+                self.artworkGeneration += 1
                 self.updateNowPlayingInfo(elapsed: 0.0, rate: 1.0)
                 if !meta.coverUrl.isEmpty { self.fetchArtwork(urlString: meta.coverUrl) }
                 self.notifyListeners("trackAdvancedNatively", data: [:])
