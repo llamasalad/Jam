@@ -299,6 +299,18 @@ body.ios-native-shell #theme-wrap {
   pointer-events: none;
 }
 
+body.ios-native-shell #header {
+  padding-top: 0 !important;
+}
+
+body.ios-native-shell #header-top-row {
+  height: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
 body.ios-native-shell #theme-wrap {
   visibility: visible !important;
   pointer-events: auto;
