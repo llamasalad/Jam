@@ -297,11 +297,6 @@ body.ios-native-shell #theme-wrap {
   display: flex !important;
   visibility: hidden !important;
   pointer-events: none;
-  height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: none !important;
-  overflow: visible !important;
 }
 
 body.ios-native-shell #theme-wrap {
