@@ -10,3 +10,5 @@ errors.txt
 .agents/
 skills-lock.json
 resources/ios/**/*
+canvas_downloads
+canvas_map.json

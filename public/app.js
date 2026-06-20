@@ -89,6 +89,48 @@ let playerExpanded = false;
 let desktopExpandedLyricsOpen = false;
 let suggestedCardsInterval = null;
 
+let canvasMap = { tracks: {}, albums: {} };
+
+function getCanvasMapKey(artist, name) {
+    function clean(s) {
+        if (!s) return '';
+        s = s.toLowerCase().trim();
+        s = s.replace(/\$/g, 's');
+        return s.replace(/\s+/g, ' ');
+    }
+    return `${clean(artist)} - ${clean(name)}`;
+}
+
+function getCanvasForTrack(t) {
+    if (!t) return null;
+    const artist = t.artist || '';
+    const title = t.title || '';
+    const album = t.album || '';
+
+    const trackKey = getCanvasMapKey(artist, title);
+    const albumKey = getCanvasMapKey(artist, album);
+
+    if (canvasMap.tracks && canvasMap.tracks[trackKey]) {
+        return `/canvas_downloads/${canvasMap.tracks[trackKey]}`;
+    }
+    if (canvasMap.albums && canvasMap.albums[albumKey]) {
+        return `/canvas_downloads/${canvasMap.albums[albumKey]}`;
+    }
+    return null;
+}
+
+async function loadCanvasMap() {
+    try {
+        const response = await fetch('/canvas_map.json');
+        if (response.ok) {
+            canvasMap = await response.json();
+            console.log('[Canvas] Loaded canvas map:', canvasMap);
+        }
+    } catch (e) {
+        console.error('[Canvas] Failed to load canvas_map.json', e);
+    }
+}
+
 function setTokenCookie(t) {
     if (t) document.cookie = `music_token=${encodeURIComponent(t)}; path=/; max-age=31536000; SameSite=Lax; Secure`;
 }
@@ -457,6 +499,7 @@ const expCollapse = document.getElementById('exp-collapse');
 const expDesktopCollapse = document.getElementById('desktop-exp-collapse');
 const expContent = document.getElementById('exp-content');
 const expCover = document.getElementById('exp-cover');
+const expCanvas = document.getElementById('exp-canvas');
 const expCoverIcon = document.getElementById('exp-cover-icon');
 const expCoverWrap = document.getElementById('exp-cover-wrap');
 const expTitle = document.getElementById('exp-title');
@@ -2750,13 +2793,43 @@ function updateExpandedNowPlaying(t) {
         setTimeout(adjustExpTitleMarquee, 400);
     }
     if (expArtist) renderArtistAlbumSub(expArtist, t, 'expanded-player');
-    if (expCover) expCover.style.display = 'block';
+
+    const canvasUrl = getCanvasForTrack(t);
+    if (canvasUrl) {
+        if (expCover) expCover.style.display = 'none';
+        if (expCanvas) {
+            expCanvas.style.display = 'block';
+            if (expCanvas.getAttribute('src') !== canvasUrl) {
+                expCanvas.src = canvasUrl;
+                expCanvas.load();
+                if (audio && !audio.paused) {
+                    expCanvas.play().catch(e => console.log('[Canvas] Play failed:', e));
+                }
+            } else {
+                if (audio && !audio.paused) {
+                    expCanvas.play().catch(e => console.log('[Canvas] Play failed:', e));
+                }
+            }
+        }
+    } else {
+        if (expCanvas) {
+            expCanvas.style.display = 'none';
+            expCanvas.src = '';
+        }
+        if (expCover) expCover.style.display = 'block';
+    }
+
     updateHeartUI(t.starred);
     if (expCoverIcon) expCoverIcon.style.display = 'none';
     if (expCover) {
         loadCover(t.id, expCover, 600);
         expCover.onload = () => updateAdaptiveBackground();
-        expCover.onerror = () => { expCover.style.display = 'none'; if (expCoverIcon) expCoverIcon.style.display = 'block'; };
+        expCover.onerror = () => {
+            if (!canvasUrl) {
+                expCover.style.display = 'none';
+                if (expCoverIcon) expCoverIcon.style.display = 'block';
+            }
+        };
     }
 }
 
@@ -2801,6 +2874,9 @@ if (audio) {
         updateSyncedLyricsState(true);
         const ct = queue && queue[qIdx];
         if (ct) updateMediaSession(ct);
+        if (expCanvas && expCanvas.src && expCanvas.style.display !== 'none') {
+            expCanvas.play().catch(e => console.log('[Canvas] Play failed:', e));
+        }
     });
     audio.addEventListener('playing', () => {
         _trackTransition = false;
@@ -2810,6 +2886,9 @@ if (audio) {
     audio.addEventListener('pause', () => {
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
         if (!_trackTransition) syncPlayPause(false);
+        if (expCanvas && expCanvas.style.display !== 'none') {
+            expCanvas.pause();
+        }
     });
     audio.addEventListener('ended', () => {
         if (_trackTransition) return;
@@ -4517,7 +4596,7 @@ async function init() {
         }
     }
 
-    await Promise.all([loadTracks(), loadPlaylists()]);
+    await Promise.all([loadTracks(), loadPlaylists(), loadCanvasMap()]);
 
     try {
         const last = JSON.parse(localStorage.getItem('music_last') || 'null');
