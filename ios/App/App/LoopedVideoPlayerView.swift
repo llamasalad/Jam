@@ -8,6 +8,8 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
         let view = UIView()
         view.backgroundColor = .clear
 
+        context.coordinator.currentUrl = urlString
+
         guard let url = URL(string: urlString) else { return view }
         let asset = AVURLAsset(url: url)
         let playerItem = AVPlayerItem(asset: asset)
@@ -21,6 +23,7 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
         context.coordinator.playerLayer = playerLayer
 
         queuePlayer.isMuted = true
+        queuePlayer.automaticallyWaitsToMinimizeStalling = false
         queuePlayer.play()
 
         return view
@@ -28,6 +31,10 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
 
     func updateUIView(_ uiView: UIView, context: Context) {
         if context.coordinator.currentUrl != urlString {
+            context.coordinator.looper = nil
+            context.coordinator.playerLayer?.player?.pause()
+            context.coordinator.playerLayer?.player = nil
+
             context.coordinator.currentUrl = urlString
             guard let url = URL(string: urlString) else { return }
             let asset = AVURLAsset(url: url)
@@ -38,12 +45,20 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
             context.coordinator.playerLayer?.player = queuePlayer
 
             queuePlayer.isMuted = true
+            queuePlayer.automaticallyWaitsToMinimizeStalling = false
             queuePlayer.play()
         }
 
         DispatchQueue.main.async {
             context.coordinator.playerLayer?.frame = uiView.bounds
         }
+    }
+
+    static func dismantleUIView(_ uiView: UIView, coordinator: Coordinator) {
+        coordinator.looper = nil
+        coordinator.playerLayer?.player?.pause()
+        coordinator.playerLayer?.player = nil
+        coordinator.playerLayer = nil
     }
 
     func makeCoordinator() -> Coordinator {
