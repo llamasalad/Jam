@@ -1661,13 +1661,15 @@ body.player-open #main {
 
 #expanded-player.has-canvas #exp-canvas {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
   z-index: -2;
   pointer-events: none;
+}
+
+#expanded-player.has-canvas #exp-title,
+#expanded-player.has-canvas #exp-artist,
+#expanded-player.has-canvas #exp-lyric-current,
+#expanded-player.has-canvas #exp-lyric-next {
+  color: #fff
 }
 
 #expanded-player.has-canvas #exp-cover-wrap {
