@@ -271,7 +271,20 @@ struct ExpandedPlayerView: View {
 
     var body: some View {
         ZStack {
-            BlurredBackgroundView(url: state.coverUrl)
+            if !state.canvasUrl.isEmpty && !state.canvasDisabled {
+                LoopedVideoPlayerView(urlString: state.canvasUrl)
+                    .ignoresSafeArea()
+                    .overlay(
+                        LinearGradient(
+                            colors: [.clear, .black.opacity(0.8)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .ignoresSafeArea()
+            } else {
+                BlurredBackgroundView(url: state.coverUrl)
+            }
 
             VStack(spacing: 16) {
                 Spacer()
@@ -292,6 +305,16 @@ struct ExpandedPlayerView: View {
                     }
                     .buttonStyle(.plain)
                     .glassEffect(.regular.interactive(), in: .circle)
+
+                    if !state.canvasUrl.isEmpty {
+                        Button(action: { state.toggleCanvas() }) {
+                            Image(systemName: state.canvasDisabled ? "paintbrush" : "paintbrush.fill")
+                                .imageScale(.large)
+                                .frame(width: 44, height: 44)
+                        }
+                        .buttonStyle(.plain)
+                        .glassEffect(.regular.interactive(), in: .circle)
+                    }
 
                     Button(action: { state.toggleStar() }) {
                         Image(systemName: state.starred ? "star.fill" : "star")
@@ -316,36 +339,44 @@ private struct AlbumArtView: View {
     private var state: PlaybackStateManager { .shared }
 
     var body: some View {
-        AsyncImage(url: URL(string: state.coverUrl)) { phase in
-            switch phase {
-            case .success(let image):
-                image
-                    .resizable()
+        Group {
+            if !state.canvasUrl.isEmpty && !state.canvasDisabled {
+                Color.clear
                     .aspectRatio(1, contentMode: .fill)
                     .frame(maxWidth: .infinity)
-            case .failure:
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .glassEffect()
-                    .aspectRatio(1, contentMode: .fill)
-                    .frame(maxWidth: .infinity)
-                    .overlay(
-                        Image(systemName: "music.note")
-                            .font(.system(size: 48, weight: .light))
-                            .foregroundStyle(.secondary)
-                    )
-            case .empty:
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .glassEffect()
-                    .aspectRatio(1, contentMode: .fill)
-                    .frame(maxWidth: .infinity)
-                    .overlay(ProgressView())
-            @unknown default:
-                EmptyView()
+            } else {
+                AsyncImage(url: URL(string: state.coverUrl)) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(1, contentMode: .fill)
+                            .frame(maxWidth: .infinity)
+                    case .failure:
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .glassEffect()
+                            .aspectRatio(1, contentMode: .fill)
+                            .frame(maxWidth: .infinity)
+                            .overlay(
+                                Image(systemName: "music.note")
+                                    .font(.system(size: 48, weight: .light))
+                                    .foregroundStyle(.secondary)
+                            )
+                    case .empty:
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .glassEffect()
+                            .aspectRatio(1, contentMode: .fill)
+                            .frame(maxWidth: .infinity)
+                            .overlay(ProgressView())
+                    @unknown default:
+                        EmptyView()
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .shadow(color: .black.opacity(0.3), radius: 24, x: 0, y: 16)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .padding(.horizontal, 32)
-        .shadow(color: .black.opacity(0.3), radius: 24, x: 0, y: 16)
     }
 }
 

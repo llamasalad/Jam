@@ -86,6 +86,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let album: String
         let duration: Double
         let coverUrl: String
+        let canvasUrl: String
         let starred: Bool
     }
 
@@ -226,6 +227,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         currentAlbum = call.getString("album") ?? "Unknown"
         currentDuration = call.getDouble("duration") ?? 0.0
         let coverUrl = call.getString("coverUrl") ?? ""
+        let canvasUrl = call.getString("canvasUrl") ?? ""
         let suffix = call.getString("suffix") ?? "flac"
         let starred = call.getBool("starred") ?? false
 
@@ -242,6 +244,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             mgr.updateCurrentTime(0)
             mgr.isPlaying = false
             mgr.coverUrl = coverUrl
+            mgr.canvasUrl = canvasUrl
             mgr.starred = starred
         }
         uiTimeTickCount = 0
@@ -270,7 +273,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let asset = AVURLAsset(url: url, options: options)
         let playerItem = AVPlayerItem(asset: asset)
         
-        metadataMap[playerItem.hash] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, starred: starred)
+        metadataMap[playerItem.hash] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred)
         
         player = AVQueuePlayer(playerItem: playerItem)
 
@@ -337,6 +340,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                     mgr.album = meta.album
                     mgr.duration = meta.duration
                     mgr.coverUrl = meta.coverUrl
+                    mgr.canvasUrl = meta.canvasUrl
                     mgr.updateCurrentTime(0)
                     mgr.isPlaying = true
                     mgr.starred = meta.starred
@@ -374,6 +378,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let album = call.getString("album") ?? "Unknown"
         let duration = call.getDouble("duration") ?? 0.0
         let coverUrl = call.getString("coverUrl") ?? ""
+        let canvasUrl = call.getString("canvasUrl") ?? ""
         let suffix = call.getString("suffix") ?? "flac"
         let starred = call.getBool("starred") ?? false
 
@@ -397,7 +402,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let asset = AVURLAsset(url: url, options: options)
         let playerItem = AVPlayerItem(asset: asset)
 
-        metadataMap[playerItem.hash] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, starred: starred)
+        metadataMap[playerItem.hash] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred)
 
         if queuePlayer.items().count > 1 {
             for item in queuePlayer.items().dropFirst() {
@@ -557,10 +562,12 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let shuffleVal = call.getBool("shuffle") ?? false
         let repeatVal = call.getString("repeatMode") ?? "off"
         let starredVal = call.getBool("starred") ?? false
+        let canvasDisabledVal = call.getBool("canvasDisabled") ?? false
         Task { @MainActor in
             PlaybackStateManager.shared.shuffle = shuffleVal
             PlaybackStateManager.shared.repeatMode = repeatVal
             PlaybackStateManager.shared.starred = starredVal
+            PlaybackStateManager.shared.canvasDisabled = canvasDisabledVal
         }
         call.resolve()
     }

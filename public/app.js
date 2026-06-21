@@ -370,6 +370,7 @@ class CapacitorAudioPlayerShim {
                 artist: this._metadata?.artist || 'Unknown',
                 album: this._metadata?.album || 'Unknown',
                 coverUrl: this._metadata?.coverUrl || '',
+                canvasUrl: getCanvasForTrack(this._metadata) || '',
                 duration: this._metadata?.duration || 0,
                 suffix: this._metadata?.suffix || 'flac',
                 starred: !!this._metadata?.starred
@@ -553,7 +554,8 @@ function syncStarredStateNatively(starred) {
         window.Capacitor.Plugins.AudioPlayerPlugin.setPlaybackState({
             shuffle,
             repeatMode,
-            starred: starred
+            starred: starred,
+            canvasDisabled: canvasDisabled
         });
     }
 }
@@ -2700,6 +2702,7 @@ function preloadNextTrack() {
                 album: t.album || '',
                 duration: t.duration || 0,
                 coverUrl: Navidrome.getCoverUrl(t.id),
+                canvasUrl: getCanvasForTrack(t) || '',
                 suffix: t.suffix || 'flac',
                 starred: !!t.starred
             });
@@ -4530,6 +4533,7 @@ if (expAdaptiveBtn) {
             expAdaptiveBtn.classList.toggle('active', !canvasDisabled);
             updateExpandedNowPlaying(currentTrack);
             updateAdaptiveBackground();
+            notifyNativePlaybackState();
         } else {
             adaptiveMode = !adaptiveMode;
             localStorage.setItem('adaptive_mode', adaptiveMode);
@@ -4980,7 +4984,8 @@ function notifyNativePlaybackState() {
         plugin.setPlaybackState({
             shuffle,
             repeatMode,
-            starred: currentTrack ? !!currentTrack.starred : false
+            starred: currentTrack ? !!currentTrack.starred : false,
+            canvasDisabled: canvasDisabled
         });
     }
 }

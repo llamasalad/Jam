@@ -21,6 +21,8 @@ final class PlaybackStateManager {
     var artist: String = ""
     var album: String = ""
     var coverUrl: String = ""
+    var canvasUrl: String = ""
+    var canvasDisabled: Bool = false
     var shuffle: Bool = false
     var repeatMode: String = "off"  // "off", "all", "one"
     var starred: Bool = false
@@ -35,6 +37,10 @@ final class PlaybackStateManager {
 
     func toggleStar() {
         evaluateJS("if(typeof window.toggleStarCurrent==='function')window.toggleStarCurrent()")
+    }
+
+    func toggleCanvas() {
+        evaluateJS("if(typeof document !== 'undefined' && document.getElementById('exp-adaptive-btn')){document.getElementById('exp-adaptive-btn').click();}")
     }
 
     var currentTheme: String = "default"
