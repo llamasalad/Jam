@@ -2796,6 +2796,7 @@ function updateExpandedNowPlaying(t) {
 
     const canvasUrl = getCanvasForTrack(t);
     if (canvasUrl) {
+        if (expPlayer) expPlayer.classList.add('has-canvas');
         if (expCover) expCover.style.display = 'none';
         if (expCanvas) {
             expCanvas.style.display = 'block';
@@ -2812,6 +2813,7 @@ function updateExpandedNowPlaying(t) {
             }
         }
     } else {
+        if (expPlayer) expPlayer.classList.remove('has-canvas');
         if (expCanvas) {
             expCanvas.style.display = 'none';
             expCanvas.src = '';
