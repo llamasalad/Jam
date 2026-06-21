@@ -525,6 +525,7 @@ const expDesktopLyricsScroll = document.getElementById('exp-desktop-lyrics-scrol
 const menuBackdrop = document.getElementById('menu-backdrop');
 
 let adaptiveMode = localStorage.getItem('adaptive_mode') === 'true';
+let canvasDisabled = localStorage.getItem('canvas_disabled') === 'true';
 
 const SMART_PLAYLISTS = [
     { id: 'smart:favorites', name: 'Favorites', image: '', tracks: [] },
@@ -2795,7 +2796,7 @@ function updateExpandedNowPlaying(t) {
     if (expArtist) renderArtistAlbumSub(expArtist, t, 'expanded-player');
 
     const canvasUrl = getCanvasForTrack(t);
-    if (canvasUrl) {
+    if (canvasUrl && !canvasDisabled) {
         if (expPlayer) expPlayer.classList.add('has-canvas');
         if (expCover) expCover.style.display = 'none';
         if (expCanvas) {
@@ -2819,6 +2820,14 @@ function updateExpandedNowPlaying(t) {
             expCanvas.src = '';
         }
         if (expCover) expCover.style.display = 'block';
+    }
+
+    if (expAdaptiveBtn) {
+        if (canvasUrl) {
+            expAdaptiveBtn.classList.toggle('active', !canvasDisabled);
+        } else {
+            expAdaptiveBtn.classList.toggle('active', adaptiveMode);
+        }
     }
 
     updateHeartUI(t.starred);
@@ -4513,15 +4522,22 @@ async function updateAdaptiveBackground() {
 if (expAdaptiveBtn) {
     expAdaptiveBtn.classList.toggle('active', adaptiveMode);
     expAdaptiveBtn.onclick = () => {
-        adaptiveMode = !adaptiveMode;
-        localStorage.setItem('adaptive_mode', adaptiveMode);
-        expAdaptiveBtn.classList.toggle('active', adaptiveMode);
-        updateAdaptiveBackground();
+        const currentTrack = qIdx >= 0 ? queue[qIdx] : null;
+        const canvasUrl = currentTrack ? getCanvasForTrack(currentTrack) : null;
+        if (canvasUrl) {
+            canvasDisabled = !canvasDisabled;
+            localStorage.setItem('canvas_disabled', canvasDisabled);
+            expAdaptiveBtn.classList.toggle('active', !canvasDisabled);
+            updateExpandedNowPlaying(currentTrack);
+            updateAdaptiveBackground();
+        } else {
+            adaptiveMode = !adaptiveMode;
+            localStorage.setItem('adaptive_mode', adaptiveMode);
+            expAdaptiveBtn.classList.toggle('active', adaptiveMode);
+            updateAdaptiveBackground();
+        }
     };
 }
-
-
-
 
 async function init() {
     try {
