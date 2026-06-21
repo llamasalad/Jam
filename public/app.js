@@ -111,10 +111,10 @@ function getCanvasForTrack(t) {
     const albumKey = getCanvasMapKey(artist, album);
 
     if (canvasMap.tracks && canvasMap.tracks[trackKey]) {
-        return `/canvas_downloads/${canvasMap.tracks[trackKey]}`;
+        return `https://pub-b4408b7b82c6425a8f24f73936991660.r2.dev/${canvasMap.tracks[trackKey]}`;
     }
     if (canvasMap.albums && canvasMap.albums[albumKey]) {
-        return `/canvas_downloads/${canvasMap.albums[albumKey]}`;
+        return `https://pub-b4408b7b82c6425a8f24f73936991660.r2.dev/${canvasMap.albums[albumKey]}`;
     }
     return null;
 }
