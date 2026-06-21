@@ -121,13 +121,13 @@ function getCanvasForTrack(t) {
 
 async function loadCanvasMap() {
     try {
-        const response = await fetch('/canvas_map.json');
+        const response = await fetch('/api/canvas-map', { headers: hget() });
         if (response.ok) {
             canvasMap = await response.json();
             console.log('[Canvas] Loaded canvas map:', canvasMap);
         }
     } catch (e) {
-        console.error('[Canvas] Failed to load canvas_map.json', e);
+        console.error('[Canvas] Failed to load canvas map', e);
     }
 }
 
