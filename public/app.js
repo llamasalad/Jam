@@ -4625,10 +4625,13 @@ async function init() {
     if (lastTrackData?.id) {
         ensureCoverUrl(lastTrackData.id);
         if (audio) {
-            audio.preload = 'auto';
-            setAudioMetadata(lastTrackData);
-            audio.src = Navidrome.getStreamUrl(lastTrackData.id);
-            audio.load();
+            const alreadySet = audio.src?.includes(lastTrackData.id);
+            if (!alreadySet) {
+                audio.preload = 'auto';
+                setAudioMetadata(lastTrackData);
+                audio.src = Navidrome.getStreamUrl(lastTrackData.id);
+                audio.load();
+            }
         }
     }
 

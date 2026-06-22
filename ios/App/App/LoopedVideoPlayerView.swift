@@ -5,19 +5,24 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
     let urlString: String
 
     func makeUIView(context: Context) -> UIView {
-        let view = UIView()
+        let view = PlayerContainerView()
         view.backgroundColor = .clear
 
         context.coordinator.currentUrl = urlString
 
         guard let url = URL(string: urlString) else { return view }
-        let asset = AVURLAsset(url: url)
+        let options: [String: Any] = [
+            "AVURLAssetOutOfBandMIMETypeKey": "video/mp4",
+            "AVURLAssetOverrideMIMETypeKey": "video/mp4"
+        ]
+        let asset = AVURLAsset(url: url, options: options)
         let playerItem = AVPlayerItem(asset: asset)
         let player = AVPlayer(playerItem: playerItem)
 
         let playerLayer = AVPlayerLayer(player: player)
         playerLayer.videoGravity = .resizeAspectFill
         view.layer.addSublayer(playerLayer)
+        view.playerLayer = playerLayer
         context.coordinator.playerLayer = playerLayer
         context.coordinator.player = player
 
@@ -36,7 +41,11 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
 
             context.coordinator.currentUrl = urlString
             guard let url = URL(string: urlString) else { return }
-            let asset = AVURLAsset(url: url)
+            let options: [String: Any] = [
+                "AVURLAssetOutOfBandMIMETypeKey": "video/mp4",
+                "AVURLAssetOverrideMIMETypeKey": "video/mp4"
+            ]
+            let asset = AVURLAsset(url: url, options: options)
             let playerItem = AVPlayerItem(asset: asset)
             let player = AVPlayer(playerItem: playerItem)
 
@@ -92,5 +101,13 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
         var playerLayer: AVPlayerLayer?
         var loopObserverToken: NSObjectProtocol?
         var currentUrl: String = ""
+    }
+}
+
+private class PlayerContainerView: UIView {
+    var playerLayer: AVPlayerLayer?
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        playerLayer?.frame = bounds
     }
 }
