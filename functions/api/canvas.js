@@ -10,7 +10,13 @@ export async function onRequestGet({ request, env }) {
   }
 
   try {
-    const object = await env.CANVAS.get(key);
+    const rangeHeader = request.headers.get("range");
+    const options = {};
+    if (rangeHeader) {
+      options.range = request.headers;
+    }
+
+    const object = await env.CANVAS.get(key, options);
     if (!object) {
       return new Response("Object not found in bucket", { status: 404 });
     }
@@ -19,8 +25,21 @@ export async function onRequestGet({ request, env }) {
     object.writeHttpMetadata(headers);
     headers.set("etag", object.httpEtag);
     headers.set("Cache-Control", "public, max-age=604800"); // Cache for 7 days
+    headers.set("Accept-Ranges", "bytes");
 
-    return new Response(object.body, { headers });
+    let status = 200;
+    if (rangeHeader && object.range) {
+      status = 206;
+      const offset = object.range.offset;
+      const length = object.range.length;
+      const end = offset + length - 1;
+      headers.set("Content-Range", `bytes ${offset}-${end}/${object.size}`);
+      headers.set("Content-Length", String(length));
+    } else {
+      headers.set("Content-Length", String(object.size));
+    }
+
+    return new Response(object.body, { status, headers });
   } catch (err) {
     return new Response(err.message || "Internal Server Error", { status: 500 });
   }
