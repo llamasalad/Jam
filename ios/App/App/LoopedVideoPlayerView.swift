@@ -32,7 +32,7 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
 
     func updateUIView(_ uiView: UIView, context: Context) {
         if context.coordinator.currentUrl != urlString {
-            teardownPlayer(coordinator: context.coordinator)
+            Self.teardownPlayer(coordinator: context.coordinator)
 
             context.coordinator.currentUrl = urlString
             guard let url = URL(string: urlString) else { return }
