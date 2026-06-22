@@ -110,11 +110,15 @@ function getCanvasForTrack(t) {
     const trackKey = getCanvasMapKey(artist, title);
     const albumKey = getCanvasMapKey(artist, album);
 
+    let path = null;
     if (canvasMap.tracks && canvasMap.tracks[trackKey]) {
-        return `/api/canvas?key=${encodeURIComponent(canvasMap.tracks[trackKey])}`;
+        path = `/api/canvas?key=${encodeURIComponent(canvasMap.tracks[trackKey])}`;
+    } else if (canvasMap.albums && canvasMap.albums[albumKey]) {
+        path = `/api/canvas?key=${encodeURIComponent(canvasMap.albums[albumKey])}`;
     }
-    if (canvasMap.albums && canvasMap.albums[albumKey]) {
-        return `/api/canvas?key=${encodeURIComponent(canvasMap.albums[albumKey])}`;
+
+    if (path) {
+        return new URL(path, window.location.origin).href;
     }
     return null;
 }
