@@ -18,6 +18,10 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
         let asset = AVURLAsset(url: url, options: options)
         let playerItem = AVPlayerItem(asset: asset)
         let player = AVPlayer(playerItem: playerItem)
+        player.appliesMediaSelectionCriteriaAutomatically = false
+        if let group = asset.mediaSelectionGroup(forMediaCharacteristic: .audible) {
+            playerItem.select(nil, in: group)
+        }
 
         let playerLayer = AVPlayerLayer(player: player)
         playerLayer.videoGravity = .resizeAspectFill
@@ -48,6 +52,10 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
             let asset = AVURLAsset(url: url, options: options)
             let playerItem = AVPlayerItem(asset: asset)
             let player = AVPlayer(playerItem: playerItem)
+            player.appliesMediaSelectionCriteriaAutomatically = false
+            if let group = asset.mediaSelectionGroup(forMediaCharacteristic: .audible) {
+                playerItem.select(nil, in: group)
+            }
 
             context.coordinator.playerLayer?.player = player
             context.coordinator.player = player
