@@ -118,6 +118,9 @@ function getCanvasForTrack(t) {
     }
 
     if (path) {
+        if (token) {
+            path += `&token=${encodeURIComponent(token)}`;
+        }
         return new URL(path, window.location.origin).href;
     }
     return null;
