@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import UIKit
 
 struct LoopedVideoPlayerView: UIViewRepresentable {
     let urlString: String
@@ -16,13 +17,10 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
             "AVURLAssetOverrideMIMETypeKey": "video/mp4"
         ]
         let asset = AVURLAsset(url: url, options: options)
-        let playerItem = AVPlayerItem(asset: asset)
-        let player = AVPlayer(playerItem: playerItem)
+        
+        let player = AVPlayer()
         player.appliesMediaSelectionCriteriaAutomatically = false
-        if let group = asset.mediaSelectionGroup(forMediaCharacteristic: .audible) {
-            playerItem.select(nil, in: group)
-        }
-
+        
         let playerLayer = AVPlayerLayer(player: player)
         playerLayer.videoGravity = .resizeAspectFill
         view.layer.addSublayer(playerLayer)
@@ -30,11 +28,35 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
         context.coordinator.playerLayer = playerLayer
         context.coordinator.player = player
 
-        setupLoopObserver(for: playerItem, player: player, coordinator: context.coordinator)
-
         player.isMuted = true
         player.automaticallyWaitsToMinimizeStalling = false
-        player.play()
+
+        asset.loadValuesAsynchronously(forKeys: ["tracks"]) { [weak coordinator = context.coordinator, weak player] in
+            guard let coordinator = coordinator, let player = player, coordinator.player === player else { return }
+            var error: NSError? = nil
+            let status = asset.statusOfValue(forKey: "tracks", error: &error)
+            guard status == .loaded else { return }
+            
+            let composition = AVMutableComposition()
+            let videoTracks = asset.tracks(withMediaType: .video)
+            if let videoTrack = videoTracks.first {
+                guard let compositionTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else { return }
+                do {
+                    try compositionTrack.insertTimeRange(CMTimeRange(start: .zero, duration: asset.duration), of: videoTrack, at: .zero)
+                } catch {
+                    print("Failed to insert video track: \(error)")
+                    return
+                }
+            }
+            
+            DispatchQueue.main.async { [weak coordinator, weak player] in
+                guard let coordinator = coordinator, let player = player, coordinator.player === player else { return }
+                let playerItem = AVPlayerItem(asset: composition)
+                player.replaceCurrentItem(with: playerItem)
+                setupLoopObserver(for: playerItem, player: player, coordinator: coordinator)
+                player.play()
+            }
+        }
 
         return view
     }
@@ -50,23 +72,56 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
                 "AVURLAssetOverrideMIMETypeKey": "video/mp4"
             ]
             let asset = AVURLAsset(url: url, options: options)
-            let playerItem = AVPlayerItem(asset: asset)
-            let player = AVPlayer(playerItem: playerItem)
+            
+            let player = AVPlayer()
             player.appliesMediaSelectionCriteriaAutomatically = false
-            if let group = asset.mediaSelectionGroup(forMediaCharacteristic: .audible) {
-                playerItem.select(nil, in: group)
-            }
-
+            
             context.coordinator.playerLayer?.player = player
             context.coordinator.player = player
-
-            setupLoopObserver(for: playerItem, player: player, coordinator: context.coordinator)
-
+            
             player.isMuted = true
             player.automaticallyWaitsToMinimizeStalling = false
-            player.play()
+
+            asset.loadValuesAsynchronously(forKeys: ["tracks"]) { [weak coordinator = context.coordinator, weak player] in
+                guard let coordinator = coordinator, let player = player, coordinator.player === player else { return }
+                var error: NSError? = nil
+                let status = asset.statusOfValue(forKey: "tracks", error: &error)
+                guard status == .loaded else { return }
+                
+                let composition = AVMutableComposition()
+                let videoTracks = asset.tracks(withMediaType: .video)
+                if let videoTrack = videoTracks.first {
+                    guard let compositionTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else { return }
+                    do {
+                        try compositionTrack.insertTimeRange(CMTimeRange(start: .zero, duration: asset.duration), of: videoTrack, at: .zero)
+                    } catch {
+                        print("Failed to insert video track: \(error)")
+                        return
+                    }
+                }
+                
+                DispatchQueue.main.async { [weak coordinator, weak player] in
+                    guard let coordinator = coordinator, let player = player, coordinator.player === player else { return }
+                    let playerItem = AVPlayerItem(asset: composition)
+                    player.replaceCurrentItem(with: playerItem)
+                    setupLoopObserver(for: playerItem, player: player, coordinator: coordinator)
+                    player.play()
+                }
+            }
         }
         context.coordinator.playerLayer?.frame = uiView.bounds
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    class Coordinator {
+        var player: AVPlayer?
+        var playerLayer: AVPlayerLayer?
+        var loopObserverToken: NSObjectProtocol?
+        var foregroundObserverToken: NSObjectProtocol?
+        var currentUrl: String = ""
     }
 
     static func dismantleUIView(_ uiView: UIView, coordinator: Coordinator) {
@@ -75,6 +130,9 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
 
     private func setupLoopObserver(for playerItem: AVPlayerItem, player: AVPlayer, coordinator: Coordinator) {
         if let token = coordinator.loopObserverToken {
+            NotificationCenter.default.removeObserver(token)
+        }
+        if let token = coordinator.foregroundObserverToken {
             NotificationCenter.default.removeObserver(token)
         }
 
@@ -88,6 +146,15 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
             player.play()
         }
         coordinator.loopObserverToken = token
+
+        let fgToken = NotificationCenter.default.addObserver(
+            forName: UIApplication.willEnterForegroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak player] _ in
+            player?.play()
+        }
+        coordinator.foregroundObserverToken = fgToken
     }
 
     private static func teardownPlayer(coordinator: Coordinator) {
@@ -95,20 +162,13 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
             NotificationCenter.default.removeObserver(token)
             coordinator.loopObserverToken = nil
         }
+        if let token = coordinator.foregroundObserverToken {
+            NotificationCenter.default.removeObserver(token)
+            coordinator.foregroundObserverToken = nil
+        }
         coordinator.player?.pause()
         coordinator.playerLayer?.player = nil
         coordinator.player = nil
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator()
-    }
-
-    class Coordinator {
-        var player: AVPlayer?
-        var playerLayer: AVPlayerLayer?
-        var loopObserverToken: NSObjectProtocol?
-        var currentUrl: String = ""
     }
 }
 
