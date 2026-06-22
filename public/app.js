@@ -2808,7 +2808,7 @@ function updateExpandedNowPlaying(t) {
     if (expArtist) renderArtistAlbumSub(expArtist, t, 'expanded-player');
 
     const canvasUrl = getCanvasForTrack(t);
-    if (canvasUrl && !canvasDisabled) {
+    if (canvasUrl && !canvasDisabled && !(window.Capacitor && window.Capacitor.getPlatform() === 'ios')) {
         if (expPlayer) expPlayer.classList.add('has-canvas');
         if (expCover) expCover.style.display = 'none';
         if (expCanvas) {
