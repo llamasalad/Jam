@@ -49,10 +49,7 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
             player.automaticallyWaitsToMinimizeStalling = false
             player.play()
         }
-
-        DispatchQueue.main.async {
-            context.coordinator.playerLayer?.frame = uiView.bounds
-        }
+        context.coordinator.playerLayer?.frame = uiView.bounds
     }
 
     static func dismantleUIView(_ uiView: UIView, coordinator: Coordinator) {
@@ -82,8 +79,8 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
             coordinator.loopObserverToken = nil
         }
         coordinator.player?.pause()
-        coordinator.player = nil
         coordinator.playerLayer?.player = nil
+        coordinator.player = nil
     }
 
     func makeCoordinator() -> Coordinator {

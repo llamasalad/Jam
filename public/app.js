@@ -353,7 +353,7 @@ class CapacitorAudioPlayerShim {
         this._metadata = metadata;
         this._currentTime = 0;
         this._lastNativeTime = 0;
-        this._lastSyncTime = performance.now();
+        this._lastSyncTime = 0;
     }
 
     get src() { return this._src; }
@@ -2643,7 +2643,7 @@ function setAudioMetadata(t) {
             album: t.album,
             coverUrl: t.coverUrl || Navidrome.getCoverUrl(t.id),
             duration: t.duration,
-            suffix: t.suffix || 'flac'
+            suffix: currentQuality === 'original' ? (t.suffix || 'flac') : 'mp3'
         });
     }
 }
@@ -2693,6 +2693,8 @@ let nextAudio = null;
 function preloadNextTrack() {
     if (qIdx + 1 < queue.length) {
         let t = queue[qIdx + 1];
+        const canvasUrl = getCanvasForTrack(t);
+        if (canvasUrl) fetch(canvasUrl, { method: 'HEAD' }).catch(() => { });
         let streamUrl = Navidrome.getStreamUrl(t.id);
         if (window.Capacitor?.Plugins?.AudioPlayerPlugin) {
             window.Capacitor.Plugins.AudioPlayerPlugin.preloadNext({
@@ -2702,8 +2704,8 @@ function preloadNextTrack() {
                 album: t.album || '',
                 duration: t.duration || 0,
                 coverUrl: Navidrome.getCoverUrl(t.id),
-                canvasUrl: getCanvasForTrack(t) || '',
-                suffix: t.suffix || 'flac',
+                canvasUrl: canvasUrl || '',
+                suffix: currentQuality === 'original' ? (t.suffix || 'flac') : 'mp3',
                 starred: !!t.starred
             });
         } else {
@@ -2804,7 +2806,7 @@ function updateExpandedNowPlaying(t) {
         if (expCover) expCover.style.display = 'none';
         if (expCanvas) {
             expCanvas.style.display = 'block';
-            if (expCanvas.getAttribute('src') !== canvasUrl) {
+            if (expCanvas.src !== canvasUrl) {
                 expCanvas.src = canvasUrl;
                 expCanvas.load();
                 if (audio && !audio.paused) {
@@ -2905,7 +2907,9 @@ if (audio) {
         }
     });
     audio.addEventListener('ended', () => {
-        if (_trackTransition) return;
+        const wasTransitioning = _trackTransition;
+        _trackTransition = false;
+        if (wasTransitioning) return;
         const dur = getRealDuration();
         const cur = _lastKnownTime;
         if (dur > 10 && cur < dur * 0.95) {
@@ -4608,6 +4612,9 @@ async function init() {
     if (expVolumeIcon) expVolumeIcon.innerHTML = sv === 0 ? volIcons.muted : sv < 0.5 ? volIcons.low : volIcons.high;
 
     const lastTrackData = JSON.parse(localStorage.getItem('music_last') || 'null');
+
+    await Promise.all([loadTracks(), loadPlaylists(), loadCanvasMap()]);
+
     if (lastTrackData?.id) {
         ensureCoverUrl(lastTrackData.id);
         if (audio) {
@@ -4617,8 +4624,6 @@ async function init() {
             audio.load();
         }
     }
-
-    await Promise.all([loadTracks(), loadPlaylists(), loadCanvasMap()]);
 
     try {
         const last = JSON.parse(localStorage.getItem('music_last') || 'null');

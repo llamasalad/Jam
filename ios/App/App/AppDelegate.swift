@@ -93,9 +93,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     private var player: AVQueuePlayer?
     private var timeObserverToken: Any?
     private var uiTimeObserverToken: Any?
-    private var playerItemStatusObservers: [Int: NSKeyValueObservation] = [:]
+    private var playerItemStatusObservers: [ObjectIdentifier: NSKeyValueObservation] = [:]
     private var currentItemObserver: NSKeyValueObservation?
-    private var metadataMap: [Int: TrackMetadata] = [:]
+    private var metadataMap: [ObjectIdentifier: TrackMetadata] = [:]
     private var isManuallyChangingItem = false
     private var artworkGeneration: Int = 0
 
@@ -220,6 +220,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         }
 
         isManuallyChangingItem = true
+        defer { isManuallyChangingItem = false }
         artworkGeneration += 1
 
         currentTitle = call.getString("title") ?? "Unknown"
@@ -273,7 +274,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let asset = AVURLAsset(url: url, options: options)
         let playerItem = AVPlayerItem(asset: asset)
         
-        metadataMap[playerItem.hash] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred)
+        metadataMap[ObjectIdentifier(playerItem)] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred)
         
         player = AVQueuePlayer(playerItem: playerItem)
 
@@ -297,7 +298,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                 }
             }
         }
-        playerItemStatusObservers[playerItem.hash] = statusObserver
+        playerItemStatusObservers[ObjectIdentifier(playerItem)] = statusObserver
 
         let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         timeObserverToken = player?.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
@@ -328,7 +329,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         currentItemObserver = player?.observe(\.currentItem, options: [.new]) { [weak self] player, change in
             guard let self = self else { return }
             if self.isManuallyChangingItem { return }
-            if let newItem = change.newValue as? AVPlayerItem, let meta = self.metadataMap[newItem.hash] {
+            if let newItem = change.newValue as? AVPlayerItem, let meta = self.metadataMap[ObjectIdentifier(newItem)] {
                 self.currentTitle = meta.title
                 self.currentArtist = meta.artist
                 self.currentAlbum = meta.album
@@ -402,10 +403,13 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let asset = AVURLAsset(url: url, options: options)
         let playerItem = AVPlayerItem(asset: asset)
 
-        metadataMap[playerItem.hash] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred)
+        metadataMap[ObjectIdentifier(playerItem)] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred)
 
         if queuePlayer.items().count > 1 {
             for item in queuePlayer.items().dropFirst() {
+                NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: item)
+                playerItemStatusObservers.removeValue(forKey: ObjectIdentifier(item))
+                metadataMap.removeValue(forKey: ObjectIdentifier(item))
                 queuePlayer.remove(item)
             }
         }
@@ -421,9 +425,18 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                 }
             }
         }
-        playerItemStatusObservers[playerItem.hash] = statusObserver
+        playerItemStatusObservers[ObjectIdentifier(playerItem)] = statusObserver
         
         NotificationCenter.default.addObserver(self, selector: #selector(playerItemDidReachEnd), name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
+
+        asset.loadValuesAsynchronously(forKeys: ["playable", "duration"]) {
+            DispatchQueue.main.async {
+                var error: NSError?
+                if asset.statusOfValue(forKey: "playable", error: &error) == .loaded {
+                    // preloading warm
+                }
+            }
+        }
 
         queuePlayer.insert(playerItem, after: nil)
         call.resolve()
