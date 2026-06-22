@@ -1438,7 +1438,7 @@ function renderList() {
                             <line x1="15" y1="15" x2="21" y2="21"></line>
                             <line x1="4" y1="4" x2="9" y2="9"></line>
                         </svg>
-                        shuffle all
+                        shuffle
                     </button>
                 </div>
             `;
