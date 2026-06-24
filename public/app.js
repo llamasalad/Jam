@@ -539,10 +539,10 @@ const SMART_PLAYLISTS = [
     { id: 'smart:favorites', name: 'Favorites', image: '', tracks: [] },
     { id: 'smart:recent', name: 'Recently Played', image: '', tracks: [] },
     { id: 'smart:newest', name: 'Recently Added', image: '', tracks: [] },
-    { id: 'smart:random', name: 'Daily Mix', image: '/images/daily_mix.png', tracks: [] },
-    { id: 'smart:genre:upbeat', name: 'Upbeat Mix', image: '/images/upbeat_mix.png', tracks: [] },
-    { id: 'smart:genre:chill', name: 'Chill Mix', image: '/images/chill_mix.png', tracks: [] },
-    { id: 'smart:genre:flow', name: 'Flow Mix', image: '/images/flow_mix.png', tracks: [] }
+    { id: 'smart:random', name: 'Daily Mix', image: '', tracks: [] },
+    { id: 'smart:genre:upbeat', name: 'Upbeat', image: '', tracks: [] },
+    { id: 'smart:genre:chill', name: 'Chill', image: '', tracks: [] },
+    { id: 'smart:genre:flow', name: 'Flow', image: '', tracks: [] }
 ];
 
 function updateHeartUI(starred) {
@@ -929,7 +929,7 @@ function renderLibraryCards() {
             if (savedTime && Date.now() - parseInt(savedTime) >= 3600000) {
                 if (audio.paused && document.visibilityState === 'hidden') {
                     renderSuggestedCards(true);
-                    renderSmartMixesCards(true);
+                    renderSmartMixesCards();
                 }
             }
         };
@@ -941,7 +941,7 @@ function renderLibraryCards() {
                 const savedTime = localStorage.getItem('jam_suggested_time');
                 if (savedTime && Date.now() - parseInt(savedTime) >= 3600000 && audio.paused) {
                     renderSuggestedCards(true);
-                    renderSmartMixesCards(true);
+                    renderSmartMixesCards();
                 }
             }
         });
@@ -958,7 +958,7 @@ function renderLibraryCards() {
                 refreshBtn.style.setProperty('transform', `rotate(${(refreshBtn._rot || 0) + 360}deg)`, 'important');
                 refreshBtn._rot = (refreshBtn._rot || 0) + 360;
                 renderSuggestedCards(true);
-                renderSmartMixesCards(true);
+                renderSmartMixesCards();
             };
         }
     }
@@ -1059,6 +1059,7 @@ function renderSmartMixesCards(force = false) {
     targetMixes.forEach(pl => {
         const card = document.createElement('div');
         card.className = 'suggested-card';
+        card.dataset.mixId = pl.id.split(':').pop();
 
         let artworkTrackId = null;
         let mixTrackIds = [];
@@ -1080,11 +1081,12 @@ function renderSmartMixesCards(force = false) {
             mixTrackIds = generateSmartGenreMix(mixId, force);
         }
 
+        let artistName = '';
         if (mixTrackIds.length > 0) {
-            artworkTrackId = mixTrackIds[0];
-            card.dataset.id = artworkTrackId;
-            card.dataset.artworkId = artworkTrackId;
-            card.dataset.coverSize = "600";
+            const firstTrack = trackMap.get(mixTrackIds[0]);
+            if (firstTrack) {
+                artistName = firstTrack.artist || '';
+            }
         }
 
         const overlay = document.createElement('div');
@@ -1102,6 +1104,21 @@ function renderSmartMixesCards(force = false) {
         info.append(titleLabel, subLabel);
         card.append(overlay, info);
 
+        if (artistName) {
+            const artistImg = document.createElement('img');
+            artistImg.className = 'suggested-artist-bg';
+            artistImg.dataset.artistName = artistName;
+            artistImg.alt = '';
+            artistImg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;visibility:hidden;';
+            artistImg.onerror = () => { artistImg.style.visibility = 'hidden'; };
+            card.appendChild(artistImg);
+            if (_artistImgObserver) {
+                _artistImgObserver.observe(artistImg);
+            } else {
+                loadArtistImage(artistName, artistImg);
+            }
+        }
+
         bindTapActivation(card, () => {
             const resolvedTracks = mixTrackIds.map(id => trackMap.get(id)).filter(Boolean);
             const fullPl = {
@@ -1117,10 +1134,10 @@ function renderSmartMixesCards(force = false) {
         });
 
         frag.appendChild(card);
-        if (artworkTrackId) _coverObserver.observe(card);
     });
 
     container.appendChild(frag);
+    renderPlaylists();
 }
 
 function renderArtistCards() {
@@ -2363,6 +2380,35 @@ async function loadPlaylists() {
     } catch (e) { console.error("Failed to load playlists", e); }
 }
 
+function getSmartPlaylistFirstTrackArtist(pl) {
+    if (pl.id === 'smart:random') {
+        const savedDaily = localStorage.getItem('jam_daily_mix_tracks');
+        if (savedDaily) {
+            try {
+                const ids = JSON.parse(savedDaily);
+                if (ids && ids.length > 0) {
+                    const firstTrack = trackMap.get(ids[0]);
+                    if (firstTrack) return firstTrack.artist;
+                }
+            } catch (e) { }
+        }
+    } else if (pl.id.startsWith('smart:genre:')) {
+        const mixId = pl.id.split(':').pop();
+        const cacheKey = `jam_smart_mix_${mixId}_tracks`;
+        const saved = localStorage.getItem(cacheKey);
+        if (saved) {
+            try {
+                const ids = JSON.parse(saved);
+                if (ids && ids.length > 0) {
+                    const firstTrack = trackMap.get(ids[0]);
+                    if (firstTrack) return firstTrack.artist;
+                }
+            } catch (e) { }
+        }
+    }
+    return null;
+}
+
 function renderPlaylistCard(pl) {
     const isSmart = pl.id.startsWith('smart:');
     const card = document.createElement('div');
@@ -2376,8 +2422,12 @@ function renderPlaylistCard(pl) {
     else if (pl.id === 'smart:random') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512"><path d="M0 0h512v512H0z" fill="none"/><path fill="currentColor" fill-rule="evenodd" d="M465.023 135.32L376.68 465.023L46.977 376.68L135.32 46.977zM317.08 316.538c-17.071-4.574-34.618 5.557-39.192 22.627c-4.574 17.07 5.556 34.618 22.627 39.192s34.618-5.556 39.192-22.627s-5.557-34.618-22.627-39.192m-52.798-91.448c-17.07-4.574-34.617 5.557-39.192 22.628c-4.574 17.07 5.557 34.618 22.628 39.192s34.617-5.557 39.192-22.628c4.574-17.07-5.557-34.617-22.628-39.192m-52.797-91.447c-17.071-4.574-34.618 5.556-39.192 22.627s5.557 34.618 22.627 39.192c17.071 4.574 34.618-5.556 39.192-22.627s-5.556-34.618-22.627-39.192"/></svg>';
     else if (pl.id.startsWith('smart:genre:')) iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55c-2.21 0-4 1.79-4 4s1.79 4 4 4s4-1.79 4-4V7h4V3h-6z"/></svg>';
 
+    const isSmartMix = pl.id === 'smart:random' || pl.id.startsWith('smart:genre:');
+
     let playlistIconHtml = '\u266B';
-    if (pl.image) {
+    if (isSmartMix) {
+        playlistIconHtml = `<img class="smart-playlist-cover-img" style="width:100%;height:100%;object-fit:cover;border-radius:6px;z-index:0;" />`;
+    } else if (pl.image) {
         playlistIconHtml = `<img src="${pl.image}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width:100%;height:100%;object-fit:cover;border-radius:6px;" />` +
             `<span style="display:none;font-size:20px;color:var(--accent);align-items:center;justify-content:center;width:100%;height:100%;">${iconSymbol}</span>`;
     } else if (isSmart) {
@@ -2387,7 +2437,24 @@ function renderPlaylistCard(pl) {
     const deleteBtnHtml = isSmart ? '' : '<button class="playlist-del" title="Delete">\u2715</button>';
     const countHtml = isSmart ? '' : `<div class="playlist-count">${pl.tracks.length} song${pl.tracks.length !== 1 ? 's' : ''}</div>`;
 
-    card.innerHTML = '<div class="playlist-icon">' + playlistIconHtml + '</div><div class="playlist-info"><div class="playlist-name">' + pl.name + '</div>' + countHtml + '</div>' + deleteBtnHtml;
+    card.innerHTML = '<div class="playlist-icon" style="position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;">' + playlistIconHtml + '</div><div class="playlist-info"><div class="playlist-name">' + pl.name + '</div>' + countHtml + '</div>' + deleteBtnHtml;
+
+    if (isSmartMix) {
+        setTimeout(() => {
+            const imgEl = card.querySelector('.smart-playlist-cover-img');
+            if (imgEl) {
+                const artistName = getSmartPlaylistFirstTrackArtist(pl);
+                if (artistName) {
+                    loadArtistImage(artistName, imgEl);
+                } else {
+                    const parent = imgEl.parentElement;
+                    if (parent) {
+                        parent.innerHTML = `<span style="font-size:20px;color:var(--accent);display:flex;align-items:center;justify-content:center;">${iconSymbol}</span>`;
+                    }
+                }
+            }
+        }, 0);
+    }
 
     if (!isSmart) {
         card.querySelector('.playlist-del').onclick = e => { e.stopPropagation(); deletePlaylist(pl.id) };
@@ -2440,8 +2507,23 @@ async function openPlaylistDetail(pl) {
     else if (pl.id === 'smart:newest') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="m21.45 11.11l-3-1.5l-2.7-1.35l-1.35-2.7l-1.5-3c-.34-.68-1.45-.68-1.79 0l-1.5 3l-1.35 2.7l-2.7 1.35l-3 1.5c-.34.17-.55.52-.55.89s.21.72.55.89l3 1.5l2.7 1.35l1.35 2.7l1.5 3c.17.34.52.55.89.55s.73-.21.89-.55l1.5-3l1.35-2.7l2.7-1.35l3-1.5c.34-.17.55-.52.55-.89s-.21-.72-.55-.89Zm-3.89 1.5l-.84.42l-2.16 1.08l-.3.15l-.15.3L12 18.77l-2.11-4.21l-.15-.3l-.3-.15l-2.16-1.08l-.84-.42L5.23 12l1.21-.61l.84-.42l2.16-1.08l.3-.15l.15-.3L12 5.23l2.11 4.21l.15.3l.3.15l2.16 1.08l.84.42l1.21.61z"/></svg>';
     else if (pl.id === 'smart:random') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512"><path d="M0 0h512v512H0z" fill="none"/><path fill="currentColor" fill-rule="evenodd" d="M465.023 135.32L376.68 465.023L46.977 376.68L135.32 46.977zM317.08 316.538c-17.071-4.574-34.618 5.557-39.192 22.627c-4.574 17.07 5.556 34.618 22.627 39.192s34.618-5.556 39.192-22.627s-5.557-34.618-22.627-39.192m-52.798-91.448c-17.07-4.574-34.617 5.557-39.192 22.628c-4.574 17.07 5.557 34.618 22.628 39.192s34.617-5.557 39.192-22.628c4.574-17.07-5.557-34.617-22.628-39.192m-52.797-91.447c-17.071-4.574-34.618 5.556-39.192 22.627s5.557 34.618 22.627 39.192c17.071 4.574 34.618-5.556 39.192-22.627s-5.556-34.618-22.627-39.192"/></svg>';
 
+    const isSmartMix = pl.id === 'smart:random' || pl.id.startsWith('smart:genre:');
+
     if (plCover) {
-        if (pl.image) {
+        if (isSmartMix) {
+            const mixId = pl.id.split(':').pop();
+            plCover.innerHTML = `
+                <img class="smart-playlist-cover-img" style="width:100%;height:100%;object-fit:cover;border-radius:8px;z-index:0;position:absolute;inset:0;" />
+                <div class="smart-playlist-cover-overlay" data-mix-id="${mixId}" style="position:absolute;inset:0;z-index:1;"></div>
+            `;
+            const imgEl = plCover.querySelector('.smart-playlist-cover-img');
+            const artistName = getSmartPlaylistFirstTrackArtist(pl);
+            if (artistName) {
+                loadArtistImage(artistName, imgEl);
+            } else {
+                plCover.innerHTML = `<span style="font-size:100px;color:var(--accent);display:flex;align-items:center;justify-content:center;">${iconSymbol}</span>`;
+            }
+        } else if (pl.image) {
             plCover.innerHTML = `<img src="${pl.image}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />` +
                 `<span style="display:none;font-size:100px;color:var(--accent);align-items:center;justify-content:center;width:100%;height:100%;">${iconSymbol}</span>`;
         } else if (pl.id.startsWith('smart:')) {
@@ -2506,6 +2588,20 @@ async function openPlaylistDetail(pl) {
             const idx = playlists.findIndex(p => p.id === pl.id);
             if (idx !== -1) playlists[idx] = fullPl;
             renderPlaylistDetail(fullPl);
+            if (isSmartMix && plCover) {
+                const firstPt = fullPl.tracks[0];
+                const firstTrack = firstPt ? trackMap.get(firstPt.trackId) : null;
+                const artistName = firstTrack ? firstTrack.artist : '';
+                if (artistName) {
+                    const mixId = fullPl.id.split(':').pop();
+                    plCover.innerHTML = `
+                        <img class="smart-playlist-cover-img" style="width:100%;height:100%;object-fit:cover;border-radius:8px;z-index:0;position:absolute;inset:0;" />
+                        <div class="smart-playlist-cover-overlay" data-mix-id="${mixId}" style="position:absolute;inset:0;z-index:1;"></div>
+                    `;
+                    const imgEl = plCover.querySelector('.smart-playlist-cover-img');
+                    loadArtistImage(artistName, imgEl);
+                }
+            }
         } else {
             renderPlaylistDetail({ ...pl, tracks: [] });
             showToast('Failed to load playlist songs');
