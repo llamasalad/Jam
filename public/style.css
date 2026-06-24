@@ -2279,7 +2279,7 @@ body.player-open #main {
 #smart-mixes-container .suggested-info {
   position: absolute;
   top: 0;
-  text-align: right;
+  text-align: left;
 }
 
 #smart-mixes-container .suggested-title {

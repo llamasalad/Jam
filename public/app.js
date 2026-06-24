@@ -80,6 +80,7 @@ let shuffle = localStorage.getItem('music_shuffle') === 'true', seeking = false,
 const SAVED_VOL = parseInt(localStorage.getItem('music_vol') || '80');
 let lastVol = SAVED_VOL;
 let playlists = [], currentPlaylist = null, ctxTrack = null, pendingPlaylistTrack = null;
+let playlistOpenedFromLibrary = false;
 let queueOpen = false, lyricsTrackId = null, lyricsOpen = false;
 let isSelecting = false;
 let toggleMode = true;
@@ -2426,7 +2427,11 @@ function renderPlaylistCard(pl) {
 
     let playlistIconHtml = '\u266B';
     if (isSmartMix) {
-        playlistIconHtml = `<img class="smart-playlist-cover-img" style="width:100%;height:100%;object-fit:cover;border-radius:6px;z-index:0;" />`;
+        const mixId = pl.id.split(':').pop();
+        playlistIconHtml = `
+            <img class="smart-playlist-cover-img" style="width:100%;height:100%;object-fit:cover;border-radius:6px;z-index:0;position:absolute;inset:0;" />
+            <div class="smart-playlist-cover-overlay" data-mix-id="${mixId}" style="position:absolute;inset:0;z-index:1;border-radius:6px;"></div>
+        `;
     } else if (pl.image) {
         playlistIconHtml = `<img src="${pl.image}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width:100%;height:100%;object-fit:cover;border-radius:6px;" />` +
             `<span style="display:none;font-size:20px;color:var(--accent);align-items:center;justify-content:center;width:100%;height:100%;">${iconSymbol}</span>`;
@@ -2492,6 +2497,7 @@ async function openPlaylistDetail(pl) {
     document.body.classList.add('detail-view');
 
     const viewLibrary = document.getElementById('view-library');
+    playlistOpenedFromLibrary = viewLibrary && viewLibrary.classList.contains('active');
     if (viewLibrary) viewLibrary.classList.remove('active');
     const viewPlaylists = document.getElementById('view-playlists');
     if (viewPlaylists) viewPlaylists.classList.add('active');
@@ -2633,6 +2639,22 @@ function closePlaylistDetail() {
     document.body.classList.remove('detail-view');
     const headerTitle = document.getElementById('header-title');
     if (headerTitle) headerTitle.textContent = 'Jam!';
+
+    if (playlistOpenedFromLibrary) {
+        playlistOpenedFromLibrary = false;
+        const viewLibrary = document.getElementById('view-library');
+        const viewPlaylists = document.getElementById('view-playlists');
+        const sortBtn = document.getElementById('sort-btn');
+
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'library'));
+        document.querySelectorAll('.sidebar-item[data-tab]').forEach(t => t.classList.toggle('active', t.dataset.tab === 'library'));
+        document.querySelectorAll('.dock-item[data-tab]').forEach(t => t.classList.toggle('active', t.dataset.tab === 'library'));
+
+        if (viewLibrary) viewLibrary.classList.add('active');
+        if (viewPlaylists) viewPlaylists.classList.remove('active');
+        if (sortBtn) sortBtn.style.display = '';
+    }
+
     restoreScroll();
     notifyNativeDetailView(false);
 }
@@ -2674,9 +2696,7 @@ function renderPlaylistDetail(pl) {
 const plBack = document.getElementById('playlist-back');
 if (plBack) {
     plBack.onclick = () => {
-        if (playlistDetail) playlistDetail.classList.remove('active');
-        if (playlistsListView) playlistsListView.style.display = '';
-        currentPlaylist = null;
+        closePlaylistDetail();
     };
 }
 
