@@ -997,6 +997,13 @@ function restoreScroll() {
 }
 
 function openDetail(type, name, isGoingBack = false) {
+    if (type === 'playlist') {
+        const pl = playlists.find(p => p.name === name);
+        if (pl) {
+            openPlaylistDetail(pl);
+            return;
+        }
+    }
     saveScroll();
     if (!isGoingBack && currentDetailView) {
         detailViewHistory.push(currentDetailView);
@@ -1004,11 +1011,13 @@ function openDetail(type, name, isGoingBack = false) {
     currentDetailView = { type, name };
     document.body.classList.add('detail-view');
     const viewLibrary = document.getElementById('view-library');
+    const viewPlaylists = document.getElementById('view-playlists');
     const libraryCards = document.getElementById('library-cards');
     const trackList = document.getElementById('track-list');
     const headerTitle = document.getElementById('header-title');
 
     if (viewLibrary) viewLibrary.classList.add('active');
+    if (viewPlaylists) viewPlaylists.classList.remove('active');
     if (libraryCards) libraryCards.classList.remove('show');
     if (trackList) trackList.style.display = 'block';
     if (headerTitle) headerTitle.textContent = '';
@@ -2135,6 +2144,11 @@ async function openPlaylistDetail(pl) {
     currentPlaylist = pl;
     currentDetailView = { type: 'playlist', name: pl.name };
     document.body.classList.add('detail-view');
+
+    const viewLibrary = document.getElementById('view-library');
+    if (viewLibrary) viewLibrary.classList.remove('active');
+    const viewPlaylists = document.getElementById('view-playlists');
+    if (viewPlaylists) viewPlaylists.classList.add('active');
 
     if (playlistsListView) playlistsListView.style.display = 'none';
     if (playlistDetail) playlistDetail.classList.add('active');
