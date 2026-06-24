@@ -75,7 +75,7 @@ function triggerHaptic(type) {
 const TOKEN_KEY = 'music_token';
 let token = localStorage.getItem(TOKEN_KEY) || '';
 setTokenCookie(token);
-let tracks = [], trackMap = new Map(), filtered = [], queue = [], qIdx = -1, sortMode = 'title';
+let tracks = [], trackMap = new Map(), filtered = [], detailViewTracks = [], queue = [], qIdx = -1, sortMode = 'title';
 let shuffle = localStorage.getItem('music_shuffle') === 'true', seeking = false, muted = false;
 const SAVED_VOL = parseInt(localStorage.getItem('music_vol') || '80');
 let lastVol = SAVED_VOL;
@@ -953,6 +953,80 @@ function renderLibraryCards() {
     }
 }
 
+function renderArtistCards() {
+    const artistsContainer = document.getElementById('artists-container');
+    if (!artistsContainer) return;
+    artistsContainer.innerHTML = '';
+
+    const artists = new Map();
+    filtered.forEach(t => {
+        if (t.artist) {
+            if (!artists.has(t.artist)) artists.set(t.artist, { count: 0, artwork: null });
+            artists.get(t.artist).count++;
+            if (!artists.get(t.artist).artwork && t.id) artists.get(t.artist).artwork = t.id;
+        }
+    });
+
+    const fragA = document.createDocumentFragment();
+    Array.from(artists.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .forEach(([artist, data]) => {
+            const card = document.createElement('div');
+            card.className = 'artist-card';
+            if (data.artwork) card.dataset.artworkId = data.artwork;
+
+            const artistImg = document.createElement('img');
+            artistImg.className = 'artist-portrait';
+            artistImg.dataset.artistName = artist;
+            artistImg.alt = '';
+            artistImg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;visibility:hidden;';
+            artistImg.onerror = () => { artistImg.style.visibility = 'hidden'; };
+
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:absolute;inset:0;z-index:1';
+            const label = document.createElement('span');
+            label.textContent = artist;
+            card.append(artistImg, overlay, label);
+            card.onclick = () => openArtistDetail(artist);
+            fragA.appendChild(card);
+            if (data.artwork) _coverObserver.observe(card);
+            _artistImgObserver.observe(artistImg);
+        });
+    artistsContainer.appendChild(fragA);
+}
+
+function renderAlbumCards() {
+    const albumsContainer = document.getElementById('albums-container');
+    if (!albumsContainer) return;
+    albumsContainer.innerHTML = '';
+
+    const albums = new Map();
+    filtered.forEach(t => {
+        if (t.album) {
+            if (!albums.has(t.album)) albums.set(t.album, { count: 0, artist: t.artist, artwork: null });
+            albums.get(t.album).count++;
+            if (!albums.get(t.album).artwork && t.id) albums.get(t.album).artwork = t.id;
+        }
+    });
+
+    const fragB = document.createDocumentFragment();
+    Array.from(albums.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .forEach(([album, data]) => {
+            const card = document.createElement('div');
+            card.className = 'album-card';
+            if (data.artwork) card.dataset.artworkId = data.artwork;
+            const overlay = document.createElement('div');
+            const label = document.createElement('span');
+            label.textContent = album;
+            card.append(overlay, label);
+            card.onclick = () => openAlbumDetail(album);
+            fragB.appendChild(card);
+            if (data.artwork) _coverObserver.observe(card);
+        });
+    albumsContainer.appendChild(fragB);
+}
+
 const sortModes = ['title', 'artist', 'album'];
 const sortSVGs = [
     `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 32 32"><path fill="currentColor" d="m8.19 5l-.22.66L6.03 11H6v.06l-.94 2.6l-.06.15V15h2v-.84L7.41 13h3.18l.41 1.16V15h2v-1.19l-.06-.15l-.94-2.6V11h-.03l-1.94-5.34L9.81 5zM23 5.5l-.72.69L18 10.5l1.41 1.41L22 9.31V28h2V9.31l2.59 2.6L28 10.5l-4.28-4.31zM9 8.66L9.84 11H8.16zM5 17v2h5.56l-5.28 5.28l-.28.31V27h8v-2H7.44l5.28-5.28l.28-.31V17z"/></svg>`,
@@ -1039,6 +1113,7 @@ function openDetail(type, name, isGoingBack = false) {
     } else {
         filtered = tracks.filter(t => t[type] === name);
     }
+    detailViewTracks = [...filtered];
     renderList();
     restoreScroll();
     notifyNativeDetailView(true, name);
@@ -1057,7 +1132,10 @@ function closeDetailView(force = false) {
         openDetail(prev.type, prev.name, true);
         return;
     }
-    if (currentDetailView?.type === 'playlist') { closePlaylistDetail(); return; }
+    if (currentDetailView?.type === 'playlist') {
+        closePlaylistDetail();
+        if (!force) return;
+    }
     currentDetailView = null;
     document.body.classList.remove('detail-view');
     const libraryCards = document.getElementById('library-cards');
@@ -1310,7 +1388,23 @@ if (sidebarUpdate) {
 
 function applyFilter() {
     const q = searchEl ? searchEl.value.toLowerCase() : '';
-    filtered = q ? tracks.filter(t => (t.title || '').toLowerCase().includes(q) || (t.artist || '').toLowerCase().includes(q) || (t.album || '').toLowerCase().includes(q)) : [...tracks];
+    let baseTracks = (currentDetailView && currentDetailView.type !== 'playlist') ? detailViewTracks : tracks;
+
+    if (q) {
+        if (!currentDetailView) {
+            if (sortMode === 'artist') {
+                filtered = baseTracks.filter(t => (t.artist || '').toLowerCase().includes(q));
+            } else if (sortMode === 'album') {
+                filtered = baseTracks.filter(t => (t.album || '').toLowerCase().includes(q) || (t.artist || '').toLowerCase().includes(q));
+            } else {
+                filtered = baseTracks.filter(t => (t.title || '').toLowerCase().includes(q) || (t.artist || '').toLowerCase().includes(q) || (t.album || '').toLowerCase().includes(q));
+            }
+        } else {
+            filtered = baseTracks.filter(t => (t.title || '').toLowerCase().includes(q) || (t.artist || '').toLowerCase().includes(q) || (t.album || '').toLowerCase().includes(q));
+        }
+    } else {
+        filtered = [...baseTracks];
+    }
     sort();
 }
 
@@ -1339,11 +1433,13 @@ function sort() {
             if (artistsSection) artistsSection.style.display = 'block';
             if (albumsSection) albumsSection.style.display = 'none';
             if (trackList) trackList.style.display = 'none';
+            renderArtistCards();
         } else if (sortMode === 'album') {
             libraryCards.classList.add('show');
             if (artistsSection) artistsSection.style.display = 'none';
             if (albumsSection) albumsSection.style.display = 'block';
             if (trackList) trackList.style.display = 'none';
+            renderAlbumCards();
         }
     }
 
@@ -2152,10 +2248,10 @@ async function openPlaylistDetail(pl) {
 
     if (playlistsListView) playlistsListView.style.display = 'none';
     if (playlistDetail) playlistDetail.classList.add('active');
-    const plName = document.getElementById('playlist-detail-name');
+    const plName = playlistDetail ? playlistDetail.querySelector('#playlist-detail-name') : null;
     if (plName) plName.textContent = pl.name;
 
-    const plCover = document.getElementById('playlist-detail-cover');
+    const plCover = playlistDetail ? playlistDetail.querySelector('#playlist-detail-cover') : null;
     let iconSymbol = '♫';
     if (pl.id === 'smart:favorites') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="m5.825 21l1.625-7.025L2 9.25l7.2-.625L12 2l2.8 6.625l7.2.625l-5.45 4.725L18.175 21L12 17.275z"/></svg>';
     else if (pl.id === 'smart:recent') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="M13.5 8H12v5l4.28 2.54l.72-1.21l-3.5-2.08zM13 3a9 9 0 0 0-9 9H1l3.96 4.03L9 12H6a7 7 0 0 1 7-7a7 7 0 0 1 7 7a7 7 0 0 1-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.9 8.9 0 0 0 13 21a9 9 0 0 0 9-9a9 9 0 0 0-9-9"/></svg>';
@@ -2225,9 +2321,9 @@ function closePlaylistDetail() {
 }
 
 function renderPlaylistDetail(pl) {
-    const plCount = document.getElementById('playlist-detail-count');
+    const plCount = playlistDetail ? playlistDetail.querySelector('#playlist-detail-count') : null;
     if (plCount) plCount.textContent = pl.tracks.length + ' song' + (pl.tracks.length !== 1 ? 's' : '');
-    const container = document.getElementById('playlist-tracks');
+    const container = playlistDetail ? playlistDetail.querySelector('#playlist-tracks') : null;
     if (!container) return;
     container.innerHTML = '';
     if (!pl.tracks.length) {
@@ -2382,12 +2478,12 @@ if (editPlConfirm) {
                 const idx = playlists.findIndex(p => p.id === currentPlaylist.id);
                 if (idx !== -1) playlists[idx] = updated;
                 currentPlaylist = updated;
-                const plName = document.getElementById('playlist-detail-name');
+                const plName = playlistDetail ? playlistDetail.querySelector('#playlist-detail-name') : null;
                 if (plName) plName.textContent = updated.name;
                 const headerTitle = document.getElementById('header-title');
                 if (headerTitle) headerTitle.textContent = updated.name;
                 if (currentDetailView) currentDetailView.name = updated.name;
-                const plCover = document.getElementById('playlist-detail-cover');
+                const plCover = playlistDetail ? playlistDetail.querySelector('#playlist-detail-cover') : null;
                 if (plCover) plCover.innerHTML = updated.image ? `<img src="${updated.image}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />` : '\u266B';
                 renderPlaylists();
                 renderPlaylistDetail(updated);
