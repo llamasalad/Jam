@@ -53,6 +53,7 @@ export async function getTracks(forceRefresh = false) {
       duration: song.duration,
       suffix: song.suffix || 'flac',
       starred: !!song.starred,
+      genre: song.genre || '',
       coverUrl: `${NAVIDROME_URL}/rest/getCoverArt?id=${song.coverArt}&${getAuthParams()}`,
       streamUrl: `${NAVIDROME_URL}/rest/stream?id=${song.id}&${getAuthParams()}`,
     };
@@ -204,6 +205,7 @@ export async function getFavorites() {
     duration: song.duration,
     suffix: song.suffix || 'flac',
     starred: true,
+    genre: song.genre || '',
     coverUrl: `${NAVIDROME_URL}/rest/getCoverArt?id=${song.coverArt}&${getAuthParams()}`,
     streamUrl: `${NAVIDROME_URL}/rest/stream?id=${song.id}&${getAuthParams()}`,
   }));
@@ -244,6 +246,7 @@ async function getAlbumTracks(albumId) {
     duration: song.duration,
     suffix: song.suffix || 'flac',
     starred: !!song.starred,
+    genre: song.genre || '',
     coverUrl: `${NAVIDROME_URL}/rest/getCoverArt?id=${song.coverArt}&${getAuthParams()}`,
     streamUrl: `${NAVIDROME_URL}/rest/stream?id=${song.id}&${getAuthParams()}`,
   }));
@@ -284,6 +287,7 @@ export async function getRandomDiscovery() {
     duration: song.duration,
     suffix: song.suffix || 'flac',
     starred: !!song.starred,
+    genre: song.genre || '',
     coverUrl: `${NAVIDROME_URL}/rest/getCoverArt?id=${song.coverArt}&${getAuthParams()}`,
     streamUrl: `${NAVIDROME_URL}/rest/stream?id=${song.id}&${getAuthParams()}`,
   }));

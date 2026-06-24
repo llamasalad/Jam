@@ -539,7 +539,10 @@ const SMART_PLAYLISTS = [
     { id: 'smart:favorites', name: 'Favorites', image: '', tracks: [] },
     { id: 'smart:recent', name: 'Recently Played', image: '', tracks: [] },
     { id: 'smart:newest', name: 'Recently Added', image: '', tracks: [] },
-    { id: 'smart:random', name: 'Discover', image: '', tracks: [] }
+    { id: 'smart:random', name: 'Daily Mix', image: '/images/daily_mix.png', tracks: [] },
+    { id: 'smart:genre:upbeat', name: 'Upbeat Mix', image: '/images/upbeat_mix.png', tracks: [] },
+    { id: 'smart:genre:chill', name: 'Chill Mix', image: '/images/chill_mix.png', tracks: [] },
+    { id: 'smart:genre:flow', name: 'Flow Mix', image: '/images/flow_mix.png', tracks: [] }
 ];
 
 function updateHeartUI(starred) {
@@ -913,6 +916,11 @@ function renderLibraryCards() {
         suggestedContainer.appendChild(fragS);
     }
 
+    const smartMixesContainer = document.getElementById('smart-mixes-container');
+    if (smartMixesContainer) {
+        renderSmartMixesCards();
+    }
+
     if (suggestedContainer) {
         renderSuggestedCards();
 
@@ -921,6 +929,7 @@ function renderLibraryCards() {
             if (savedTime && Date.now() - parseInt(savedTime) >= 3600000) {
                 if (audio.paused && document.visibilityState === 'hidden') {
                     renderSuggestedCards(true);
+                    renderSmartMixesCards(true);
                 }
             }
         };
@@ -932,6 +941,7 @@ function renderLibraryCards() {
                 const savedTime = localStorage.getItem('jam_suggested_time');
                 if (savedTime && Date.now() - parseInt(savedTime) >= 3600000 && audio.paused) {
                     renderSuggestedCards(true);
+                    renderSmartMixesCards(true);
                 }
             }
         });
@@ -948,9 +958,169 @@ function renderLibraryCards() {
                 refreshBtn.style.setProperty('transform', `rotate(${(refreshBtn._rot || 0) + 360}deg)`, 'important');
                 refreshBtn._rot = (refreshBtn._rot || 0) + 360;
                 renderSuggestedCards(true);
+                renderSmartMixesCards(true);
             };
         }
     }
+}
+
+const MIX_GENRES = {
+    'upbeat': ['Pop', 'Dance', 'Rap/Hip Hop'],
+    'chill': ['R&B', 'Dance', 'Electro'],
+    'flow': ['Rap/Hip Hop', 'R&B', 'Pop']
+};
+
+function generateSmartGenreMix(mixId, force = false) {
+    const genres = MIX_GENRES[mixId];
+    if (!genres) return [];
+
+    const now = Date.now();
+    const cacheKey = `jam_smart_mix_${mixId}_tracks`;
+    const timeKey = `jam_smart_mix_${mixId}_time`;
+
+    const saved = localStorage.getItem(cacheKey);
+    const savedTime = localStorage.getItem(timeKey);
+
+    if (!force && saved && savedTime && now - parseInt(savedTime, 10) < 86400000) {
+        try {
+            const cachedIds = JSON.parse(saved);
+            if (Array.isArray(cachedIds) && cachedIds.length > 0) {
+                return cachedIds;
+            }
+        } catch (e) {
+            console.error(`Failed to parse cached IDs for ${mixId}`, e);
+        }
+    }
+
+    const lowercaseGenres = genres.map(g => g.toLowerCase());
+    const matchedTracks = tracks.filter(t => {
+        const tg = (t.genre || '').toLowerCase();
+        return lowercaseGenres.includes(tg);
+    });
+
+    if (matchedTracks.length === 0) {
+        return [];
+    }
+
+    const grouped = {};
+    lowercaseGenres.forEach(g => { grouped[g] = []; });
+    matchedTracks.forEach(t => {
+        const tg = (t.genre || '').toLowerCase();
+        if (grouped[tg]) grouped[tg].push(t);
+    });
+
+    const selectedTracks = [];
+    const selectedIds = new Set();
+
+    lowercaseGenres.forEach(g => {
+        const groupList = grouped[g];
+        if (groupList && groupList.length > 0) {
+            const shuffledGroup = [...groupList].sort(() => 0.5 - Math.random());
+            const capped = shuffledGroup.slice(0, 5);
+            capped.forEach(t => {
+                selectedTracks.push(t);
+                selectedIds.add(t.id);
+            });
+        }
+    });
+
+    if (selectedTracks.length < 20) {
+        const remainingPool = matchedTracks.filter(t => !selectedIds.has(t.id));
+        if (remainingPool.length > 0) {
+            const shuffledRemaining = remainingPool.sort(() => 0.5 - Math.random());
+            const needed = 20 - selectedTracks.length;
+            const overflow = shuffledRemaining.slice(0, needed);
+            overflow.forEach(t => {
+                selectedTracks.push(t);
+                selectedIds.add(t.id);
+            });
+        }
+    }
+
+    const finalSelection = selectedTracks.sort(() => 0.5 - Math.random()).map(t => t.id);
+
+    localStorage.setItem(cacheKey, JSON.stringify(finalSelection));
+    localStorage.setItem(timeKey, now.toString());
+
+    return finalSelection;
+}
+
+function renderSmartMixesCards(force = false) {
+    const container = document.getElementById('smart-mixes-container');
+    if (!container || !tracks.length) return;
+
+    container.innerHTML = '';
+    const frag = document.createDocumentFragment();
+
+    const targetMixes = SMART_PLAYLISTS.filter(pl =>
+        ['smart:random', 'smart:genre:upbeat', 'smart:genre:chill', 'smart:genre:flow'].includes(pl.id)
+    );
+
+    targetMixes.forEach(pl => {
+        const card = document.createElement('div');
+        card.className = 'suggested-card';
+
+        let artworkTrackId = null;
+        let mixTrackIds = [];
+
+        if (pl.id === 'smart:random') {
+            const savedDaily = localStorage.getItem('jam_daily_mix_tracks');
+            const savedDailyTime = localStorage.getItem('jam_daily_mix_time');
+            const now = Date.now();
+            if (!force && savedDaily && savedDailyTime && now - parseInt(savedDailyTime, 10) < 86400000) {
+                try { mixTrackIds = JSON.parse(savedDaily); } catch (e) { }
+            }
+            if (!mixTrackIds.length) {
+                mixTrackIds = [...tracks].sort(() => 0.5 - Math.random()).slice(0, 20).map(t => t.id);
+                localStorage.setItem('jam_daily_mix_tracks', JSON.stringify(mixTrackIds));
+                localStorage.setItem('jam_daily_mix_time', now.toString());
+            }
+        } else {
+            const mixId = pl.id.split(':').pop();
+            mixTrackIds = generateSmartGenreMix(mixId, force);
+        }
+
+        if (mixTrackIds.length > 0) {
+            artworkTrackId = mixTrackIds[0];
+            card.dataset.id = artworkTrackId;
+            card.dataset.artworkId = artworkTrackId;
+            card.dataset.coverSize = "600";
+        }
+
+        const overlay = document.createElement('div');
+        const info = document.createElement('div');
+        info.className = 'suggested-info';
+
+        const titleLabel = document.createElement('div');
+        titleLabel.className = 'suggested-title';
+        titleLabel.textContent = pl.name;
+
+        const subLabel = document.createElement('div');
+        subLabel.className = 'suggested-artist';
+        subLabel.textContent = `${mixTrackIds.length} tracks`;
+
+        info.append(titleLabel, subLabel);
+        card.append(overlay, info);
+
+        bindTapActivation(card, () => {
+            const resolvedTracks = mixTrackIds.map(id => trackMap.get(id)).filter(Boolean);
+            const fullPl = {
+                ...pl,
+                tracks: resolvedTracks.map(t => ({
+                    trackId: t.id,
+                    title: t.title,
+                    artist: t.artist,
+                    album: t.album
+                }))
+            };
+            openPlaylistDetail(fullPl);
+        });
+
+        frag.appendChild(card);
+        if (artworkTrackId) _coverObserver.observe(card);
+    });
+
+    container.appendChild(frag);
 }
 
 function renderArtistCards() {
@@ -2193,6 +2363,45 @@ async function loadPlaylists() {
     } catch (e) { console.error("Failed to load playlists", e); }
 }
 
+function renderPlaylistCard(pl) {
+    const isSmart = pl.id.startsWith('smart:');
+    const card = document.createElement('div');
+    card.className = 'playlist-card' + (isSmart ? ' smart-playlist-card' : '');
+    card.dataset.id = pl.id;
+
+    let iconSymbol = '♫';
+    if (pl.id === 'smart:favorites') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="m5.825 21l1.625-7.025L2 9.25l7.2-.625L12 2l2.8 6.625l7.2.625l-5.45 4.725L18.175 21L12 17.275z"/></svg>';
+    else if (pl.id === 'smart:recent') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="M13.5 8H12v5l4.28 2.54l.72-1.21l-3.5-2.08zM13 3a9 9 0 0 0-9 9H1l3.96 4.03L9 12H6a7 7 0 0 1 7-7a7 7 0 0 1 7 7a7 7 0 0 1-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.9 8.9 0 0 0 13 21a9 9 0 0 0 9-9a9 9 0 0 0-9-9"/></svg>';
+    else if (pl.id === 'smart:newest') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="m21.45 11.11l-3-1.5l-2.7-1.35l-1.35-2.7l-1.5-3c-.34-.68-1.45-.68-1.79 0l-1.5 3l-1.35 2.7l-2.7 1.35l-3 1.5c-.34.17-.55.52-.55.89s.21.72.55.89l3 1.5l2.7 1.35l1.35 2.7l1.5 3c.17.34.52.55.89.55s.73-.21.89-.55l1.5-3l1.35-2.7l2.7-1.35l3-1.5c.34-.17.55-.52.55-.89s-.21-.72-.55-.89Zm-3.89 1.5l-.84.42l-2.16 1.08l-.3.15l-.15.3L12 18.77l-2.11-4.21l-.15-.3l-.3-.15l-2.16-1.08l-.84-.42L5.23 12l1.21-.61l.84-.42l2.16-1.08l.3-.15l.15-.3L12 5.23l2.11 4.21l.15.3l.3.15l2.16 1.08l.84.42l1.21.61z"/></svg>';
+    else if (pl.id === 'smart:random') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512"><path d="M0 0h512v512H0z" fill="none"/><path fill="currentColor" fill-rule="evenodd" d="M465.023 135.32L376.68 465.023L46.977 376.68L135.32 46.977zM317.08 316.538c-17.071-4.574-34.618 5.557-39.192 22.627c-4.574 17.07 5.556 34.618 22.627 39.192s34.618-5.556 39.192-22.627s-5.557-34.618-22.627-39.192m-52.798-91.448c-17.07-4.574-34.617 5.557-39.192 22.628c-4.574 17.07 5.557 34.618 22.628 39.192s34.617-5.557 39.192-22.628c4.574-17.07-5.557-34.617-22.628-39.192m-52.797-91.447c-17.071-4.574-34.618 5.556-39.192 22.627s5.557 34.618 22.627 39.192c17.071 4.574 34.618-5.556 39.192-22.627s-5.556-34.618-22.627-39.192"/></svg>';
+    else if (pl.id.startsWith('smart:genre:')) iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55c-2.21 0-4 1.79-4 4s1.79 4 4 4s4-1.79 4-4V7h4V3h-6z"/></svg>';
+
+    let playlistIconHtml = '\u266B';
+    if (pl.image) {
+        playlistIconHtml = `<img src="${pl.image}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width:100%;height:100%;object-fit:cover;border-radius:6px;" />` +
+            `<span style="display:none;font-size:20px;color:var(--accent);align-items:center;justify-content:center;width:100%;height:100%;">${iconSymbol}</span>`;
+    } else if (isSmart) {
+        playlistIconHtml = `<span style="font-size:20px;color:var(--accent);display:flex;align-items:center;justify-content:center;">${iconSymbol}</span>`;
+    }
+
+    const deleteBtnHtml = isSmart ? '' : '<button class="playlist-del" title="Delete">\u2715</button>';
+    const countHtml = isSmart ? '' : `<div class="playlist-count">${pl.tracks.length} song${pl.tracks.length !== 1 ? 's' : ''}</div>`;
+
+    card.innerHTML = '<div class="playlist-icon">' + playlistIconHtml + '</div><div class="playlist-info"><div class="playlist-name">' + pl.name + '</div>' + countHtml + '</div>' + deleteBtnHtml;
+
+    if (!isSmart) {
+        card.querySelector('.playlist-del').onclick = e => { e.stopPropagation(); deletePlaylist(pl.id) };
+    }
+    bindTapActivation(card, () => openPlaylistDetail(pl), {
+        onLongPress: (e) => {
+            if (!isSmart) {
+                openPlaylistCtxMenu({ clientX: e.clientX, clientY: e.clientY, stopPropagation() { } }, pl);
+            }
+        }
+    });
+    playlistsContainer.appendChild(card);
+}
+
 function renderPlaylists() {
     if (!playlistsContainer) return;
     playlistsContainer.innerHTML = '';
@@ -2200,39 +2409,27 @@ function renderPlaylists() {
         playlistsContainer.innerHTML = '<div style="padding:40px 16px;text-align:center;color:var(--muted);font-size:14px">No playlists yet</div>';
         return;
     }
-    playlists.forEach(pl => {
-        const isSmart = pl.id.startsWith('smart:');
-        const card = document.createElement('div');
-        card.className = 'playlist-card' + (isSmart ? ' smart-playlist-card' : '');
-        card.dataset.id = pl.id;
 
-        let playlistIconHtml = '\u266B';
-        if (isSmart) {
-            if (pl.id === 'smart:favorites') playlistIconHtml = '<span style="font-size:20px;color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="m5.825 21l1.625-7.025L2 9.25l7.2-.625L12 2l2.8 6.625l7.2.625l-5.45 4.725L18.175 21L12 17.275z"/></svg></span>';
-            else if (pl.id === 'smart:recent') playlistIconHtml = '<span style="font-size:20px;color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="M13.5 8H12v5l4.28 2.54l.72-1.21l-3.5-2.08zM13 3a9 9 0 0 0-9 9H1l3.96 4.03L9 12H6a7 7 0 0 1 7-7a7 7 0 0 1 7 7a7 7 0 0 1-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.9 8.9 0 0 0 13 21a9 9 0 0 0 9-9a9 9 0 0 0-9-9"/></svg></span>';
-            else if (pl.id === 'smart:newest') playlistIconHtml = '<span style="font-size:20px;color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="m21.45 11.11l-3-1.5l-2.7-1.35l-1.35-2.7l-1.5-3c-.34-.68-1.45-.68-1.79 0l-1.5 3l-1.35 2.7l-2.7 1.35l-3 1.5c-.34.17-.55.52-.55.89s.21.72.55.89l3 1.5l2.7 1.35l1.35 2.7l1.5 3c.17.34.52.55.89.55s.73-.21.89-.55l1.5-3l1.35-2.7l2.7-1.35l3-1.5c.34-.17.55-.52.55-.89s-.21-.72-.55-.89Zm-3.89 1.5l-.84.42l-2.16 1.08l-.3.15l-.15.3L12 18.77l-2.11-4.21l-.15-.3l-.3-.15l-2.16-1.08l-.84-.42L5.23 12l1.21-.61l.84-.42l2.16-1.08l.3-.15l.15-.3L12 5.23l2.11 4.21l.15.3l.3.15l2.16 1.08l.84.42l1.21.61z"/></svg></span>';
-            else if (pl.id === 'smart:random') playlistIconHtml = '<span style="font-size:20px;color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512"><path d="M0 0h512v512H0z" fill="none"/><path fill="currentColor" fill-rule="evenodd" d="M465.023 135.32L376.68 465.023L46.977 376.68L135.32 46.977zM317.08 316.538c-17.071-4.574-34.618 5.557-39.192 22.627c-4.574 17.07 5.556 34.618 22.627 39.192s34.618-5.556 39.192-22.627s-5.557-34.618-22.627-39.192m-52.798-91.448c-17.07-4.574-34.617 5.557-39.192 22.628c-4.574 17.07 5.557 34.618 22.628 39.192s34.617-5.557 39.192-22.628c4.574-17.07-5.557-34.617-22.628-39.192m-52.797-91.447c-17.071-4.574-34.618 5.556-39.192 22.627s5.557 34.618 22.627 39.192c17.071 4.574 34.618-5.556 39.192-22.627s-5.556-34.618-22.627-39.192"/></svg></span>';
-        } else if (pl.image) {
-            playlistIconHtml = `<img src="${pl.image}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;" />`;
-        }
+    const smartList = playlists.filter(pl => pl.id.startsWith('smart:'));
+    const customList = playlists.filter(pl => !pl.id.startsWith('smart:'));
 
-        const deleteBtnHtml = isSmart ? '' : '<button class="playlist-del" title="Delete">\u2715</button>';
-        const countHtml = isSmart ? '' : `<div class="playlist-count">${pl.tracks.length} song${pl.tracks.length !== 1 ? 's' : ''}</div>`;
+    const renderHeader = (title) => {
+        const h = document.createElement('h3');
+        h.className = 'section-title';
+        h.style.cssText = 'grid-column: 1 / -1; margin: 20px 0 10px 0; font-size: 13px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em;';
+        h.textContent = title;
+        playlistsContainer.appendChild(h);
+    };
 
-        card.innerHTML = '<div class="playlist-icon">' + playlistIconHtml + '</div><div class="playlist-info"><div class="playlist-name">' + pl.name + '</div>' + countHtml + '</div>' + deleteBtnHtml;
+    if (smartList.length > 0) {
+        renderHeader('smart mixes');
+        smartList.forEach(pl => renderPlaylistCard(pl));
+    }
 
-        if (!isSmart) {
-            card.querySelector('.playlist-del').onclick = e => { e.stopPropagation(); deletePlaylist(pl.id) };
-        }
-        bindTapActivation(card, () => openPlaylistDetail(pl), {
-            onLongPress: (e) => {
-                if (!isSmart) {
-                    openPlaylistCtxMenu({ clientX: e.clientX, clientY: e.clientY, stopPropagation() { } }, pl);
-                }
-            }
-        });
-        playlistsContainer.appendChild(card);
-    });
+    if (customList.length > 0) {
+        renderHeader('my playlists');
+        customList.forEach(pl => renderPlaylistCard(pl));
+    }
 }
 
 async function openPlaylistDetail(pl) {
@@ -2259,7 +2456,14 @@ async function openPlaylistDetail(pl) {
     else if (pl.id === 'smart:random') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512"><path d="M0 0h512v512H0z" fill="none"/><path fill="currentColor" fill-rule="evenodd" d="M465.023 135.32L376.68 465.023L46.977 376.68L135.32 46.977zM317.08 316.538c-17.071-4.574-34.618 5.557-39.192 22.627c-4.574 17.07 5.556 34.618 22.627 39.192s34.618-5.556 39.192-22.627s-5.557-34.618-22.627-39.192m-52.798-91.448c-17.07-4.574-34.617 5.557-39.192 22.628c-4.574 17.07 5.557 34.618 22.628 39.192s34.617-5.557 39.192-22.628c4.574-17.07-5.557-34.617-22.628-39.192m-52.797-91.447c-17.071-4.574-34.618 5.556-39.192 22.627s5.557 34.618 22.627 39.192c17.071 4.574 34.618-5.556 39.192-22.627s-5.556-34.618-22.627-39.192"/></svg>';
 
     if (plCover) {
-        plCover.innerHTML = pl.id.startsWith('smart:') ? `<span style="font-size:100px;color:var(--accent);display:flex;align-items:center;justify-content:center;">${iconSymbol}</span>` : (pl.image ? `<img src="${pl.image}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />` : '\u266B');
+        if (pl.image) {
+            plCover.innerHTML = `<img src="${pl.image}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />` +
+                `<span style="display:none;font-size:100px;color:var(--accent);align-items:center;justify-content:center;width:100%;height:100%;">${iconSymbol}</span>`;
+        } else if (pl.id.startsWith('smart:')) {
+            plCover.innerHTML = `<span style="font-size:100px;color:var(--accent);display:flex;align-items:center;justify-content:center;">${iconSymbol}</span>`;
+        } else {
+            plCover.innerHTML = pl.image ? `<img src="${pl.image}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />` : '\u266B';
+        }
     }
 
     const plEditBtn = document.getElementById('playlist-edit-btn');
@@ -2286,7 +2490,27 @@ async function openPlaylistDetail(pl) {
             const tracksList = await Navidrome.getRecentlyAdded();
             fullPl = { ...pl, tracks: tracksList.map(t => ({ trackId: t.id, title: t.title, artist: t.artist, album: t.album })) };
         } else if (pl.id === 'smart:random') {
-            const tracksList = await Navidrome.getRandomDiscovery();
+            let mixTrackIds = [];
+            const savedDaily = localStorage.getItem('jam_daily_mix_tracks');
+            const savedDailyTime = localStorage.getItem('jam_daily_mix_time');
+            const now = Date.now();
+            if (savedDaily && savedDailyTime && now - parseInt(savedDailyTime, 10) < 86400000) {
+                try { mixTrackIds = JSON.parse(savedDaily); } catch (e) { }
+            }
+            let tracksList;
+            if (mixTrackIds.length) {
+                tracksList = mixTrackIds.map(id => trackMap.get(id)).filter(Boolean);
+            } else {
+                const fetchedList = await Navidrome.getRandomDiscovery();
+                tracksList = fetchedList.slice(0, 20);
+                localStorage.setItem('jam_daily_mix_tracks', JSON.stringify(tracksList.map(t => t.id)));
+                localStorage.setItem('jam_daily_mix_time', now.toString());
+            }
+            fullPl = { ...pl, tracks: tracksList.map(t => ({ trackId: t.id, title: t.title, artist: t.artist, album: t.album })) };
+        } else if (pl.id.startsWith('smart:genre:')) {
+            const mixId = pl.id.split(':').pop();
+            const mixTrackIds = generateSmartGenreMix(mixId);
+            const tracksList = mixTrackIds.map(id => trackMap.get(id)).filter(Boolean);
             fullPl = { ...pl, tracks: tracksList.map(t => ({ trackId: t.id, title: t.title, artist: t.artist, album: t.album })) };
         } else {
             fullPl = await fetchPlaylist(pl.id);

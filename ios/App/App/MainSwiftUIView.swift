@@ -135,7 +135,6 @@ struct MainSwiftUIView: View {
                             Image(systemName: selectedTab == "library" ? "house.fill" : "house")
                                 .imageScale(.large)
                                 .frame(width: 44, height: 44)
-                                .padding(.horizontal, 6)
                         }
                         .foregroundStyle(selectedTab == "library" ? .primary : .secondary)
 
@@ -148,7 +147,6 @@ struct MainSwiftUIView: View {
                             Image(systemName: "list.triangle")
                                 .imageScale(.large)
                                 .frame(width: 44, height: 44)
-                                .padding(.horizontal, 6)
                         }
                         .foregroundStyle(selectedTab == "playlists" ? .primary : .secondary)
 
@@ -167,7 +165,7 @@ struct MainSwiftUIView: View {
                             Image(systemName: "magnifyingglass")
                                 .frame(width: 44, height: 44)
                         }
-                        .foregroundStyle(.secondary)
+                        .buttonStyle(.plain)
                     }
                 }
             }

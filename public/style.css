@@ -2215,7 +2215,8 @@ body.player-open #main {
   text-transform: uppercase;
 }
 
-#suggested-container {
+#suggested-container,
+#smart-mixes-container {
   display: flex;
   gap: 16px;
   overflow-x: auto;
@@ -3426,7 +3427,8 @@ body.menu-open .queue-remove {
     margin: 10px;
   }
 
-  #suggested-container {
+  #suggested-container,
+  #smart-mixes-container {
     flex-wrap: wrap;
   }
 
@@ -3434,20 +3436,24 @@ body.menu-open .queue-remove {
     font-weight: 500;
   }
 
-  #suggested-container::-webkit-scrollbar {
+  #suggested-container::-webkit-scrollbar,
+  #smart-mixes-container::-webkit-scrollbar {
     height: 8px;
   }
 
-  #suggested-container::-webkit-scrollbar-track {
+  #suggested-container::-webkit-scrollbar-track,
+  #smart-mixes-container::-webkit-scrollbar-track {
     background: transparent;
   }
 
-  #suggested-container::-webkit-scrollbar-thumb {
+  #suggested-container::-webkit-scrollbar-thumb,
+  #smart-mixes-container::-webkit-scrollbar-thumb {
     background: var(--surface3);
     border-radius: 4px;
   }
 
-  #suggested-container::-webkit-scrollbar-thumb:hover {
+  #suggested-container::-webkit-scrollbar-thumb:hover,
+  #smart-mixes-container::-webkit-scrollbar-thumb:hover {
     background: var(--muted);
   }
 
@@ -4099,7 +4105,8 @@ body.menu-open .queue-remove {
     justify-content: center;
   }
 
-  #suggested-container {
+  #suggested-container,
+  #smart-mixes-container {
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
@@ -4108,7 +4115,8 @@ body.menu-open .queue-remove {
     margin-left: 16px;
   }
 
-  #suggested-container::-webkit-scrollbar {
+  #suggested-container::-webkit-scrollbar,
+  #smart-mixes-container::-webkit-scrollbar {
     display: none;
   }
 }
