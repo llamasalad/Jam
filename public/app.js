@@ -1395,7 +1395,7 @@ function applyFilter() {
             if (sortMode === 'artist') {
                 filtered = baseTracks.filter(t => (t.artist || '').toLowerCase().includes(q));
             } else if (sortMode === 'album') {
-                filtered = baseTracks.filter(t => (t.album || '').toLowerCase().includes(q) || (t.artist || '').toLowerCase().includes(q));
+                filtered = baseTracks.filter(t => (t.album || '').toLowerCase().includes(q));
             } else {
                 filtered = baseTracks.filter(t => (t.title || '').toLowerCase().includes(q) || (t.artist || '').toLowerCase().includes(q) || (t.album || '').toLowerCase().includes(q));
             }
