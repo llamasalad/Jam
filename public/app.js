@@ -966,9 +966,9 @@ function renderLibraryCards() {
 }
 
 const MIX_GENRES = {
-    'upbeat': ['Pop', 'Dance', 'Rap/Hip Hop'],
+    'upbeat': ['Pop', 'Dance', 'Rap', 'Rap/Hip Hop'],
     'chill': ['R&B', 'Dance', 'Electro'],
-    'flow': ['Rap/Hip Hop', 'R&B', 'Pop']
+    'flow': ['Rap', 'Rap/Hip Hop', 'R&B', 'Pop']
 };
 
 function generateSmartGenreMix(mixId, force = false) {
@@ -976,8 +976,8 @@ function generateSmartGenreMix(mixId, force = false) {
     if (!genres) return [];
 
     const now = Date.now();
-    const cacheKey = `jam_smart_mix_${mixId}_tracks`;
-    const timeKey = `jam_smart_mix_${mixId}_time`;
+    const cacheKey = `jam_smart_mix_${mixId}_tracks_v2`;
+    const timeKey = `jam_smart_mix_${mixId}_time_v2`;
 
     const saved = localStorage.getItem(cacheKey);
     const savedTime = localStorage.getItem(timeKey);
