@@ -2413,23 +2413,8 @@ function renderPlaylists() {
     const smartList = playlists.filter(pl => pl.id.startsWith('smart:'));
     const customList = playlists.filter(pl => !pl.id.startsWith('smart:'));
 
-    const renderHeader = (title) => {
-        const h = document.createElement('h3');
-        h.className = 'section-title';
-        h.style.cssText = 'grid-column: 1 / -1; margin: 20px 0 10px 0; font-size: 13px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em;';
-        h.textContent = title;
-        playlistsContainer.appendChild(h);
-    };
-
-    if (smartList.length > 0) {
-        renderHeader('smart mixes');
-        smartList.forEach(pl => renderPlaylistCard(pl));
-    }
-
-    if (customList.length > 0) {
-        renderHeader('my playlists');
-        customList.forEach(pl => renderPlaylistCard(pl));
-    }
+    smartList.forEach(pl => renderPlaylistCard(pl));
+    customList.forEach(pl => renderPlaylistCard(pl));
 }
 
 async function openPlaylistDetail(pl) {
