@@ -2214,6 +2214,7 @@ body.player-open #main {
   color: var(--muted);
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  font-family: begav;
 }
 
 #suggested-container,
@@ -2252,7 +2253,7 @@ body.player-open #main {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0) 60%);
+  background: linear-gradient(to top, rgb(0, 0, 0) 0%, rgba(0, 0, 0, 0) 100%);
   z-index: 1;
 }
 
@@ -2275,12 +2276,6 @@ body.player-open #main {
   overflow: hidden;
   text-overflow: ellipsis;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-#smart-mixes-container .suggested-info {
-  bottom: 0;
-  text-align: left;
-  left: 0;
 }
 
 #smart-mixes-container .suggested-title {
