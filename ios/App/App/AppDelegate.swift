@@ -247,6 +247,8 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             mgr.coverUrl = coverUrl
             mgr.canvasUrl = canvasUrl
             mgr.starred = starred
+            mgr.isFetchingLyrics = false
+            mgr.lyricsFetchFailed = false
         }
         uiTimeTickCount = 0
 
@@ -525,6 +527,16 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             let mgr = PlaybackStateManager.shared
             mgr.currentLyric = current
             mgr.nextLyric = next
+            if current == "Loading lyrics..." {
+                mgr.isFetchingLyrics = true
+                mgr.lyricsFetchFailed = false
+            } else if current == "No lyrics found" {
+                mgr.isFetchingLyrics = false
+                mgr.lyricsFetchFailed = true
+            } else if !current.isEmpty {
+                mgr.isFetchingLyrics = false
+                mgr.lyricsFetchFailed = false
+            }
             if let all = call.getArray("all", [String: Any].self) {
                 mgr.updateFullLyrics(all)
             }

@@ -51,6 +51,8 @@ final class PlaybackStateManager {
     var nextLyric: String = ""
     var fullLyrics: [[String: Any]] = []
     var activeLyricIndex: Int? = nil
+    var isFetchingLyrics: Bool = false
+    var lyricsFetchFailed: Bool = false
 
     private func updateActiveLyricIndex(for time: Double) {
         if fullLyrics.isEmpty {

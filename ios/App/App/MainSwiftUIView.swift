@@ -400,18 +400,34 @@ private struct TrackInfoView: View {
     }
 }
 
+private struct LyricStateKey: Equatable {
+    let currentLyric: String
+    let isFetching: Bool
+    let fetchFailed: Bool
+}
+
 private struct LyricSnippetView: View {
     private var state: PlaybackStateManager { .shared }
     @State private var showFullLyrics: Bool = false
     @State private var displayedCurrentLyric: String = ""
     @State private var displayedNextLyric: String = ""
+    @State private var displayedIsFetching: Bool = false
+    @State private var displayedFetchFailed: Bool = false
     @State private var lyricOpacity: Double = 1
     @State private var lyricOffset: CGFloat = 0
 
     var body: some View {
         Button(action: { showFullLyrics = true }) {
             VStack(spacing: 10) {
-                if displayedCurrentLyric.isEmpty {
+                if displayedIsFetching {
+                    Image(systemName: "arrow.2.circlepath")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(.primary)
+                        .symbolEffect(.rotate, options: .repeating)
+                } else if displayedFetchFailed {
+                    Text("")
+                        .font(.system(size: 18, weight: .bold))
+                } else if displayedCurrentLyric.isEmpty {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 18, weight: .bold))
                         .foregroundStyle(.primary)
@@ -445,14 +461,18 @@ private struct LyricSnippetView: View {
         .task {
             displayedCurrentLyric = state.currentLyric
             displayedNextLyric = state.nextLyric
+            displayedIsFetching = state.isFetchingLyrics
+            displayedFetchFailed = state.lyricsFetchFailed
         }
-        .onChange(of: state.activeLyricIndex) { _, _ in
+        .onChange(of: LyricStateKey(currentLyric: state.currentLyric, isFetching: state.isFetchingLyrics, fetchFailed: state.lyricsFetchFailed)) { _, _ in
             withAnimation(.snappy(duration: 0.15)) {
                 lyricOpacity = 0
                 lyricOffset = 6
             } completion: {
                 displayedCurrentLyric = state.currentLyric
                 displayedNextLyric = state.nextLyric
+                displayedIsFetching = state.isFetchingLyrics
+                displayedFetchFailed = state.lyricsFetchFailed
 
                 withAnimation(.bouncy(duration: 0.25)) {
                     lyricOpacity = 1
@@ -615,7 +635,7 @@ struct FullLyricsView: View {
                     ScrollView(showsIndicators: false) {
                         LazyVStack(alignment: .leading, spacing: 24) {
                             if state.fullLyrics.isEmpty {
-                                Text(state.currentLyric == "Loading lyrics..." ? "Loading lyrics..." : "No lyrics available")
+                                Text(state.isFetchingLyrics ? "Loading lyrics..." : "No lyrics available")
                                     .font(.title2)
                                     .fontWeight(.medium)
                                     .foregroundStyle(.white.opacity(0.6))
