@@ -330,7 +330,7 @@ body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: 'SF Pro Display', -apple-system, sans-serif;
+  font-family: -apple-system, 'SF Pro Display';
   overscroll-behavior: none;
   overflow-x: clip;
   -webkit-font-smoothing: antialiased;
