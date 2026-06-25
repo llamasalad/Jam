@@ -2261,7 +2261,7 @@ body.player-open #main {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 10px;
+  padding: 5px;
   z-index: 2;
   display: flex;
   flex-direction: column;
@@ -2278,9 +2278,9 @@ body.player-open #main {
 }
 
 #smart-mixes-container .suggested-info {
-  position: absolute;
-  top: 0;
+  bottom: 0;
   text-align: left;
+  left: 0;
 }
 
 #smart-mixes-container .suggested-title {
