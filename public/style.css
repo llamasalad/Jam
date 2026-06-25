@@ -2225,7 +2225,6 @@ body.player-open #main {
   background-position: center;
   background-color: var(--surface2);
   border-radius: var(--radius-s);
-  border: 1px solid;
   position: relative;
   overflow: hidden;
   cursor: pointer;
@@ -2767,7 +2766,6 @@ body.menu-open .queue-remove {
   will-change: transform;
   box-shadow: 0 10px 10px rgba(0, 0, 0, 0.212);
   border-radius: 6px;
-  border: 1px solid;
   position: relative;
   cursor: pointer;
   overflow: hidden;
