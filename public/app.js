@@ -2633,7 +2633,7 @@ async function openPlaylistDetail(pl) {
                     plCover.innerHTML = `
                         <img class="smart-playlist-cover-img" style="width:100%;height:100%;object-fit:cover;border-radius:8px;z-index:0;position:absolute;inset:0;" />
                         <div class="smart-playlist-cover-overlay" data-mix-id="${mixId}" style="position:absolute;inset:0;z-index:1;"></div>
-                        <div class="smart-playlist-cover-info" style="position:absolute;inset:0;padding:12px;z-index:2;display:flex;flex-direction:column;justify-content:flex-start;text-align:right;">
+                        <div class="smart-playlist-cover-info" style="position:absolute;inset:0;padding:12px;z-index:2;display:flex;flex-direction:column;justify-content:flex-start;text-align:left;">
                             <div class="smart-playlist-cover-title" style="font-size:28px;font-weight:800;color:#fff;text-shadow:0 2px 4px rgba(0,0,0,0.5);">${escHtml(fullPl.name)}</div>
                         </div>
                     `;
