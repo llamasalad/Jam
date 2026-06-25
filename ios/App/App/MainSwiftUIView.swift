@@ -54,7 +54,7 @@ struct MainSwiftUIView: View {
                     Button(action: {
                         PlaybackStateManager.shared.triggerSort()
                     }) {
-                        Image(systemName: "line.horizontal.3.decrease")
+                        Image(systemName: "rectangle.stack")
                     }
                 }
 
