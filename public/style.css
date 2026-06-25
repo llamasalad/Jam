@@ -24,6 +24,14 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'Transcity';
+  src: url('./fonts/Transcity-owMAA-subset.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -322,7 +330,6 @@ body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: 'SF Pro Display', -apple-system, sans-serif;
   overscroll-behavior: none;
   overflow-x: clip;
   -webkit-font-smoothing: antialiased;
@@ -380,7 +387,6 @@ body {
   border: 1px solid var(--border);
   color: var(--text);
   border-radius: var(--radius-s);
-  font-family: inherit;
   font-size: 13px;
   padding: 6px 10px 6px 10px;
   outline: none;
@@ -429,7 +435,6 @@ body {
   transition: color 0.15s, border-color 0.15s;
   white-space: nowrap;
   pointer-events: auto;
-  font-family: inherit;
   text-transform: lowercase;
 }
 
@@ -846,7 +851,6 @@ body {
 }
 
 .track-dur {
-  font-family: 'SF Pro Display', -apple-system, sans-serif;
   font-size: 12px;
   color: var(--muted);
 }
@@ -930,7 +934,6 @@ body {
 .ctx-label {
   padding: 6px 12px 2px;
   font-size: 10px;
-  font-family: 'SF Pro Display', -apple-system, sans-serif;
   letter-spacing: 0.08em;
   color: var(--muted);
   text-transform: uppercase;
@@ -1505,7 +1508,6 @@ body {
   border-radius: var(--radius-s);
   padding: 6px 10px;
   font-size: 12px;
-  font-family: 'SF Pro Display', -apple-system, sans-serif;
   cursor: pointer;
   transition: color .15s, border-color .15s, background .15s, transform .15s;
 }
@@ -2087,7 +2089,6 @@ body.player-open #main {
 #queue-header {
   padding: 10px 16px;
   font-size: 11px;
-  font-family: 'SF Pro Display', -apple-system, sans-serif;
   letter-spacing: 0.08em;
   color: var(--muted);
   text-transform: uppercase;
@@ -2174,7 +2175,6 @@ body.player-open #main {
 }
 
 .queue-num {
-  font-family: 'SF Pro Display', -apple-system, sans-serif;
   font-size: 11px;
   color: var(--muted);
   min-width: 20px;
@@ -2283,6 +2283,7 @@ body.player-open #main {
 }
 
 #smart-mixes-container .suggested-title {
+  font-family: Transcity;
   font-size: 25px;
   text-shadow: none;
 }
@@ -2378,7 +2379,6 @@ body.player-open #main {
 
 #lyrics-panel-title {
   font-size: 10px;
-  font-family: 'SF Pro Display', -apple-system, sans-serif;
   letter-spacing: 0.08em;
   color: var(--muted);
   text-transform: uppercase;
@@ -2497,7 +2497,6 @@ body.player-open #main {
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
-  font-family: 'SF Pro Display', -apple-system, sans-serif;
   font-size: 14px;
   padding: 9px 12px;
   outline: none;
@@ -2514,7 +2513,6 @@ body.player-open #main {
   border: none;
   border-radius: 8px;
   padding: 9px 16px;
-  font-family: inherit;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -2585,7 +2583,6 @@ body.player-open #main {
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
-  font-family: inherit;
   font-size: 14px;
   padding: 9px 12px;
   outline: none;
@@ -2606,7 +2603,6 @@ body.player-open #main {
   border: none;
   border-radius: 8px;
   padding: 8px 16px;
-  font-family: inherit;
   font-size: 13px;
   cursor: pointer;
   transition: background .15s;
@@ -3230,7 +3226,6 @@ body.menu-open .queue-remove {
     background: none;
     border: 1px solid var(--border);
     color: var(--text);
-    font-family: inherit;
     font-size: 13px;
     padding: 6px 0px 6px 28px;
     width: 100%;
@@ -4114,7 +4109,6 @@ body.menu-open .queue-remove {
     background: none;
     border: none;
     color: var(--text);
-    font-family: inherit;
     font-size: 16px;
     outline: none;
     padding: 0;
