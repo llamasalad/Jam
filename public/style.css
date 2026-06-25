@@ -2284,46 +2284,43 @@ body.player-open #main {
 
 #smart-mixes-container .suggested-title {
   font-size: 25px;
+  text-shadow: none;
 }
 
 #smart-mixes-container .suggested-artist {
   display: none;
 }
 
-#smart-mixes-container .suggested-card::after {
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0) 70%);
-}
-
 #smart-mixes-container .suggested-card[data-mix-id="random"]::after {
-  background: linear-gradient(to bottom, rgba(139, 92, 246, 0.85) 0%, rgba(0, 0, 0, 0) 80%);
+  background: linear-gradient(to bottom, rgba(139, 92, 246, 0.85) 0%, rgba(0, 0, 0, 0) 100%);
 }
 
 #smart-mixes-container .suggested-card[data-mix-id="upbeat"]::after {
-  background: linear-gradient(to bottom, rgba(244, 63, 94, 0.85) 0%, rgba(0, 0, 0, 0) 80%);
+  background: linear-gradient(to bottom, rgba(244, 63, 94, 0.85) 0%, rgba(0, 0, 0, 0) 100%);
 }
 
 #smart-mixes-container .suggested-card[data-mix-id="chill"]::after {
-  background: linear-gradient(to bottom, rgba(16, 185, 129, 0.85) 0%, rgba(0, 0, 0, 0) 80%);
+  background: linear-gradient(to bottom, rgba(16, 185, 129, 0.85) 0%, rgba(0, 0, 0, 0) 100%);
 }
 
 #smart-mixes-container .suggested-card[data-mix-id="flow"]::after {
-  background: linear-gradient(to bottom, rgba(14, 165, 233, 0.85) 0%, rgba(0, 0, 0, 0) 80%);
+  background: linear-gradient(to bottom, rgba(14, 165, 233, 0.85) 0%, rgba(0, 0, 0, 0) 100%);
 }
 
 .smart-playlist-cover-overlay[data-mix-id="random"] {
-  background: linear-gradient(to bottom, rgba(139, 92, 246, 0.6) 0%, rgba(0, 0, 0, 0) 80%);
+  background: linear-gradient(to bottom, rgba(139, 92, 246, 0.6) 0%, rgba(0, 0, 0, 0) 100%);
 }
 
 .smart-playlist-cover-overlay[data-mix-id="upbeat"] {
-  background: linear-gradient(to bottom, rgba(244, 63, 94, 0.6) 0%, rgba(0, 0, 0, 0) 80%);
+  background: linear-gradient(to bottom, rgba(244, 63, 94, 0.6) 0%, rgba(0, 0, 0, 0) 100%);
 }
 
 .smart-playlist-cover-overlay[data-mix-id="chill"] {
-  background: linear-gradient(to bottom, rgba(16, 185, 129, 0.6) 0%, rgba(0, 0, 0, 0) 80%);
+  background: linear-gradient(to bottom, rgba(16, 185, 129, 0.6) 0%, rgba(0, 0, 0, 0) 100%);
 }
 
 .smart-playlist-cover-overlay[data-mix-id="flow"] {
-  background: linear-gradient(to bottom, rgba(14, 165, 233, 0.6) 0%, rgba(0, 0, 0, 0) 80%);
+  background: linear-gradient(to bottom, rgba(14, 165, 233, 0.6) 0%, rgba(0, 0, 0, 0) 100%);
 }
 
 #smart-mixes-container .suggested-card img.suggested-artist-bg {
