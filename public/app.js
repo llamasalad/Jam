@@ -1057,6 +1057,8 @@ function renderSmartMixesCards(force = false) {
         ['smart:random', 'smart:genre:upbeat', 'smart:genre:chill', 'smart:genre:flow'].includes(pl.id)
     );
 
+    const usedArtists = new Set();
+
     targetMixes.forEach(pl => {
         const card = document.createElement('div');
         card.className = 'suggested-card';
@@ -1084,9 +1086,27 @@ function renderSmartMixesCards(force = false) {
 
         let artistName = '';
         if (mixTrackIds.length > 0) {
-            const firstTrack = trackMap.get(mixTrackIds[0]);
-            if (firstTrack) {
-                artistName = firstTrack.artist || '';
+            let chosenArtist = '';
+            for (const id of mixTrackIds) {
+                const track = trackMap.get(id);
+                if (track && track.artist) {
+                    const cleanArtist = track.artist.trim();
+                    if (cleanArtist && !usedArtists.has(cleanArtist.toLowerCase())) {
+                        chosenArtist = cleanArtist;
+                        break;
+                    }
+                }
+            }
+            if (!chosenArtist) {
+                const firstTrack = trackMap.get(mixTrackIds[0]);
+                if (firstTrack) {
+                    chosenArtist = firstTrack.artist || '';
+                }
+            }
+            artistName = chosenArtist;
+            pl.coverArtist = artistName;
+            if (artistName) {
+                usedArtists.add(artistName.toLowerCase());
             }
         }
 
@@ -2382,6 +2402,7 @@ async function loadPlaylists() {
 }
 
 function getSmartPlaylistFirstTrackArtist(pl) {
+    if (pl.coverArtist) return pl.coverArtist;
     if (pl.id === 'smart:random') {
         const savedDaily = localStorage.getItem('jam_daily_mix_tracks');
         if (savedDaily) {
@@ -2395,7 +2416,7 @@ function getSmartPlaylistFirstTrackArtist(pl) {
         }
     } else if (pl.id.startsWith('smart:genre:')) {
         const mixId = pl.id.split(':').pop();
-        const cacheKey = `jam_smart_mix_${mixId}_tracks`;
+        const cacheKey = `jam_smart_mix_${mixId}_tracks_v3`;
         const saved = localStorage.getItem(cacheKey);
         if (saved) {
             try {
