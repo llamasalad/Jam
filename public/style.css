@@ -3301,10 +3301,9 @@ body.menu-open .queue-remove {
 
   .sidebar-logo {
     font-size: 50px;
-    font-weight: 500;
-    padding: 20px 20px 28px;
+    padding: 10px;
     color: var(--text);
-    flex-shrink: 0;
+    font-family: 'Begav';
   }
 
   .sidebar-nav {
@@ -3975,15 +3974,14 @@ body.menu-open .queue-remove {
 
   #header h1,
   #header-title {
-    all: unset !important;
     display: block !important;
     font-size: 30px !important;
-    font-weight: 500 !important;
     color: var(--text) !important;
     transform-origin: left !important;
     transition: transform 0.2s ease !important;
     flex-shrink: 1 !important;
     margin-right: auto !important;
+    font-family: 'Begav';
   }
 
   #header-top-actions {
