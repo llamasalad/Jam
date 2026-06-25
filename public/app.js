@@ -2627,7 +2627,7 @@ async function openPlaylistDetail(pl) {
             if (isSmartMix && plCover) {
                 const firstPt = fullPl.tracks[0];
                 const firstTrack = firstPt ? trackMap.get(firstPt.trackId) : null;
-                const artistName = firstTrack ? firstTrack.artist : '';
+                const artistName = fullPl.coverArtist || getSmartPlaylistFirstTrackArtist(fullPl) || (firstTrack ? firstTrack.artist : '');
                 if (artistName) {
                     const mixId = fullPl.id.split(':').pop();
                     plCover.innerHTML = `
