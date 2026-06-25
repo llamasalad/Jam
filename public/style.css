@@ -330,6 +330,7 @@ body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
+  font-family: 'SF Pro Display', -apple-system, sans-serif;
   overscroll-behavior: none;
   overflow-x: clip;
   -webkit-font-smoothing: antialiased;
@@ -3978,20 +3979,16 @@ body.menu-open .queue-remove {
     display: block !important;
     font-size: 30px !important;
     color: var(--text) !important;
-    transform-origin: left !important;
-    transition: transform 0.2s ease !important;
-    flex-shrink: 1 !important;
-    margin-right: auto !important;
     font-family: 'Begav';
+    font-weight: unset;
+    padding-left: unset;
   }
 
   #header-top-actions {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 8px !important;
-    flex-shrink: 0 !important;
-    justify-content: flex-end !important;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
     margin-left: auto;
   }
 
