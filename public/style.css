@@ -757,7 +757,7 @@ body {
 
 .track-title {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 400;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2230,6 +2230,10 @@ body.player-open #main {
   margin-bottom: 16px;
 }
 
+#smart-mixes-container .suggested-card {
+  border: none;
+}
+
 .suggested-card {
   flex: 0 0 160px;
   height: 100px;
@@ -2237,6 +2241,7 @@ body.player-open #main {
   background-position: center;
   background-color: var(--surface2);
   border-radius: var(--radius-s);
+  border: 1px solid;
   position: relative;
   overflow: hidden;
   cursor: pointer;
@@ -2270,7 +2275,7 @@ body.player-open #main {
 
 .suggested-title {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 400;
   color: #fff;
   white-space: nowrap;
   overflow: hidden;
@@ -2663,8 +2668,14 @@ body.detail-view .group-header {
   display: none;
 }
 
+body:has(#detail-album-cover-img) #track-list .interactive-artist,
 body:has(#detail-album-cover-img) #track-list .interactive-album,
 body:has(#detail-album-cover-img) #track-list .interactive-separator {
+  display: none;
+}
+
+body:has(#detail-artist-image) #track-list .interactive-artist,
+body:has(#detail-artist-image) #track-list .interactive-separator {
   display: none;
 }
 
@@ -2771,7 +2782,8 @@ body.menu-open .queue-remove {
   contain: layout style;
   will-change: transform;
   box-shadow: 0 10px 10px rgba(0, 0, 0, 0.212);
-  border-radius: 6px 6px 0 0;
+  border-radius: 6px;
+  border: 1px solid;
   position: relative;
   cursor: pointer;
   overflow: hidden;
@@ -3448,7 +3460,7 @@ body.menu-open .queue-remove {
   .artist-card span,
   .album-card span {
     font-size: 1em;
-    font-weight: 700;
+    font-weight: 400;
   }
 
   .lyrics-timing-btn {
@@ -3461,11 +3473,6 @@ body.menu-open .queue-remove {
 
   .lyric-line.active {
     filter: none;
-  }
-
-  .track-title {
-    font-size: 14px;
-    font-weight: 600;
   }
 
   .track-sub {
