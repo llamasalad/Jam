@@ -533,7 +533,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             } else if current == "No lyrics found" {
                 mgr.isFetchingLyrics = false
                 mgr.lyricsFetchFailed = true
-            } else if !current.isEmpty {
+            } else {
                 mgr.isFetchingLyrics = false
                 mgr.lyricsFetchFailed = false
             }
