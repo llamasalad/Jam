@@ -46,7 +46,6 @@ struct MainSwiftUIView: View {
                             PlaybackStateManager.shared.navigateBack()
                         }) {
                             Image(systemName: "chevron.left")
-                                .frame(width: 44, height: 44)
                         }
                     }
                 }
@@ -56,7 +55,6 @@ struct MainSwiftUIView: View {
                         PlaybackStateManager.shared.triggerSort()
                     }) {
                         Image(systemName: "line.horizontal.3.decrease")
-                            .frame(width: 44, height: 44)
                     }
                 }
 
@@ -67,7 +65,6 @@ struct MainSwiftUIView: View {
                     }) {
                         Image(systemName: "paintpalette")
                             .symbolEffect(.bounce, value: themeChangePulse)
-                            .frame(width: 44, height: 44)
                     }
                 }
 
@@ -88,9 +85,8 @@ struct MainSwiftUIView: View {
                             }
                         }
                     } label: {
-                        Image(systemName: "slider.horizontal.3")
+                        Image(systemName: "gear")
                             .symbolEffect(.bounce, value: qualityChangePulse)
-                            .frame(width: 44, height: 44)
                     }
                 }
 
@@ -133,8 +129,6 @@ struct MainSwiftUIView: View {
                             }
                         }) {
                             Image(systemName: selectedTab == "library" ? "house.fill" : "house")
-                                .imageScale(.large)
-                                .frame(width: 44, height: 44)
                         }
                         .foregroundStyle(selectedTab == "library" ? .primary : .secondary)
 
@@ -145,8 +139,6 @@ struct MainSwiftUIView: View {
                             }
                         }) {
                             Image(systemName: "list.triangle")
-                                .imageScale(.large)
-                                .frame(width: 44, height: 44)
                         }
                         .foregroundStyle(selectedTab == "playlists" ? .primary : .secondary)
 
@@ -306,7 +298,7 @@ struct ExpandedPlayerView: View {
 
                     if !state.canvasUrl.isEmpty {
                         Button(action: { state.toggleCanvas() }) {
-                            Image(systemName: state.canvasDisabled ? "paintbrush" : "paintbrush.fill")
+                            Image(systemName: state.canvasDisabled ? "livephoto.play" : "livephoto.slash")
                                 .imageScale(.large)
                                 .frame(width: 44, height: 44)
                         }
