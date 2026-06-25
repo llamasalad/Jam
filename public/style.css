@@ -2286,6 +2286,7 @@ body.player-open #main {
   font-family: Begav;
   font-size: 25px;
   text-shadow: none;
+  font-weight: unset;
 }
 
 #smart-mixes-container .suggested-artist {

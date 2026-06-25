@@ -2549,7 +2549,7 @@ async function openPlaylistDetail(pl) {
                 <img class="smart-playlist-cover-img" style="width:100%;height:100%;object-fit:cover;border-radius:8px;z-index:0;position:absolute;inset:0;" />
                 <div class="smart-playlist-cover-overlay" data-mix-id="${mixId}" style="position:absolute;inset:0;z-index:1;"></div>
                 <div class="smart-playlist-cover-info" style="position:absolute;inset:0;padding:12px;z-index:2;display:flex;flex-direction:column;justify-content:flex-start;text-align:right;">
-                    <div class="smart-playlist-cover-title" style="font-size:28px;font-family: Begav;font-weight:800;color:#fff;">${escHtml(pl.name)}</div>
+                    <div class="smart-playlist-cover-title" style="font-size:28px;font-family: Begav;font-weight: unset;color:#fff;">${escHtml(pl.name)}</div>
                 </div>
             `;
             const imgEl = plCover.querySelector('.smart-playlist-cover-img');
@@ -2634,7 +2634,7 @@ async function openPlaylistDetail(pl) {
                         <img class="smart-playlist-cover-img" style="width:100%;height:100%;object-fit:cover;border-radius:8px;z-index:0;position:absolute;inset:0;" />
                         <div class="smart-playlist-cover-overlay" data-mix-id="${mixId}" style="position:absolute;inset:0;z-index:1;"></div>
                         <div class="smart-playlist-cover-info" style="position:absolute;inset:0;padding:12px;z-index:2;display:flex;flex-direction:column;justify-content:flex-start;text-align:left;">
-                            <div class="smart-playlist-cover-title" style="font-size:28px;font-family: Begav;font-weight:800;color:#fff;">${escHtml(fullPl.name)}</div>
+                            <div class="smart-playlist-cover-title" style="font-size:28px;font-family: Begav;font-weight: unset;color:#fff;">${escHtml(fullPl.name)}</div>
                         </div>
                     `;
                     const imgEl = plCover.querySelector('.smart-playlist-cover-img');
