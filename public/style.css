@@ -757,7 +757,7 @@ body {
 
 .track-title {
   font-size: 14px;
-  font-weight: 400;
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2275,7 +2275,7 @@ body.player-open #main {
 
 .suggested-title {
   font-size: 15px;
-  font-weight: 400;
+  font-weight: 500;
   color: #fff;
   white-space: nowrap;
   overflow: hidden;
@@ -2815,7 +2815,7 @@ body.menu-open .queue-remove {
   left: 3.5px;
   color: #fff;
   font-size: 0.7em;
-  font-weight: 700;
+  font-weight: 500;
   z-index: 2;
 }
 
@@ -3460,7 +3460,6 @@ body.menu-open .queue-remove {
   .artist-card span,
   .album-card span {
     font-size: 1em;
-    font-weight: 400;
   }
 
   .lyrics-timing-btn {
@@ -4172,6 +4171,7 @@ body.menu-open .queue-remove {
     justify-self: center;
     display: flex;
     justify-content: center;
+    align-items: center;
   }
 
   #suggested-container,
