@@ -25,11 +25,11 @@
 }
 
 @font-face {
-  font-family: 'Transcity';
-  src: url('./fonts/Transcity-owMAA-subset.woff2') format('woff2');
+  font-family: 'Begav';
+  src: url('./fonts/begav-subset.woff2') format('woff2');
   font-weight: 400;
-  font-style: normal;
   font-display: swap;
+  unicode-range: U+0020-007E, U+00A0-00A1, U+00A6-00A9, U+00AC-00B0, U+00B2-00B3, U+00B6, U+00B9, U+00BC-00BD, U+00BF-00DD, U+00DF-00EF, U+00F1-00F6, U+00F8-00FD, U+00FF, U+2018, U+201C-201D, U+2020-2021, U+2030, U+2032-2033, U+203C, U+20A0, U+20A2-20A3, U+20A6, U+20A8, U+20AC-20AE, U+20B1, U+20B3-20B6, U+20B8;
 }
 
 html {
@@ -2283,7 +2283,7 @@ body.player-open #main {
 }
 
 #smart-mixes-container .suggested-title {
-  font-family: Transcity;
+  font-family: Begav;
   font-size: 25px;
   text-shadow: none;
 }
