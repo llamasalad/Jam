@@ -1,7 +1,5 @@
 # Jam
 
-## Description
-
 Jam is a lowkey, self-hosted music player designed to give you full control over your personal audio library.
 
 ## Features
