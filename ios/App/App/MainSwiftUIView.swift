@@ -550,6 +550,7 @@ struct MarqueeText: View {
             .overlay(
                 GeometryReader { geometry in
                     let isOversized = textWidth > geometry.size.width
+                    let offsetVal = animate && isOversized ? -(textWidth - geometry.size.width) : 0
 
                     Text(text)
                         .font(font)
@@ -560,20 +561,24 @@ struct MarqueeText: View {
                                 Color.clear.preference(key: ViewWidthKey.self, value: innerGeo.frame(in: .local).width)
                             }
                         )
-                        .onPreferenceChange(ViewWidthKey.self) {
-                            textWidth = $0
-                        }
                         .frame(width: geometry.size.width, alignment: isOversized ? .leading : alignment)
-                        .offset(x: animate && isOversized ? -(textWidth - geometry.size.width) : 0)
+                        .offset(x: offsetVal)
                         .animation(
                             isOversized ?
                             Animation.linear(duration: Double(textWidth) * 0.03).delay(1.0).repeatForever(autoreverses: true) :
                             .default,
-                            value: animate
+                            value: offsetVal
                         )
                 }
                 .clipped()
             )
+            .onPreferenceChange(ViewWidthKey.self) { newWidth in
+                if textWidth != newWidth {
+                    DispatchQueue.main.async {
+                        textWidth = newWidth
+                    }
+                }
+            }
             .onAppear {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { animate = true }
             }
