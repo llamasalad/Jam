@@ -2198,7 +2198,6 @@ body.player-open #main {
   color: var(--muted);
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  font-family: begav;
 }
 
 #suggested-container,
