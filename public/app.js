@@ -1318,6 +1318,24 @@ function openDetail(type, name, isGoingBack = false) {
                 (t.title && artistRegex.test(t.title))) &&
             !(name.toLowerCase() === 'future' && t.title && t.title.toLowerCase().includes('future nostalgia'))
         );
+        const featured = [];
+        const main = [];
+        filtered.forEach(t => {
+            if (t.artist && t.artist.toLowerCase() !== name.toLowerCase()) {
+                featured.push(t);
+            } else {
+                main.push(t);
+            }
+        });
+        main.sort((a, b) => {
+            const albumA = (a.album || '').toLowerCase();
+            const albumB = (b.album || '').toLowerCase();
+            if (albumA !== albumB) {
+                return albumA.localeCompare(albumB);
+            }
+            return (a.title || '').toLowerCase().localeCompare((b.title || '').toLowerCase());
+        });
+        filtered = [...featured, ...main];
     } else {
         filtered = tracks.filter(t => t[type] === name);
     }
@@ -1668,6 +1686,11 @@ function renderList() {
     if (!filtered.length) { if (empty) empty.style.display = 'flex'; return }
     if (empty) empty.style.display = 'none';
 
+    let numFeatured = 0;
+    if (currentDetailView && currentDetailView.type === 'artist' && currentDetailView.name) {
+        numFeatured = filtered.filter(t => t.artist && t.artist.toLowerCase() !== currentDetailView.name.toLowerCase()).length;
+    }
+
     if (currentDetailView) {
         const headerContainer = document.createElement('div');
         headerContainer.id = 'playlist-detail';
@@ -1850,6 +1873,42 @@ function renderList() {
         const frag = document.createDocumentFragment();
         const end = Math.min(i + CHUNK, filtered.length);
         for (; i < end; i++) {
+            if (currentDetailView && currentDetailView.type === 'artist') {
+                if (numFeatured > 0) {
+                    if (i === 0) {
+                        const h = document.createElement('div');
+                        h.className = 'featured-header';
+                        h.textContent = 'Featured on';
+                        frag.appendChild(h);
+                    }
+                    if (i === numFeatured) {
+                        const sep = document.createElement('div');
+                        sep.className = 'featured-separator';
+                        frag.appendChild(sep);
+                    }
+                }
+                if (i >= numFeatured) {
+                    const currentAlbum = filtered[i].album || 'Unknown Album';
+                    if (i === numFeatured) {
+                        const h = document.createElement('div');
+                        h.className = 'featured-header';
+                        h.textContent = currentAlbum;
+                        frag.appendChild(h);
+                    } else {
+                        const previousAlbum = filtered[i - 1].album || 'Unknown Album';
+                        if (currentAlbum !== previousAlbum) {
+                            const sep = document.createElement('div');
+                            sep.className = 'featured-separator';
+                            frag.appendChild(sep);
+
+                            const h = document.createElement('div');
+                            h.className = 'featured-header';
+                            h.textContent = currentAlbum;
+                            frag.appendChild(h);
+                        }
+                    }
+                }
+            }
             const t = filtered[i];
             const g = groupKey(t);
             if (!currentDetailView && g !== lastGroup) {
@@ -2061,6 +2120,9 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
     div.dataset.id = t.id;
     if (qIdx >= 0 && queue[qIdx]?.id === t.id) div.classList.add('active');
     if (inPlaylist) div.dataset.inPlaylist = "true";
+    if (currentDetailView && currentDetailView.type === 'artist' && t.artist && currentDetailView.name && t.artist.toLowerCase() !== currentDetailView.name.toLowerCase()) {
+        div.classList.add('featured-track');
+    }
 
     const actionsBg = document.createElement('div');
     actionsBg.className = 'track-actions';

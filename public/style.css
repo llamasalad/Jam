@@ -420,7 +420,7 @@ body {
   transition: color 0.15s, border-color 0.15s;
   white-space: nowrap;
   pointer-events: auto;
-  text-transform: lowercase;
+  text-transform: uppercase;
 }
 
 #theme-toggle.active,
@@ -1082,7 +1082,7 @@ body {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px;
+  padding: 16px 16px 0 16px;
 }
 
 #playlist-detail-cover {
@@ -1132,7 +1132,7 @@ body {
 .playlist-detail-buttons {
   display: flex;
   gap: 8px;
-  padding: 12px 16px;
+  padding: 10px 16px;
   align-items: center;
 }
 
@@ -1165,9 +1165,8 @@ body {
 }
 
 .artist-albums-section {
-  margin-top: 10px;
-  margin-bottom: 24px;
-  margin-left: 10px;
+  padding: 0px 0px 10px 10px;
+  border-bottom: 1px solid var(--border);
 }
 
 #track-list .section-title {
@@ -1181,7 +1180,7 @@ body {
 #playlist-play-btn,
 #playlist-add-queue-btn,
 #playlist-edit-btn {
-  margin: 0 8px 10px 16px;
+  margin: 10px 6px 10px 16px;
   height: 30px;
   display: inline-flex;
   align-items: center;
@@ -2656,9 +2655,22 @@ body:has(#detail-album-cover-img) #track-list .interactive-separator {
   display: none;
 }
 
-body:has(#detail-artist-image) #track-list .interactive-artist,
-body:has(#detail-artist-image) #track-list .interactive-separator {
+body:has(#detail-artist-image) #track-list .track:not(.featured-track) .interactive-artist,
+body:has(#detail-artist-image) #track-list .track:not(.featured-track) .interactive-separator {
   display: none;
+}
+
+.featured-header {
+  padding: 12px 16px 6px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.featured-separator {
+  border-bottom: 1px solid var(--border);
 }
 
 body.detail-view #sort-btn {
@@ -3049,6 +3061,10 @@ body.menu-open .queue-remove {
     align-items: center;
     gap: 4px;
     position: relative;
+  }
+
+  .featured-header {
+    padding: 12px 10px 6px;
   }
 
   #exp-desktop-lyrics-title {
@@ -3526,7 +3542,7 @@ body.menu-open .queue-remove {
   }
 
   #playlist-detail-header {
-    padding: 10px 0 10px 10px !important;
+    padding: 10px 10px 0 10px;
   }
 
   #playlist-play-btn {
@@ -4158,7 +4174,7 @@ body.menu-open .queue-remove {
   }
 
   .artist-albums-section {
-    margin-left: 16px;
+    padding-left: 16px;
   }
 
   #suggested-container::-webkit-scrollbar,
