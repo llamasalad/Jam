@@ -1701,6 +1701,33 @@ body.player-open #main {
   align-items: center;
 }
 
+#exp-lyrics-toggle,
+#exp-heart-btn,
+#exp-queue-btn,
+#exp-adaptive-btn,
+#desktop-exp-collapse {
+  font-size: 28px;
+  color: var(--muted);
+  background: transparent;
+  display: flex;
+  border: none;
+}
+
+#exp-heart-btn.starred {
+  color: var(--accent);
+}
+
+#exp-adaptive-btn.active svg {
+  animation: adaptive-hue 3s linear infinite;
+}
+
+#exp-volume-icon {
+  font-size: 30px;
+  max-height: 30px;
+  text-align: center;
+  background: transparent;
+}
+
 #exp-volume-row {
   display: flex;
   width: 100px;
@@ -1734,62 +1761,6 @@ body.player-open #main {
   background: var(--accent);
   box-shadow: -100vw 0 0 100vw var(--accent);
   cursor: pointer;
-}
-
-#exp-lyrics-toggle {
-  font-size: 28px;
-  color: var(--muted);
-  background: transparent;
-  display: flex;
-  border: 1px solid;
-  border-radius: var(--radius-s);
-}
-
-#exp-volume-icon {
-  font-size: 30px;
-  max-height: 30px;
-  text-align: center;
-  background: transparent;
-}
-
-#exp-queue-btn {
-  font-size: 28px;
-  color: var(--muted);
-  background: none;
-  display: flex;
-  border: 1px solid;
-  border-radius: var(--radius-s);
-}
-
-#exp-heart-btn {
-  font-size: 28px;
-  color: var(--muted);
-  background: transparent;
-  display: flex;
-  border: 1px solid;
-  cursor: pointer;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.15s ease, transform 0.15s ease;
-  border-radius: var(--radius-s);
-}
-
-#exp-heart-btn.starred {
-  color: var(--accent);
-}
-
-#exp-adaptive-btn {
-  font-size: 28px;
-  color: var(--muted);
-  background: transparent;
-  transition: transform 0.2s ease;
-  display: flex;
-  border: 1px solid;
-  border-radius: var(--radius-s);
-}
-
-#exp-adaptive-btn.active svg {
-  animation: adaptive-hue 3s linear infinite;
 }
 
 @keyframes adaptive-hue {
@@ -3332,15 +3303,6 @@ body.menu-open .queue-remove {
 
   .suggested-card {
     flex: 1 1 20%;
-  }
-
-  #desktop-exp-collapse {
-    font-size: 28px;
-    color: var(--muted);
-    background: transparent;
-    display: flex;
-    border: 1px solid;
-    border-radius: var(--radius-s);
   }
 
   #exp-collapse {
