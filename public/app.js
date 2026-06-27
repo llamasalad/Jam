@@ -552,10 +552,10 @@ function updateHeartUI(starred) {
     if (svg) {
         if (starred) {
             svg.setAttribute('fill', 'currentColor');
-            expHeartBtn.style.color = 'var(--accent)';
+            expHeartBtn.classList.add('starred');
         } else {
             svg.setAttribute('fill', 'none');
-            expHeartBtn.style.color = 'var(--muted)';
+            expHeartBtn.classList.remove('starred');
         }
     }
 }
@@ -959,7 +959,6 @@ function renderLibraryCards() {
                 refreshBtn.style.setProperty('transform', `rotate(${(refreshBtn._rot || 0) + 360}deg)`, 'important');
                 refreshBtn._rot = (refreshBtn._rot || 0) + 360;
                 renderSuggestedCards(true);
-                renderSmartMixesCards();
             };
         }
     }
@@ -1775,7 +1774,7 @@ function renderList() {
 
             buttonsHtml = `
                 <div class="playlist-detail-buttons">
-                    <button id="playlist-edit-btn">
+                    <button id="playlist-shuffle-btn">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="16 3 21 3 21 8"></polyline>
                             <line x1="4" y1="20" x2="21" y2="3"></line>
@@ -2320,6 +2319,7 @@ document.addEventListener('touchstart', e => {
 
 let ctxPlaylist = null;
 function openPlaylistCtxMenu(e, pl) {
+    if (pl && pl.id && pl.id.startsWith('smart:')) return;
     ctxPlaylist = pl;
     document.body.classList.add('menu-open');
     if (menuBackdrop) menuBackdrop.style.display = 'block';
@@ -2631,7 +2631,14 @@ async function openPlaylistDetail(pl) {
         }
     }
 
+    const isSmart = pl.id.startsWith('smart:');
     const plEditBtn = document.getElementById('playlist-edit-btn');
+    if (plEditBtn) {
+        plEditBtn.style.display = isSmart ? 'none' : '';
+    }
+    if (playlistDetail) {
+        playlistDetail.classList.toggle('is-smart', isSmart);
+    }
     const headerTitle = document.getElementById('header-title');
     if (headerTitle) headerTitle.textContent = pl.name;
 
@@ -2753,10 +2760,11 @@ function renderPlaylistDetail(pl) {
         return;
     }
     const isTouchScreen = coarseQuery.matches;
+    const isSmart = pl.id.startsWith('smart:');
     pl.tracks.forEach(pt => {
         const t = trackMap.get(pt.trackId) || { id: pt.trackId, title: pt.title, artist: pt.artist, album: pt.album, suffix: pt.suffix || 'flac' };
         const row = makeRow(t, false, true);
-        if (!isTouchScreen) {
+        if (!isTouchScreen && !isSmart) {
             const removeBtn = document.createElement('button');
             removeBtn.className = 'track-menu-btn';
             removeBtn.textContent = '\u2715';
@@ -3909,6 +3917,7 @@ function openExpandedPlayer(options = {}) {
     if (queueOpen) {
         if (queuePanel) queuePanel.classList.remove('open');
         if (queueBtn) queueBtn.classList.remove('active');
+        if (expQueueBtn) expQueueBtn.classList.remove('active');
         queueOpen = false;
     }
     if (qIdx >= 0 && queue[qIdx]) {
@@ -4147,6 +4156,7 @@ function closeQueuePanel() {
     queueOpen = false;
     if (queuePanel) { queuePanel.classList.remove('open'); queuePanel.style.transform = ''; }
     if (queueBtn) queueBtn.classList.remove('active');
+    if (expQueueBtn) expQueueBtn.classList.remove('active');
 }
 
 function removeFromQueue(idx) {
@@ -4215,6 +4225,7 @@ if (queueBtn) {
         if (queueOpen) {
             if (queuePanel) queuePanel.classList.add('open');
             if (queueBtn) queueBtn.classList.add('active');
+            if (expQueueBtn) expQueueBtn.classList.add('active');
             renderQueue();
         } else {
             closeQueuePanel();
@@ -4225,10 +4236,15 @@ if (queueBtn) {
 const expQueueBtn = document.getElementById('exp-queue-btn');
 if (expQueueBtn) {
     expQueueBtn.onclick = () => {
-        queueOpen = true;
-        if (queuePanel) queuePanel.classList.add('open');
-        if (queueBtn) queueBtn.classList.add('active');
-        renderQueue();
+        queueOpen = !queueOpen;
+        if (queueOpen) {
+            if (queuePanel) queuePanel.classList.add('open');
+            if (queueBtn) queueBtn.classList.add('active');
+            expQueueBtn.classList.add('active');
+            renderQueue();
+        } else {
+            closeQueuePanel();
+        }
     };
 }
 
@@ -5254,7 +5270,7 @@ document.addEventListener('contextmenu', (e) => {
     } else if (playlistCard) {
         const plId = playlistCard.dataset.id;
         const plData = playlists.find(x => x.id === plId);
-        if (plData) openPlaylistCtxMenu(e, plData);
+        if (plData && !(plData.id && plData.id.startsWith('smart:'))) openPlaylistCtxMenu(e, plData);
     } else {
         closeCtxMenu();
     }
