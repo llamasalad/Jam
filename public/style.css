@@ -570,6 +570,7 @@ body {
   color: var(--muted);
   text-transform: uppercase;
   border-bottom: 1px solid var(--surface);
+  display: none;
 }
 
 .track {
@@ -1140,12 +1141,6 @@ body {
 .playlist-detail-buttons #playlist-add-queue-btn,
 .playlist-detail-buttons #playlist-edit-btn {
   margin: 0;
-}
-
-.playlist-detail-buttons #playlist-edit-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
 }
 
 #detail-album-cover-img,
@@ -2191,12 +2186,16 @@ body.player-open #main {
 }
 
 .section-title {
+  display: flex;
   font-size: 15px;
   font-weight: 500;
   margin-bottom: 16px;
   color: var(--muted);
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  justify-content: center;
+  justify-self: center;
+  align-items: center;
 }
 
 #suggested-container,
@@ -3485,11 +3484,6 @@ body.menu-open .queue-remove {
     animation: update-pulse 2s ease-in-out infinite;
   }
 
-  .section-title {
-    padding: 0;
-    justify-self: center;
-  }
-
   #suggested-section {
     margin: 10px;
   }
@@ -4076,11 +4070,12 @@ body.menu-open .queue-remove {
   }
 
   .dock-item {
-    font-size: 20px;
+    font-size: 30px;
     text-transform: lowercase;
     color: var(--muted);
     cursor: pointer;
     transition: color 0.2s;
+    display: inline-flex;
   }
 
   .dock-item.active {
@@ -4157,14 +4152,6 @@ body.menu-open .queue-remove {
 
   #main::-webkit-scrollbar {
     display: none;
-  }
-
-  .section-title {
-    letter-spacing: 0;
-    justify-self: center;
-    display: flex;
-    justify-content: center;
-    align-items: center;
   }
 
   #suggested-container,

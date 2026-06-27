@@ -48,14 +48,8 @@
   <div id="ctx-menu">
     <div class="ctx-label" id="ctx-track-name">Track Name</div>
     <div class="ctx-item" id="ctx-add-queue">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-        stroke-linecap="round" stroke-linejoin="round">
-        <line x1="8" y1="6" x2="21" y2="6" />
-        <line x1="8" y1="12" x2="21" y2="12" />
-        <line x1="8" y1="18" x2="21" y2="18" />
-        <line x1="3" y1="6" x2="3.01" y2="6" />
-        <line x1="3" y1="12" x2="3.01" y2="12" />
-        <line x1="3" y1="18" x2="3.01" y2="18" />
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M4 6H2v16h16v-2H4zm18-4H6v16h16zm-3 9h-4v4h-2v-4H9V9h4V5h2v4h4z" />
       </svg>
       Add to Queue
     </div>
@@ -233,19 +227,30 @@
     </nav>
     <div id="header">
       <div id="header-top-row">
-        <button id="library-back" style="display:none">←</button>
+        <button id="library-back" style="display:none">
+          <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16">
+            <path fill="currentColor" fill-rule="evenodd"
+              d="m2.87 7.75l1.97 1.97a.75.75 0 1 1-1.06 1.06L.53 7.53L0 7l.53-.53l3.25-3.25a.75.75 0 0 1 1.06 1.06L2.87 6.25h9.88a3.25 3.25 0 0 1 0 6.5h-2a.75.75 0 0 1 0-1.5h2a1.75 1.75 0 1 0 0-3.5z"
+              clip-rule="evenodd" />
+          </svg>
+        </button>
         <h1 id="header-title">Jam!</h1>
         <div id="header-top-actions">
-          <button id="sort-btn"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 32 32">
-              <path fill="currentColor"
-                d="m8.19 5l-.22.66L6.03 11H6v.06l-.94 2.6l-.06.15V15h2v-.84L7.41 13h3.18l.41 1.16V15h2v-1.19l-.06-.15l-.94-2.6V11h-.03l-1.94-5.34L9.81 5zM23 5.5l-.72.69L18 10.5l1.41 1.41L22 9.31V28h2V9.31l2.59 2.6L28 10.5l-4.28-4.31zM9 8.66L9.84 11H8.16zM5 17v2h5.56l-5.28 5.28l-.28.31V27h8v-2H7.44l5.28-5.28l.28-.31V17z" />
-            </svg></button>
+          <button id="sort-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+              <path d="M0 0h24v24H0z" fill="none" />
+              <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 20V10m0 10l-3-3m3 3l3-3m5-13v10m0-10l3 3m-3-3l-3 3" />
+            </svg>
+          </button>
           <div id="theme-wrap">
             <button id="theme-toggle">
-              <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
-                <path fill="currentColor" d="M11 13.5v8H3v-8zm-2 2H5v4h4zM12 2l5.5 9h-11zm0 3.86L10.08 
-                9h3.84zM17.5 13c2.5 0 4.5 2 4.5 4.5S20 22 17.5 22S13 20 13 17.5s2-4.5 4.5-4.5m0 2a2.5
-                2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5" />
+              <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20">
+                <path d="M0 0h20v20H0z" fill="none" />
+                <path fill="currentColor"
+                  d="M6.75 11a1.25 1.25 0 1 0 0 2.5a1.25 1.25 0 0 0 0-2.5m6.5-3.5a1.25 1.25 0 1 0 0 2.5a1.25 1.25 0 0 0 0-2.5M6.75 7a1.25 1.25 0 1 0 0 2.5a1.25 1.25 0 0 0 0-2.5m3.5-2a1.25 1.25 0 1 0 0 2.5a1.25 1.25 0 0 0 0-2.5" />
+                <path fill="currentColor"
+                  d="M12.828 1.456a9 9 0 0 0-5.656 17.088c.624.206 1.486.31 2.118.367a23 23 0 0 0 1.1.071l.07.002l.02.001h.008l1.028-1.003l-.011-3.725a.75.75 0 0 1 .75-.753l5.337.01l.952-.685a9 9 0 0 0-5.716-11.373M3.354 7.8a7 7 0 0 1 13.482 3.711l-4.576-.008a2.75 2.75 0 0 0-2.754 2.757l.008 2.662l-.047-.003c-.631-.056-1.285-.148-1.668-.275A7 7 0 0 1 3.354 7.8" />
               </svg>
             </button>
             <div id="theme-menu">
@@ -283,7 +288,7 @@
             <button id="settings-toggle" title="Settings">
               <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
                 <path fill="currentColor"
-                  d="M19.14 12.94c.04-.3.06-.61.06-.94c0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L3.99 8.87a.49.49 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.27.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.48.48 0 0 0-.12-.61zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6s3.6 1.62 3.6 3.6s-1.62 3.6-3.6 3.6" />
+                  d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5a3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97s-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1s.03.65.07.97l-2.11 1.66c-.19.15-.25.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64z" />
               </svg>
             </button>
             <div id="settings-menu">
@@ -302,8 +307,15 @@
         </div>
         <div id="empty" style="display:none">No tracks found.</div>
         <div id="suggested-section">
-          <h2 class="section-title">discover<button id="refresh-suggested-btn"
-              style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:inherit;padding:0 8px;">↻</button>
+          <h2 class="section-title">discover
+            <button id="refresh-suggested-btn"
+              style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:inherit;padding-left:5px;display:inline-flex">
+              <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20">
+                <path d="M0 0h20v20H0z" fill="none" />
+                <path fill="currentColor"
+                  d="M5.7 9c.4-2 2.2-3.5 4.3-3.5c1.5 0 2.7.7 3.5 1.8l1.7-2C14 3.9 12.1 3 10 3C6.5 3 3.6 5.6 3.1 9H1l3.5 4L8 9zm9.8-2L12 11h2.3c-.5 2-2.2 3.5-4.3 3.5c-1.5 0-2.7-.7-3.5-1.8l-1.7 1.9C6 16.1 7.9 17 10 17c3.5 0 6.4-2.6 6.9-6H19z" />
+              </svg>
+            </button>
           </h2>
           <div id="smart-mixes-container"></div>
           <div id="suggested-container"></div>
@@ -343,8 +355,22 @@
               <line x1="4" y1="4" x2="9" y2="9"></line>
             </svg>
             shuffle
-          </button><button id="playlist-add-queue-btn">+ add to
-            queue</button><button id="playlist-edit-btn">✎ edit</button>
+          </button>
+          <button id="playlist-add-queue-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M4 6H2v16h16v-2H4zm18-4H6v16h16zm-3 9h-4v4h-2v-4H9V9h4V5h2v4h4z" />
+            </svg>
+            queue
+          </button>
+          <button id="playlist-edit-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+              <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                <path d="M7 7H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-1" />
+                <path d="M20.385 6.585a2.1 2.1 0 0 0-2.97-2.97L9 12v3h3zM16 5l3 3" />
+              </g>
+            </svg>
+            edit
+          </button>
           <div id="playlist-tracks"></div>
         </div>
       </div>
@@ -434,9 +460,10 @@
                 </svg>
               </button>
               <button id="exp-queue-btn" style="display:none">
-                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 32 32">
-                  <path fill="currentColor" d="M10 6h18v2H10zm0 6h18v2H10zm5 6h13v2H15zm-5 6h18v2H10zM4 14l7 5l-7 5z">
-                  </path>
+                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+                  <path d="M0 0h24v24H0z" fill="none" />
+                  <path fill="currentColor"
+                    d="M15 6H3v2h12zm0 4H3v2h12zM3 16h8v-2H3zM17 6v8.18c-.31-.11-.65-.18-1-.18a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3V8h3V6z" />
                 </svg>
               </button>
               <button id="desktop-exp-collapse">
@@ -527,8 +554,10 @@
           <input id="volume" type="range" min="0" max="100" step="1" />
         </div>
         <button id="queue-btn">
-          <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 32 32">
-            <path fill="currentColor" d="M10 6h18v2H10zm0 6h18v2H10zm5 6h13v2H15zm-5 6h18v2H10zM4 14l7 5l-7 5z"></path>
+          <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+            <path d="M0 0h24v24H0z" fill="none" />
+            <path fill="currentColor"
+              d="M15 6H3v2h12zm0 4H3v2h12zM3 16h8v-2H3zM17 6v8.18c-.31-.11-.65-.18-1-.18a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3V8h3V6z" />
           </svg>
         </button>
         <button id="lyrics-btn">
@@ -541,33 +570,26 @@
     </div>
   </div>
   <div id="mobile-dock">
-    <div class="dock-item active" data-tab="library"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
-        viewBox="0 0 24 24">
-        <title xmlns="">home</title>
-        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M21 19v-6.733a4 4 0 0 0-1.245-2.9L13.378 3.31a2 2 0 0 0-2.755 0L4.245 9.367A4 4 0 0 0 3 12.267V19a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2">
-        </path>
-      </svg>library</div>
-    <div class="dock-item" id="dock-search"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
-        viewBox="0 0 24 24">
-        <title xmlns="">search-line</title>
-        <g fill="none" fill-rule="evenodd">
-          <path
-            d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z">
-          </path>
-          <path fill="currentColor"
-            d="M10.5 2a8.5 8.5 0 1 0 5.262 15.176l3.652 3.652a1 1 0 0 0 1.414-1.414l-3.652-3.652A8.5 8.5 0 0 0 10.5 2M4 10.5a6.5 6.5 0 1 1 13 0a6.5 6.5 0 0 1-13 0">
-          </path>
-        </g>
-      </svg>search</div>
-    <div class="dock-item" data-tab="playlists"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
-        viewBox="0 0 24 24">
-        <title xmlns="">playlist</title>
-        <g fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2">
-          <path d="M6 6L3 7.732V4.268z"></path>
-          <path stroke-linecap="round" d="M3 12h18M10 6h11M3 18h18"></path>
-        </g>
-      </svg>playlists</div>
+    <div class="dock-item active" data-tab="library">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 1024 1024">
+        <path fill="currentColor"
+          d="M192 414v482h640V414L512 147.3zm-52.5-39.6l352-293.3a32 32 0 0 1 41 0l352 293.3A32 32 0 0 1 896 399v529a32 32 0 0 1-32 32H160a32 32 0 0 1-32-32V399a32 32 0 0 1 11.5-24.6" />
+      </svg>
+    </div>
+    <div class="dock-item" id="dock-search">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+        <path fill="currentColor"
+          d="m18.031 16.617l4.283 4.282l-1.415 1.415l-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9s9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617m-2.006-.742A6.98 6.98 0 0 0 18 11c0-3.867-3.133-7-7-7s-7 3.133-7 7s3.133 7 7 7a6.98 6.98 0 0 0 4.875-1.975z" />
+      </svg>
+    </div>
+    <div class="dock-item" data-tab="playlists">
+      <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+        <path d="M0 0h24v24H0z" fill="none" />
+        <path fill="currentColor" fill-rule="evenodd"
+          d="M7 6a1 1 0 0 1-.5.866l-3 1.732A1 1 0 0 1 2 7.732V4.268a1 1 0 0 1 1.5-.866l3 1.732A1 1 0 0 1 7 6m-4 5a1 1 0 1 0 0 2h18a1 1 0 1 0 0-2zm6-5a1 1 0 0 1 1-1h11a1 1 0 1 1 0 2H10a1 1 0 0 1-1-1M3 17a1 1 0 1 0 0 2h18a1 1 0 1 0 0-2z"
+          clip-rule="evenodd" />
+      </svg>
+    </div>
   </div>
   <audio id="audio" crossorigin="anonymous"></audio>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
