@@ -465,7 +465,7 @@ private struct LyricSnippetView: View {
             displayedFetchFailed = state.lyricsFetchFailed
         }
         .onChange(of: LyricStateKey(currentLyric: state.currentLyric, isFetching: state.isFetchingLyrics, fetchFailed: state.lyricsFetchFailed)) { _, _ in
-            withAnimation(.snappy(duration: 0.15)) {
+            withAnimation(.easeOut(duration: 0.08)) {
                 lyricOpacity = 0
                 lyricOffset = 6
             } completion: {
@@ -474,7 +474,7 @@ private struct LyricSnippetView: View {
                 displayedIsFetching = state.isFetchingLyrics
                 displayedFetchFailed = state.lyricsFetchFailed
 
-                withAnimation(.bouncy(duration: 0.25)) {
+                withAnimation(.easeOut(duration: 0.08)) {
                     lyricOpacity = 1
                     lyricOffset = 0
                 }
@@ -652,12 +652,13 @@ struct FullLyricsView: View {
                                         let isActive = state.activeLyricIndex == index
 
                                         Text(text.isEmpty ? "•" : text)
-                                            .font(.system(size: isActive ? 24 : 20, weight: isActive ? .bold : .medium))
+                                            .font(.system(size: 20, weight: isActive ? .bold : .medium))
+                                            .scaleEffect(isActive ? 1.15 : 1.0, anchor: .leading)
                                             .foregroundStyle(isActive ? .white : .white.opacity(0.5))
                                             .multilineTextAlignment(.leading)
                                             .frame(maxWidth: .infinity, alignment: .leading)
                                             .id(index)
-                                            .animation(.easeInOut(duration: 0.3), value: isActive)
+                                            .animation(.easeOut(duration: 0.2), value: isActive)
                                             .onTapGesture {
                                                 state.performSeek(to: time)
                                             }
@@ -672,7 +673,7 @@ struct FullLyricsView: View {
                                                     let isPreviousVisible = index > 0 && visibleTracker.lines.contains(index - 1)
                                                     let isCurrentVisible = visibleTracker.lines.contains(index)
                                                     if index == 0 || isPreviousVisible || isCurrentVisible {
-                                                        withAnimation(.easeInOut(duration: 0.5)) {
+                                                        withAnimation(.easeInOut(duration: 0.3)) {
                                                             proxy.scrollTo(index, anchor: .center)
                                                         }
                                                     }
@@ -690,7 +691,7 @@ struct FullLyricsView: View {
                         if newCount > 0 {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                 if let activeIndex = state.activeLyricIndex {
-                                    withAnimation(.easeInOut(duration: 0.5)) {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
                                         proxy.scrollTo(activeIndex, anchor: .center)
                                     }
                                 }
