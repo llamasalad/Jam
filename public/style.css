@@ -174,21 +174,6 @@ body:has(#player:not(.hidden)) {
   --shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
-.liquid-glass-theme {
-  --bg: #09090c;
-  --surface: rgba(18, 18, 24, 0.45);
-  --surface2: rgba(30, 30, 38, 0.55);
-  --surface3: rgba(45, 45, 55, 0.70);
-  --border: rgba(255, 255, 255, 0.08);
-  --border2: rgba(255, 255, 255, 0.15);
-  --text: var(--accent);
-  --muted: #80809b;
-  --accent: #f8f9fabf;
-  --accent2: #f8f9fabf;
-  --danger: #ef4444;
-  --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-}
-
 .blind-theme #volume-row input::-webkit-slider-runnable-track,
 .blind-theme #exp-volume-row input::-webkit-slider-runnable-track,
 .blind-theme #progress-row input::-webkit-slider-runnable-track,
@@ -204,72 +189,6 @@ body:has(#player:not(.hidden)) {
 .aurielle-theme #expanded-player.adaptive .lyric-line.active,
 .aurielle-theme #expanded-player.adaptive #exp-lyric-current {
   color: var(--adaptive-color);
-}
-
-.liquid-bg-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 20vw 20vh, rgba(168, 85, 247, 0.22) 0%, rgba(168, 85, 247, 0) 60%),
-    radial-gradient(circle at 80vw 80vh, rgba(59, 130, 246, 0.25) 0%, rgba(59, 130, 246, 0) 65%),
-    radial-gradient(circle at 75vw 45vh, rgba(236, 72, 153, 0.18) 0%, rgba(236, 72, 153, 0) 55%),
-    radial-gradient(circle at 50% 50%, #0d0d15, #050508);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.8s ease;
-}
-
-body.liquid-glass-theme #sidebar,
-body.liquid-glass-theme #player,
-body.liquid-glass-theme #mobile-dock,
-body.liquid-glass-theme #expanded-player,
-body.liquid-glass-theme #lyrics-panel,
-body.liquid-glass-theme #queue-panel,
-body.liquid-glass-theme #quick-playlist-menu,
-body.liquid-glass-theme #ctx-menu,
-body.liquid-glass-theme .modal,
-body.liquid-glass-theme #auth-box,
-body.liquid-glass-theme #header,
-body.liquid-glass-theme .track,
-body.liquid-glass-theme .track-content,
-body.liquid-glass-theme #view-library,
-body.liquid-glass-theme #view-playlists,
-body.liquid-glass-theme #view-library.active:has(#library-cards.show) {
-  background: none !important;
-  backdrop-filter: blur(25px) !important;
-  -webkit-backdrop-filter: blur(25px) !important;
-}
-
-body.liquid-glass-theme #exp-adaptive-btn {
-  display: none !important;
-}
-
-body.liquid-glass-theme .sidebar-item.active .sidebar-label,
-body.liquid-glass-theme .sidebar-item:hover .sidebar-label {
-  display: none;
-}
-
-body.liquid-glass-theme .liquid-bg-container {
-  opacity: 1;
-}
-
-body.liquid-glass-theme #app {
-  background: transparent !important;
-}
-
-body.liquid-glass-theme #progress-row input::-webkit-slider-runnable-track,
-body.liquid-glass-theme #exp-progress::-webkit-slider-runnable-track,
-body.liquid-glass-theme #volume-row input::-webkit-slider-runnable-track,
-body.liquid-glass-theme #exp-volume-row input::-webkit-slider-runnable-track {
-  background: var(--muted);
-}
-
-body.liquid-glass-theme .group-header {
-  border: none;
 }
 
 body.ios-native-shell,
@@ -645,12 +564,8 @@ body {
   background: var(--surface2);
 }
 
-.track.active .track-title {
-  color: var(--accent);
-}
-
 .track.selected .track-content {
-  background-color: rgb(0 0 0 / 0%) !important;
+  background: var(--surface3);
 }
 
 .track-actions.right-active,
@@ -2716,21 +2631,12 @@ body.menu-open .queue-remove {
     background: var(--accent2);
   }
 
-  .track:active .track-content {
-    background: var(--surface3);
-    transition: background 0s;
-  }
-
   .interactable:hover {
     color: var(--accent);
   }
 
   .queue-handle:hover {
     color: var(--text);
-  }
-
-  .track:active .track-content {
-    background: var(--surface2);
   }
 
   .track:hover .track-content {
@@ -3393,12 +3299,8 @@ body.menu-open .queue-remove {
     transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1) !important;
   }
 
-  .track:hover .track-content {
-    background: none !important;
-  }
-
-  .playlist-card:hover {
-    background: none !important;
+  .track.selected .track-content {
+    background: none;
   }
 
   #player {
@@ -3465,14 +3367,9 @@ body.menu-open .queue-remove {
     display: none !important;
   }
 
-  .track.selected,
-  .track:hover {
-    background: none !important;
-  }
-
   .track * {
-    -webkit-user-select: none !important;
-    user-select: none !important;
+    -webkit-user-select: none;
+    user-select: none;
     -webkit-touch-callout: none;
   }
 

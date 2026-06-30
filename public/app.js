@@ -1406,7 +1406,7 @@ if (sortBtn) { sortBtn.onclick = cycleSort; sortBtn.innerHTML = sortSVGs[sortMod
 
 let currentTheme = localStorage.getItem('music_theme') || 'default';
 function applyTheme() {
-    document.body.classList.remove('ember-theme', 'glacier-theme', 'void-theme', 'blind-theme', 'rosecore-theme', 'abyss-theme', 'aurielle-theme', 'liquid-glass-theme');
+    document.body.classList.remove('ember-theme', 'glacier-theme', 'void-theme', 'blind-theme', 'rosecore-theme', 'abyss-theme', 'aurielle-theme');
     if (currentTheme === 'ember-theme') document.body.classList.add('ember-theme');
     else if (currentTheme === 'glacier-theme') document.body.classList.add('glacier-theme');
     else if (currentTheme === 'void-theme') document.body.classList.add('void-theme');
@@ -1414,7 +1414,6 @@ function applyTheme() {
     else if (currentTheme === 'rosecore-theme') document.body.classList.add('rosecore-theme');
     else if (currentTheme === 'abyss-theme') document.body.classList.add('abyss-theme');
     else if (currentTheme === 'aurielle-theme') document.body.classList.add('aurielle-theme');
-    else if (currentTheme === 'liquid-glass-theme') document.body.classList.add('liquid-glass-theme');
     updateStatusBar();
     document.querySelectorAll('.theme-option').forEach(option => {
         option.classList.toggle('active', option.dataset.theme === currentTheme);
@@ -1441,8 +1440,7 @@ function updateStatusBar(overrideColor) {
         'blind-theme': '#000000',
         'rosecore-theme': '#0f0d0e',
         'abyss-theme': '#0d0d0f',
-        'aurielle-theme': '#f8f9fa',
-        'liquid-glass-theme': '#09090c'
+        'aurielle-theme': '#f8f9fa'
     };
     meta.setAttribute('content', themeColors[currentTheme] || '#0d0d0f');
 }
