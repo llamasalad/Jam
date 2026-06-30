@@ -618,7 +618,6 @@ struct FullLyricsView: View {
                 }
             }
             .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-            .scaleEffect(1.2)
             .ignoresSafeArea()
             .overlay(Color.black.opacity(0.6))
             .blur(radius: 40)
@@ -653,7 +652,6 @@ struct FullLyricsView: View {
 
                                         Text(text.isEmpty ? "•" : text)
                                             .font(.system(size: 20, weight: isActive ? .bold : .medium))
-                                            .scaleEffect(isActive ? 1.15 : 1.0, anchor: .leading)
                                             .foregroundStyle(isActive ? .white : .white.opacity(0.5))
                                             .multilineTextAlignment(.leading)
                                             .frame(maxWidth: .infinity, alignment: .leading)
