@@ -2400,6 +2400,7 @@ body:has(#detail-album-cover-img) #track-list .interactive-separator {
 }
 
 body:has(#detail-artist-image) #track-list .track:not(.featured-track) .interactive-artist,
+body:has(#detail-artist-image) #track-list .track:not(.featured-track) .interactive-album,
 body:has(#detail-artist-image) #track-list .track:not(.featured-track) .interactive-separator {
   display: none;
 }
