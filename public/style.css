@@ -984,7 +984,6 @@ body {
 
 #playlist-detail.active {
   display: block;
-  padding-top: 10px;
 }
 
 #playlist-back {
