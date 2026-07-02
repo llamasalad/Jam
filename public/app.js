@@ -333,6 +333,9 @@ class CapacitorAudioPlayerShim {
                 this._lastSyncTime = performance.now();
                 this.dispatchEvent('trackAdvancedNatively');
             });
+            plugin.addListener('error', (data) => {
+                this.dispatchEvent('error');
+            });
         }
     }
 
@@ -3471,8 +3474,17 @@ if (audio) {
                 audio.src = retryUrl;
                 audio.load();
                 audio.addEventListener('loadedmetadata', () => {
-                    try { audio.currentTime = savedPos; } catch (e) { }
-                    audio.play().catch(e => console.error("Playback retry failed:", e));
+                    const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
+                    if (plugin && window.Capacitor.getPlatform() === 'ios') {
+                        plugin.seek({ to: savedPos }).then(() => {
+                            audio.play().catch(e => console.error("Playback retry failed:", e));
+                        }).catch(() => {
+                            audio.play().catch(e => console.error("Playback retry failed:", e));
+                        });
+                    } else {
+                        try { audio.currentTime = savedPos; } catch (e) { }
+                        audio.play().catch(e => console.error("Playback retry failed:", e));
+                    }
                 }, { once: true });
                 return;
             } else {
@@ -3502,9 +3514,20 @@ if (audio) {
                 const volRestoreTimer = setTimeout(() => applyVolume(prevVol), 5000);
                 audio.addEventListener('loadedmetadata', () => {
                     clearTimeout(volRestoreTimer);
-                    try { audio.currentTime = savedPos; } catch (e) { }
-                    setTimeout(() => applyVolume(prevVol), 80);
-                    audio.play().catch(e => console.error("Playback retry failed:", e));
+                    const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
+                    if (plugin && window.Capacitor.getPlatform() === 'ios') {
+                        plugin.seek({ to: savedPos }).then(() => {
+                            setTimeout(() => applyVolume(prevVol), 80);
+                            audio.play().catch(e => console.error("Playback retry failed:", e));
+                        }).catch(() => {
+                            setTimeout(() => applyVolume(prevVol), 80);
+                            audio.play().catch(e => console.error("Playback retry failed:", e));
+                        });
+                    } else {
+                        try { audio.currentTime = savedPos; } catch (e) { }
+                        setTimeout(() => applyVolume(prevVol), 80);
+                        audio.play().catch(e => console.error("Playback retry failed:", e));
+                    }
                 }, { once: true });
                 return;
             } else {

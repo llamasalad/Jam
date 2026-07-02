@@ -219,24 +219,30 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
 
-        isManuallyChangingItem = true
-        defer { isManuallyChangingItem = false }
-        artworkGeneration += 1
-
-        currentTitle = call.getString("title") ?? "Unknown"
-        currentArtist = call.getString("artist") ?? "Unknown"
-        currentAlbum = call.getString("album") ?? "Unknown"
-        currentDuration = call.getDouble("duration") ?? 0.0
+        let title = call.getString("title") ?? "Unknown"
+        let artist = call.getString("artist") ?? "Unknown"
+        let album = call.getString("album") ?? "Unknown"
+        let duration = call.getDouble("duration") ?? 0.0
         let coverUrl = call.getString("coverUrl") ?? ""
         let canvasUrl = call.getString("canvasUrl") ?? ""
         let suffix = call.getString("suffix") ?? "flac"
         let starred = call.getBool("starred") ?? false
 
-        let title = currentTitle
-        let artist = currentArtist
-        let album = currentAlbum
-        let duration = currentDuration
-        Task { @MainActor in
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else {
+                call.reject("Plugin instance is nil")
+                return
+            }
+
+            self.isManuallyChangingItem = true
+            defer { self.isManuallyChangingItem = false }
+            self.artworkGeneration += 1
+
+            self.currentTitle = title
+            self.currentArtist = artist
+            self.currentAlbum = album
+            self.currentDuration = duration
+
             let mgr = PlaybackStateManager.shared
             mgr.title = title
             mgr.artist = artist
@@ -249,94 +255,90 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             mgr.starred = starred
             mgr.isFetchingLyrics = false
             mgr.lyricsFetchFailed = false
-        }
-        uiTimeTickCount = 0
 
-        removeObservers()
-        metadataMap.removeAll()
-        playerItemStatusObservers.removeAll()
+            self.uiTimeTickCount = 0
 
-        var mimeType = "audio/flac"
-        let lowerSuffix = suffix.lowercased()
-        if lowerSuffix == "mp3" {
-            mimeType = "audio/mpeg"
-        } else if lowerSuffix == "m4a" || lowerSuffix == "mp4" {
-            mimeType = "audio/mp4"
-        } else if lowerSuffix == "wav" {
-            mimeType = "audio/wav"
-        } else if lowerSuffix == "ogg" || lowerSuffix == "oga" {
-            mimeType = "audio/ogg"
-        }
+            self.removeObservers()
+            self.metadataMap.removeAll()
+            self.playerItemStatusObservers.removeAll()
 
-        let options: [String: Any] = [
-            AVURLAssetPreferPreciseDurationAndTimingKey: true,
-            "AVURLAssetOutOfBandMIMETypeKey": mimeType,
-            "AVURLAssetOverrideMIMETypeKey": mimeType
-        ]
-        let asset = AVURLAsset(url: url, options: options)
-        let playerItem = AVPlayerItem(asset: asset)
-        
-        metadataMap[ObjectIdentifier(playerItem)] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred)
-        
-        player = AVQueuePlayer(playerItem: playerItem)
+            var mimeType = "audio/flac"
+            let lowerSuffix = suffix.lowercased()
+            if lowerSuffix == "mp3" {
+                mimeType = "audio/mpeg"
+            } else if lowerSuffix == "m4a" || lowerSuffix == "mp4" {
+                mimeType = "audio/mp4"
+            } else if lowerSuffix == "wav" {
+                mimeType = "audio/wav"
+            } else if lowerSuffix == "ogg" || lowerSuffix == "oga" {
+                mimeType = "audio/ogg"
+            }
 
-        updateNowPlayingInfo(elapsed: 0.0, rate: 0.0)
+            let options: [String: Any] = [
+                AVURLAssetPreferPreciseDurationAndTimingKey: true,
+                "AVURLAssetOutOfBandMIMETypeKey": mimeType,
+                "AVURLAssetOverrideMIMETypeKey": mimeType
+            ]
+            let asset = AVURLAsset(url: url, options: options)
+            let playerItem = AVPlayerItem(asset: asset)
 
-        if !coverUrl.isEmpty {
-            fetchArtwork(urlString: coverUrl)
-        }
+            self.metadataMap[ObjectIdentifier(playerItem)] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred)
 
-        let statusObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, change in
-            guard let self = self else { return }
-            if item.status == .readyToPlay, self.player?.currentItem == item {
-                let dur = CMTimeGetSeconds(item.duration)
-                if !dur.isNaN {
-                    self.currentDuration = dur
-                    self.updateNowPlayingInfo()
-                    self.notifyListeners("ready", data: ["duration": dur])
-                    Task { @MainActor in
+            self.player = AVQueuePlayer(playerItem: playerItem)
+
+            self.updateNowPlayingInfo(elapsed: 0.0, rate: 0.0)
+
+            if !coverUrl.isEmpty {
+                self.fetchArtwork(urlString: coverUrl)
+            }
+
+            let statusObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, change in
+                guard let self = self else { return }
+                if item.status == .readyToPlay, self.player?.currentItem == item {
+                    let dur = CMTimeGetSeconds(item.duration)
+                    if !dur.isNaN {
+                        self.currentDuration = dur
+                        self.updateNowPlayingInfo()
+                        self.notifyListeners("ready", data: ["duration": dur])
                         PlaybackStateManager.shared.duration = dur
                     }
+                } else if item.status == .failed {
+                    self.notifyListeners("error", data: ["message": item.error?.localizedDescription ?? "Playback failed"])
                 }
             }
-        }
-        playerItemStatusObservers[ObjectIdentifier(playerItem)] = statusObserver
+            self.playerItemStatusObservers[ObjectIdentifier(playerItem)] = statusObserver
 
-        let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-        timeObserverToken = player?.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
-            guard let self = self else { return }
-            let ct = CMTimeGetSeconds(time)
-            if !ct.isNaN {
-                self.notifyListeners("timeupdate", data: ["currentTime": ct])
+            let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+            self.timeObserverToken = self.player?.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+                guard let self = self else { return }
+                let ct = CMTimeGetSeconds(time)
+                if !ct.isNaN {
+                    self.notifyListeners("timeupdate", data: ["currentTime": ct])
+                }
             }
-        }
 
-        let uiInterval = CMTime(seconds: 0.05, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-        uiTimeObserverToken = player?.addPeriodicTimeObserver(forInterval: uiInterval, queue: .main) { [weak self] time in
-            guard let self = self else { return }
-            let ct = CMTimeGetSeconds(time)
-            if !ct.isNaN {
-                Task { @MainActor in
-                    // Always update lyric index at full 20 Hz for accurate line detection
+            let uiInterval = CMTime(seconds: 0.05, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+            self.uiTimeObserverToken = self.player?.addPeriodicTimeObserver(forInterval: uiInterval, queue: .main) { [weak self] time in
+                guard let self = self else { return }
+                let ct = CMTimeGetSeconds(time)
+                if !ct.isNaN {
                     PlaybackStateManager.shared.updateActiveLyricIndexOnly(ct)
-                    // Throttle @Observable currentTime writes to ~4 Hz to reduce SwiftUI re-renders
                     self.uiTimeTickCount += 1
                     if self.uiTimeTickCount % 5 == 0 {
                         PlaybackStateManager.shared.currentTime = ct
                     }
                 }
             }
-        }
 
-        currentItemObserver = player?.observe(\.currentItem, options: [.new]) { [weak self] player, change in
-            guard let self = self else { return }
-            if self.isManuallyChangingItem { return }
-            if let newItem = change.newValue as? AVPlayerItem, let meta = self.metadataMap[ObjectIdentifier(newItem)] {
-                self.currentTitle = meta.title
-                self.currentArtist = meta.artist
-                self.currentAlbum = meta.album
-                self.currentDuration = meta.duration
-                Task { @MainActor in
+            self.currentItemObserver = self.player?.observe(\.currentItem, options: [.new]) { [weak self] player, change in
+                guard let self = self else { return }
+                if self.isManuallyChangingItem { return }
+                if let newItem = change.newValue as? AVPlayerItem, let meta = self.metadataMap[ObjectIdentifier(newItem)] {
+                    self.currentTitle = meta.title
+                    self.currentArtist = meta.artist
+                    self.currentAlbum = meta.album
+                    self.currentDuration = meta.duration
+                    
                     let mgr = PlaybackStateManager.shared
                     mgr.title = meta.title
                     mgr.artist = meta.artist
@@ -347,30 +349,30 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                     mgr.updateCurrentTime(0)
                     mgr.isPlaying = true
                     mgr.starred = meta.starred
-                }
-                self.artworkGeneration += 1
-                self.updateNowPlayingInfo(elapsed: 0.0, rate: 1.0)
-                if !meta.coverUrl.isEmpty { self.fetchArtwork(urlString: meta.coverUrl) }
-                self.notifyListeners("trackAdvancedNatively", data: [:])
-                
-                let dur = CMTimeGetSeconds(newItem.duration)
-                if !dur.isNaN {
-                    self.currentDuration = dur
-                    self.updateNowPlayingInfo()
-                    Task { @MainActor in PlaybackStateManager.shared.duration = dur }
+                    
+                    self.artworkGeneration += 1
+                    self.updateNowPlayingInfo(elapsed: 0.0, rate: 1.0)
+                    if !meta.coverUrl.isEmpty { self.fetchArtwork(urlString: meta.coverUrl) }
+                    self.notifyListeners("trackAdvancedNatively", data: [:])
+
+                    let dur = CMTimeGetSeconds(newItem.duration)
+                    if !dur.isNaN {
+                        self.currentDuration = dur
+                        self.updateNowPlayingInfo()
+                        PlaybackStateManager.shared.duration = dur
+                    }
                 }
             }
+
+            NotificationCenter.default.addObserver(self, selector: #selector(self.playerItemDidReachEnd), name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
+            NotificationCenter.default.addObserver(self, selector: #selector(self.playerItemFailedToPlay), name: .AVPlayerItemFailedToPlayToEndTime, object: playerItem)
+
+            call.resolve()
         }
-
-        NotificationCenter.default.addObserver(self, selector: #selector(playerItemDidReachEnd), name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
-
-        isManuallyChangingItem = false
-        call.resolve()
     }
 
     @objc func preloadNext(_ call: CAPPluginCall) {
-        guard let queuePlayer = player,
-              let urlString = call.getString("url"),
+        guard let urlString = call.getString("url"),
               let url = URL(string: urlString) else {
             call.resolve()
             return
@@ -385,83 +387,101 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let suffix = call.getString("suffix") ?? "flac"
         let starred = call.getBool("starred") ?? false
 
-        var mimeType = "audio/flac"
-        let lowerSuffix = suffix.lowercased()
-        if lowerSuffix == "mp3" {
-            mimeType = "audio/mpeg"
-        } else if lowerSuffix == "m4a" || lowerSuffix == "mp4" {
-            mimeType = "audio/mp4"
-        } else if lowerSuffix == "wav" {
-            mimeType = "audio/wav"
-        } else if lowerSuffix == "ogg" || lowerSuffix == "oga" {
-            mimeType = "audio/ogg"
-        }
-
-        let options: [String: Any] = [
-            AVURLAssetPreferPreciseDurationAndTimingKey: true,
-            "AVURLAssetOutOfBandMIMETypeKey": mimeType,
-            "AVURLAssetOverrideMIMETypeKey": mimeType
-        ]
-        let asset = AVURLAsset(url: url, options: options)
-        let playerItem = AVPlayerItem(asset: asset)
-
-        metadataMap[ObjectIdentifier(playerItem)] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred)
-
-        if queuePlayer.items().count > 1 {
-            for item in queuePlayer.items().dropFirst() {
-                NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: item)
-                playerItemStatusObservers.removeValue(forKey: ObjectIdentifier(item))
-                metadataMap.removeValue(forKey: ObjectIdentifier(item))
-                queuePlayer.remove(item)
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, let queuePlayer = self.player else {
+                call.resolve()
+                return
             }
-        }
 
-        let statusObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, change in
-            guard let self = self else { return }
-            if item.status == .readyToPlay, self.player?.currentItem == item {
-                let dur = CMTimeGetSeconds(item.duration)
-                if !dur.isNaN {
-                    self.currentDuration = dur
-                    self.updateNowPlayingInfo()
-                    Task { @MainActor in PlaybackStateManager.shared.duration = dur }
+            var mimeType = "audio/flac"
+            let lowerSuffix = suffix.lowercased()
+            if lowerSuffix == "mp3" {
+                mimeType = "audio/mpeg"
+            } else if lowerSuffix == "m4a" || lowerSuffix == "mp4" {
+                mimeType = "audio/mp4"
+            } else if lowerSuffix == "wav" {
+                mimeType = "audio/wav"
+            } else if lowerSuffix == "ogg" || lowerSuffix == "oga" {
+                mimeType = "audio/ogg"
+            }
+
+            let options: [String: Any] = [
+                AVURLAssetPreferPreciseDurationAndTimingKey: true,
+                "AVURLAssetOutOfBandMIMETypeKey": mimeType,
+                "AVURLAssetOverrideMIMETypeKey": mimeType
+            ]
+            let asset = AVURLAsset(url: url, options: options)
+            let playerItem = AVPlayerItem(asset: asset)
+
+            self.metadataMap[ObjectIdentifier(playerItem)] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred)
+
+            if queuePlayer.items().count > 1 {
+                for item in queuePlayer.items().dropFirst() {
+                    NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: item)
+                    self.playerItemStatusObservers.removeValue(forKey: ObjectIdentifier(item))
+                    self.metadataMap.removeValue(forKey: ObjectIdentifier(item))
+                    queuePlayer.remove(item)
                 }
             }
-        }
-        playerItemStatusObservers[ObjectIdentifier(playerItem)] = statusObserver
-        
-        NotificationCenter.default.addObserver(self, selector: #selector(playerItemDidReachEnd), name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
 
-        asset.loadValuesAsynchronously(forKeys: ["playable", "duration"]) {
-            DispatchQueue.main.async {
-                var error: NSError?
-                if asset.statusOfValue(forKey: "playable", error: &error) == .loaded {
-                    // preloading warm
+            let statusObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, change in
+                guard let self = self else { return }
+                if item.status == .readyToPlay, self.player?.currentItem == item {
+                    let dur = CMTimeGetSeconds(item.duration)
+                    if !dur.isNaN {
+                        self.currentDuration = dur
+                        self.updateNowPlayingInfo()
+                        PlaybackStateManager.shared.duration = dur
+                    }
+                } else if item.status == .failed {
+                    self.notifyListeners("error", data: ["message": item.error?.localizedDescription ?? "Playback failed"])
                 }
             }
-        }
+            self.playerItemStatusObservers[ObjectIdentifier(playerItem)] = statusObserver
 
-        queuePlayer.insert(playerItem, after: nil)
-        call.resolve()
+            NotificationCenter.default.addObserver(self, selector: #selector(self.playerItemDidReachEnd), name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
+            NotificationCenter.default.addObserver(self, selector: #selector(self.playerItemFailedToPlay), name: .AVPlayerItemFailedToPlayToEndTime, object: playerItem)
+
+            asset.loadValuesAsynchronously(forKeys: ["playable", "duration"]) {
+                DispatchQueue.main.async {
+                    var error: NSError?
+                    if asset.statusOfValue(forKey: "playable", error: &error) == .loaded {
+                        // preloading warm
+                    }
+                }
+            }
+
+            queuePlayer.insert(playerItem, after: nil)
+            call.resolve()
+        }
     }
 
     @objc func play(_ call: CAPPluginCall) {
-        player?.play()
-        updateNowPlayingInfo(rate: 1.0)
-        notifyListeners("play", data: [:])
-        Task { @MainActor in
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else {
+                call.reject("Plugin instance is nil")
+                return
+            }
+            self.player?.play()
+            self.updateNowPlayingInfo(rate: 1.0)
+            self.notifyListeners("play", data: [:])
             PlaybackStateManager.shared.isPlaying = true
+            call.resolve()
         }
-        call.resolve()
     }
 
     @objc func pause(_ call: CAPPluginCall) {
-        player?.pause()
-        updateNowPlayingInfo(rate: 0.0)
-        notifyListeners("pause", data: [:])
-        Task { @MainActor in
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else {
+                call.reject("Plugin instance is nil")
+                return
+            }
+            self.player?.pause()
+            self.updateNowPlayingInfo(rate: 0.0)
+            self.notifyListeners("pause", data: [:])
             PlaybackStateManager.shared.isPlaying = false
+            call.resolve()
         }
-        call.resolve()
     }
 
     @objc func seek(_ call: CAPPluginCall) {
@@ -469,28 +489,40 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             call.reject("Must provide a time to seek to")
             return
         }
-        guard let player = player else {
-            self.notifyListeners("seeked", data: ["currentTime": to])
-            call.resolve()
-            return
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, let player = self.player else {
+                self?.notifyListeners("seeked", data: ["currentTime": to])
+                call.resolve()
+                return
+            }
+            let time = CMTime(seconds: to, preferredTimescale: 1000)
+            player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
+                guard let self = self else { return }
+                if finished {
+                    self.updateNowPlayingInfo(elapsed: to)
+                    self.notifyListeners("seeked", data: ["currentTime": to])
+                    call.resolve()
+                } else {
+                    call.reject("Seek cancelled or failed")
+                }
+            }
         }
-        let time = CMTime(seconds: to, preferredTimescale: 1000)
-        player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
-            self?.updateNowPlayingInfo(elapsed: to)
-            self?.notifyListeners("seeked", data: ["currentTime": to])
-        }
-        call.resolve()
     }
 
     public func seekNatively(to time: Double) {
-        guard let player = player else {
-            self.notifyListeners("seeked", data: ["currentTime": time])
-            return
-        }
-        let cmTime = CMTime(seconds: time, preferredTimescale: 1000)
-        player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
-            self?.updateNowPlayingInfo(elapsed: time)
-            self?.notifyListeners("seeked", data: ["currentTime": time])
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, let player = self.player else {
+                self?.notifyListeners("seeked", data: ["currentTime": time])
+                return
+            }
+            let cmTime = CMTime(seconds: time, preferredTimescale: 1000)
+            player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
+                guard let self = self else { return }
+                if finished {
+                    self.updateNowPlayingInfo(elapsed: time)
+                    self.notifyListeners("seeked", data: ["currentTime": time])
+                }
+            }
         }
     }
 
@@ -499,8 +531,10 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             call.reject("Must provide a volume value")
             return
         }
-        player?.volume = volume
-        call.resolve()
+        DispatchQueue.main.async { [weak self] in
+            self?.player?.volume = volume
+            call.resolve()
+        }
     }
 
     @objc func setTheme(_ call: CAPPluginCall) {
@@ -553,20 +587,33 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         }
         call.resolve()
     }
+
     private func removeObservers() {
-        if let token = timeObserverToken {
-            player?.removeTimeObserver(token)
-            timeObserverToken = nil
+        let block = { [weak self] in
+            guard let self = self else { return }
+            if let token = self.timeObserverToken {
+                self.player?.removeTimeObserver(token)
+                self.timeObserverToken = nil
+            }
+            if let uiToken = self.uiTimeObserverToken {
+                self.player?.removeTimeObserver(uiToken)
+                self.uiTimeObserverToken = nil
+            }
+            self.player?.pause()
+            self.player?.replaceCurrentItem(with: nil)
+            self.uiTimeTickCount = 0
+            self.playerItemStatusObservers.removeAll()
+            self.currentItemObserver?.invalidate()
+            self.currentItemObserver = nil
+            NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: nil)
+            NotificationCenter.default.removeObserver(self, name: .AVPlayerItemFailedToPlayToEndTime, object: nil)
         }
-        if let uiToken = uiTimeObserverToken {
-            player?.removeTimeObserver(uiToken)
-            uiTimeObserverToken = nil
+        
+        if Thread.isMainThread {
+            block()
+        } else {
+            DispatchQueue.main.sync(execute: block)
         }
-        uiTimeTickCount = 0
-        playerItemStatusObservers.removeAll()
-        currentItemObserver?.invalidate()
-        currentItemObserver = nil
-        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: nil)
     }
 
     @objc func playerItemDidReachEnd(_ notification: Notification) {
@@ -577,6 +624,10 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         Task { @MainActor in
             PlaybackStateManager.shared.isPlaying = false
         }
+    }
+
+    @objc func playerItemFailedToPlay(_ notification: Notification) {
+        notifyListeners("error", data: ["message": "Failed to play to end time"])
     }
 
     deinit {
