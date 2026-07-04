@@ -3468,21 +3468,29 @@ if (audio) {
                 _retryCount++;
                 console.warn('[Audio] Premature stream end at', Math.round(cur) + 's', '/', Math.round(dur) + 's — retrying stream (attempt ' + _retryCount + '/3)');
                 const savedPos = cur;
+                const prevVol = gainNode ? gainNode.gain.value : audio.volume;
+                applyVolume(0);
                 const baseUrl = Navidrome.getStreamUrl(queue[qIdx].id);
                 const retryUrl = `${baseUrl}&_r=${Date.now()}`;
                 _trackTransition = true;
                 audio.src = retryUrl;
                 audio.load();
+
+                const volRestoreTimer = setTimeout(() => applyVolume(prevVol), 5000);
                 audio.addEventListener('loadedmetadata', () => {
+                    clearTimeout(volRestoreTimer);
                     const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
                     if (plugin && window.Capacitor.getPlatform() === 'ios') {
                         plugin.seek({ to: savedPos }).then(() => {
+                            setTimeout(() => applyVolume(prevVol), 80);
                             audio.play().catch(e => console.error("Playback retry failed:", e));
                         }).catch(() => {
+                            setTimeout(() => applyVolume(prevVol), 80);
                             audio.play().catch(e => console.error("Playback retry failed:", e));
                         });
                     } else {
                         try { audio.currentTime = savedPos; } catch (e) { }
+                        setTimeout(() => applyVolume(prevVol), 80);
                         audio.play().catch(e => console.error("Playback retry failed:", e));
                     }
                 }, { once: true });

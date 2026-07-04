@@ -617,7 +617,8 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc func playerItemDidReachEnd(_ notification: Notification) {
-        if let player = player, player.items().count > 1 {
+        guard let endedItem = notification.object as? AVPlayerItem else { return }
+        guard let player = self.player, player.currentItem === endedItem else {
             return
         }
         notifyListeners("ended", data: [:])
