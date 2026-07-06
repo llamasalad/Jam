@@ -442,9 +442,17 @@ class CapacitorAudioPlayerShim {
     get preload() { return 'auto'; }
     set preload(val) { }
 
-    addEventListener(event, callback) {
+    addEventListener(event, callback, options) {
         if (!this.listeners[event]) this.listeners[event] = [];
-        this.listeners[event].push(callback);
+        if (options && options.once) {
+            const wrapped = (...args) => {
+                this.removeEventListener(event, wrapped);
+                callback(...args);
+            };
+            this.listeners[event].push(wrapped);
+        } else {
+            this.listeners[event].push(callback);
+        }
     }
 
     removeEventListener(event, callback) {
@@ -453,7 +461,7 @@ class CapacitorAudioPlayerShim {
     }
 
     dispatchEvent(event) {
-        const list = this.listeners[event];
+        const list = this.listeners[event] ? this.listeners[event].slice() : null;
         if (list) {
             list.forEach(cb => {
                 try { cb(); } catch (e) { console.error("Event error:", event, e); }
@@ -3202,10 +3210,12 @@ function setAudioMetadata(t) {
 let _trackTransition = false;
 let _lastKnownTime = 0;
 let _retryCount = 0;
+let _currentTrackReady = false;
 
 function play(t) {
     _lastKnownTime = 0;
     _retryCount = 0;
+    _currentTrackReady = false;
     seeking = false;
     updateStatusBar();
     updateMediaSession(t);
@@ -3237,10 +3247,19 @@ function play(t) {
     loadLyrics(t);
     updateExpandedNowPlaying(t);
     updateAdaptiveBackground();
-    preloadNextTrack();
+    schedulePreloadNext();
 }
 
 let nextAudio = null;
+
+function schedulePreloadNext() {
+    if (currentQuality === 'original' && !_currentTrackReady && audio) {
+        audio.addEventListener('loadedmetadata', preloadNextTrack, { once: true });
+        return;
+    }
+    preloadNextTrack();
+}
+
 function preloadNextTrack() {
     if (qIdx + 1 < queue.length) {
         let t = queue[qIdx + 1];
