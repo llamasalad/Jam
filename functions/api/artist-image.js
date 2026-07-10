@@ -13,7 +13,10 @@ async function searchArtistId(name) {
       headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' }
     });
     if (!res.ok) {
-      return { success: false, errorStatus: res.status };
+      let bodySnippet = '';
+      try { bodySnippet = (await res.text()).slice(0, 200); } catch (_) { }
+      console.warn('iTunes search non-OK:', res.status, bodySnippet);
+      return { success: false, errorStatus: res.status, errorDetail: bodySnippet };
     }
     const data = await res.json();
     if (data.results && data.results.length > 0) {
@@ -28,7 +31,8 @@ async function searchArtistId(name) {
     }
     return { success: true, artist: null };
   } catch (err) {
-    return { success: false, errorStatus: 502 };
+    console.warn('iTunes search threw:', err && err.message, err && err.stack);
+    return { success: false, errorStatus: 502, errorDetail: err && err.message };
   }
 }
 
@@ -84,6 +88,8 @@ async function scrapeArtistImage(viewUrl) {
   }
 }
 
+// Runs `fn` over `items` with at most `limit` in flight at once, so a batch of
+// misses doesn't fire off a burst of simultaneous iTunes/Apple requests.
 async function mapWithConcurrency(items, limit, fn) {
   const results = new Array(items.length);
   let cursor = 0;
@@ -98,6 +104,11 @@ async function mapWithConcurrency(items, limit, fn) {
   return results;
 }
 
+/**
+ * Resolves picture/id/name for a list of artist names, KV-first.
+ * Returns an array of { queryName, id, name, picture, fromCache, error? }
+ * in the same order as the input names (duplicates/blank names filtered out).
+ */
 async function resolveArtistImages(rawNames, env) {
   const hasKV = !!env.LYRICS_PICKS;
 
@@ -105,6 +116,7 @@ async function resolveArtistImages(rawNames, env) {
     .map(raw => ({ queryName: raw, cleanName: (raw || '').toLowerCase().trim() }))
     .filter(e => e.cleanName);
 
+  // --- Step 1: check KV for every requested name up front ---
   const kvChecks = await Promise.all(entries.map(async (entry) => {
     if (!hasKV) return { ...entry, cached: null };
     try {
@@ -116,6 +128,7 @@ async function resolveArtistImages(rawNames, env) {
     }
   }));
 
+  // --- Step 2: anything already mapped gets served straight away ---
   const resolved = [];
   const misses = [];
   for (const entry of kvChecks) {
@@ -134,18 +147,23 @@ async function resolveArtistImages(rawNames, env) {
 
   if (misses.length === 0) return resolved;
 
+  // --- Step 3: only the misses touch iTunes + the scraper, and only now ---
   const freshResults = await mapWithConcurrency(misses, 3, async (entry) => {
     const searchResult = await searchArtistId(entry.queryName);
 
     if (!searchResult.success) {
+      // Transient failure (network hiccup / iTunes rate limit) — don't cache this
+      // as "no artist", just surface the error so the caller can retry later.
       return {
         queryName: entry.queryName, cleanName: entry.cleanName,
-        id: null, name: null, picture: null, error: 'itunes_search_failed'
+        id: null, name: null, picture: null, error: 'itunes_search_failed',
+        errorStatus: searchResult.errorStatus, errorDetail: searchResult.errorDetail
       };
     }
 
     const artistInfo = searchResult.artist;
     if (!artistInfo || !artistInfo.id) {
+      // Confirmed empty result — this is real signal, cache it as null.
       return {
         queryName: entry.queryName, cleanName: entry.cleanName,
         id: null, name: null, picture: null, confirmedEmpty: true
@@ -169,6 +187,8 @@ async function resolveArtistImages(rawNames, env) {
       }
     }
 
+    // Not cached under this artist ID yet (even though the name itself was a
+    // miss) — scrape Apple Music for it.
     if (!alreadyCachedById) {
       const scrapeResult = await scrapeArtistImage(artistInfo.viewUrl);
       if (!scrapeResult.success) {
@@ -192,13 +212,15 @@ async function resolveArtistImages(rawNames, env) {
     };
   });
 
+  // --- Step 4 & 5: persist every fresh result, success or empty, back into KV ---
   if (hasKV) {
     await Promise.all(freshResults.map(async (r) => {
       try {
         if (r.needsIdWrite && r.artistIdKey) {
           await env.LYRICS_PICKS.put(r.artistIdKey, r.picture || 'null');
         }
-
+        // Only skip writing the name-level key on a transient error — everything
+        // else (including confirmed-empty / no-image results) gets written.
         if (!r.error) {
           const body = { id: r.id, name: r.name, picture: r.picture || null };
           await env.LYRICS_PICKS.put(`artist_image:${r.cleanName}`, JSON.stringify(body));
@@ -216,7 +238,9 @@ async function resolveArtistImages(rawNames, env) {
       name: r.name,
       picture: r.picture,
       fromCache: false,
-      error: r.error
+      error: r.error,
+      errorStatus: r.errorStatus,
+      errorDetail: r.errorDetail
     });
   }
 
@@ -233,6 +257,7 @@ export async function onRequestGet(context) {
 
   const namesParam = url.searchParams.get('names');
 
+  // Batch mode: /api/artist-image?names=Artist%20A,Artist%20B
   if (namesParam) {
     const rawNames = namesParam.split(',').map(n => n.trim()).filter(Boolean);
     if (rawNames.length === 0) {
@@ -244,6 +269,7 @@ export async function onRequestGet(context) {
     return jsonResponse(body, { headers: { 'Cache-Control': 'no-store' } });
   }
 
+  // Single-name mode (backward compatible with the existing app.js caller)
   const name = url.searchParams.get('name') || '';
   if (!name) {
     return jsonResponse({ error: 'name or names required' }, { status: 400 });
@@ -252,7 +278,11 @@ export async function onRequestGet(context) {
   const [result] = await resolveArtistImages([name], env);
   if (result.error) {
     return jsonResponse(
-      { error: `Artist resolution failed: ${result.error}` },
+      {
+        error: `Artist resolution failed: ${result.error}`,
+        upstreamStatus: result.errorStatus,
+        upstreamDetail: result.errorDetail
+      },
       { status: 502, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
     );
   }
@@ -269,6 +299,8 @@ export async function onRequestGet(context) {
   );
 }
 
+// Batch endpoint — pre-warm or backfill KV for a list of artist names.
+// Follows the exact same KV-first resolution as GET, just over a bigger list.
 export async function onRequestPost(context) {
   const { request, env } = context;
 
