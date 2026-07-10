@@ -100,7 +100,7 @@ export async function onRequestGet(context) {
   const cleanName = name.toLowerCase().trim();
   const kvKey = `artist_image:${cleanName}`;
 
-  // Step 1: Check KV Namespace if available
+  // Step 1: Check KV Namespace if available for the name query cache
   if (env.LYRICS_PICKS) {
     try {
       const cachedStr = await env.LYRICS_PICKS.get(kvKey);
@@ -129,11 +129,101 @@ export async function onRequestGet(context) {
     return cachedResponse;
   }
 
-  // Since mapping is build-time / upload-time, return a 404 response for unmapped artist images
-  const resultBody = { id: null, name: null, picture: null };
+  // Step 3: Resolve artist ID from iTunes
+  const searchResult = await searchArtistId(name);
+  if (!searchResult.success) {
+    return jsonResponse(
+      { error: 'iTunes search API request failed or was rate-limited' },
+      {
+        status: searchResult.errorStatus || 502,
+        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+      }
+    );
+  }
+
+  const artistInfo = searchResult.artist;
+  if (!artistInfo || !artistInfo.id) {
+    const resultBody = { id: null, name: null, picture: null };
+
+    // Store the negative result in KV permanently so we don't query iTunes again for it
+    if (env.LYRICS_PICKS) {
+      try {
+        await env.LYRICS_PICKS.put(kvKey, JSON.stringify(resultBody));
+      } catch (e) {
+        console.warn('KV write failed:', e);
+      }
+    }
+
+    const response = jsonResponse(resultBody, {
+      headers: { 'Cache-Control': 'public, max-age=7200' }
+    });
+    try {
+      await cache.put(cacheKey, response.clone());
+    } catch (e) { }
+
+    return response;
+  }
+
+  const artistId = artistInfo.id;
+  const artistIdKey = `artist_image_id:${artistId}`;
+  let picture = null;
+  let hasArtistIdCache = false;
+
+  // Step 4: Check if this artist ID is already mapped in KV
+  if (env.LYRICS_PICKS) {
+    try {
+      const cachedPic = await env.LYRICS_PICKS.get(artistIdKey);
+      if (cachedPic !== null) {
+        picture = cachedPic === 'null' ? null : cachedPic;
+        hasArtistIdCache = true;
+      }
+    } catch (e) {
+      console.warn('KV artist ID read failed:', e);
+    }
+  }
+
+  // Step 5: If not cached by artist ID, scrape the page
+  if (!hasArtistIdCache) {
+    const scrapeResult = await scrapeArtistImage(artistInfo.viewUrl);
+    if (!scrapeResult.success) {
+      return jsonResponse(
+        { error: 'Apple Music scraping failed or was rate-limited' },
+        {
+          status: scrapeResult.errorStatus || 502,
+          headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+        }
+      );
+    }
+
+    picture = scrapeResult.picture || null;
+
+    if (env.LYRICS_PICKS) {
+      try {
+        await env.LYRICS_PICKS.put(artistIdKey, picture || 'null');
+      } catch (e) {
+        console.warn('KV artist ID write failed:', e);
+      }
+    }
+  }
+
+  const resultBody = {
+    id: artistId,
+    name: artistInfo.name,
+    picture: picture || null
+  };
+
+  // Step 6: Store in name query cache
+  if (env.LYRICS_PICKS) {
+    try {
+      await env.LYRICS_PICKS.put(kvKey, JSON.stringify(resultBody));
+    } catch (e) {
+      console.warn('KV write failed:', e);
+    }
+  }
+
+  const edgeCacheTime = picture ? 31536000 : 7200;
   const response = jsonResponse(resultBody, {
-    status: 404,
-    headers: { 'Cache-Control': 'public, max-age=3600' }
+    headers: { 'Cache-Control': `public, max-age=${edgeCacheTime}${picture ? ', immutable' : ''}` }
   });
 
   try {
