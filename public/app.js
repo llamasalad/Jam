@@ -5123,7 +5123,7 @@ async function updateAdaptiveBackground() {
         try {
             const color = getDominantColor(imgEl);
             expPlayer.style.setProperty('--adaptive-color', color);
-            expPlayer.style.background = `linear-gradient(${color} 0%, var(--bg) 80%)`;
+            expPlayer.style.background = `linear-gradient(${color} 0%, var(--bg) 100%)`;
             expPlayer.classList.add('adaptive');
             updateStatusBar(color);
         } catch (e) { }
