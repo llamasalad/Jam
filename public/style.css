@@ -1121,7 +1121,10 @@ body {
   display: flex;
   flex-direction: column;
   bottom: 10px;
-  margin-left: 22%;
+  left: 160px;
+  right: 0;
+  width: fit-content;
+  margin-inline: auto;
   height: auto;
   background: color-mix(in srgb, var(--bg) 50%, transparent);
   border: 1px solid var(--border2);
@@ -1360,7 +1363,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   transform: translateY(160vh);
   transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
 }
@@ -1442,7 +1445,7 @@ body.player-open #main {
 }
 
 #exp-cover-wrap {
-  width: min(85vw, 300px);
+  width: min(85vw, 500px);
   aspect-ratio: 1 / 1;
   border-radius: 24px;
   overflow: hidden;
@@ -1454,6 +1457,10 @@ body.player-open #main {
   box-shadow: 0 20px 60px rgba(0, 0, 0, .5);
   position: relative;
   margin-top: -15px;
+}
+
+.desktop-lyrics-open #exp-cover-wrap {
+  width: min(85vw, 300px);
 }
 
 #exp-cover {
@@ -1480,6 +1487,8 @@ body.player-open #main {
 #expanded-player.has-canvas #exp-title,
 #expanded-player.has-canvas #exp-artist,
 #expanded-player.has-canvas #exp-lyric-current,
+#expanded-player.has-canvas .lyric-line.active,
+#expanded-player.has-canvas .lyric-line:hover,
 #expanded-player.has-canvas #exp-lyric-next {
   color: #fff
 }
@@ -1599,6 +1608,7 @@ body.player-open #main {
   flex-direction: column;
   gap: 20px;
   align-items: center;
+  padding-bottom: 10px
 }
 
 #exp-controls {
@@ -2674,6 +2684,7 @@ body.menu-open .queue-remove {
 
   #expanded-player.desktop-lyrics-open {
     align-items: center;
+    justify-content: center;
   }
 
   #exp-content.desktop-lyrics-open {
