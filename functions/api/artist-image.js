@@ -1,3 +1,9 @@
+function jsonResponse(body, init = {}) {
+  const headers = new Headers(init.headers || {});
+  headers.set('Content-Type', 'application/json');
+  return new Response(JSON.stringify(body), { ...init, headers });
+}
+
 async function searchArtistId(name) {
   const cleanName = (name || '').trim();
   if (!cleanName) return { success: true, artist: null };
@@ -32,7 +38,7 @@ function parseJSONLD(html) {
   while ((match = scriptRegex.exec(html)) !== null) {
     try {
       const data = JSON.parse(match[1].trim());
-      if (data && data.image) {
+      if (data && typeof data.image === 'string') {
         return data.image;
       }
     } catch (_) { }
@@ -63,15 +69,11 @@ async function scrapeArtistImage(viewUrl) {
     }
     const html = await res.text();
 
-    // Try JSON-LD first
     let imageUrl = parseJSONLD(html);
-
-    // Fallback to OpenGraph
     if (!imageUrl) {
       imageUrl = parseOpenGraphImage(html);
     }
 
-    // Discard generic placeholder image
     if (imageUrl === placeholderImageURL) {
       return { success: true, picture: null };
     }
@@ -82,263 +84,216 @@ async function scrapeArtistImage(viewUrl) {
   }
 }
 
-function jsonResponse(body, init = {}) {
-  const headers = new Headers(init.headers || {});
-  headers.set('Content-Type', 'application/json');
-  return new Response(JSON.stringify(body), { ...init, headers });
+async function mapWithConcurrency(items, limit, fn) {
+  const results = new Array(items.length);
+  let cursor = 0;
+  async function worker() {
+    while (cursor < items.length) {
+      const i = cursor++;
+      results[i] = await fn(items[i], i);
+    }
+  }
+  const workerCount = Math.min(limit, items.length);
+  await Promise.all(Array.from({ length: workerCount }, worker));
+  return results;
+}
+
+async function resolveArtistImages(rawNames, env) {
+  const hasKV = !!env.LYRICS_PICKS;
+
+  const entries = rawNames
+    .map(raw => ({ queryName: raw, cleanName: (raw || '').toLowerCase().trim() }))
+    .filter(e => e.cleanName);
+
+  const kvChecks = await Promise.all(entries.map(async (entry) => {
+    if (!hasKV) return { ...entry, cached: null };
+    try {
+      const cachedStr = await env.LYRICS_PICKS.get(`artist_image:${entry.cleanName}`);
+      return { ...entry, cached: cachedStr ? JSON.parse(cachedStr) : null };
+    } catch (err) {
+      console.warn('KV read failed for', entry.cleanName, err);
+      return { ...entry, cached: null };
+    }
+  }));
+
+  const resolved = [];
+  const misses = [];
+  for (const entry of kvChecks) {
+    if (entry.cached) {
+      resolved.push({
+        queryName: entry.queryName,
+        id: entry.cached.id,
+        name: entry.cached.name,
+        picture: entry.cached.picture,
+        fromCache: true
+      });
+    } else {
+      misses.push(entry);
+    }
+  }
+
+  if (misses.length === 0) return resolved;
+
+  const freshResults = await mapWithConcurrency(misses, 3, async (entry) => {
+    const searchResult = await searchArtistId(entry.queryName);
+
+    if (!searchResult.success) {
+      return {
+        queryName: entry.queryName, cleanName: entry.cleanName,
+        id: null, name: null, picture: null, error: 'itunes_search_failed'
+      };
+    }
+
+    const artistInfo = searchResult.artist;
+    if (!artistInfo || !artistInfo.id) {
+      return {
+        queryName: entry.queryName, cleanName: entry.cleanName,
+        id: null, name: null, picture: null, confirmedEmpty: true
+      };
+    }
+
+    const artistId = artistInfo.id;
+    const artistIdKey = `artist_image_id:${artistId}`;
+    let picture;
+    let alreadyCachedById = false;
+
+    if (hasKV) {
+      try {
+        const cachedPic = await env.LYRICS_PICKS.get(artistIdKey);
+        if (cachedPic !== null) {
+          picture = cachedPic === 'null' ? null : cachedPic;
+          alreadyCachedById = true;
+        }
+      } catch (err) {
+        console.warn('KV artist ID read failed:', err);
+      }
+    }
+
+    if (!alreadyCachedById) {
+      const scrapeResult = await scrapeArtistImage(artistInfo.viewUrl);
+      if (!scrapeResult.success) {
+        return {
+          queryName: entry.queryName, cleanName: entry.cleanName,
+          id: artistId, name: artistInfo.name, picture: null,
+          error: 'scrape_failed'
+        };
+      }
+      picture = scrapeResult.picture || null;
+    }
+
+    return {
+      queryName: entry.queryName,
+      cleanName: entry.cleanName,
+      id: artistId,
+      name: artistInfo.name,
+      picture,
+      artistIdKey,
+      needsIdWrite: !alreadyCachedById
+    };
+  });
+
+  if (hasKV) {
+    await Promise.all(freshResults.map(async (r) => {
+      try {
+        if (r.needsIdWrite && r.artistIdKey) {
+          await env.LYRICS_PICKS.put(r.artistIdKey, r.picture || 'null');
+        }
+
+        if (!r.error) {
+          const body = { id: r.id, name: r.name, picture: r.picture || null };
+          await env.LYRICS_PICKS.put(`artist_image:${r.cleanName}`, JSON.stringify(body));
+        }
+      } catch (err) {
+        console.warn('KV write failed for', r.cleanName, err);
+      }
+    }));
+  }
+
+  for (const r of freshResults) {
+    resolved.push({
+      queryName: r.queryName,
+      id: r.id,
+      name: r.name,
+      picture: r.picture,
+      fromCache: false,
+      error: r.error
+    });
+  }
+
+  return resolved;
 }
 
 export async function onRequestGet(context) {
   const { request, env } = context;
   const url = new URL(request.url);
-  const name = url.searchParams.get('name') || '';
 
-  if (!name) {
-    return jsonResponse({ error: 'name required' }, { status: 400 });
+  if (!env.LYRICS_PICKS) {
+    return jsonResponse({ error: 'LYRICS_PICKS KV binding not found' }, { status: 500 });
   }
 
-  const cleanName = name.toLowerCase().trim();
-  const kvKey = `artist_image:${cleanName}`;
+  const namesParam = url.searchParams.get('names');
 
-  // Step 1: Check KV Namespace if available for the name query cache
-  if (env.LYRICS_PICKS) {
-    try {
-      const cachedStr = await env.LYRICS_PICKS.get(kvKey);
-      if (cachedStr) {
-        const cachedData = JSON.parse(cachedStr);
-        return jsonResponse(cachedData, {
-          headers: { 'Cache-Control': 'public, max-age=31536000, immutable' }
-        });
-      }
-    } catch (e) {
-      console.warn('KV read failed:', e);
+  if (namesParam) {
+    const rawNames = namesParam.split(',').map(n => n.trim()).filter(Boolean);
+    if (rawNames.length === 0) {
+      return jsonResponse({ error: 'names required' }, { status: 400 });
     }
+    const results = await resolveArtistImages(rawNames, env);
+    const body = {};
+    for (const r of results) body[r.queryName] = r;
+    return jsonResponse(body, { headers: { 'Cache-Control': 'no-store' } });
   }
 
-  // Step 2: Check Cloudflare Cache API for edge caching
-  const cache = caches.default;
-  const cacheKey = new Request(request.url, { method: 'GET' });
-  let cachedResponse = null;
-  try {
-    cachedResponse = await cache.match(cacheKey);
-  } catch (e) {
-    console.warn('Cache API match failed:', e);
+  const name = url.searchParams.get('name') || '';
+  if (!name) {
+    return jsonResponse({ error: 'name or names required' }, { status: 400 });
   }
 
-  if (cachedResponse) {
-    return cachedResponse;
-  }
-
-  // Step 3: Resolve artist ID from iTunes
-  const searchResult = await searchArtistId(name);
-  if (!searchResult.success) {
+  const [result] = await resolveArtistImages([name], env);
+  if (result.error) {
     return jsonResponse(
-      { error: 'iTunes search API request failed or was rate-limited' },
-      {
-        status: searchResult.errorStatus || 502,
-        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
-      }
+      { error: `Artist resolution failed: ${result.error}` },
+      { status: 502, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
     );
   }
 
-  const artistInfo = searchResult.artist;
-  if (!artistInfo || !artistInfo.id) {
-    const resultBody = { id: null, name: null, picture: null };
-
-    // Store the negative result in KV permanently so we don't query iTunes again for it
-    if (env.LYRICS_PICKS) {
-      try {
-        await env.LYRICS_PICKS.put(kvKey, JSON.stringify(resultBody));
-      } catch (e) {
-        console.warn('KV write failed:', e);
+  return jsonResponse(
+    { id: result.id, name: result.name, picture: result.picture },
+    {
+      headers: {
+        'Cache-Control': result.picture
+          ? 'public, max-age=31536000, immutable'
+          : 'public, max-age=3600'
       }
     }
-
-    const response = jsonResponse(resultBody, {
-      headers: { 'Cache-Control': 'public, max-age=7200' }
-    });
-    try {
-      await cache.put(cacheKey, response.clone());
-    } catch (e) { }
-
-    return response;
-  }
-
-  const artistId = artistInfo.id;
-  const artistIdKey = `artist_image_id:${artistId}`;
-  let picture = null;
-  let hasArtistIdCache = false;
-
-  // Step 4: Check if this artist ID is already mapped in KV
-  if (env.LYRICS_PICKS) {
-    try {
-      const cachedPic = await env.LYRICS_PICKS.get(artistIdKey);
-      if (cachedPic !== null) {
-        picture = cachedPic === 'null' ? null : cachedPic;
-        hasArtistIdCache = true;
-      }
-    } catch (e) {
-      console.warn('KV artist ID read failed:', e);
-    }
-  }
-
-  // Step 5: If not cached by artist ID, scrape the page
-  if (!hasArtistIdCache) {
-    const scrapeResult = await scrapeArtistImage(artistInfo.viewUrl);
-    if (!scrapeResult.success) {
-      return jsonResponse(
-        { error: 'Apple Music scraping failed or was rate-limited' },
-        {
-          status: scrapeResult.errorStatus || 502,
-          headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
-        }
-      );
-    }
-
-    picture = scrapeResult.picture || null;
-
-    if (env.LYRICS_PICKS) {
-      try {
-        await env.LYRICS_PICKS.put(artistIdKey, picture || 'null');
-      } catch (e) {
-        console.warn('KV artist ID write failed:', e);
-      }
-    }
-  }
-
-  const resultBody = {
-    id: artistId,
-    name: artistInfo.name,
-    picture: picture || null
-  };
-
-  // Step 6: Store in name query cache
-  if (env.LYRICS_PICKS) {
-    try {
-      await env.LYRICS_PICKS.put(kvKey, JSON.stringify(resultBody));
-    } catch (e) {
-      console.warn('KV write failed:', e);
-    }
-  }
-
-  const edgeCacheTime = picture ? 31536000 : 7200;
-  const response = jsonResponse(resultBody, {
-    headers: { 'Cache-Control': `public, max-age=${edgeCacheTime}${picture ? ', immutable' : ''}` }
-  });
-
-  try {
-    await cache.put(cacheKey, response.clone());
-  } catch (e) { }
-
-  return response;
+  );
 }
 
 export async function onRequestPost(context) {
   const { request, env } = context;
 
-  if (env.ADMIN_SECRET) {
-    const authHeader = request.headers.get('Authorization') || '';
-    if (!authHeader.startsWith('Bearer ') || authHeader.slice(7) !== env.ADMIN_SECRET) {
-      return jsonResponse({ error: 'Unauthorized' }, { status: 401 });
-    }
+  if (!env.LYRICS_PICKS) {
+    return jsonResponse({ error: 'LYRICS_PICKS KV binding not found' }, { status: 500 });
   }
 
-  let name = '';
+  let names = [];
   try {
     const body = await request.json();
-    name = body.name || '';
+    if (Array.isArray(body.names)) {
+      names = body.names;
+    } else if (typeof body.name === 'string') {
+      names = [body.name];
+    }
   } catch (_) {
     const url = new URL(request.url);
-    name = url.searchParams.get('name') || '';
+    const single = url.searchParams.get('name');
+    if (single) names = [single];
   }
 
-  if (!name) {
-    return jsonResponse({ error: 'name required' }, { status: 400 });
+  if (names.length === 0) {
+    return jsonResponse({ error: 'name or names required' }, { status: 400 });
   }
 
-  const cleanName = name.toLowerCase().trim();
-  const kvKey = `artist_image:${cleanName}`;
-
-  // Resolve artist ID from iTunes
-  const searchResult = await searchArtistId(name);
-  if (!searchResult.success) {
-    return jsonResponse(
-      { error: 'iTunes search API request failed or was rate-limited' },
-      { status: searchResult.errorStatus || 502 }
-    );
-  }
-
-  const artistInfo = searchResult.artist;
-  if (!artistInfo || !artistInfo.id) {
-    const resultBody = { id: null, name: null, picture: null };
-    if (env.LYRICS_PICKS) {
-      try {
-        await env.LYRICS_PICKS.put(kvKey, JSON.stringify(resultBody));
-      } catch (e) {
-        console.warn('KV write failed:', e);
-      }
-    }
-    return jsonResponse(resultBody);
-  }
-
-  const artistId = artistInfo.id;
-  const artistIdKey = `artist_image_id:${artistId}`;
-  let picture = null;
-  let hasArtistIdCache = false;
-
-  if (env.LYRICS_PICKS) {
-    try {
-      const cachedPic = await env.LYRICS_PICKS.get(artistIdKey);
-      if (cachedPic !== null) {
-        picture = cachedPic === 'null' ? null : cachedPic;
-        hasArtistIdCache = true;
-      }
-    } catch (e) {
-      console.warn('KV artist ID read failed:', e);
-    }
-  }
-
-  if (!hasArtistIdCache) {
-    const scrapeResult = await scrapeArtistImage(artistInfo.viewUrl);
-    if (!scrapeResult.success) {
-      return jsonResponse(
-        { error: 'Apple Music scraping failed or was rate-limited' },
-        { status: scrapeResult.errorStatus || 502 }
-      );
-    }
-
-    picture = scrapeResult.picture || null;
-
-    if (env.LYRICS_PICKS) {
-      try {
-        await env.LYRICS_PICKS.put(artistIdKey, picture || 'null');
-      } catch (e) {
-        console.warn('KV artist ID write failed:', e);
-      }
-    }
-  }
-
-  const resultBody = {
-    id: artistId,
-    name: artistInfo.name,
-    picture: picture || null
-  };
-
-  if (env.LYRICS_PICKS) {
-    try {
-      await env.LYRICS_PICKS.put(kvKey, JSON.stringify(resultBody));
-    } catch (e) {
-      console.warn('KV write failed:', e);
-    }
-  }
-
-  try {
-    const cache = caches.default;
-    const url = new URL(request.url);
-    url.searchParams.set('name', name);
-    const cacheKey = new Request(url.toString(), { method: 'GET' });
-    await cache.delete(cacheKey);
-  } catch (e) { }
-
-  return jsonResponse(resultBody);
+  const results = await resolveArtistImages(names, env);
+  return jsonResponse({ results });
 }
