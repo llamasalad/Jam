@@ -1,9 +1,8 @@
-const CACHE = 'jam-v5';
+const CACHE = 'jam-v6';
 const ASSETS = [
   '/', '/index.html', '/style.css', '/app.js', '/manifest.json',
-  '/fonts/subset-SFProDisplay-Regular.woff2',
-  '/fonts/subset-SFProDisplay-Medium.woff2',
-  '/fonts/subset-SFProDisplay-Bold.woff2'
+  '/fonts/begav-subset.woff2',
+  '/fonts/SFUIText-Regular-subset.woff2'
 ];
 
 self.addEventListener('install', e => {

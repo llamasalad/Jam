@@ -5372,10 +5372,7 @@ window.addEventListener('pageshow', (e) => {
     if (wasPlayingBeforeHidden && audio && audio.paused && audio.src) audio.play().catch(e => console.error('Resume after BFCache restore failed:', e));
 });
 
-const APP_VERSION = '2026.04.24';
 let swRegistration = null;
-
-console.log('[App] Version:', APP_VERSION);
 
 function activateUpdate() {
     if (!swRegistration?.waiting) { console.log('[SW] No update waiting'); return; }
@@ -5386,7 +5383,6 @@ function activateUpdate() {
 window.getSWStatus = function () {
     if (!swRegistration) return { error: 'No SW registration' };
     return {
-        appVersion: APP_VERSION,
         swScope: swRegistration.scope,
         installing: swRegistration.installing ? true : false,
         waiting: swRegistration.waiting ? true : false,

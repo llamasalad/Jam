@@ -24,7 +24,7 @@ export async function onRequestGet({ request, env }) {
     const headers = new Headers();
     object.writeHttpMetadata(headers);
     headers.set("etag", object.httpEtag);
-    headers.set("Cache-Control", "public, max-age=604800"); // Cache for 7 days
+    headers.set("Cache-Control", "public, max-age=604800");
     headers.set("Accept-Ranges", "bytes");
 
     let status = 200;

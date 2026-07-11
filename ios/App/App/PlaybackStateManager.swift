@@ -2,11 +2,8 @@ import SwiftUI
 import Capacitor
 import Combine
 import WebKit
-
 import Observation
 
-// Explicitly disambiguate KeyPath to prevent macro expansion shadowing
-// from external C/Objective-C frameworks or plugins
 typealias KeyPath<Root, Value> = Swift.KeyPath<Root, Value>
 
 @Observable
@@ -82,7 +79,6 @@ final class PlaybackStateManager {
         }
     }
 
-    /// Called at full 20 Hz from AVPlayer observer — updates lyric index without writing currentTime.
     func updateActiveLyricIndexOnly(_ time: Double) {
         updateActiveLyricIndex(for: time)
     }

@@ -8,10 +8,7 @@ async function md5(message) {
 export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
-
-  // Extract subsonic path (e.g., /search3, /getCoverArt, /stream)
   const pathname = url.pathname.replace(/^\/api\/subsonic/, '');
-
   const navidromeUrl = env.NAVIDROME_URL;
   const username = env.NAVIDROME_USERNAME;
   const password = env.NAVIDROME_PASSWORD;
@@ -23,20 +20,16 @@ export async function onRequest(context) {
     );
   }
 
-  // Generate Subsonic auth params
   const salt = Math.random().toString(36).substring(2, 10);
   const token = await md5(password + salt);
-
   const targetUrl = new URL(`${navidromeUrl}/rest${pathname}`);
 
-  // Forward incoming search params, excluding client-side auth tokens
   for (const [key, value] of url.searchParams.entries()) {
     if (key !== 'token') {
       targetUrl.searchParams.set(key, value);
     }
   }
 
-  // Inject secure authentication parameters
   targetUrl.searchParams.set('u', username);
   targetUrl.searchParams.set('t', token);
   targetUrl.searchParams.set('s', salt);
