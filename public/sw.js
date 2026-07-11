@@ -27,6 +27,7 @@ self.addEventListener('fetch', e => {
     const u = new URL(request.url);
     u.searchParams.delete('t');
     u.searchParams.delete('s');
+    u.searchParams.delete('token');
     return u.toString();
   };
 
@@ -40,7 +41,7 @@ self.addEventListener('fetch', e => {
     } catch (_) { }
   }
 
-  if ((url.pathname === '/api/tracks' || url.pathname.endsWith('/rest/search3')) && e.request.method === 'GET' && !url.searchParams.has('refresh')) {
+  if ((url.pathname === '/api/tracks' || url.pathname.endsWith('/rest/search3') || url.pathname === '/api/subsonic/search3') && e.request.method === 'GET' && !url.searchParams.has('refresh')) {
     e.respondWith(caches.open(CACHE).then(async cache => {
       const cacheKey = getCacheKey(requestToFetch);
       const cached = await cache.match(cacheKey);
@@ -58,11 +59,11 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  if (url.pathname.startsWith('/api/stream/') || url.pathname.endsWith('/rest/stream')) {
+  if (url.pathname.startsWith('/api/stream/') || url.pathname.endsWith('/rest/stream') || url.pathname === '/api/subsonic/stream') {
     return;
   }
 
-  if (url.pathname.startsWith('/api/cover/') || url.pathname.endsWith('/rest/getCoverArt')) {
+  if (url.pathname.startsWith('/api/cover/') || url.pathname.endsWith('/rest/getCoverArt') || url.pathname === '/api/subsonic/getCoverArt') {
     e.respondWith(caches.open(CACHE).then(async cache => {
       const cacheKey = getCacheKey(requestToFetch);
       const cached = await cache.match(cacheKey);
