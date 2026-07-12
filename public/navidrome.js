@@ -37,8 +37,8 @@ export async function getTracks(forceRefresh = false) {
       suffix: song.suffix || 'flac',
       starred: !!song.starred,
       genre: song.genre || '',
-      coverUrl: `/api/subsonic/getCoverArt?id=${song.coverArt}&token=${token}`,
-      streamUrl: `/api/subsonic/stream?id=${song.id}&token=${token}`,
+      coverUrl: getCoverUrl(song.coverArt),
+      streamUrl: getStreamUrl(song.id),
     };
   });
   return allTracksCache;
@@ -51,7 +51,7 @@ export async function getPlaylists() {
   const playlistArray = Array.isArray(playlists) ? playlists : [playlists];
   const token = localStorage.getItem('music_token') || '';
   return playlistArray.filter(Boolean).map(pl => {
-    const fallback = pl.coverArt ? `/api/subsonic/getCoverArt?id=${pl.coverArt}&token=${token}` : '';
+    const fallback = pl.coverArt ? getCoverUrl(pl.coverArt) : '';
     return {
       id: pl.id,
       name: pl.name,
@@ -69,7 +69,7 @@ export async function getPlaylist(id) {
   const entries = pl.entry || [];
   const entryArray = Array.isArray(entries) ? entries : [entries];
   const token = localStorage.getItem('music_token') || '';
-  const fallback = pl.coverArt ? `/api/subsonic/getCoverArt?id=${pl.coverArt}&token=${token}` : '';
+  const fallback = pl.coverArt ? getCoverUrl(pl.coverArt) : '';
   return {
     id: pl.id,
     name: pl.name,
@@ -132,18 +132,21 @@ export async function renamePlaylist(id, newName) {
 }
 
 export function getStreamUrl(id) {
+  if (!id) return '';
   const token = localStorage.getItem('music_token') || '';
   const bitrate = localStorage.getItem('jam_bitrate') || 'original';
-  let url = `/api/subsonic/stream?id=${id}&token=${token}`;
+  let path = `/api/subsonic/stream?id=${id}&token=${token}`;
   if (bitrate !== 'original') {
-    url += `&maxBitRate=${bitrate}`;
+    path += `&maxBitRate=${bitrate}`;
   }
-  return url;
+  return new URL(path, window.location.origin).href;
 }
 
 export function getCoverUrl(id) {
+  if (!id) return '';
   const token = localStorage.getItem('music_token') || '';
-  return `/api/subsonic/getCoverArt?id=${id}&token=${token}`;
+  const path = `/api/subsonic/getCoverArt?id=${id}&token=${token}`;
+  return new URL(path, window.location.origin).href;
 }
 
 export async function starTrack(id, isStarred) {
@@ -159,7 +162,6 @@ export async function starTrack(id, isStarred) {
 }
 
 export async function getFavorites() {
-  const token = localStorage.getItem('music_token') || '';
   const res = await fetchWithAuth('/getStarred2');
   const data = await res.json();
   const songs = data['subsonic-response']?.starred2?.song || [];
@@ -173,8 +175,8 @@ export async function getFavorites() {
     suffix: song.suffix || 'flac',
     starred: true,
     genre: song.genre || '',
-    coverUrl: `/api/subsonic/getCoverArt?id=${song.coverArt}&token=${token}`,
-    streamUrl: `/api/subsonic/stream?id=${song.id}&token=${token}`,
+    coverUrl: getCoverUrl(song.coverArt),
+    streamUrl: getStreamUrl(song.id),
   }));
 }
 
@@ -199,7 +201,6 @@ export async function getRecentlyPlayed() {
 }
 
 async function getAlbumTracks(albumId) {
-  const token = localStorage.getItem('music_token') || '';
   const res = await fetchWithAuth(`/getAlbum?id=${albumId}`);
   const data = await res.json();
   const songs = data['subsonic-response']?.album?.song || [];
@@ -213,8 +214,8 @@ async function getAlbumTracks(albumId) {
     suffix: song.suffix || 'flac',
     starred: !!song.starred,
     genre: song.genre || '',
-    coverUrl: `/api/subsonic/getCoverArt?id=${song.coverArt}&token=${token}`,
-    streamUrl: `/api/subsonic/stream?id=${song.id}&token=${token}`,
+    coverUrl: getCoverUrl(song.coverArt),
+    streamUrl: getStreamUrl(song.id),
   }));
 }
 
@@ -236,7 +237,6 @@ export async function getRecentlyAdded() {
 }
 
 export async function getRandomDiscovery() {
-  const token = localStorage.getItem('music_token') || '';
   const res = await fetchWithAuth('/getRandomSongs?size=50');
   const data = await res.json();
   const songs = data['subsonic-response']?.randomSongs?.song || [];
@@ -250,7 +250,7 @@ export async function getRandomDiscovery() {
     suffix: song.suffix || 'flac',
     starred: !!song.starred,
     genre: song.genre || '',
-    coverUrl: `/api/subsonic/getCoverArt?id=${song.coverArt}&token=${token}`,
-    streamUrl: `/api/subsonic/stream?id=${song.id}&token=${token}`,
+    coverUrl: getCoverUrl(song.coverArt),
+    streamUrl: getStreamUrl(song.id),
   }));
 }
