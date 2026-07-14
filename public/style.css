@@ -2526,6 +2526,7 @@ body.menu-open .queue-remove {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  clip-path: inset(0 round var(--radius-s));
 }
 
 .artist-portrait {
