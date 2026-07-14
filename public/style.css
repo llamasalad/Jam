@@ -1990,6 +1990,7 @@ body.player-open #main {
   scroll-snap-align: start;
   transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   box-shadow: var(--shadow);
+  clip-path: inset(0 round var(--radius-s));
 }
 
 .suggested-card:active {
