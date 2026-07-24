@@ -277,8 +277,6 @@ final class PlaybackStateManager {
     }
 
     private func evaluateJS(_ js: String) {
-        DispatchQueue.main.async { [weak self] in
-            self?.webViewController?.webView?.evaluateJavaScript(js, completionHandler: nil)
-        }
+        webViewController?.webView?.evaluateJavaScript(js, completionHandler: nil)
     }
 }
