@@ -538,8 +538,13 @@ struct MarqueeText: View {
     let font: Font
     var alignment: Alignment = .leading
 
-    @State private var animate = false
     @State private var textWidth: CGFloat = 0
+    @State private var containerWidth: CGFloat = 0
+    @State private var offset: CGFloat = 0
+
+    private var isOversized: Bool {
+        textWidth > containerWidth && containerWidth > 0
+    }
 
     var body: some View {
         Text(text)
@@ -547,51 +552,76 @@ struct MarqueeText: View {
             .lineLimit(1)
             .opacity(0)
             .frame(maxWidth: .infinity, alignment: alignment)
+            .background(
+                GeometryReader { geo in
+                    Color.clear
+                        .preference(key: ContainerWidthKey.self, value: geo.size.width)
+                }
+            )
             .overlay(
-                GeometryReader { geometry in
-                    let isOversized = textWidth > geometry.size.width
-                    let offsetVal = animate && isOversized ? -(textWidth - geometry.size.width) : 0
-
+                GeometryReader { geo in
                     Text(text)
                         .font(font)
                         .lineLimit(1)
                         .fixedSize(horizontal: true, vertical: false)
                         .background(
-                            GeometryReader { innerGeo in
-                                Color.clear.preference(key: ViewWidthKey.self, value: innerGeo.frame(in: .local).width)
+                            GeometryReader { textGeo in
+                                Color.clear
+                                    .preference(key: TextWidthKey.self, value: textGeo.size.width)
                             }
                         )
-                        .frame(width: geometry.size.width, alignment: isOversized ? .leading : alignment)
-                        .offset(x: offsetVal)
-                        .animation(
-                            isOversized ?
-                            Animation.linear(duration: Double(textWidth) * 0.03).delay(1.0).repeatForever(autoreverses: true) :
-                            .default,
-                            value: offsetVal
-                        )
+                        .frame(width: geo.size.width, alignment: isOversized ? .leading : alignment)
+                        .offset(x: offset)
+                        .clipped()
                 }
-                .clipped()
             )
-            .onPreferenceChange(ViewWidthKey.self) { newWidth in
-                if textWidth != newWidth {
-                    DispatchQueue.main.async {
-                        textWidth = newWidth
-                    }
+            .onPreferenceChange(ContainerWidthKey.self) { newWidth in
+                if containerWidth != newWidth {
+                    containerWidth = newWidth
                 }
             }
-            .onAppear {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { animate = true }
+            .onPreferenceChange(TextWidthKey.self) { newWidth in
+                if textWidth != newWidth {
+                    textWidth = newWidth
+                }
             }
-            .onChange(of: text) { _, _ in
-                animate = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { animate = true }
+            .task(id: "\(text)_\(textWidth)_\(containerWidth)") {
+                offset = 0
+                guard isOversized else { return }
+
+                let scrollDistance = textWidth - containerWidth
+                let duration = Double(scrollDistance) * 0.035 + 1.0
+
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+
+                while !Task.isCancelled {
+                    withAnimation(.linear(duration: duration)) {
+                        offset = -scrollDistance
+                    }
+                    try? await Task.sleep(nanoseconds: UInt64((duration + 1.5) * 1_000_000_000))
+                    if Task.isCancelled { break }
+
+                    withAnimation(.linear(duration: duration)) {
+                        offset = 0
+                    }
+                    try? await Task.sleep(nanoseconds: UInt64((duration + 1.5) * 1_000_000_000))
+                }
             }
     }
 }
 
-struct ViewWidthKey: PreferenceKey {
+private struct TextWidthKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+private struct ContainerWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
 }
 
 class VisibleLinesTracker {

@@ -3015,6 +3015,10 @@ body.menu-open .queue-remove {
     display: none;
   }
 
+  body:has(#expanded-player.open) #queue-panel {
+    top: 25%;
+  }
+
   #main {
     grid-column: 2;
     grid-row: 2;
