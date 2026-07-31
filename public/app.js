@@ -551,6 +551,8 @@ const SMART_PLAYLISTS = [
     { id: 'smart:favorites', name: 'Favorites', image: '', tracks: [] },
     { id: 'smart:recent', name: 'Recently Played', image: '', tracks: [] },
     { id: 'smart:newest', name: 'Recently Added', image: '', tracks: [] },
+    { id: 'smart:charts', name: 'Charts', image: '', tracks: [] },
+    { id: 'smart:wishlist', name: 'Wishlist', image: '', tracks: [] },
     { id: 'smart:random', name: 'Daily Mix', image: '', tracks: [] },
     { id: 'smart:genre:upbeat', name: 'Upbeat', image: '', tracks: [] },
     { id: 'smart:genre:chill', name: 'Chill', image: '', tracks: [] },
@@ -2417,6 +2419,83 @@ function openCtxMenu(e, t) {
         };
     }
 
+    const ctxWishlist = document.getElementById('ctx-wishlist');
+    const ctxRemoveWishlist = document.getElementById('ctx-remove-wishlist');
+    const isInLibrary = t && tracks.some(lt => String(lt.id) === String(t.id));
+    const isUnowned = t && !isInLibrary && (String(t.id).startsWith('deezer:') || String(t.id).startsWith('http') || !!t.link || currentPlaylist?.id === 'smart:charts' || currentPlaylist?.id === 'smart:wishlist');
+
+    let currentWishlist = [];
+    try { currentWishlist = JSON.parse(localStorage.getItem('jam_wishlist_items') || '[]'); } catch (_) { }
+    const isWishlisted = t && currentWishlist.some(x => String(x.id) === String(t.id));
+
+    if (ctxWishlist && ctxRemoveWishlist) {
+        if (isUnowned) {
+            if (isWishlisted) {
+                ctxWishlist.style.display = 'none';
+                ctxRemoveWishlist.style.display = 'flex';
+                ctxRemoveWishlist.onclick = async () => {
+                    closeCtxMenu();
+                    let wishlist = [];
+                    try { wishlist = JSON.parse(localStorage.getItem('jam_wishlist_items') || '[]'); } catch (_) { }
+                    wishlist = wishlist.filter(item => String(item.id) !== String(t.id));
+                    localStorage.setItem('jam_wishlist_items', JSON.stringify(wishlist));
+                    showToast('Removed from Wishlist');
+                    if (currentPlaylist && currentPlaylist.id === 'smart:wishlist') {
+                        const tracksList = wishlist.map(item => {
+                            trackMap.set(item.id, item);
+                            return { trackId: item.id, title: item.title, artist: item.artist, album: item.album };
+                        });
+                        currentPlaylist = { ...currentPlaylist, tracks: tracksList };
+                        renderPlaylistDetail(currentPlaylist);
+                    }
+                    try {
+                        await fetch('/api/wishlist', {
+                            method: 'DELETE',
+                            headers: { ...hget(), 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: t.id })
+                        });
+                    } catch (_) { }
+                };
+            } else {
+                ctxWishlist.style.display = 'flex';
+                ctxRemoveWishlist.style.display = 'none';
+                ctxWishlist.onclick = async () => {
+                    closeCtxMenu();
+                    const item = {
+                        id: t.id,
+                        title: t.title || '',
+                        artist: t.artist || '',
+                        album: t.album || '',
+                        coverUrl: t.coverUrl || '',
+                        streamUrl: t.streamUrl || '',
+                        link: t.link || t.streamUrl || ''
+                    };
+                    let wishlist = [];
+                    try { wishlist = JSON.parse(localStorage.getItem('jam_wishlist_items') || '[]'); } catch (_) { }
+                    if (!wishlist.some(x => String(x.id) === String(t.id))) {
+                        wishlist.push(item);
+                        localStorage.setItem('jam_wishlist_items', JSON.stringify(wishlist));
+                    }
+                    showToast('Saved to Wishlist');
+                    try {
+                        const res = await fetch('/api/wishlist', {
+                            method: 'POST',
+                            headers: { ...hget(), 'Content-Type': 'application/json' },
+                            body: JSON.stringify(item)
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data.wishlist) localStorage.setItem('jam_wishlist_items', JSON.stringify(data.wishlist));
+                        }
+                    } catch (_) { }
+                };
+            }
+        } else {
+            ctxWishlist.style.display = 'none';
+            ctxRemoveWishlist.style.display = 'none';
+        }
+    }
+
     const ctxRemoveFromPlaylist = document.getElementById('ctx-remove-from-playlist');
     const ctxRemoveSep = document.getElementById('ctx-remove-sep');
     if (ctxRemoveFromPlaylist && ctxRemoveSep) {
@@ -2512,6 +2591,8 @@ function renderPlaylistCard(pl) {
     if (pl.id === 'smart:favorites') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="m5.825 21l1.625-7.025L2 9.25l7.2-.625L12 2l2.8 6.625l7.2.625l-5.45 4.725L18.175 21L12 17.275z"/></svg>';
     else if (pl.id === 'smart:recent') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="M13.5 8H12v5l4.28 2.54l.72-1.21l-3.5-2.08zM13 3a9 9 0 0 0-9 9H1l3.96 4.03L9 12H6a7 7 0 0 1 7-7a7 7 0 0 1 7 7a7 7 0 0 1-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.9 8.9 0 0 0 13 21a9 9 0 0 0 9-9a9 9 0 0 0-9-9"/></svg>';
     else if (pl.id === 'smart:newest') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="m21.45 11.11l-3-1.5l-2.7-1.35l-1.35-2.7l-1.5-3c-.34-.68-1.45-.68-1.79 0l-1.5 3l-1.35 2.7l-2.7 1.35l-3 1.5c-.34.17-.55.52-.55.89s.21.72.55.89l3 1.5l2.7 1.35l1.35 2.7l1.5 3c.17.34.52.55.89.55s.73-.21.89-.55l1.5-3l1.35-2.7l2.7-1.35l3-1.5c.34-.17.55-.52.55-.89s-.21-.72-.55-.89Zm-3.89 1.5l-.84.42l-2.16 1.08l-.3.15l-.15.3L12 18.77l-2.11-4.21l-.15-.3l-.3-.15l-2.16-1.08l-.84-.42L5.23 12l1.21-.61l.84-.42l2.16-1.08l.3-.15l.15-.3L12 5.23l2.11 4.21l.15.3l.3.15l2.16 1.08l.84.42l1.21.61z"/></svg>';
+    else if (pl.id === 'smart:charts') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path fill="currentColor" d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>';
+    else if (pl.id === 'smart:wishlist') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path fill="currentColor" d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>';
     else if (pl.id === 'smart:random') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512"><path d="M0 0h512v512H0z" fill="none"/><path fill="currentColor" fill-rule="evenodd" d="M465.023 135.32L376.68 465.023L46.977 376.68L135.32 46.977zM317.08 316.538c-17.071-4.574-34.618 5.557-39.192 22.627c-4.574 17.07 5.556 34.618 22.627 39.192s34.618-5.556 39.192-22.627s-5.557-34.618-22.627-39.192m-52.798-91.448c-17.07-4.574-34.617 5.557-39.192 22.628c-4.574 17.07 5.557 34.618 22.628 39.192s34.617-5.557 39.192-22.628c4.574-17.07-5.557-34.617-22.628-39.192m-52.797-91.447c-17.071-4.574-34.618 5.556-39.192 22.627s5.557 34.618 22.627 39.192c17.071 4.574 34.618-5.556 39.192-22.627s-5.556-34.618-22.627-39.192"/></svg>';
     else if (pl.id.startsWith('smart:genre:')) iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55c-2.21 0-4 1.79-4 4s1.79 4 4 4s4-1.79 4-4V7h4V3h-6z"/></svg>';
 
@@ -2611,6 +2692,8 @@ async function openPlaylistDetail(pl) {
     if (pl.id === 'smart:favorites') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="m5.825 21l1.625-7.025L2 9.25l7.2-.625L12 2l2.8 6.625l7.2.625l-5.45 4.725L18.175 21L12 17.275z"/></svg>';
     else if (pl.id === 'smart:recent') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="M13.5 8H12v5l4.28 2.54l.72-1.21l-3.5-2.08zM13 3a9 9 0 0 0-9 9H1l3.96 4.03L9 12H6a7 7 0 0 1 7-7a7 7 0 0 1 7 7a7 7 0 0 1-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.9 8.9 0 0 0 13 21a9 9 0 0 0 9-9a9 9 0 0 0-9-9"/></svg>';
     else if (pl.id === 'smart:newest') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path fill="currentColor" d="m21.45 11.11l-3-1.5l-2.7-1.35l-1.35-2.7l-1.5-3c-.34-.68-1.45-.68-1.79 0l-1.5 3l-1.35 2.7l-2.7 1.35l-3 1.5c-.34.17-.55.52-.55.89s.21.72.55.89l3 1.5l2.7 1.35l1.35 2.7l1.5 3c.17.34.52.55.89.55s.73-.21.89-.55l1.5-3l1.35-2.7l2.7-1.35l3-1.5c.34-.17.55-.52.55-.89s-.21-.72-.55-.89Zm-3.89 1.5l-.84.42l-2.16 1.08l-.3.15l-.15.3L12 18.77l-2.11-4.21l-.15-.3l-.3-.15l-2.16-1.08l-.84-.42L5.23 12l1.21-.61l.84-.42l2.16-1.08l.3-.15l.15-.3L12 5.23l2.11 4.21l.15.3l.3.15l2.16 1.08l.84.42l1.21.61z"/></svg>';
+    else if (pl.id === 'smart:charts') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path fill="currentColor" d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>';
+    else if (pl.id === 'smart:wishlist') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path fill="currentColor" d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>';
     else if (pl.id === 'smart:random') iconSymbol = '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512"><path d="M0 0h512v512H0z" fill="none"/><path fill="currentColor" fill-rule="evenodd" d="M465.023 135.32L376.68 465.023L46.977 376.68L135.32 46.977zM317.08 316.538c-17.071-4.574-34.618 5.557-39.192 22.627c-4.574 17.07 5.556 34.618 22.627 39.192s34.618-5.556 39.192-22.627s-5.557-34.618-22.627-39.192m-52.798-91.448c-17.07-4.574-34.617 5.557-39.192 22.628c-4.574 17.07 5.557 34.618 22.628 39.192s34.617-5.557 39.192-22.628c4.574-17.07-5.557-34.617-22.628-39.192m-52.797-91.447c-17.071-4.574-34.618 5.556-39.192 22.627s5.557 34.618 22.627 39.192c17.071 4.574 34.618-5.556 39.192-22.627s-5.556-34.618-22.627-39.192"/></svg>';
 
     if (plCover) {
@@ -2666,6 +2749,74 @@ async function openPlaylistDetail(pl) {
         } else if (pl.id === 'smart:newest') {
             const tracksList = await Navidrome.getRecentlyAdded();
             fullPl = { ...pl, tracks: tracksList.map(t => ({ trackId: t.id, title: t.title, artist: t.artist, album: t.album })) };
+        } else if (pl.id === 'smart:charts') {
+            try {
+                const res = await fetch('/api/chart?limit=100');
+                if (res.ok) {
+                    const data = await res.json();
+                    const deezerTracks = data.data || [];
+                    const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\(.*?\)|\[.*?\]/g, '').replace(/[^a-z0-9]/g, '').trim();
+
+                    const localTrackLookup = new Map();
+                    for (const t of tracks) {
+                        const key = `${norm(t.title)}|${norm(t.artist)}`;
+                        if (key && !localTrackLookup.has(key)) {
+                            localTrackLookup.set(key, t);
+                        }
+                    }
+
+                    const tracksList = deezerTracks.map(t => {
+                        const dTitle = norm(t.title);
+                        const dArtist = norm(t.artist?.name);
+                        const key = `${dTitle}|${dArtist}`;
+
+                        let matchedLocal = localTrackLookup.get(key);
+                        if (!matchedLocal && dTitle) {
+                            matchedLocal = tracks.find(lt => norm(lt.title) === dTitle && (norm(lt.artist).includes(dArtist) || dArtist.includes(norm(lt.artist))));
+                        }
+
+                        if (matchedLocal) {
+                            return { trackId: matchedLocal.id, title: matchedLocal.title, artist: matchedLocal.artist, album: matchedLocal.album };
+                        }
+
+                        const trackObj = {
+                            id: t.preview || `deezer:${t.id}`,
+                            title: t.title || '',
+                            artist: t.artist?.name || '',
+                            album: t.album?.title || '',
+                            duration: t.duration || 0,
+                            coverUrl: t.album?.cover_medium || t.album?.cover || '',
+                            streamUrl: t.preview || '',
+                            suffix: 'mp3'
+                        };
+                        trackMap.set(trackObj.id, trackObj);
+                        return { trackId: trackObj.id, title: trackObj.title, artist: trackObj.artist, album: trackObj.album };
+                    });
+                    fullPl = { ...pl, tracks: tracksList };
+                } else {
+                    fullPl = { ...pl, tracks: [] };
+                }
+            } catch (_) {
+                fullPl = { ...pl, tracks: [] };
+            }
+        } else if (pl.id === 'smart:wishlist') {
+            let savedWishlist = [];
+            try {
+                const res = await fetch('/api/wishlist', { headers: hget() });
+                if (res.ok) {
+                    savedWishlist = await res.json();
+                    localStorage.setItem('jam_wishlist_items', JSON.stringify(savedWishlist));
+                } else {
+                    savedWishlist = JSON.parse(localStorage.getItem('jam_wishlist_items') || '[]');
+                }
+            } catch (_) {
+                try { savedWishlist = JSON.parse(localStorage.getItem('jam_wishlist_items') || '[]'); } catch (_) { }
+            }
+            const tracksList = savedWishlist.map(t => {
+                trackMap.set(t.id, t);
+                return { trackId: t.id, title: t.title, artist: t.artist, album: t.album };
+            });
+            fullPl = { ...pl, tracks: tracksList };
         } else if (pl.id === 'smart:random') {
             let mixTrackIds = [];
             const savedDaily = localStorage.getItem('jam_daily_mix_tracks');
@@ -3224,7 +3375,7 @@ function play(t) {
         if (audioCtx?.state === 'suspended') audioCtx.resume();
         _trackTransition = true;
         setAudioMetadata(t);
-        audio.src = Navidrome.getStreamUrl(t.id);
+        audio.src = t.streamUrl || Navidrome.getStreamUrl(t.id);
         audio.load();
         audio.play().catch(e => console.error("Playback failed", e));
     }
