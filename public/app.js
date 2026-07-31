@@ -3416,7 +3416,7 @@ function preloadNextTrack() {
         let t = queue[qIdx + 1];
         const canvasUrl = getCanvasForTrack(t);
         if (canvasUrl) fetch(canvasUrl, { method: 'HEAD' }).catch(() => { });
-        let streamUrl = Navidrome.getStreamUrl(t.id);
+        let streamUrl = t.streamUrl || Navidrome.getStreamUrl(t.id);
         if (window.Capacitor?.Plugins?.AudioPlayerPlugin) {
             window.Capacitor.Plugins.AudioPlayerPlugin.preloadNext({
                 url: streamUrl,
@@ -3424,7 +3424,7 @@ function preloadNextTrack() {
                 artist: t.artist || '',
                 album: t.album || '',
                 duration: t.duration || 0,
-                coverUrl: Navidrome.getCoverUrl(t.id),
+                coverUrl: t.coverUrl || Navidrome.getCoverUrl(t.id),
                 canvasUrl: canvasUrl || '',
                 suffix: currentQuality === 'original' ? (t.suffix || 'flac') : 'mp3',
                 starred: !!t.starred
@@ -3446,7 +3446,7 @@ function syncGaplessNextTrack() {
         let t = queue[qIdx];
 
         if (audio && typeof audio.syncSourceNatively === 'function') {
-            audio.syncSourceNatively(Navidrome.getStreamUrl(t.id), {
+            audio.syncSourceNatively(t.streamUrl || Navidrome.getStreamUrl(t.id), {
                 title: t.title,
                 artist: t.artist,
                 album: t.album,
@@ -3633,15 +3633,17 @@ if (audio) {
         if (wasTransitioning) return;
         const dur = getRealDuration();
         const cur = _lastKnownTime;
-        if (dur > 10 && cur < dur * 0.95) {
+        const curTrack = queue[qIdx];
+        const isPreview = curTrack && (curTrack.streamUrl || String(curTrack.id).startsWith('deezer:'));
+        if (!isPreview && dur > 10 && cur < dur * 0.95) {
             if (_retryCount < 3) {
                 _retryCount++;
                 console.warn('[Audio] Premature stream end at', Math.round(cur) + 's', '/', Math.round(dur) + 's — retrying stream (attempt ' + _retryCount + '/3)');
                 const savedPos = cur;
                 const prevVol = gainNode ? gainNode.gain.value : audio.volume;
                 applyVolume(0);
-                const baseUrl = Navidrome.getStreamUrl(queue[qIdx].id);
-                const retryUrl = `${baseUrl}&_r=${Date.now()}`;
+                const baseUrl = queue[qIdx]?.streamUrl || Navidrome.getStreamUrl(queue[qIdx].id);
+                const retryUrl = baseUrl.includes('?') ? `${baseUrl}&_r=${Date.now()}` : `${baseUrl}?_r=${Date.now()}`;
                 _trackTransition = true;
                 audio.src = retryUrl;
                 audio.load();
@@ -3676,15 +3678,17 @@ if (audio) {
         console.error('Audio error on:', audio.src, audio.error?.message);
         const dur = getRealDuration();
         const cur = _lastKnownTime;
-        if (dur > 10 && cur < dur * 0.95) {
+        const curTrack = queue[qIdx];
+        const isPreview = curTrack && (curTrack.streamUrl || String(curTrack.id).startsWith('deezer:'));
+        if (!isPreview && dur > 10 && cur < dur * 0.95) {
             if (_retryCount < 3) {
                 _retryCount++;
                 console.warn('[Audio] Error mid-stream. Retrying stream (attempt ' + _retryCount + '/3)...');
                 const savedPos = cur;
                 const prevVol = gainNode ? gainNode.gain.value : audio.volume;
                 applyVolume(0);
-                const baseUrl = Navidrome.getStreamUrl(queue[qIdx].id);
-                const retryUrl = `${baseUrl}&_r=${Date.now()}`;
+                const baseUrl = queue[qIdx]?.streamUrl || Navidrome.getStreamUrl(queue[qIdx].id);
+                const retryUrl = baseUrl.includes('?') ? `${baseUrl}&_r=${Date.now()}` : `${baseUrl}?_r=${Date.now()}`;
                 _trackTransition = true;
                 audio.src = retryUrl;
                 audio.load();
@@ -5379,7 +5383,7 @@ async function init() {
             if (!alreadySet) {
                 audio.preload = 'auto';
                 setAudioMetadata(lastTrackData);
-                audio.src = Navidrome.getStreamUrl(lastTrackData.id);
+                audio.src = lastTrackData.streamUrl || Navidrome.getStreamUrl(lastTrackData.id);
                 audio.load();
             }
         }
@@ -5428,7 +5432,7 @@ async function init() {
                 if (!alreadyBuffering) {
                     audio.preload = 'auto';
                     setAudioMetadata(t);
-                    audio.src = Navidrome.getStreamUrl(t.id);
+                    audio.src = t.streamUrl || Navidrome.getStreamUrl(t.id);
                     audio.load();
                 }
                 updateMediaSession(t);

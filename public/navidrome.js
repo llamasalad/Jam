@@ -133,6 +133,7 @@ export async function renamePlaylist(id, newName) {
 
 export function getStreamUrl(id) {
   if (!id) return '';
+  if (typeof id === 'string' && (id.startsWith('http://') || id.startsWith('https://') || id.startsWith('deezer:'))) return id;
   const token = localStorage.getItem('music_token') || '';
   const bitrate = localStorage.getItem('jam_bitrate') || 'original';
   let path = `/api/subsonic/stream?id=${id}&token=${token}`;
