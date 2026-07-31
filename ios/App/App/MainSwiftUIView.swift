@@ -309,7 +309,7 @@ struct ExpandedPlayerView: View {
                     Button(action: { state.toggleStar() }) {
                         Image(systemName: state.isPreview ? (state.starred ? "bookmark.fill" : "bookmark") : (state.starred ? "star.fill" : "star"))
                             .imageScale(.large)
-                            .foregroundStyle(state.starred ? (state.isPreview ? .accentColor : .yellow) : .primary)
+                            .foregroundStyle(state.starred ? (state.isPreview ? Color.accentColor : .yellow) : .primary)
                             .frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)
