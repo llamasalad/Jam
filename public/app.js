@@ -4080,97 +4080,8 @@ if (expVolumeSlider) {
 if (expVolumeIcon) expVolumeIcon.addEventListener('click', toggleMute);
 
 if (expHeartBtn) {
-    expHeartBtn.onclick = async () => {
-        const t = queue[qIdx];
-        if (!t) return;
-        triggerHaptic('IMPACT_MEDIUM');
-
-        const isInLibrary = t && tracks.some(lt => String(lt.id) === String(t.id));
-        const isPreview = t && !isInLibrary && (String(t.id).startsWith('deezer:') || String(t.id).startsWith('http') || !!t.link || !!t.streamUrl);
-
-        if (isPreview) {
-            let wishlist = [];
-            try { wishlist = JSON.parse(localStorage.getItem('jam_wishlist_items') || '[]'); } catch (_) { }
-            const isWishlisted = wishlist.some(x => String(x.id) === String(t.id));
-
-            if (isWishlisted) {
-                wishlist = wishlist.filter(x => String(x.id) !== String(t.id));
-                localStorage.setItem('jam_wishlist_items', JSON.stringify(wishlist));
-                showToast('Removed from Wishlist');
-                updateHeartUI(t);
-                if (currentPlaylist && currentPlaylist.id === 'smart:wishlist') {
-                    const tracksList = wishlist.map(item => {
-                        trackMap.set(item.id, item);
-                        return { trackId: item.id, title: item.title, artist: item.artist, album: item.album };
-                    });
-                    currentPlaylist = { ...currentPlaylist, tracks: tracksList };
-                    renderPlaylistDetail(currentPlaylist);
-                }
-                fetch('/api/wishlist', {
-                    method: 'DELETE',
-                    headers: { ...hget(), 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: t.id })
-                }).catch(() => { });
-            } else {
-                const item = {
-                    id: t.id,
-                    title: t.title || '',
-                    artist: t.artist || '',
-                    album: t.album || '',
-                    coverUrl: t.coverUrl || '',
-                    streamUrl: t.streamUrl || '',
-                    link: t.link || t.streamUrl || ''
-                };
-                if (!wishlist.some(x => String(x.id) === String(t.id))) {
-                    wishlist.push(item);
-                    localStorage.setItem('jam_wishlist_items', JSON.stringify(wishlist));
-                }
-                showToast('Saved to Wishlist');
-                updateHeartUI(t);
-                if (currentPlaylist && currentPlaylist.id === 'smart:wishlist') {
-                    const tracksList = wishlist.map(item => {
-                        trackMap.set(item.id, item);
-                        return { trackId: item.id, title: item.title, artist: item.artist, album: item.album };
-                    });
-                    currentPlaylist = { ...currentPlaylist, tracks: tracksList };
-                    renderPlaylistDetail(currentPlaylist);
-                }
-                fetch('/api/wishlist', {
-                    method: 'POST',
-                    headers: { ...hget(), 'Content-Type': 'application/json' },
-                    body: JSON.stringify(item)
-                }).catch(() => { });
-            }
-            return;
-        }
-
-        const nextStarredState = !t.starred;
-        t.starred = nextStarredState;
-        updateHeartUI(nextStarredState);
-        syncStarredStateNatively(nextStarredState);
-
-        try {
-            const ok = await Navidrome.starTrack(t.id, nextStarredState);
-            if (ok) {
-                showToast(nextStarredState ? 'Added to Favorites' : 'Removed from Favorites');
-                if (currentPlaylist && currentPlaylist.id === 'smart:favorites') {
-                    const tracksList = await Navidrome.getFavorites();
-                    currentPlaylist.tracks = tracksList.map(x => ({ trackId: x.id, title: x.title, artist: x.artist, album: x.album }));
-                    renderPlaylistDetail(currentPlaylist);
-                }
-            } else {
-                t.starred = !nextStarredState;
-                updateHeartUI(!nextStarredState);
-                syncStarredStateNatively(!nextStarredState);
-                showToast('Failed to update favorite status');
-            }
-        } catch (e) {
-            console.error(e);
-            t.starred = !nextStarredState;
-            updateHeartUI(!nextStarredState);
-            syncStarredStateNatively(!nextStarredState);
-            showToast('Error updating favorite status');
-        }
+    expHeartBtn.onclick = () => {
+        window.toggleStarCurrent();
     };
 }
 
@@ -4264,10 +4175,74 @@ if (ctxUnfavorite) {
 window.toggleStarCurrent = async function () {
     const t = queue[qIdx];
     if (!t) return;
+    triggerHaptic('IMPACT_MEDIUM');
+
+    const isInLibrary = t && tracks.some(lt => String(lt.id) === String(t.id));
+    const isPreview = t && !isInLibrary && (String(t.id).startsWith('deezer:') || String(t.id).startsWith('http') || !!t.link || !!t.streamUrl);
+
+    if (isPreview) {
+        let wishlist = [];
+        try { wishlist = JSON.parse(localStorage.getItem('jam_wishlist_items') || '[]'); } catch (_) { }
+        const isWishlisted = wishlist.some(x => String(x.id) === String(t.id));
+
+        if (isWishlisted) {
+            wishlist = wishlist.filter(x => String(x.id) !== String(t.id));
+            localStorage.setItem('jam_wishlist_items', JSON.stringify(wishlist));
+            showToast('Removed from Wishlist');
+            updateHeartUI(t);
+            syncStarredStateNatively(false, true);
+            if (currentPlaylist && currentPlaylist.id === 'smart:wishlist') {
+                const tracksList = wishlist.map(item => {
+                    trackMap.set(item.id, item);
+                    return { trackId: item.id, title: item.title, artist: item.artist, album: item.album };
+                });
+                currentPlaylist = { ...currentPlaylist, tracks: tracksList };
+                renderPlaylistDetail(currentPlaylist);
+            }
+            fetch('/api/wishlist', {
+                method: 'DELETE',
+                headers: { ...hget(), 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: t.id })
+            }).catch(() => { });
+        } else {
+            const item = {
+                id: t.id,
+                title: t.title || '',
+                artist: t.artist || '',
+                album: t.album || '',
+                coverUrl: t.coverUrl || '',
+                streamUrl: t.streamUrl || '',
+                link: t.link || t.streamUrl || ''
+            };
+            if (!wishlist.some(x => String(x.id) === String(t.id))) {
+                wishlist.push(item);
+                localStorage.setItem('jam_wishlist_items', JSON.stringify(wishlist));
+            }
+            showToast('Saved to Wishlist');
+            updateHeartUI(t);
+            syncStarredStateNatively(true, true);
+            if (currentPlaylist && currentPlaylist.id === 'smart:wishlist') {
+                const tracksList = wishlist.map(item => {
+                    trackMap.set(item.id, item);
+                    return { trackId: item.id, title: item.title, artist: item.artist, album: item.album };
+                });
+                currentPlaylist = { ...currentPlaylist, tracks: tracksList };
+                renderPlaylistDetail(currentPlaylist);
+            }
+            fetch('/api/wishlist', {
+                method: 'POST',
+                headers: { ...hget(), 'Content-Type': 'application/json' },
+                body: JSON.stringify(item)
+            }).catch(() => { });
+        }
+        return;
+    }
+
     const nextStarredState = !t.starred;
     t.starred = nextStarredState;
     updateHeartUI(nextStarredState);
-    syncStarredStateNatively(nextStarredState);
+    syncStarredStateNatively(nextStarredState, false);
+
     try {
         const ok = await Navidrome.starTrack(t.id, nextStarredState);
         if (ok) {
@@ -4280,12 +4255,15 @@ window.toggleStarCurrent = async function () {
         } else {
             t.starred = !nextStarredState;
             updateHeartUI(!nextStarredState);
-            syncStarredStateNatively(!nextStarredState);
+            syncStarredStateNatively(!nextStarredState, false);
+            showToast('Failed to update favorite status');
         }
     } catch (e) {
+        console.error(e);
         t.starred = !nextStarredState;
         updateHeartUI(!nextStarredState);
-        syncStarredStateNatively(!nextStarredState);
+        syncStarredStateNatively(!nextStarredState, false);
+        showToast('Error updating favorite status');
     }
 };
 
