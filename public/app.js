@@ -559,17 +559,25 @@ const SMART_PLAYLISTS = [
     { id: 'smart:genre:flow', name: 'Flow', image: '', tracks: [] }
 ];
 
-function updateHeartUI(starred) {
+function updateHeartUI(starredArg) {
     if (!expHeartBtn) return;
-    const svg = expHeartBtn.querySelector('svg');
-    if (svg) {
-        if (starred) {
-            svg.setAttribute('fill', 'currentColor');
-            expHeartBtn.classList.add('starred');
-        } else {
-            svg.setAttribute('fill', 'none');
-            expHeartBtn.classList.remove('starred');
-        }
+    const trackObj = (typeof starredArg === 'object' && starredArg) ? starredArg : (queue && queue[qIdx] ? queue[qIdx] : null);
+    const isInLibrary = trackObj && tracks.some(lt => String(lt.id) === String(trackObj.id));
+    const isPreview = trackObj && !isInLibrary && (String(trackObj.id).startsWith('deezer:') || String(trackObj.id).startsWith('http') || !!trackObj.link || !!trackObj.streamUrl);
+
+    if (isPreview) {
+        let wishlist = [];
+        try { wishlist = JSON.parse(localStorage.getItem('jam_wishlist_items') || '[]'); } catch (_) { }
+        const isWishlisted = wishlist.some(x => String(x.id) === String(trackObj.id));
+
+        expHeartBtn.setAttribute('title', isWishlisted ? 'Remove from Wishlist' : 'Wishlist');
+        expHeartBtn.innerHTML = `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>`;
+        expHeartBtn.classList.toggle('starred', isWishlisted);
+    } else {
+        const starred = typeof starredArg === 'boolean' ? starredArg : !!(trackObj && trackObj.starred);
+        expHeartBtn.setAttribute('title', 'Favorite');
+        expHeartBtn.innerHTML = `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="${starred ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5.825 21l1.625-7.025L2 9.25l7.2-.625L12 2l2.8 6.625l7.2.625l-5.45 4.725L18.175 21L12 17.275z" /></svg>`;
+        expHeartBtn.classList.toggle('starred', starred);
     }
 }
 
@@ -2369,56 +2377,6 @@ function openCtxMenu(e, t) {
     const row = document.querySelector(`.track[data-id="${t.id}"]`);
     if (row) row.classList.add('long-press');
 
-    const trackItems = ['ctx-add-queue', 'ctx-new-playlist', t.starred ? 'ctx-unfavorite' : 'ctx-favorite'];
-    trackItems.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'flex'; });
-    const hideItems = t.starred ? ['ctx-favorite'] : ['ctx-unfavorite'];
-    hideItems.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
-
-    if (ctxPlaylists) ctxPlaylists.style.display = 'block';
-
-    if (ctxMenu) {
-        const addLabel = Array.from(ctxMenu.querySelectorAll('.ctx-label')).find(el => el.textContent === 'Add to Playlist');
-        if (addLabel) addLabel.style.display = 'block';
-        ctxMenu.querySelectorAll('.ctx-sep').forEach(sep => { if (sep.id !== 'ctx-remove-sep') sep.style.display = 'block'; });
-    }
-
-    const ctxDeletePlaylist = document.getElementById('ctx-delete-playlist');
-    if (ctxDeletePlaylist) ctxDeletePlaylist.style.display = 'none';
-
-    const isTouch = coarseQuery.matches;
-    let targetTracks = [];
-    if (!isTouch) {
-        targetTracks = Array.from(document.querySelectorAll('.track.selected'))
-            .map(el => trackMap.get(el.dataset.id))
-            .filter(Boolean);
-    }
-    if (!targetTracks.length || !targetTracks.some(st => st.id === t.id)) targetTracks = [t];
-
-    const trackNameLabel = document.getElementById('ctx-track-name');
-    if (trackNameLabel) trackNameLabel.textContent = targetTracks.length > 1 ? `${targetTracks.length} tracks selected` : (t.title || 'Track');
-
-    const ctxPlayNext = document.getElementById('ctx-play-next');
-    if (ctxPlayNext) {
-        ctxPlayNext.onclick = () => {
-            queue.splice(qIdx + 1, 0, ...targetTracks);
-            showToast(`Playing ${targetTracks.length} track(s) next`);
-            saveQueueState();
-            renderQueue();
-            closeCtxMenu();
-        };
-    }
-
-    const ctxAddQueue = document.getElementById('ctx-add-queue');
-    if (ctxAddQueue) {
-        ctxAddQueue.onclick = () => {
-            queue.splice(qIdx + 1, 0, ...targetTracks);
-            showToast(`Added ${targetTracks.length} track(s) to play next`);
-            saveQueueState();
-            renderQueue();
-            closeCtxMenu();
-        };
-    }
-
     const ctxWishlist = document.getElementById('ctx-wishlist');
     const ctxRemoveWishlist = document.getElementById('ctx-remove-wishlist');
     const isInLibrary = t && tracks.some(lt => String(lt.id) === String(t.id));
@@ -2428,8 +2386,18 @@ function openCtxMenu(e, t) {
     try { currentWishlist = JSON.parse(localStorage.getItem('jam_wishlist_items') || '[]'); } catch (_) { }
     const isWishlisted = t && currentWishlist.some(x => String(x.id) === String(t.id));
 
-    if (ctxWishlist && ctxRemoveWishlist) {
-        if (isUnowned) {
+    if (isUnowned) {
+        ['ctx-add-queue', 'ctx-favorite', 'ctx-unfavorite', 'ctx-new-playlist', 'ctx-remove-from-playlist', 'ctx-remove-sep'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
+        if (ctxPlaylists) ctxPlaylists.style.display = 'none';
+        if (ctxMenu) {
+            const addLabel = Array.from(ctxMenu.querySelectorAll('.ctx-label')).find(el => el.textContent === 'Add to Playlist');
+            if (addLabel) addLabel.style.display = 'none';
+            ctxMenu.querySelectorAll('.ctx-sep').forEach(sep => sep.style.display = 'none');
+        }
+        if (ctxWishlist && ctxRemoveWishlist) {
             if (isWishlisted) {
                 ctxWishlist.style.display = 'none';
                 ctxRemoveWishlist.style.display = 'flex';
@@ -2490,10 +2458,59 @@ function openCtxMenu(e, t) {
                     } catch (_) { }
                 };
             }
-        } else {
-            ctxWishlist.style.display = 'none';
-            ctxRemoveWishlist.style.display = 'none';
         }
+    } else {
+        const trackItems = ['ctx-add-queue', 'ctx-new-playlist', t.starred ? 'ctx-unfavorite' : 'ctx-favorite'];
+        trackItems.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'flex'; });
+        const hideItems = t.starred ? ['ctx-favorite'] : ['ctx-unfavorite'];
+        hideItems.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+
+        if (ctxPlaylists) ctxPlaylists.style.display = 'block';
+
+        if (ctxMenu) {
+            const addLabel = Array.from(ctxMenu.querySelectorAll('.ctx-label')).find(el => el.textContent === 'Add to Playlist');
+            if (addLabel) addLabel.style.display = 'block';
+            ctxMenu.querySelectorAll('.ctx-sep').forEach(sep => { if (sep.id !== 'ctx-remove-sep') sep.style.display = 'block'; });
+        }
+        if (ctxWishlist) ctxWishlist.style.display = 'none';
+        if (ctxRemoveWishlist) ctxRemoveWishlist.style.display = 'none';
+    }
+
+    const ctxDeletePlaylist = document.getElementById('ctx-delete-playlist');
+    if (ctxDeletePlaylist) ctxDeletePlaylist.style.display = 'none';
+
+    const isTouch = coarseQuery.matches;
+    let targetTracks = [];
+    if (!isTouch) {
+        targetTracks = Array.from(document.querySelectorAll('.track.selected'))
+            .map(el => trackMap.get(el.dataset.id))
+            .filter(Boolean);
+    }
+    if (!targetTracks.length || !targetTracks.some(st => st.id === t.id)) targetTracks = [t];
+
+    const trackNameLabel = document.getElementById('ctx-track-name');
+    if (trackNameLabel) trackNameLabel.textContent = targetTracks.length > 1 ? `${targetTracks.length} tracks selected` : (t.title || 'Track');
+
+    const ctxPlayNext = document.getElementById('ctx-play-next');
+    if (ctxPlayNext) {
+        ctxPlayNext.onclick = () => {
+            queue.splice(qIdx + 1, 0, ...targetTracks);
+            showToast(`Playing ${targetTracks.length} track(s) next`);
+            saveQueueState();
+            renderQueue();
+            closeCtxMenu();
+        };
+    }
+
+    const ctxAddQueue = document.getElementById('ctx-add-queue');
+    if (ctxAddQueue) {
+        ctxAddQueue.onclick = () => {
+            queue.splice(qIdx + 1, 0, ...targetTracks);
+            showToast(`Added ${targetTracks.length} track(s) to play next`);
+            saveQueueState();
+            renderQueue();
+            closeCtxMenu();
+        };
     }
 
     const ctxRemoveFromPlaylist = document.getElementById('ctx-remove-from-playlist');
@@ -2727,6 +2744,10 @@ async function openPlaylistDetail(pl) {
     const plEditBtn = document.getElementById('playlist-edit-btn');
     if (plEditBtn) {
         plEditBtn.style.display = isSmart ? 'none' : '';
+    }
+    const plSearchBtn = document.getElementById('playlist-search-btn');
+    if (plSearchBtn) {
+        plSearchBtn.style.display = (pl.id === 'smart:wishlist') ? '' : 'none';
     }
     if (playlistDetail) {
         playlistDetail.classList.toggle('is-smart', isSmart);
@@ -2975,6 +2996,198 @@ if (plAddQueueBtn) {
         showToast(`Added ${list.length} song(s) to queue`);
         saveQueueState();
         renderQueue();
+    };
+}
+
+const modalDeezerSearch = document.getElementById('modal-deezer-search');
+const modalDeezerSearchClose = document.getElementById('modal-deezer-search-close');
+const deezerSearchInput = document.getElementById('deezer-search-input');
+const deezerSearchSubmit = document.getElementById('deezer-search-submit');
+const deezerSearchResults = document.getElementById('deezer-search-results');
+
+function openDeezerSearchModal() {
+    if (!modalDeezerSearch) return;
+    modalDeezerSearch.style.display = 'flex';
+    if (deezerSearchInput) {
+        deezerSearchInput.value = '';
+        deezerSearchInput.focus();
+    }
+    if (deezerSearchResults) {
+        deezerSearchResults.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">Enter a song title above</div>';
+    }
+}
+
+function closeDeezerSearchModal() {
+    if (modalDeezerSearch) modalDeezerSearch.style.display = 'none';
+}
+
+if (modalDeezerSearchClose) modalDeezerSearchClose.onclick = closeDeezerSearchModal;
+if (modalDeezerSearch) {
+    modalDeezerSearch.onclick = e => {
+        if (e.target === modalDeezerSearch) closeDeezerSearchModal();
+    };
+}
+
+async function performDeezerSearch() {
+    const q = (deezerSearchInput?.value || '').trim();
+    if (!q) return;
+    if (deezerSearchResults) {
+        deezerSearchResults.innerHTML = '<div class="lyrics-picker-loading">Searching Deezer\u2026</div>';
+    }
+    try {
+        const res = await fetch(`/api/search/deezer?q=${encodeURIComponent(q)}`);
+        if (!res.ok) throw new Error('Search failed');
+        const data = await res.json();
+        const items = data.data || [];
+        if (!items.length) {
+            if (deezerSearchResults) {
+                deezerSearchResults.innerHTML = '<div class="lyrics-picker-empty">No results found</div>';
+            }
+            return;
+        }
+
+        let wishlist = [];
+        try { wishlist = JSON.parse(localStorage.getItem('jam_wishlist_items') || '[]'); } catch (_) { }
+
+        const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\([^)]*\)/g, '').replace(/[^a-z0-9]/g, '').trim();
+
+        deezerSearchResults.innerHTML = items.map(t => {
+            const titleNorm = norm(t.title || t.title_short);
+            const artistNorm = norm(t.artist?.name);
+            const localMatch = tracks.find(lt => {
+                const lTitle = norm(lt.title);
+                const lArtist = norm(lt.artist);
+                return lTitle && lArtist && titleNorm.includes(lTitle) && artistNorm.includes(lArtist);
+            });
+
+            const trackId = localMatch ? localMatch.id : (t.preview || `deezer:${t.id}`);
+            const isWishlisted = wishlist.some(w => String(w.id) === String(trackId));
+            const duration = t.duration ? `${Math.floor(t.duration / 60)}:${String(Math.floor(t.duration % 60)).padStart(2, '0')}` : '';
+
+            const badges = [];
+            if (localMatch) badges.push('<span class="lyrics-picker-item-badge synced">in library</span>');
+            else badges.push('<span class="lyrics-picker-item-badge">preview</span>');
+
+            const name = `${t.title || ''} \u00B7 ${t.artist?.name || 'Unknown'}`;
+            return `<div class="lyrics-picker-item" data-deezer-id="${t.id}" data-track-id="${escHtml(String(trackId))}">
+                <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+                    <div style="flex:1;min-width:0;margin-right:8px">
+                        <div class="lyrics-picker-item-name">${escHtml(name)}</div>
+                        <div class="lyrics-picker-item-meta">
+                            ${t.album?.title ? `<span>${escHtml(t.album.title)}</span>` : ''}
+                            ${duration ? `<span>${duration}</span>` : ''}
+                            ${badges.join('')}
+                        </div>
+                    </div>
+                    <button class="btn-wishlist-toggle" data-track-id="${escHtml(String(trackId))}" style="background:none;border:1px solid var(--border);color:${isWishlisted ? 'var(--accent)' : 'var(--muted)'};padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer;flex-shrink:0">
+                        ${isWishlisted ? 'Wishlisted ✓' : '+ Wishlist'}
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
+
+        deezerSearchResults.querySelectorAll('.lyrics-picker-item').forEach(el => {
+            el.addEventListener('click', async (e) => {
+                if (e.target.closest('.btn-wishlist-toggle')) return;
+                const dzId = el.dataset.deezerId;
+                const item = items.find(i => String(i.id) === String(dzId));
+                if (!item) return;
+
+                const titleNorm = norm(item.title || item.title_short);
+                const artistNorm = norm(item.artist?.name);
+                const localMatch = tracks.find(lt => {
+                    const lTitle = norm(lt.title);
+                    const lArtist = norm(lt.artist);
+                    return lTitle && lArtist && titleNorm.includes(lTitle) && artistNorm.includes(lArtist);
+                });
+
+                const trackObj = localMatch || {
+                    id: item.preview || `deezer:${item.id}`,
+                    title: item.title || '',
+                    artist: item.artist?.name || '',
+                    album: item.album?.title || '',
+                    duration: 30,
+                    coverUrl: item.album?.cover_medium || item.album?.cover || '',
+                    streamUrl: item.preview || '',
+                    suffix: 'mp3'
+                };
+
+                trackMap.set(trackObj.id, trackObj);
+                play(trackObj);
+            });
+        });
+
+        deezerSearchResults.querySelectorAll('.btn-wishlist-toggle').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const trId = btn.dataset.trackId;
+                const item = items.find(i => (i.preview || `deezer:${i.id}`) === trId || String(i.id) === trId);
+                let wishlist = [];
+                try { wishlist = JSON.parse(localStorage.getItem('jam_wishlist_items') || '[]'); } catch (_) { }
+
+                const already = wishlist.some(w => String(w.id) === String(trId));
+                if (already) {
+                    wishlist = wishlist.filter(w => String(w.id) !== String(trId));
+                    localStorage.setItem('jam_wishlist_items', JSON.stringify(wishlist));
+                    btn.textContent = '+ Wishlist';
+                    btn.style.color = 'var(--muted)';
+                    showToast('Removed from Wishlist');
+                    fetch('/api/wishlist', {
+                        method: 'DELETE',
+                        headers: { ...hget(), 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: trId })
+                    }).catch(() => { });
+                } else {
+                    const wishItem = {
+                        id: trId,
+                        title: item?.title || '',
+                        artist: item?.artist?.name || '',
+                        album: item?.album?.title || '',
+                        coverUrl: item?.album?.cover_medium || item?.album?.cover || '',
+                        streamUrl: item?.preview || '',
+                        link: item?.preview || ''
+                    };
+                    wishlist.push(wishItem);
+                    localStorage.setItem('jam_wishlist_items', JSON.stringify(wishlist));
+                    btn.textContent = 'Wishlisted ✓';
+                    btn.style.color = 'var(--accent)';
+                    showToast('Saved to Wishlist');
+                    fetch('/api/wishlist', {
+                        method: 'POST',
+                        headers: { ...hget(), 'Content-Type': 'application/json' },
+                        body: JSON.stringify(wishItem)
+                    }).catch(() => { });
+                }
+
+                if (currentPlaylist && currentPlaylist.id === 'smart:wishlist') {
+                    const tracksList = wishlist.map(w => {
+                        trackMap.set(w.id, w);
+                        return { trackId: w.id, title: w.title, artist: w.artist, album: w.album };
+                    });
+                    currentPlaylist = { ...currentPlaylist, tracks: tracksList };
+                    renderPlaylistDetail(currentPlaylist);
+                }
+            });
+        });
+
+    } catch (e) {
+        if (deezerSearchResults) {
+            deezerSearchResults.innerHTML = '<div class="lyrics-picker-empty">Search failed</div>';
+        }
+    }
+}
+
+if (deezerSearchSubmit) deezerSearchSubmit.onclick = performDeezerSearch;
+if (deezerSearchInput) {
+    deezerSearchInput.onkeydown = e => {
+        if (e.key === 'Enter') performDeezerSearch();
+    };
+}
+
+const plSearchBtn = document.getElementById('playlist-search-btn');
+if (plSearchBtn) {
+    plSearchBtn.onclick = () => {
+        openDeezerSearchModal();
     };
 }
 
@@ -3849,6 +4062,66 @@ if (expHeartBtn) {
         const t = queue[qIdx];
         if (!t) return;
         triggerHaptic('IMPACT_MEDIUM');
+
+        const isInLibrary = t && tracks.some(lt => String(lt.id) === String(t.id));
+        const isPreview = t && !isInLibrary && (String(t.id).startsWith('deezer:') || String(t.id).startsWith('http') || !!t.link || !!t.streamUrl);
+
+        if (isPreview) {
+            let wishlist = [];
+            try { wishlist = JSON.parse(localStorage.getItem('jam_wishlist_items') || '[]'); } catch (_) { }
+            const isWishlisted = wishlist.some(x => String(x.id) === String(t.id));
+
+            if (isWishlisted) {
+                wishlist = wishlist.filter(x => String(x.id) !== String(t.id));
+                localStorage.setItem('jam_wishlist_items', JSON.stringify(wishlist));
+                showToast('Removed from Wishlist');
+                updateHeartUI(t);
+                if (currentPlaylist && currentPlaylist.id === 'smart:wishlist') {
+                    const tracksList = wishlist.map(item => {
+                        trackMap.set(item.id, item);
+                        return { trackId: item.id, title: item.title, artist: item.artist, album: item.album };
+                    });
+                    currentPlaylist = { ...currentPlaylist, tracks: tracksList };
+                    renderPlaylistDetail(currentPlaylist);
+                }
+                fetch('/api/wishlist', {
+                    method: 'DELETE',
+                    headers: { ...hget(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: t.id })
+                }).catch(() => { });
+            } else {
+                const item = {
+                    id: t.id,
+                    title: t.title || '',
+                    artist: t.artist || '',
+                    album: t.album || '',
+                    coverUrl: t.coverUrl || '',
+                    streamUrl: t.streamUrl || '',
+                    link: t.link || t.streamUrl || ''
+                };
+                if (!wishlist.some(x => String(x.id) === String(t.id))) {
+                    wishlist.push(item);
+                    localStorage.setItem('jam_wishlist_items', JSON.stringify(wishlist));
+                }
+                showToast('Saved to Wishlist');
+                updateHeartUI(t);
+                if (currentPlaylist && currentPlaylist.id === 'smart:wishlist') {
+                    const tracksList = wishlist.map(item => {
+                        trackMap.set(item.id, item);
+                        return { trackId: item.id, title: item.title, artist: item.artist, album: item.album };
+                    });
+                    currentPlaylist = { ...currentPlaylist, tracks: tracksList };
+                    renderPlaylistDetail(currentPlaylist);
+                }
+                fetch('/api/wishlist', {
+                    method: 'POST',
+                    headers: { ...hget(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify(item)
+                }).catch(() => { });
+            }
+            return;
+        }
+
         const nextStarredState = !t.starred;
         t.starred = nextStarredState;
         updateHeartUI(nextStarredState);
@@ -4790,6 +5063,19 @@ if (lyricsCloseBtn) {
 async function loadLyrics(t) {
     if (lyricsTrackId === t.id && !lyricsFailed.has(t.id)) return;
     lyricsFailed.delete(t.id);
+
+    const isInLibrary = t && tracks.some(lt => String(lt.id) === String(t.id));
+    const isPreviewTrack = t && !isInLibrary && (String(t.id).startsWith('deezer:') || String(t.id).startsWith('http') || !!t.link || !!t.streamUrl);
+
+    if (isPreviewTrack) {
+        lyricsTrackId = t.id;
+        syncedLyrics = []; plainLyrics = '';
+        lastExpLyricIdx = -1;
+        invalidateLyricScrollCache();
+        if (expLyricsWrap) { expLyricsWrap.style.display = 'none'; expLyricsWrap.style.flex = '0'; }
+        setLyricsMessage("Lyrics disabled for preview songs", "");
+        return;
+    }
 
     const requestSeq = ++lyricsRequestSeq;
     lyricsTrackId = t.id;

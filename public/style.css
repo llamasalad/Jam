@@ -344,6 +344,7 @@ body {
 #new-playlist-btn,
 #playlist-edit-btn,
 #playlist-shuffle-btn,
+#playlist-search-btn,
 #playlist-add-queue-btn,
 #playlist-play-btn,
 #library-back {
@@ -1058,6 +1059,7 @@ body {
 .playlist-detail-buttons #playlist-play-btn,
 .playlist-detail-buttons #playlist-add-queue-btn,
 .playlist-detail-buttons #playlist-edit-btn,
+.playlist-detail-buttons #playlist-search-btn,
 .playlist-detail-buttons #playlist-shuffle-btn {
   margin: 0;
 }
@@ -1094,6 +1096,7 @@ body {
 #playlist-play-btn,
 #playlist-add-queue-btn,
 #playlist-edit-btn,
+#playlist-search-btn,
 #playlist-shuffle-btn {
   margin: 10px 6px 10px 16px;
   height: 30px;
@@ -1104,6 +1107,7 @@ body {
 }
 
 #playlist-add-queue-btn,
+#playlist-search-btn,
 #playlist-edit-btn {
   margin-left: 0;
 }
@@ -2328,6 +2332,73 @@ img.smart-playlist-cover-img {
   gap: 14px;
 }
 
+.lyrics-picker-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background .1s;
+}
+
+.lyrics-picker-item:last-child {
+  border-bottom: none;
+}
+
+.lyrics-picker-item:hover,
+.lyrics-picker-item.selected {
+  background: var(--surface3);
+}
+
+.lyrics-picker-item-name {
+  font-size: 12px;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lyrics-picker-item-meta {
+  font-size: 10px;
+  color: var(--muted);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.lyrics-picker-item-badge {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--surface3);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.lyrics-picker-item-badge.synced {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
+}
+
+.lyrics-picker-loading,
+.lyrics-picker-empty {
+  padding: 16px 12px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+#deezer-search-results::-webkit-scrollbar {
+  width: 3px;
+}
+
+#deezer-search-results::-webkit-scrollbar-thumb {
+  background: var(--surface3);
+  border-radius: 3px;
+}
+
 .modal h3 {
   font-size: 16px;
   font-weight: 500;
@@ -2814,11 +2885,13 @@ body.menu-open .queue-remove {
     display: block;
   }
 
-  #lyrics-picker-dropdown::-webkit-scrollbar {
+  #lyrics-picker-dropdown::-webkit-scrollbar,
+  #deezer-search-results::-webkit-scrollbar {
     width: 3px;
   }
 
-  #lyrics-picker-dropdown::-webkit-scrollbar-thumb {
+  #lyrics-picker-dropdown::-webkit-scrollbar-thumb,
+  #deezer-search-results::-webkit-scrollbar-thumb {
     background: var(--surface3);
     border-radius: 3px;
   }
