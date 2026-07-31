@@ -23,6 +23,7 @@ final class PlaybackStateManager {
     var shuffle: Bool = false
     var repeatMode: String = "off"  // "off", "all", "one"
     var starred: Bool = false
+    var isPreview: Bool = false
 
     func toggleShuffle() {
         evaluateJS("if(typeof window.toggleShuffle==='function')window.toggleShuffle()")

@@ -307,9 +307,9 @@ struct ExpandedPlayerView: View {
                     }
 
                     Button(action: { state.toggleStar() }) {
-                        Image(systemName: state.starred ? "star.fill" : "star")
+                        Image(systemName: state.isPreview ? (state.starred ? "bookmark.fill" : "bookmark") : (state.starred ? "star.fill" : "star"))
                             .imageScale(.large)
-                            .foregroundStyle(state.starred ? .yellow : .primary)
+                            .foregroundStyle(state.starred ? (state.isPreview ? .accentColor : .yellow) : .primary)
                             .frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)
@@ -669,7 +669,7 @@ struct FullLyricsView: View {
                     ScrollView(showsIndicators: false) {
                         LazyVStack(alignment: .leading, spacing: 24) {
                             if state.fullLyrics.isEmpty {
-                                Text(state.isFetchingLyrics ? "Loading lyrics..." : "No lyrics available")
+                                Text(state.isPreview ? "Lyrics disabled for preview songs" : (state.isFetchingLyrics ? "Loading lyrics..." : "No lyrics available"))
                                     .font(.title2)
                                     .fontWeight(.medium)
                                     .foregroundStyle(.white.opacity(0.6))

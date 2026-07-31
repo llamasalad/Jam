@@ -581,12 +581,22 @@ function updateHeartUI(starredArg) {
     }
 }
 
-function syncStarredStateNatively(starred) {
+function syncStarredStateNatively(starredArg, forceIsPreview) {
     if (window.Capacitor?.Plugins?.AudioPlayerPlugin) {
+        const t = queue[qIdx];
+        const isInLibrary = t && tracks.some(lt => String(lt.id) === String(t.id));
+        const isPreview = forceIsPreview !== undefined ? !!forceIsPreview : (t && !isInLibrary && (String(t.id).startsWith('deezer:') || String(t.id).startsWith('http') || !!t.link || !!t.streamUrl));
+        const isStarredOrWishlisted = typeof starredArg === 'boolean' ? starredArg : (isPreview ? (function () {
+            let wishlist = [];
+            try { wishlist = JSON.parse(localStorage.getItem('jam_wishlist_items') || '[]'); } catch (_) { }
+            return wishlist.some(x => String(x.id) === String(t?.id));
+        })() : !!(t && t.starred));
+
         window.Capacitor.Plugins.AudioPlayerPlugin.setPlaybackState({
             shuffle,
             repeatMode,
-            starred: starred,
+            starred: isStarredOrWishlisted,
+            isPreview: !!isPreview,
             canvasDisabled: canvasDisabled
         });
     }
@@ -3577,6 +3587,18 @@ let _retryCount = 0;
 let _currentTrackReady = false;
 
 function play(t) {
+    if (!t) return;
+    let existingIdx = queue.findIndex(x => String(x.id) === String(t.id));
+    if (existingIdx !== -1) {
+        qIdx = existingIdx;
+    } else {
+        const insertAt = (qIdx >= 0 && qIdx < queue.length) ? qIdx + 1 : queue.length;
+        queue.splice(insertAt, 0, t);
+        qIdx = insertAt;
+    }
+    updateActive();
+    renderQueue();
+
     _lastKnownTime = 0;
     _retryCount = 0;
     _currentTrackReady = false;

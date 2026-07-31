@@ -227,6 +227,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let canvasUrl = call.getString("canvasUrl") ?? ""
         let suffix = call.getString("suffix") ?? "flac"
         let starred = call.getBool("starred") ?? false
+        let isPreview = call.getBool("isPreview") ?? (urlString.contains("dzcdn.net") || urlString.contains("deezer:"))
 
         DispatchQueue.main.async { [weak self] in
             guard let self = self else {
@@ -253,6 +254,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             mgr.coverUrl = coverUrl
             mgr.canvasUrl = canvasUrl
             mgr.starred = starred
+            mgr.isPreview = isPreview
             mgr.isFetchingLyrics = false
             mgr.lyricsFetchFailed = false
 
@@ -639,11 +641,13 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let shuffleVal = call.getBool("shuffle") ?? false
         let repeatVal = call.getString("repeatMode") ?? "off"
         let starredVal = call.getBool("starred") ?? false
+        let isPreviewVal = call.getBool("isPreview") ?? false
         let canvasDisabledVal = call.getBool("canvasDisabled") ?? false
         Task { @MainActor in
             PlaybackStateManager.shared.shuffle = shuffleVal
             PlaybackStateManager.shared.repeatMode = repeatVal
             PlaybackStateManager.shared.starred = starredVal
+            PlaybackStateManager.shared.isPreview = isPreviewVal
             PlaybackStateManager.shared.canvasDisabled = canvasDisabledVal
         }
         call.resolve()
