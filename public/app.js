@@ -2171,6 +2171,17 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
     spanTitle.textContent = t.title || 'Unknown';
     ti.appendChild(spanTitle);
 
+    const isInLib = t && tracks.some(lt => String(lt.id) === String(t.id));
+    const isPreviewTrack = t && !isInLib && (String(t.id).startsWith('deezer:') || String(t.id).startsWith('http') || !!t.streamUrl || currentPlaylist?.id === 'smart:charts');
+    if (isPreviewTrack) {
+        const badge = document.createElement('span');
+        badge.className = 'lyrics-picker-item-badge';
+        badge.style.marginLeft = '6px';
+        badge.style.verticalAlign = 'middle';
+        badge.textContent = 'preview';
+        ti.appendChild(badge);
+    }
+
     const bars = document.createElement('div');
     bars.className = 'music-bars';
     bars.innerHTML = '<span></span><span></span><span></span>';
