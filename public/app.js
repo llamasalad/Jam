@@ -4903,7 +4903,7 @@ const lyricsPanel = document.getElementById('lyrics-panel');
 const lyricsBtn = document.getElementById('lyrics-btn');
 let syncedLyrics = [], plainLyrics = '';
 let lyricsFailed = new Set();
-let lyricsFontSize = parseInt(localStorage.getItem('lyrics_font') || '13');
+let lyricsFontSize = parseInt(localStorage.getItem('lyrics_font') || '30');
 let lyricsRequestSeq = 0;
 const LYRICS_OFFSET_STEP = 0.2;
 
