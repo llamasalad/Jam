@@ -551,7 +551,7 @@ const SMART_PLAYLISTS = [
     { id: 'smart:favorites', name: 'Favorites', image: '', tracks: [] },
     { id: 'smart:recent', name: 'Recently Played', image: '', tracks: [] },
     { id: 'smart:newest', name: 'Recently Added', image: '', tracks: [] },
-    { id: 'smart:charts', name: 'Charts', image: '', tracks: [] },
+    { id: 'smart:charts', name: 'Hits', image: '', tracks: [] },
     { id: 'smart:wishlist', name: 'Wishlist', image: '', tracks: [] },
     { id: 'smart:random', name: 'Daily Mix', image: '', tracks: [] },
     { id: 'smart:genre:upbeat', name: 'Upbeat', image: '', tracks: [] },
@@ -907,8 +907,8 @@ function renderLibraryCards() {
             suggestedTracks = suggestedIds.map(id => trackMap.get(id)).filter(Boolean);
         }
 
-        if (suggestedTracks.length < 8) {
-            suggestedTracks = [...tracks].sort(() => 0.5 - Math.random()).slice(0, 8);
+        if (suggestedTracks.length < 6) {
+            suggestedTracks = [...tracks].sort(() => 0.5 - Math.random()).slice(0, 6);
             localStorage.setItem('jam_suggested_tracks', JSON.stringify(suggestedTracks.map(t => t.id)));
             localStorage.setItem('jam_suggested_time', now.toString());
         }
@@ -1084,7 +1084,7 @@ function renderSmartMixesCards(force = false) {
     const frag = document.createDocumentFragment();
 
     const targetMixes = SMART_PLAYLISTS.filter(pl =>
-        ['smart:random', 'smart:genre:upbeat', 'smart:genre:chill', 'smart:genre:flow'].includes(pl.id)
+        ['smart:random', 'smart:charts', 'smart:genre:upbeat', 'smart:genre:chill', 'smart:genre:flow'].includes(pl.id)
     );
 
     const usedArtists = new Set();
@@ -1168,6 +1168,11 @@ function renderSmartMixesCards(force = false) {
             } else {
                 loadArtistImage(artistName, artistImg);
             }
+        } else if (pl.id === 'smart:charts') {
+            const iconWrap = document.createElement('div');
+            iconWrap.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:0;';
+            iconWrap.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path fill="rgba(255,255,255,0.5)" d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>';
+            card.appendChild(iconWrap);
         }
 
         bindTapActivation(card, () => {

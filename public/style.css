@@ -2038,6 +2038,10 @@ body.player-open #main {
   background-color: rgb(139, 92, 246);
 }
 
+#smart-mixes-container .suggested-card[data-mix-id="charts"] {
+  background-color: rgb(177, 109, 21);
+}
+
 #smart-mixes-container .suggested-card[data-mix-id="upbeat"] {
   background-color: rgb(244, 63, 94);
 }
@@ -2051,6 +2055,7 @@ body.player-open #main {
 }
 
 #smart-mixes-container .suggested-card[data-mix-id="random"]::after,
+#smart-mixes-container .suggested-card[data-mix-id="charts"]::after,
 #smart-mixes-container .suggested-card[data-mix-id="upbeat"]::after,
 #smart-mixes-container .suggested-card[data-mix-id="chill"]::after,
 #smart-mixes-container .suggested-card[data-mix-id="flow"]::after {
@@ -2059,6 +2064,11 @@ body.player-open #main {
 
 .smart-playlist-cover-overlay[data-mix-id="random"] {
   background-color: rgb(139, 92, 246);
+  mix-blend-mode: multiply;
+}
+
+.smart-playlist-cover-overlay[data-mix-id="charts"] {
+  background-color: rgb(177, 109, 21);
   mix-blend-mode: multiply;
 }
 
@@ -3291,7 +3301,7 @@ body.menu-open .queue-remove {
   }
 
   .suggested-card {
-    flex: 1 1 20%;
+    flex: 1 1 25%;
   }
 
   #exp-collapse {
