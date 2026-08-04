@@ -6,10 +6,10 @@ function jsonResponse(body, init = {}) {
 
 export async function onRequestGet({ request }) {
   const url = new URL(request.url)
-  const limit = url.searchParams.get('limit') || '20'
+  const limit = url.searchParams.get('limit') || '100'
 
   try {
-    const res = await fetch(`https://api.deezer.com/chart/0/tracks?limit=${limit}`, {
+    const res = await fetch(`https://api.deezer.com/playlist/3155776842/tracks?limit=${limit}`, {
       headers: {
         'User-Agent': 'jam/1.0',
         'Accept': 'application/json'
