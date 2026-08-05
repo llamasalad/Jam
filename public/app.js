@@ -548,15 +548,15 @@ let adaptiveMode = localStorage.getItem('adaptive_mode') === 'true';
 let canvasDisabled = localStorage.getItem('canvas_disabled') === 'true';
 
 const SMART_PLAYLISTS = [
-    { id: 'smart:favorites', name: 'Favorites', image: '', tracks: [] },
-    { id: 'smart:recent', name: 'Recently Played', image: '', tracks: [] },
-    { id: 'smart:newest', name: 'Recently Added', image: '', tracks: [] },
-    { id: 'smart:charts', name: 'Hits', image: '', tracks: [] },
-    { id: 'smart:wishlist', name: 'Wishlist', image: '', tracks: [] },
     { id: 'smart:random', name: 'Daily Mix', image: '', tracks: [] },
     { id: 'smart:genre:upbeat', name: 'Upbeat', image: '', tracks: [] },
     { id: 'smart:genre:chill', name: 'Chill', image: '', tracks: [] },
-    { id: 'smart:genre:flow', name: 'Flow', image: '', tracks: [] }
+    { id: 'smart:genre:flow', name: 'Flow', image: '', tracks: [] },
+    { id: 'smart:charts', name: 'Hits', image: '', tracks: [] },
+    { id: 'smart:favorites', name: 'Favorites', image: '', tracks: [] },
+    { id: 'smart:wishlist', name: 'Wishlist', image: '', tracks: [] },
+    { id: 'smart:recent', name: 'Recently Played', image: '', tracks: [] },
+    { id: 'smart:newest', name: 'Recently Added', image: '', tracks: [] }
 ];
 
 function updateHeartUI(starredArg) {
@@ -1084,7 +1084,7 @@ function renderSmartMixesCards(force = false) {
     const frag = document.createDocumentFragment();
 
     const targetMixes = SMART_PLAYLISTS.filter(pl =>
-        ['smart:random', 'smart:charts', 'smart:genre:upbeat', 'smart:genre:chill', 'smart:genre:flow'].includes(pl.id)
+        ['smart:random', 'smart:genre:upbeat', 'smart:genre:chill', 'smart:genre:flow', 'smart:charts'].includes(pl.id)
     );
 
     const usedArtists = new Set();

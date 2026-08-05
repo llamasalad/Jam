@@ -1956,7 +1956,7 @@ body.player-open #main {
   font-size: 20px;
   font-weight: 500;
   letter-spacing: 0.06em;
-  margin-bottom: 16px;
+  margin-top: 16px;
   color: var(--muted);
   text-transform: uppercase;
   justify-content: center;
@@ -1983,6 +1983,7 @@ body.player-open #main {
 
 .suggested-card {
   flex: 0 0 160px;
+  flex-wrap: wrap;
   height: 100px;
   background-size: cover;
   background-position: center;
