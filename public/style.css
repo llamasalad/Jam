@@ -1967,6 +1967,7 @@ body.player-open #main {
 #suggested-container,
 #smart-mixes-container {
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
@@ -1982,8 +1983,7 @@ body.player-open #main {
 }
 
 .suggested-card {
-  flex: 0 0 160px;
-  flex-wrap: wrap;
+  flex: 1 1 160px;
   height: 100px;
   background-size: cover;
   background-position: center;
