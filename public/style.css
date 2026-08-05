@@ -3407,7 +3407,7 @@ body.menu-open .queue-remove {
     transition: transform .35s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: transform;
     bottom: 70px;
-    min-width: 90%;
+    width: 90%;
     margin-left: 0;
     left: 5%;
     right: 5%;
