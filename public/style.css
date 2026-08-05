@@ -1969,9 +1969,6 @@ body.player-open #main {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  touch-action: pan-x;
 }
 
 #smart-mixes-container {
@@ -1990,9 +1987,8 @@ body.player-open #main {
   background-color: var(--surface2);
   border-radius: var(--radius-s);
   position: relative;
-  overflow: hidden;
   cursor: pointer;
-  scroll-snap-align: start;
+  overflow: hidden;
   transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   box-shadow: var(--shadow);
   clip-path: inset(0 round var(--radius-s));
