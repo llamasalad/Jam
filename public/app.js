@@ -3621,7 +3621,6 @@ function play(t) {
         _trackTransition = true;
         setAudioMetadata(t);
         audio.src = t.streamUrl || Navidrome.getStreamUrl(t.id);
-        audio.load();
         audio.play().catch(e => console.error("Playback failed", e));
     }
 
