@@ -675,6 +675,7 @@ function initAudioContext(audioEl) {
 }
 
 if (audio) applyVolume(Math.pow(SAVED_VOL / 100, 3));
+if (audio) initAudioContext(audio);
 
 function fmt(s) { if (!s || isNaN(s)) return '-'; s = Math.round(s); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') }
 function hdrs() { return token ? { 'x-auth-token': token, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' } }
@@ -3581,7 +3582,6 @@ function playTrack(t, list) {
     document.querySelectorAll('.track.active').forEach(e => e.classList.remove('active'));
     const row = document.querySelector('.track[data-id="' + t.id + '"]');
     if (row) row.classList.add('active');
-    renderQueue();
 }
 
 function setAudioMetadata(t) {
@@ -3612,17 +3612,11 @@ function play(t) {
         queue.splice(insertAt, 0, t);
         qIdx = insertAt;
     }
-    updateActive();
-    renderQueue();
-
     _lastKnownTime = 0;
     _retryCount = 0;
     _currentTrackReady = false;
     seeking = false;
-    updateStatusBar();
-    updateMediaSession(t);
     if (audio) {
-        initAudioContext(audio);
         if (audioCtx?.state === 'suspended') audioCtx.resume();
         _trackTransition = true;
         setAudioMetadata(t);
@@ -3630,6 +3624,11 @@ function play(t) {
         audio.load();
         audio.play().catch(e => console.error("Playback failed", e));
     }
+
+    updateActive();
+    renderQueue();
+    updateStatusBar();
+    updateMediaSession(t);
     if (player) { player.classList.remove('hidden'); updatePlayerHeight(); }
     updatePlayerMetadata(t);
     updateHeartUI(t.starred);
@@ -4764,7 +4763,7 @@ function renderQueue(skipScroll = false) {
     if (window.Capacitor?.Plugins?.AudioPlayerPlugin) {
         window.Capacitor.Plugins.AudioPlayerPlugin.updateQueue({ queue: queue, queueIndex: qIdx });
     }
-    if (!queueScrollArea) return;
+    if (!queueOpen || !queueScrollArea) return;
     queueScrollArea.innerHTML = '';
 
     if (!queue.length) {
