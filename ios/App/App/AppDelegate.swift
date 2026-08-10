@@ -283,7 +283,8 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             ]
             let asset = AVURLAsset(url: url, options: options)
             let playerItem = AVPlayerItem(asset: asset)
-            playerItem.preferredForwardBufferDuration = 1.0
+            playerItem.preferredForwardBufferDuration = 0.5
+            playerItem.canUseNetworkResourcesForLiveStreamingWhilePaused = true
 
             self.metadataMap[ObjectIdentifier(playerItem)] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred)
 
@@ -416,7 +417,8 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             ]
             let asset = AVURLAsset(url: url, options: options)
             let playerItem = AVPlayerItem(asset: asset)
-            playerItem.preferredForwardBufferDuration = 1.0
+            playerItem.preferredForwardBufferDuration = 0.5
+            playerItem.canUseNetworkResourcesForLiveStreamingWhilePaused = true
 
             self.metadataMap[ObjectIdentifier(playerItem)] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred)
 
