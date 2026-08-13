@@ -72,7 +72,8 @@ struct MainSwiftUIView: View {
                     Menu {
                         ForEach([
                             ("Lossless", "original"),
-                            ("Data Saver", "320")
+                            ("Data Saver", "320"),
+                            ("Fast", "fast")
                         ], id: \.1) { quality in
                             Button(action: {
                                 PlaybackStateManager.shared.setQuality(quality.1)

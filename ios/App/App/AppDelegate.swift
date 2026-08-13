@@ -276,8 +276,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                 mimeType = "audio/ogg"
             }
 
+            let isFast = PlaybackStateManager.shared.currentQuality == "fast"
             let options: [String: Any] = [
-                AVURLAssetPreferPreciseDurationAndTimingKey: true,
+                AVURLAssetPreferPreciseDurationAndTimingKey: !isFast,
                 "AVURLAssetOutOfBandMIMETypeKey": mimeType,
                 "AVURLAssetOverrideMIMETypeKey": mimeType
             ]
@@ -410,8 +411,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                 mimeType = "audio/ogg"
             }
 
+            let isFast = PlaybackStateManager.shared.currentQuality == "fast"
             let options: [String: Any] = [
-                AVURLAssetPreferPreciseDurationAndTimingKey: true,
+                AVURLAssetPreferPreciseDurationAndTimingKey: !isFast,
                 "AVURLAssetOutOfBandMIMETypeKey": mimeType,
                 "AVURLAssetOverrideMIMETypeKey": mimeType
             ]
