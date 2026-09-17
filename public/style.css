@@ -1002,12 +1002,13 @@ body {
   display: flex;
   align-items: center;
   gap: 16px;
+  justify-content: center;
   padding: 16px 16px 0 16px;
 }
 
 #playlist-detail-cover {
-  width: 160px;
-  height: 160px;
+  width: 280px;
+  height: 280px;
   font-size: 28px;
   border-radius: 8px;
   background: var(--surface3);
@@ -1022,9 +1023,9 @@ body {
 .playlist-detail-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
   min-width: 0;
   flex: 1;
+  align-items: center;
 }
 
 #playlist-detail-name {
@@ -1032,6 +1033,7 @@ body {
   font-size: 30px;
   font-weight: 600;
   text-wrap: auto;
+  text-align: center;
 }
 
 .playlist-detail-artist {
@@ -1054,6 +1056,7 @@ body {
   gap: 8px;
   padding: 10px 16px;
   align-items: center;
+  justify-content: center;
 }
 
 .playlist-detail-buttons #playlist-play-btn,
@@ -1076,7 +1079,6 @@ body {
 #suggested-container .album-card {
   flex: 0 0 120px;
   height: 120px;
-  border-radius: var(--radius-s);
   scroll-snap-align: start;
 }
 
@@ -1175,7 +1177,7 @@ body {
 #player-thumb {
   width: 44px;
   height: 44px;
-  border-radius: 8px;
+  border-radius: var(--radius-s);
   background: var(--surface3);
   object-fit: cover;
   flex-shrink: 0;
@@ -1981,17 +1983,16 @@ body.player-open #main {
 
 .suggested-card {
   flex: 1 1 160px;
-  height: 100px;
+  height: 160px;
   background-size: cover;
   background-position: center;
   background-color: var(--surface2);
-  border-radius: var(--radius-s);
   position: relative;
   cursor: pointer;
   overflow: hidden;
+  border: none;
   transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   box-shadow: var(--shadow);
-  clip-path: inset(0 round var(--radius-s));
 }
 
 .suggested-card::after {
@@ -2593,14 +2594,12 @@ body.menu-open .queue-remove {
   contain: layout style;
   will-change: transform;
   box-shadow: 0 10px 10px rgba(0, 0, 0, 0.212);
-  border-radius: 6px;
   position: relative;
   cursor: pointer;
   overflow: hidden;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  clip-path: inset(0 round var(--radius-s));
 }
 
 .artist-portrait {
@@ -2637,6 +2636,7 @@ body.menu-open .queue-remove {
   #sort-btn:hover,
   #new-playlist-btn:hover,
   #playlist-play-btn:hover,
+  #playlist-add-queue-btn:hover,
   #queue-btn:hover,
   #lyrics-btn:hover,
   #library-back:hover {
@@ -3320,11 +3320,6 @@ body.menu-open .queue-remove {
   #suggested-container .album-card {
     flex: 0 0 160px;
     height: 160px;
-  }
-
-  #playlist-detail-cover {
-    width: 200px;
-    height: 200px;
   }
 
   @keyframes update-pulse {

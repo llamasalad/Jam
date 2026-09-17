@@ -1442,15 +1442,14 @@ function cycleSort() {
 if (sortBtn) { sortBtn.onclick = cycleSort; sortBtn.innerHTML = sortSVGs[sortModeIdx]; }
 
 let currentTheme = localStorage.getItem('music_theme') || 'default';
+const themeClasses = ['ember-theme', 'glacier-theme', 'void-theme', 'blind-theme', 'rosecore-theme', 'abyss-theme', 'aurielle-theme'];
 function applyTheme() {
-    document.body.classList.remove('ember-theme', 'glacier-theme', 'void-theme', 'blind-theme', 'rosecore-theme', 'abyss-theme', 'aurielle-theme');
-    if (currentTheme === 'ember-theme') document.body.classList.add('ember-theme');
-    else if (currentTheme === 'glacier-theme') document.body.classList.add('glacier-theme');
-    else if (currentTheme === 'void-theme') document.body.classList.add('void-theme');
-    else if (currentTheme === 'blind-theme') document.body.classList.add('blind-theme');
-    else if (currentTheme === 'rosecore-theme') document.body.classList.add('rosecore-theme');
-    else if (currentTheme === 'abyss-theme') document.body.classList.add('abyss-theme');
-    else if (currentTheme === 'aurielle-theme') document.body.classList.add('aurielle-theme');
+    document.documentElement.classList.remove(...themeClasses);
+    document.body.classList.remove(...themeClasses);
+    if (currentTheme !== 'default' && themeClasses.includes(currentTheme)) {
+        document.documentElement.classList.add(currentTheme);
+        document.body.classList.add(currentTheme);
+    }
     updateStatusBar();
     document.querySelectorAll('.theme-option').forEach(option => {
         option.classList.toggle('active', option.dataset.theme === currentTheme);
@@ -1761,12 +1760,12 @@ function renderList() {
                     <div id="playlist-detail-cover" class="playlist-icon">
                         ${coverHtml}
                     </div>
+                </div>
                     <div class="playlist-detail-info">
                         <h2 id="playlist-detail-name">${escHtml(title)}</h2>
                         <div class="playlist-detail-artist">${escHtml(artistName)}</div>
                         <div id="playlist-detail-count">${countText}</div>
                     </div>
-                </div>
                 ${buttonsHtml}
             `;
 
@@ -1788,7 +1787,7 @@ function renderList() {
                         if (filtered.length > 0) playTrack(filtered[0], filtered);
                     };
                 }
-                const shuffleBtn = headerContainer.querySelector('#playlist-edit-btn');
+                const shuffleBtn = headerContainer.querySelector('#playlist-shuffle-btn');
                 if (shuffleBtn) {
                     shuffleBtn.onclick = () => {
                         if (filtered.length > 0) {
@@ -1827,11 +1826,11 @@ function renderList() {
                     <div id="playlist-detail-cover" class="playlist-icon">
                         ${coverHtml}
                     </div>
+                </div>
                     <div class="playlist-detail-info">
                         <h2 id="playlist-detail-name">${escHtml(title)}</h2>
                         <div id="playlist-detail-count">${countText}</div>
                     </div>
-                </div>
                 ${buttonsHtml}
             `;
 
@@ -1841,7 +1840,7 @@ function renderList() {
             }, 0);
 
             setTimeout(() => {
-                const shuffleBtn = headerContainer.querySelector('#playlist-edit-btn');
+                const shuffleBtn = headerContainer.querySelector('#playlist-shuffle-btn');
                 if (shuffleBtn) {
                     shuffleBtn.onclick = () => {
                         if (filtered.length > 0) {
