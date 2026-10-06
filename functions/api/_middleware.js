@@ -28,8 +28,7 @@ export async function onRequest(context) {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS, POST",
     "Access-Control-Allow-Headers": "Content-Type, x-auth-token",
-    "Access-Control-Allow-Credentials": "true",
-    "Accept-Ranges": "bytes"
+    "Access-Control-Allow-Credentials": "true"
   };
 
   if (token !== env.AUTH_TOKEN) {

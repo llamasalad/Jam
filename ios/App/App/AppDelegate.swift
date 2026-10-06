@@ -284,7 +284,8 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             ]
             let asset = AVURLAsset(url: url, options: options)
             let playerItem = AVPlayerItem(asset: asset)
-            playerItem.preferredForwardBufferDuration = 0.5
+            // Current item: buffer enough ahead to ride out brief network dips.
+            playerItem.preferredForwardBufferDuration = 15
             playerItem.canUseNetworkResourcesForLiveStreamingWhilePaused = true
 
             self.metadataMap[ObjectIdentifier(playerItem)] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred)
@@ -378,6 +379,26 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc func preloadNext(_ call: CAPPluginCall) {
+        // `clear: true` drops any queued "next" item (e.g. repeat mode changed so
+        // nothing should follow the current track).
+        if call.getBool("clear") == true {
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self, let queuePlayer = self.player else {
+                    call.resolve()
+                    return
+                }
+                for item in queuePlayer.items().dropFirst() {
+                    NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: item)
+                    NotificationCenter.default.removeObserver(self, name: .AVPlayerItemFailedToPlayToEndTime, object: item)
+                    self.playerItemStatusObservers.removeValue(forKey: ObjectIdentifier(item))
+                    self.metadataMap.removeValue(forKey: ObjectIdentifier(item))
+                    queuePlayer.remove(item)
+                }
+                call.resolve()
+            }
+            return
+        }
+
         guard let urlString = call.getString("url"),
               let url = URL(string: urlString) else {
             call.resolve()
@@ -419,7 +440,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             ]
             let asset = AVURLAsset(url: url, options: options)
             let playerItem = AVPlayerItem(asset: asset)
-            playerItem.preferredForwardBufferDuration = 0.5
+            // Preloaded item: 0 lets AVFoundation choose, so the next track
+            // actually has data ready when the gapless transition happens.
+            playerItem.preferredForwardBufferDuration = 0
             playerItem.canUseNetworkResourcesForLiveStreamingWhilePaused = true
 
             self.metadataMap[ObjectIdentifier(playerItem)] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred)
@@ -427,6 +450,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             if queuePlayer.items().count > 1 {
                 for item in queuePlayer.items().dropFirst() {
                     NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: item)
+                    NotificationCenter.default.removeObserver(self, name: .AVPlayerItemFailedToPlayToEndTime, object: item)
                     self.playerItemStatusObservers.removeValue(forKey: ObjectIdentifier(item))
                     self.metadataMap.removeValue(forKey: ObjectIdentifier(item))
                     queuePlayer.remove(item)
@@ -627,7 +651,10 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func playerItemDidReachEnd(_ notification: Notification) {
         guard let endedItem = notification.object as? AVPlayerItem else { return }
-        guard let player = self.player, player.currentItem === endedItem else {
+        // currentItem is nil when the final queued item finishes, so treat that as
+        // "ended" too; otherwise the UI is left stuck in a playing state.
+        guard let player = self.player,
+              player.currentItem == nil || player.currentItem === endedItem else {
             return
         }
         notifyListeners("ended", data: [:])

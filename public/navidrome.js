@@ -137,8 +137,10 @@ export function getStreamUrl(id) {
   const token = localStorage.getItem('music_token') || '';
   const bitrate = localStorage.getItem('jam_bitrate') || 'original';
   let path = `/api/subsonic/stream?id=${id}&token=${token}`;
-  if (bitrate !== 'original') {
-    path += `&maxBitRate=${bitrate}`;
+  // 'fast' is a native-only mode (skips precise duration scanning); it streams the
+  // original file, so it must not send a bitrate. Only numeric bitrates transcode.
+  if (/^\d+$/.test(bitrate)) {
+    path += `&maxBitRate=${bitrate}&format=mp3`;
   }
   return new URL(path, window.location.origin).href;
 }

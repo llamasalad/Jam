@@ -146,6 +146,9 @@ function setTokenCookie(t) {
 const saveQueueState = debounce(() => {
     localStorage.setItem('music_queue', JSON.stringify(queue.map(x => x.id)));
     localStorage.setItem('music_qidx', qIdx);
+    // Every queue edit (reorder, shuffle, add, remove) lands here. Re-evaluate the
+    // natively preloaded "next" item so gapless doesn't advance to a stale track.
+    if (window.Capacitor?.Plugins?.AudioPlayerPlugin && audio?.src) schedulePreloadNext();
 }, 300);
 
 function renderArtistAlbumSub(parentEl, t, viewType) {
@@ -266,6 +269,10 @@ function setLyricsMessage(msg, curMsg) {
     }
 }
 
+// Identifies the item currently queued natively as "next" (null = none). Reset
+// whenever a new native player is built, since that discards the queued item.
+let _preloadKey = null;
+
 class CapacitorAudioPlayerShim {
     constructor() {
         this._src = '';
@@ -334,6 +341,7 @@ class CapacitorAudioPlayerShim {
                 this.dispatchEvent('trackAdvancedNatively');
             });
             plugin.addListener('error', (data) => {
+                this._error = { message: (data && data.message) || 'Playback error' };
                 this.dispatchEvent('error');
             });
         }
@@ -369,6 +377,8 @@ class CapacitorAudioPlayerShim {
 
     get src() { return this._src; }
     set src(val) {
+        _preloadKey = null;
+        this._error = null;
         this._src = val;
         this._currentTime = 0;
         this._lastNativeTime = 0;
@@ -438,17 +448,22 @@ class CapacitorAudioPlayerShim {
     get duration() { return this._duration; }
 
     get readyState() { return 4; }
-    get error() { return null; }
+    get error() { return this._error || null; }
     get preload() { return 'auto'; }
     set preload(val) { }
 
     addEventListener(event, callback, options) {
         if (!this.listeners[event]) this.listeners[event] = [];
+        // Like the DOM, ignore a repeat registration of the same callback. Without
+        // this, rapid track changes stack identical once-listeners (e.g. the
+        // deferred preload) that all fire on the next loadedmetadata.
+        if (this.listeners[event].some(cb => cb === callback || cb._orig === callback)) return;
         if (options && options.once) {
             const wrapped = (...args) => {
                 this.removeEventListener(event, wrapped);
                 callback(...args);
             };
+            wrapped._orig = callback;
             this.listeners[event].push(wrapped);
         } else {
             this.listeners[event].push(callback);
@@ -457,7 +472,7 @@ class CapacitorAudioPlayerShim {
 
     removeEventListener(event, callback) {
         if (!this.listeners[event]) return;
-        this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
+        this.listeners[event] = this.listeners[event].filter(cb => cb !== callback && cb._orig !== callback);
     }
 
     dispatchEvent(event) {
@@ -1506,6 +1521,11 @@ function toggleThemeMenu() {
 }
 
 let currentQuality = localStorage.getItem('jam_bitrate') || 'original';
+// Only numeric bitrates (e.g. '320') are transcoded to mp3; 'original' and 'fast'
+// both stream the source file, so they keep the track's real suffix.
+function streamSuffixFor(t) {
+    return /^\d+$/.test(currentQuality) ? 'mp3' : ((t && t.suffix) || 'flac');
+}
 function applyQuality() {
     document.querySelectorAll('.quality-option').forEach(option => {
         option.classList.toggle('active', option.dataset.quality === currentQuality);
@@ -3591,12 +3611,21 @@ function setAudioMetadata(t) {
             album: t.album,
             coverUrl: t.coverUrl || Navidrome.getCoverUrl(t.id),
             duration: t.duration,
-            suffix: currentQuality === 'original' ? (t.suffix || 'flac') : 'mp3'
+            suffix: streamSuffixFor(t)
         });
     }
 }
 
 let _trackTransition = false;
+let _transitionTimer = null;
+// Marks a deliberate track change/retry so the resulting pause/ended events are
+// ignored. The flag is normally cleared by the 'playing' event; the timer is a
+// backstop so a retry that never starts playing can't swallow every later 'ended'.
+function beginTrackTransition() {
+    _trackTransition = true;
+    clearTimeout(_transitionTimer);
+    _transitionTimer = setTimeout(() => { _trackTransition = false; }, 15000);
+}
 let _lastKnownTime = 0;
 let _retryCount = 0;
 let _currentTrackReady = false;
@@ -3617,7 +3646,7 @@ function play(t) {
     seeking = false;
     if (audio) {
         if (audioCtx?.state === 'suspended') audioCtx.resume();
-        _trackTransition = true;
+        beginTrackTransition();
         setAudioMetadata(t);
         audio.src = t.streamUrl || Navidrome.getStreamUrl(t.id);
         audio.play().catch(e => console.error("Playback failed", e));
@@ -3659,14 +3688,38 @@ function schedulePreloadNext() {
     preloadNextTrack();
 }
 
+// Index of the track that should follow the current one, honoring repeat mode.
+// The native player advances on its own at the end of an item, so the JS-side
+// nextTrack() (which handles repeat) is bypassed for gapless transitions.
+function nextGaplessIndex() {
+    if (!queue.length || qIdx < 0) return -1;
+    if (repeatMode === 'one') return qIdx;
+    if (qIdx + 1 < queue.length) return qIdx + 1;
+    if (repeatMode === 'all') return 0;
+    return -1;
+}
+
 function preloadNextTrack() {
-    if (qIdx + 1 < queue.length) {
-        let t = queue[qIdx + 1];
+    const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
+    const nextIdx = nextGaplessIndex();
+    if (nextIdx === -1) {
+        // Nothing should follow: drop any stale item queued natively.
+        if (plugin && _preloadKey !== null) {
+            _preloadKey = null;
+            plugin.preloadNext({ clear: true });
+        }
+        return;
+    }
+    {
+        let t = queue[nextIdx];
+        const key = nextIdx + '|' + t.id + '|' + currentQuality;
+        if (plugin && key === _preloadKey) return;
         const canvasUrl = getCanvasForTrack(t);
         if (canvasUrl) fetch(canvasUrl, { method: 'HEAD' }).catch(() => { });
         let streamUrl = t.streamUrl || Navidrome.getStreamUrl(t.id);
-        if (window.Capacitor?.Plugins?.AudioPlayerPlugin) {
-            window.Capacitor.Plugins.AudioPlayerPlugin.preloadNext({
+        if (plugin) {
+            _preloadKey = key;
+            plugin.preloadNext({
                 url: streamUrl,
                 title: t.title || '',
                 artist: t.artist || '',
@@ -3674,7 +3727,7 @@ function preloadNextTrack() {
                 duration: t.duration || 0,
                 coverUrl: t.coverUrl || Navidrome.getCoverUrl(t.id),
                 canvasUrl: canvasUrl || '',
-                suffix: currentQuality === 'original' ? (t.suffix || 'flac') : 'mp3',
+                suffix: streamSuffixFor(t),
                 starred: !!t.starred
             });
         } else {
@@ -3689,8 +3742,9 @@ function preloadNextTrack() {
 }
 
 function syncGaplessNextTrack() {
-    if (qIdx < queue.length - 1) {
-        qIdx++;
+    const nextIdx = nextGaplessIndex();
+    if (nextIdx !== -1) {
+        qIdx = nextIdx;
         let t = queue[qIdx];
 
         if (audio && typeof audio.syncSourceNatively === 'function') {
@@ -3700,7 +3754,8 @@ function syncGaplessNextTrack() {
                 album: t.album,
                 coverUrl: t.coverUrl || Navidrome.getCoverUrl(t.id),
                 duration: t.duration,
-                suffix: t.suffix || 'flac'
+                suffix: streamSuffixFor(t),
+                starred: !!t.starred
             });
         }
 
@@ -3724,6 +3779,9 @@ function syncGaplessNextTrack() {
         updateActive();
         renderQueue();
 
+        // The queued native item just became the current one.
+        _preloadKey = null;
+        _currentTrackReady = true;
         preloadNextTrack();
     }
 }
@@ -3852,6 +3910,7 @@ if (audio) {
         if (expIconPause) expIconPause.style.display = playing ? 'block' : 'none';
     }
 
+    audio.addEventListener('loadedmetadata', () => { _currentTrackReady = true; });
     audio.addEventListener('timeupdate', () => { _lastKnownTime = audio.currentTime; });
     audio.addEventListener('play', () => {
         if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
@@ -3865,6 +3924,7 @@ if (audio) {
     });
     audio.addEventListener('playing', () => {
         _trackTransition = false;
+        clearTimeout(_transitionTimer);
         _pendingBackgroundPlay = false;
         _retryCount = 0;
     });
@@ -3892,13 +3952,16 @@ if (audio) {
                 applyVolume(0);
                 const baseUrl = queue[qIdx]?.streamUrl || Navidrome.getStreamUrl(queue[qIdx].id);
                 const retryUrl = baseUrl.includes('?') ? `${baseUrl}&_r=${Date.now()}` : `${baseUrl}?_r=${Date.now()}`;
-                _trackTransition = true;
+                beginTrackTransition();
                 audio.src = retryUrl;
                 audio.load();
 
                 const volRestoreTimer = setTimeout(() => applyVolume(prevVol), 5000);
                 audio.addEventListener('loadedmetadata', () => {
                     clearTimeout(volRestoreTimer);
+                    // The retry rebuilt the native player, discarding the preloaded
+                    // next item; queue it again so gapless survives the recovery.
+                    schedulePreloadNext();
                     const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
                     if (plugin && window.Capacitor.getPlatform() === 'ios') {
                         plugin.seek({ to: savedPos }).then(() => {
@@ -3937,13 +4000,16 @@ if (audio) {
                 applyVolume(0);
                 const baseUrl = queue[qIdx]?.streamUrl || Navidrome.getStreamUrl(queue[qIdx].id);
                 const retryUrl = baseUrl.includes('?') ? `${baseUrl}&_r=${Date.now()}` : `${baseUrl}?_r=${Date.now()}`;
-                _trackTransition = true;
+                beginTrackTransition();
                 audio.src = retryUrl;
                 audio.load();
 
                 const volRestoreTimer = setTimeout(() => applyVolume(prevVol), 5000);
                 audio.addEventListener('loadedmetadata', () => {
                     clearTimeout(volRestoreTimer);
+                    // The retry rebuilt the native player, discarding the preloaded
+                    // next item; queue it again so gapless survives the recovery.
+                    schedulePreloadNext();
                     const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
                     if (plugin && window.Capacitor.getPlatform() === 'ios') {
                         plugin.seek({ to: savedPos }).then(() => {
@@ -4340,6 +4406,8 @@ if (btnRepeat) {
         repeatMode = modes[(modes.indexOf(repeatMode) + 1) % 3];
         localStorage.setItem('music_repeat', repeatMode);
         applyRepeat();
+        // What plays next natively depends on repeat mode, so refresh the preload.
+        if (audio?.src) preloadNextTrack();
     };
 }
 if (expRepeat) expRepeat.onclick = () => btnRepeat && btnRepeat.onclick();
