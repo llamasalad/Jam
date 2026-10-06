@@ -227,6 +227,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let canvasUrl = call.getString("canvasUrl") ?? ""
         let suffix = call.getString("suffix") ?? "flac"
         let starred = call.getBool("starred") ?? false
+        let autoPlay = call.getBool("autoPlay") ?? true
         let isPreview = call.getBool("isPreview") ?? (urlString.contains("dzcdn.net") || urlString.contains("deezer:"))
 
         DispatchQueue.main.async { [weak self] in
@@ -291,9 +292,16 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             self.metadataMap[ObjectIdentifier(playerItem)] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred)
 
             self.player = AVQueuePlayer(playerItem: playerItem)
-            self.player?.automaticallyWaitsToMinimizeStalling = false
-
-            self.updateNowPlayingInfo(elapsed: 0.0, rate: 0.0)
+            self.player?.automaticallyWaitsToMinimizeStalling = true
+            try? AVAudioSession.sharedInstance().setActive(true)
+            if autoPlay {
+                self.player?.play()
+                self.updateNowPlayingInfo(rate: 1.0)
+                self.notifyListeners("play", data: [:])
+                PlaybackStateManager.shared.isPlaying = true
+            } else {
+                self.updateNowPlayingInfo(elapsed: 0.0, rate: 0.0)
+            }
 
             if !coverUrl.isEmpty {
                 self.fetchArtwork(urlString: coverUrl)
@@ -495,6 +503,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                 call.reject("Plugin instance is nil")
                 return
             }
+            try? AVAudioSession.sharedInstance().setActive(true)
             self.player?.play()
             self.updateNowPlayingInfo(rate: 1.0)
             self.notifyListeners("play", data: [:])
