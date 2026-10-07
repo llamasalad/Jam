@@ -12,6 +12,3 @@ skills-lock.json
 resources/ios/**/*
 canvas_downloads
 canvas_map.json
-gemini-issue-insight.md
-claude-issue-insight.md
-all-fixes.patch

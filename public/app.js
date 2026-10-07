@@ -395,7 +395,7 @@ class CapacitorAudioPlayerShim {
                 duration: this._metadata?.duration || 0,
                 suffix: this._metadata?.suffix || 'flac',
                 starred: !!this._metadata?.starred,
-                autoPlay: true
+                autoPlay: false
             });
         }
     }

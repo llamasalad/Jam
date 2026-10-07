@@ -227,7 +227,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let canvasUrl = call.getString("canvasUrl") ?? ""
         let suffix = call.getString("suffix") ?? "flac"
         let starred = call.getBool("starred") ?? false
-        let autoPlay = call.getBool("autoPlay") ?? true
+        let autoPlay = call.getBool("autoPlay") ?? false
         let isPreview = call.getBool("isPreview") ?? (urlString.contains("dzcdn.net") || urlString.contains("deezer:"))
 
         DispatchQueue.main.async { [weak self] in
