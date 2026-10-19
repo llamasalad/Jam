@@ -2819,7 +2819,7 @@ async function openPlaylistDetail(pl) {
             fullPl = { ...pl, tracks: tracksList.map(t => ({ trackId: t.id, title: t.title, artist: t.artist, album: t.album })) };
         } else if (pl.id === 'smart:charts') {
             try {
-                const res = await fetch('/api/chart?limit=100');
+                const res = await fetch('/api/chart');
                 if (res.ok) {
                     const data = await res.json();
                     const deezerTracks = data.data || [];
