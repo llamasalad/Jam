@@ -4,87 +4,37 @@ function jsonResponse(body, init = {}) {
   return new Response(JSON.stringify(body), { ...init, headers });
 }
 
-async function searchArtistId(name) {
+async function searchDeezerArtist(name) {
   const cleanName = (name || '').trim();
   if (!cleanName) return { success: true, artist: null };
-  const searchUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(cleanName)}&entity=musicArtist&limit=1`;
+  const searchUrl = `https://api.deezer.com/search/artist?q=${encodeURIComponent(cleanName)}&limit=1`;
   try {
     const res = await fetch(searchUrl, {
-      headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' }
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        'Accept': 'application/json'
+      }
     });
     if (!res.ok) {
       let bodySnippet = '';
       try { bodySnippet = (await res.text()).slice(0, 200); } catch (_) { }
-      console.warn('iTunes search non-OK:', res.status, bodySnippet);
       return { success: false, errorStatus: res.status, errorDetail: bodySnippet };
     }
     const data = await res.json();
-    if (data.results && data.results.length > 0) {
+    if (data.data && data.data.length > 0) {
+      const a = data.data[0];
       return {
         success: true,
         artist: {
-          id: data.results[0].artistId,
-          name: data.results[0].artistName,
-          viewUrl: data.results[0].artistLinkUrl || data.results[0].artistViewUrl
+          id: a.id,
+          name: a.name,
+          picture: a.picture_xl || a.picture_big || a.picture_medium || a.picture || null
         }
       };
     }
     return { success: true, artist: null };
   } catch (err) {
-    console.warn('iTunes search threw:', err && err.message, err && err.stack);
     return { success: false, errorStatus: 502, errorDetail: err && err.message };
-  }
-}
-
-function parseJSONLD(html) {
-  const scriptRegex = /<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi;
-  let match;
-  while ((match = scriptRegex.exec(html)) !== null) {
-    try {
-      const data = JSON.parse(match[1].trim());
-      if (data && typeof data.image === 'string') {
-        return data.image;
-      }
-    } catch (_) { }
-  }
-  return null;
-}
-
-function parseOpenGraphImage(html) {
-  const match = html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]+)"/i) ||
-    html.match(/<meta[^>]*content="([^"]+)"[^>]*property="og:image"/i);
-  return match ? match[1] : null;
-}
-
-const placeholderImageURL = "https://music.apple.com/assets/meta/apple-music.png";
-
-async function scrapeArtistImage(viewUrl) {
-  if (!viewUrl) return { success: true, picture: null };
-  try {
-    const res = await fetch(viewUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html',
-        'Accept-Language': 'en-US,en;q=0.9'
-      }
-    });
-    if (!res.ok) {
-      return { success: false, errorStatus: res.status };
-    }
-    const html = await res.text();
-
-    let imageUrl = parseJSONLD(html);
-    if (!imageUrl) {
-      imageUrl = parseOpenGraphImage(html);
-    }
-
-    if (imageUrl === placeholderImageURL) {
-      return { success: true, picture: null };
-    }
-
-    return { success: true, picture: imageUrl || null };
-  } catch (err) {
-    return { success: false, errorStatus: 502 };
   }
 }
 
@@ -139,12 +89,12 @@ async function resolveArtistImages(rawNames, env) {
   if (misses.length === 0) return resolved;
 
   const freshResults = await mapWithConcurrency(misses, 3, async (entry) => {
-    const searchResult = await searchArtistId(entry.queryName);
+    const searchResult = await searchDeezerArtist(entry.queryName);
 
     if (!searchResult.success) {
       return {
         queryName: entry.queryName, cleanName: entry.cleanName,
-        id: null, name: null, picture: null, error: 'itunes_search_failed',
+        id: null, name: null, picture: null, error: 'deezer_search_failed',
         errorStatus: searchResult.errorStatus, errorDetail: searchResult.errorDetail
       };
     }
@@ -159,31 +109,17 @@ async function resolveArtistImages(rawNames, env) {
 
     const artistId = artistInfo.id;
     const artistIdKey = `artist_image_id:${artistId}`;
-    let picture;
-    let alreadyCachedById = false;
+    let picture = artistInfo.picture || null;
 
-    if (hasKV) {
+    if (hasKV && !picture) {
       try {
         const cachedPic = await env.LYRICS_PICKS.get(artistIdKey);
         if (cachedPic !== null) {
           picture = cachedPic === 'null' ? null : cachedPic;
-          alreadyCachedById = true;
         }
       } catch (err) {
         console.warn('KV artist ID read failed:', err);
       }
-    }
-
-    if (!alreadyCachedById) {
-      const scrapeResult = await scrapeArtistImage(artistInfo.viewUrl);
-      if (!scrapeResult.success) {
-        return {
-          queryName: entry.queryName, cleanName: entry.cleanName,
-          id: artistId, name: artistInfo.name, picture: null,
-          error: 'scrape_failed'
-        };
-      }
-      picture = scrapeResult.picture || null;
     }
 
     return {
@@ -193,7 +129,7 @@ async function resolveArtistImages(rawNames, env) {
       name: artistInfo.name,
       picture,
       artistIdKey,
-      needsIdWrite: !alreadyCachedById
+      needsIdWrite: !!picture
     };
   });
 
