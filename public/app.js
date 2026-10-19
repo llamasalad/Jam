@@ -2823,6 +2823,38 @@ async function openPlaylistDetail(pl) {
                 if (res.ok) {
                     const data = await res.json();
                     const deezerTracks = data.data || [];
+
+                    const appleIds = deezerTracks.map(t => t.id).filter(id => id && /^\d+$/.test(String(id)));
+                    if (appleIds.length > 0) {
+                        try {
+                            const itunesRes = await fetch(`https://itunes.apple.com/lookup?id=${appleIds.join(',')}&country=us`);
+                            if (itunesRes.ok) {
+                                const itunesData = await itunesRes.json();
+                                const itunesMap = new Map();
+                                for (const item of (itunesData.results || [])) {
+                                    if (item.trackId) itunesMap.set(String(item.trackId), item);
+                                }
+                                for (const t of deezerTracks) {
+                                    const item = itunesMap.get(String(t.id));
+                                    if (item) {
+                                        if (item.previewUrl) t.preview = item.previewUrl;
+                                        if (item.trackTimeMillis) t.duration = Math.round(item.trackTimeMillis / 1000);
+                                        if (item.collectionName && (!t.album || !t.album.title)) {
+                                            t.album = t.album || {};
+                                            t.album.title = item.collectionName;
+                                        }
+                                        if (item.artworkUrl100 && (!t.album || !t.album.cover_medium)) {
+                                            t.album = t.album || {};
+                                            const art500 = item.artworkUrl100.replace(/\/\d+x\d+bb\./, '/500x500bb.');
+                                            t.album.cover = art500;
+                                            t.album.cover_medium = art500;
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (_) { }
+                    }
+
                     const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\(.*?\)|\[.*?\]/g, '').replace(/[^a-z0-9]/g, '').trim();
 
                     const localTrackLookup = new Map();
@@ -3649,8 +3681,13 @@ function play(t) {
         if (audioCtx?.state === 'suspended') audioCtx.resume();
         beginTrackTransition();
         setAudioMetadata(t);
-        audio.src = t.streamUrl || Navidrome.getStreamUrl(t.id);
-        audio.play().catch(e => console.error("Playback failed", e));
+        const streamUrl = t.streamUrl || Navidrome.getStreamUrl(t.id);
+        if (streamUrl && (streamUrl.startsWith('http://') || streamUrl.startsWith('https://') || streamUrl.startsWith('/'))) {
+            audio.src = streamUrl;
+            audio.play().catch(e => console.error("Playback failed", e));
+        } else {
+            console.warn("No playable stream URL for track:", t.title);
+        }
     }
 
     updateActive();
@@ -3718,6 +3755,9 @@ function preloadNextTrack() {
         const canvasUrl = getCanvasForTrack(t);
         if (canvasUrl) fetch(canvasUrl, { method: 'HEAD' }).catch(() => { });
         let streamUrl = t.streamUrl || Navidrome.getStreamUrl(t.id);
+        if (!streamUrl || (!streamUrl.startsWith('http://') && !streamUrl.startsWith('https://') && !streamUrl.startsWith('/'))) {
+            return;
+        }
         if (plugin) {
             _preloadKey = key;
             plugin.preloadNext({
