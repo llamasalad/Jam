@@ -5214,14 +5214,21 @@ async function loadLyrics(t) {
         const cr = await fetch(`/api/lyrics/curated?${cq}`, { headers: token ? { 'x-auth-token': token } : {} });
         if (cr.ok) {
             const cData = await cr.json();
-            if (cData.exists && cData.lrclibId) {
-                const sq = new URLSearchParams({ id: cData.lrclibId });
-                const sr = await fetch(`/api/lyrics/search?${sq}`, { headers: token ? { 'x-auth-token': token } : {} });
-                if (sr.ok) {
-                    const sItems = await sr.json();
+            if (cData.exists) {
+                if (cData.data) {
                     if (requestSeq !== lyricsRequestSeq || lyricsTrackId !== t.id) return;
-                    const match = sItems.find(i => i.id === cData.lrclibId);
-                    if (match) { applyLyricsPick(match); return; }
+                    applyLyricsPick(cData.data);
+                    return;
+                }
+                if (cData.lrclibId) {
+                    const sq = new URLSearchParams({ id: cData.lrclibId });
+                    const sr = await fetch(`/api/lyrics/search?${sq}`, { headers: token ? { 'x-auth-token': token } : {} });
+                    if (sr.ok) {
+                        const sItems = await sr.json();
+                        if (requestSeq !== lyricsRequestSeq || lyricsTrackId !== t.id) return;
+                        const match = sItems.find(i => i.id === cData.lrclibId);
+                        if (match) { applyLyricsPick(match); return; }
+                    }
                 }
             }
         }
@@ -5296,14 +5303,16 @@ function saveLyricsPick(trackId, pick) {
     } catch (_) { }
 }
 
-async function saveCuratedPick(artist, title, lrclibId) {
+async function saveCuratedPick(artist, title, item) {
     try {
-        console.log('[curated] Saving pick:', { artist, title, lrclibId });
+        console.log('[curated] Saving pick:', { artist, title, item });
         const q = new URLSearchParams({ artist, title });
+        const lrclibId = typeof item === 'object' ? item?.id : item;
+        const lyricsData = typeof item === 'object' ? item : null;
         const r = await fetch(`/api/lyrics/curated?${q}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...(token ? { 'x-auth-token': token } : {}) },
-            body: JSON.stringify({ lrclibId })
+            body: JSON.stringify({ lrclibId, lyricsData })
         });
         console.log('[curated] Response:', r.status, r.ok);
         return r.ok;
@@ -5338,7 +5347,7 @@ function applyLyricsPick(item, manual = false) {
     }
 
     saveLyricsPick(lyricsTrackId, { id: item.id, trackName: item.trackName, artistName: item.artistName, albumName: item.albumName });
-    if (manual) saveCuratedPick(t.artist || '', t.title || '', item.id);
+    if (manual) saveCuratedPick(t.artist || '', t.title || '', item);
 }
 
 function closeLyricsPicker() {
