@@ -126,16 +126,16 @@ final class PlaybackStateManager {
     }
 
     func updateSearchQuery(_ query: String) {
-        let escaped = query
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "'", with: "\\'")
-            .replacingOccurrences(of: "\n", with: "")
-        evaluateJS("""
-            (function(){
-                var s=document.getElementById('search');
-                if(s){s.value='\(escaped)';if(typeof applyFilter==='function')applyFilter();}
-            })()
-        """)
+        if let data = try? JSONSerialization.data(withJSONObject: [query]),
+           let json = String(data: data, encoding: .utf8) {
+            evaluateJS("""
+                (function(){
+                    var args = \(json);
+                    var s=document.getElementById('search');
+                    if(s){s.value=args[0];if(typeof applyFilter==='function')applyFilter();}
+                })()
+            """)
+        }
     }
 
     func clearSearch() {
@@ -194,14 +194,28 @@ final class PlaybackStateManager {
     }
 
     func openAlbumDetail() {
-        if !album.isEmpty {
-            evaluateJS("if(typeof window.openAlbumDetail==='function')window.openAlbumDetail('\(album.replacingOccurrences(of: "'", with: "\\'"))')")
+        if !album.isEmpty,
+           let data = try? JSONSerialization.data(withJSONObject: [album]),
+           let json = String(data: data, encoding: .utf8) {
+            evaluateJS("""
+                (function(){
+                    var args = \(json);
+                    if(typeof window.openAlbumDetail==='function')window.openAlbumDetail(args[0]);
+                })()
+            """)
         }
     }
 
     func openArtistDetail() {
-        if !artist.isEmpty {
-            evaluateJS("if(typeof window.openArtistDetail==='function')window.openArtistDetail('\(artist.replacingOccurrences(of: "'", with: "\\'"))')")
+        if !artist.isEmpty,
+           let data = try? JSONSerialization.data(withJSONObject: [artist]),
+           let json = String(data: data, encoding: .utf8) {
+            evaluateJS("""
+                (function(){
+                    var args = \(json);
+                    if(typeof window.openArtistDetail==='function')window.openArtistDetail(args[0]);
+                })()
+            """)
         }
     }
 

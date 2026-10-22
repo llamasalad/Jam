@@ -114,7 +114,12 @@ export async function onRequest({ request, env }) {
   }
 
   if (method === 'POST') {
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (_) {
+      return jsonResponse({ error: 'invalid JSON body' }, { status: 400 });
+    }
     const lrclibId = body.lrclibId;
     if (!artist || !title || (!lrclibId && !body.lyricsData)) {
       return jsonResponse({ error: 'artist, title, and lyricsData or lrclibId required' }, { status: 400 })

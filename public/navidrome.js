@@ -112,8 +112,21 @@ export async function deletePlaylist(id) {
   } catch (_) { }
 }
 
+async function checkSubsonicResponse(res) {
+  if (!res || !res.ok) return false;
+  try {
+    const data = await res.clone().json();
+    if (data['subsonic-response']?.status === 'failed') {
+      console.error('Subsonic error:', data['subsonic-response']?.error?.message);
+      return false;
+    }
+  } catch (_) { }
+  return true;
+}
+
 export async function addTrackToPlaylist(playlistId, trackId) {
-  await fetchWithAuth(`/updatePlaylist?playlistId=${playlistId}&songIdToAdd=${trackId}`);
+  const res = await fetchWithAuth(`/updatePlaylist?playlistId=${playlistId}&songIdToAdd=${trackId}`);
+  if (!(await checkSubsonicResponse(res))) return null;
   return await getPlaylist(playlistId);
 }
 
@@ -122,12 +135,14 @@ export async function removeTrackFromPlaylist(playlistId, trackId) {
   if (!pl) return null;
   const trackIndex = pl.tracks.findIndex(pt => pt.trackId === trackId);
   if (trackIndex === -1) return pl;
-  await fetchWithAuth(`/updatePlaylist?playlistId=${playlistId}&songIndexToRemove=${trackIndex}`);
+  const res = await fetchWithAuth(`/updatePlaylist?playlistId=${playlistId}&songIndexToRemove=${trackIndex}`);
+  if (!(await checkSubsonicResponse(res))) return null;
   return await getPlaylist(playlistId);
 }
 
 export async function renamePlaylist(id, newName) {
-  await fetchWithAuth(`/updatePlaylist?playlistId=${id}&name=${encodeURIComponent(newName)}`);
+  const res = await fetchWithAuth(`/updatePlaylist?playlistId=${id}&name=${encodeURIComponent(newName)}`);
+  if (!(await checkSubsonicResponse(res))) return null;
   return await getPlaylist(id);
 }
 
@@ -140,8 +155,7 @@ export function getStreamUrl(id) {
   const token = localStorage.getItem('music_token') || '';
   const bitrate = localStorage.getItem('jam_bitrate') || 'original';
   let path = `/api/subsonic/stream?id=${id}&token=${token}`;
-  // 'fast' is a native-only mode (skips precise duration scanning); it streams the
-  // original file, so it must not send a bitrate. Only numeric bitrates transcode.
+  // Only numeric bitrates transcode. 'original' streams the source file.
   if (/^\d+$/.test(bitrate)) {
     path += `&maxBitRate=${bitrate}&format=mp3`;
   }
@@ -158,13 +172,14 @@ export function getCoverUrl(id) {
 export async function starTrack(id, isStarred) {
   const endpoint = isStarred ? 'star' : 'unstar';
   const res = await fetchWithAuth(`/${endpoint}?id=${id}`);
-  if (res.ok && allTracksCache) {
+  const ok = await checkSubsonicResponse(res);
+  if (ok && allTracksCache) {
     const track = allTracksCache.find(t => t.id === id);
     if (track) {
       track.starred = isStarred;
     }
   }
-  return res.ok;
+  return ok;
 }
 
 export async function getFavorites() {

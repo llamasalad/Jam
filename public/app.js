@@ -75,7 +75,8 @@ function triggerHaptic(type) {
 const TOKEN_KEY = 'music_token';
 let token = localStorage.getItem(TOKEN_KEY) || '';
 setTokenCookie(token);
-let tracks = [], trackMap = new Map(), filtered = [], detailViewTracks = [], queue = [], qIdx = -1, sortMode = 'title';
+let tracks = [], trackMap = new Map(), libraryTrackIds = new Set(), filtered = [], detailViewTracks = [], queue = [], qIdx = -1, sortMode = 'title';
+function isTrackInLibrary(t) { return !!(t && t.id && libraryTrackIds.has(String(t.id))); }
 let shuffle = localStorage.getItem('music_shuffle') === 'true', seeking = false, muted = false;
 const SAVED_VOL = parseInt(localStorage.getItem('music_vol') || '80');
 let lastVol = SAVED_VOL;
@@ -442,7 +443,7 @@ class CapacitorAudioPlayerShim {
         this._lastSyncTime = performance.now();
         const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
         if (plugin) {
-            plugin.seek({ to: val });
+            plugin.seek({ to: val }).catch(() => { });
         }
     }
 
@@ -578,7 +579,7 @@ const SMART_PLAYLISTS = [
 function updateHeartUI(starredArg) {
     if (!expHeartBtn) return;
     const trackObj = (typeof starredArg === 'object' && starredArg) ? starredArg : (queue && queue[qIdx] ? queue[qIdx] : null);
-    const isInLibrary = trackObj && tracks.some(lt => String(lt.id) === String(trackObj.id));
+    const isInLibrary = isTrackInLibrary(trackObj);
     const isPreview = trackObj && !isInLibrary && (String(trackObj.id).startsWith('deezer:') || String(trackObj.id).startsWith('http') || !!trackObj.link || !!trackObj.streamUrl);
 
     if (isPreview) {
@@ -600,7 +601,7 @@ function updateHeartUI(starredArg) {
 function syncStarredStateNatively(starredArg, forceIsPreview) {
     if (window.Capacitor?.Plugins?.AudioPlayerPlugin) {
         const t = queue[qIdx];
-        const isInLibrary = t && tracks.some(lt => String(lt.id) === String(t.id));
+        const isInLibrary = isTrackInLibrary(t);
         const isPreview = forceIsPreview !== undefined ? !!forceIsPreview : (t && !isInLibrary && (String(t.id).startsWith('deezer:') || String(t.id).startsWith('http') || !!t.link || !!t.streamUrl));
         const isStarredOrWishlisted = typeof starredArg === 'boolean' ? starredArg : (isPreview ? (function () {
             let wishlist = [];
@@ -700,10 +701,13 @@ function hget() { return token ? { 'x-auth-token': token } : {} }
 async function checkAuth() {
     try {
         const r = await fetch('/api/status', { headers: hget() });
-        if (r.status === 401) { showAuth(); return false }
+        if (r.status === 401) { showAuth(); return false; }
         return true;
     } catch (e) {
         console.error("Auth check failed", e);
+        if (token || localStorage.getItem(TOKEN_KEY)) {
+            return true;
+        }
         return false;
     }
 }
@@ -781,7 +785,11 @@ async function loadTracks(forceRefresh = false) {
     try {
         tracks = await Navidrome.getTracks(forceRefresh);
         trackMap.clear();
-        for (const t of tracks) trackMap.set(t.id, t);
+        libraryTrackIds.clear();
+        for (const t of tracks) {
+            trackMap.set(t.id, t);
+            libraryTrackIds.add(String(t.id));
+        }
         if (!tracks.length) {
             if (loading) loading.style.display = 'none';
             if (empty) empty.style.display = 'flex';
@@ -1522,8 +1530,8 @@ function toggleThemeMenu() {
 }
 
 let currentQuality = localStorage.getItem('jam_bitrate') || 'original';
-// Only numeric bitrates (e.g. '320') are transcoded to mp3; 'original' and 'fast'
-// both stream the source file, so they keep the track's real suffix.
+// Only numeric bitrates (e.g. '320') are transcoded to mp3; 'original'
+// streams the source file, so it keeps the track's real suffix.
 function streamSuffixFor(t) {
     return /^\d+$/.test(currentQuality) ? 'mp3' : ((t && t.suffix) || 'flac');
 }
@@ -1805,12 +1813,6 @@ function renderList() {
                 const playBtn = headerContainer.querySelector('#playlist-play-btn');
                 if (playBtn) {
                     playBtn.onclick = () => {
-                        if (filtered.length > 0) playTrack(filtered[0], filtered);
-                    };
-                }
-                const shuffleBtn = headerContainer.querySelector('#playlist-shuffle-btn');
-                if (shuffleBtn) {
-                    shuffleBtn.onclick = () => {
                         if (filtered.length > 0) {
                             const list = [...filtered];
                             for (let idx = list.length - 1; idx > 0; idx--) {
@@ -1820,6 +1822,10 @@ function renderList() {
                             playTrack(list[0], list);
                         }
                     };
+                }
+                const shuffleBtn = headerContainer.querySelector('#playlist-shuffle-btn');
+                if (shuffleBtn) {
+                    shuffleBtn.onclick = playBtn ? playBtn.onclick : null;
                 }
             }, 0);
 
@@ -2197,7 +2203,7 @@ function makeRow(t, showMenu = false, inPlaylist = false) {
     spanTitle.textContent = t.title || 'Unknown';
     ti.appendChild(spanTitle);
 
-    const isInLib = t && tracks.some(lt => String(lt.id) === String(t.id));
+    const isInLib = isTrackInLibrary(t);
     const isPreviewTrack = t && !isInLib && (String(t.id).startsWith('deezer:') || String(t.id).startsWith('http') || !!t.streamUrl || currentPlaylist?.id === 'smart:charts');
     if (isPreviewTrack) {
         const badge = document.createElement('span');
@@ -2426,7 +2432,7 @@ function openCtxMenu(e, t) {
 
     const ctxWishlist = document.getElementById('ctx-wishlist');
     const ctxRemoveWishlist = document.getElementById('ctx-remove-wishlist');
-    const isInLibrary = t && tracks.some(lt => String(lt.id) === String(t.id));
+    const isInLibrary = isTrackInLibrary(t);
     const isUnowned = t && !isInLibrary && (String(t.id).startsWith('deezer:') || String(t.id).startsWith('http') || !!t.link || currentPlaylist?.id === 'smart:charts' || currentPlaylist?.id === 'smart:wishlist');
 
     let currentWishlist = [];
@@ -2726,7 +2732,10 @@ function renderPlaylists() {
     customList.forEach(pl => renderPlaylistCard(pl));
 }
 
+let playlistDetailReqSeq = 0;
+
 async function openPlaylistDetail(pl) {
+    const reqSeq = ++playlistDetailReqSeq;
     const isSmartMix = pl.id === 'smart:random' || pl.id.startsWith('smart:genre:');
     saveScroll();
     currentPlaylist = pl;
@@ -2819,7 +2828,7 @@ async function openPlaylistDetail(pl) {
             fullPl = { ...pl, tracks: tracksList.map(t => ({ trackId: t.id, title: t.title, artist: t.artist, album: t.album })) };
         } else if (pl.id === 'smart:charts') {
             try {
-                const res = await fetch('/api/chart');
+                const res = await fetch('/api/chart', { headers: hget() });
                 if (res.ok) {
                     const data = await res.json();
                     const deezerTracks = data.data || [];
@@ -2858,10 +2867,21 @@ async function openPlaylistDetail(pl) {
                     const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\(.*?\)|\[.*?\]/g, '').replace(/[^a-z0-9]/g, '').trim();
 
                     const localTrackLookup = new Map();
+                    const localByTitle = new Map();
                     for (const t of tracks) {
-                        const key = `${norm(t.title)}|${norm(t.artist)}`;
+                        const nTitle = norm(t.title);
+                        const nArtist = norm(t.artist);
+                        const key = `${nTitle}|${nArtist}`;
                         if (key && !localTrackLookup.has(key)) {
                             localTrackLookup.set(key, t);
+                        }
+                        if (nTitle) {
+                            let titleList = localByTitle.get(nTitle);
+                            if (!titleList) {
+                                titleList = [];
+                                localByTitle.set(nTitle, titleList);
+                            }
+                            titleList.push({ track: t, normArtist: nArtist });
                         }
                     }
 
@@ -2872,7 +2892,11 @@ async function openPlaylistDetail(pl) {
 
                         let matchedLocal = localTrackLookup.get(key);
                         if (!matchedLocal && dTitle) {
-                            matchedLocal = tracks.find(lt => norm(lt.title) === dTitle && (norm(lt.artist).includes(dArtist) || dArtist.includes(norm(lt.artist))));
+                            const candidates = localByTitle.get(dTitle);
+                            if (candidates) {
+                                const found = candidates.find(c => c.normArtist.includes(dArtist) || dArtist.includes(c.normArtist));
+                                if (found) matchedLocal = found.track;
+                            }
                         }
 
                         if (matchedLocal) {
@@ -2947,6 +2971,7 @@ async function openPlaylistDetail(pl) {
         if (fullPl) {
             currentPlaylist = fullPl;
             const idx = playlists.findIndex(p => p.id === pl.id);
+            if (reqSeq !== playlistDetailReqSeq || !currentPlaylist || currentPlaylist.id !== pl.id) return;
             if (idx !== -1) playlists[idx] = fullPl;
             renderPlaylistDetail(fullPl);
             if (isSmartMix && plCover) {
@@ -2978,6 +3003,7 @@ async function openPlaylistDetail(pl) {
 }
 
 function closePlaylistDetail() {
+    playlistDetailReqSeq++;
     if (playlistDetail) playlistDetail.classList.remove('active');
     if (playlistsListView) playlistsListView.style.display = '';
     currentPlaylist = null;
@@ -3056,12 +3082,12 @@ if (plPlayBtn) {
         if (!currentPlaylist || !currentPlaylist.tracks.length) return;
         const list = currentPlaylist.tracks.map(pt => trackMap.get(pt.trackId)).filter(Boolean);
         if (!list.length) return;
-        if (shuffle) {
-            const first = list[Math.floor(Math.random() * list.length)];
-            playTrack(first, list);
-        } else {
-            playTrack(list[0], list);
+        const shuffled = [...list];
+        for (let idx = shuffled.length - 1; idx > 0; idx--) {
+            const j = Math.floor(Math.random() * (idx + 1));
+            [shuffled[idx], shuffled[j]] = [shuffled[j], shuffled[idx]];
         }
+        playTrack(shuffled[0], shuffled);
     };
 }
 
@@ -3114,7 +3140,7 @@ async function performDeezerSearch() {
         deezerSearchResults.innerHTML = '<div class="lyrics-picker-loading">Searching Deezer\u2026</div>';
     }
     try {
-        const res = await fetch(`/api/search/deezer?q=${encodeURIComponent(q)}`);
+        const res = await fetch(`/api/search/deezer?q=${encodeURIComponent(q)}`, { headers: hget() });
         if (!res.ok) throw new Error('Search failed');
         const data = await res.json();
         const items = data.data || [];
@@ -3663,15 +3689,19 @@ let _lastKnownTime = 0;
 let _retryCount = 0;
 let _currentTrackReady = false;
 
-function play(t) {
+function play(t, explicitIdx) {
     if (!t) return;
-    let existingIdx = queue.findIndex(x => String(x.id) === String(t.id));
-    if (existingIdx !== -1) {
-        qIdx = existingIdx;
+    if (typeof explicitIdx === 'number' && explicitIdx >= 0 && explicitIdx < queue.length && queue[explicitIdx] === t) {
+        qIdx = explicitIdx;
     } else {
-        const insertAt = (qIdx >= 0 && qIdx < queue.length) ? qIdx + 1 : queue.length;
-        queue.splice(insertAt, 0, t);
-        qIdx = insertAt;
+        let existingIdx = queue.findIndex(x => String(x.id) === String(t.id));
+        if (existingIdx !== -1) {
+            qIdx = existingIdx;
+        } else {
+            const insertAt = (qIdx >= 0 && qIdx < queue.length) ? qIdx + 1 : queue.length;
+            queue.splice(insertAt, 0, t);
+            qIdx = insertAt;
+        }
     }
     _lastKnownTime = 0;
     _retryCount = 0;
@@ -3687,6 +3717,9 @@ function play(t) {
             audio.play().catch(e => console.error("Playback failed", e));
         } else {
             console.warn("No playable stream URL for track:", t.title);
+            audio.pause();
+            _trackTransition = false;
+            showToast("No stream available for this track");
         }
     }
 
@@ -4023,7 +4056,7 @@ if (audio) {
                 console.warn('[Audio] Premature stream end retry limit reached. Advancing track.');
             }
         }
-        nextTrack();
+        nextTrack(true);
     });
     audio.addEventListener('error', () => {
         _trackTransition = false;
@@ -4071,7 +4104,7 @@ if (audio) {
                 console.warn('[Audio] Error retry limit reached. Advancing track.');
             }
         }
-        nextTrack();
+        nextTrack(true);
     });
     audio.addEventListener('seeked', () => { seeking = false; _lastKnownTime = audio.currentTime; updateSyncedLyricsState(true, audio.currentTime); });
 }
@@ -4297,7 +4330,7 @@ window.toggleStarCurrent = async function () {
     if (!t) return;
     triggerHaptic('IMPACT_MEDIUM');
 
-    const isInLibrary = t && tracks.some(lt => String(lt.id) === String(t.id));
+    const isInLibrary = isTrackInLibrary(t);
     const isPreview = t && !isInLibrary && (String(t.id).startsWith('deezer:') || String(t.id).startsWith('http') || !!t.link || !!t.streamUrl);
 
     if (isPreview) {
@@ -4453,19 +4486,23 @@ if (btnRepeat) {
 }
 if (expRepeat) expRepeat.onclick = () => btnRepeat && btnRepeat.onclick();
 
-function nextTrack() {
+function nextTrack(isAuto = false) {
     if (!queue.length) return;
-    if (repeatMode === 'one') { if (audio) { audio.currentTime = 0; audio.play(); } return; }
+    if (isAuto && repeatMode === 'one') { if (audio) { audio.currentTime = 0; audio.play(); } return; }
     const isLast = qIdx >= queue.length - 1;
     if (repeatMode === 'off' && isLast) return;
     qIdx = (qIdx + 1) % queue.length;
-    play(queue[qIdx]); updateActive(); renderQueue();
+    play(queue[qIdx], qIdx); updateActive(); renderQueue();
 }
 
 function prevTrack() {
     if (!queue.length) return;
+    if (repeatMode === 'off' && qIdx === 0) {
+        if (audio) audio.currentTime = 0;
+        return;
+    }
     qIdx = (qIdx - 1 + queue.length) % queue.length;
-    play(queue[qIdx]); updateActive(); renderQueue();
+    play(queue[qIdx], qIdx); updateActive(); renderQueue();
 }
 
 function updateActive() {
@@ -4913,7 +4950,7 @@ function renderQueue(skipScroll = false) {
 
         item.onclick = (e) => {
             if (e.target.closest('.queue-handle') || item.style.opacity === '0.5') return;
-            qIdx = i; play(queue[qIdx]); updateActive(); renderQueue();
+            qIdx = i; play(queue[qIdx], i); updateActive(); renderQueue();
         };
         queueScrollArea.appendChild(item);
     });
@@ -5186,7 +5223,7 @@ async function loadLyrics(t) {
     if (lyricsTrackId === t.id && !lyricsFailed.has(t.id)) return;
     lyricsFailed.delete(t.id);
 
-    const isInLibrary = t && tracks.some(lt => String(lt.id) === String(t.id));
+    const isInLibrary = isTrackInLibrary(t);
     const isPreviewTrack = t && !isInLibrary && (String(t.id).startsWith('deezer:') || String(t.id).startsWith('http') || !!t.link || !!t.streamUrl);
 
     if (isPreviewTrack) {
@@ -5419,11 +5456,30 @@ document.addEventListener('click', (e) => {
 });
 
 function parseLRC(lrc) {
-    return lrc.split('\n').map(function (line) {
-        var m = line.match(/^\[(\d+):(\d+\.\d+)\](.*)/);
-        if (!m) return null;
-        return { time: parseInt(m[1], 10) * 60 + parseFloat(m[2]), text: m[3].trim() };
-    }).filter(Boolean);
+    if (!lrc) return [];
+    const results = [];
+    const tagRegex = /\[(\d{1,2}):(\d{2})(?:\.(\d+))?\]/g;
+    const lines = lrc.split('\n');
+    for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (!line) continue;
+        const times = [];
+        let match;
+        tagRegex.lastIndex = 0;
+        while ((match = tagRegex.exec(line)) !== null) {
+            const min = parseInt(match[1], 10);
+            const sec = parseInt(match[2], 10);
+            const frac = match[3] ? parseFloat('0.' + match[3]) : 0;
+            times.push(min * 60 + sec + frac);
+        }
+        if (!times.length) continue;
+        const text = line.replace(/\[\d{1,2}:\d{2}(?:\.\d+)?\]/g, '').trim();
+        for (const t of times) {
+            results.push({ time: t, text });
+        }
+    }
+    results.sort((a, b) => a.time - b.time);
+    return results;
 }
 
 function renderSyncedLyrics() {
@@ -5462,6 +5518,11 @@ function renderPlainLyrics() {
         }
     }
     applyLyricsFontSize();
+    const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
+    if (plugin && typeof plugin.updateLyrics === 'function') {
+        const lines = plainLyrics ? plainLyrics.split('\n').map((text, idx) => ({ time: -1, text })) : [];
+        plugin.updateLyrics({ current: 'No synced lyrics available', next: '', all: lines });
+    }
 }
 
 let lastExpLyricIdx = -1;
@@ -5726,16 +5787,6 @@ if (expAdaptiveBtn) {
 }
 
 async function init() {
-    try {
-        const last = JSON.parse(localStorage.getItem('music_last') || 'null');
-        if (last && last.id && (last.id.includes('/') || last.id.includes('%') || /\.(mp3|flac|wav|m4a|ogg)$/i.test(last.id))) {
-            console.log('[App] Stale R2 track ID detected in localStorage, clearing saved queue/playback state');
-            localStorage.removeItem('music_last');
-            localStorage.removeItem('music_queue');
-            localStorage.removeItem('music_pos');
-            localStorage.removeItem('music_qidx');
-        }
-    } catch (_) { }
 
     if (navigator.audioSession) {
         try { navigator.audioSession.type = 'playback'; }
@@ -5963,85 +6014,7 @@ window.getSWStatus = function () {
     };
 };
 
-window.removeTrack = async function (query) {
-    if (!query) { console.error("Please provide a track title, artist, album, key, or ID to match."); return; }
-    const queryStr = String(query).toLowerCase();
-    const matches = tracks.filter(t => {
-        return t.key.toLowerCase().includes(queryStr) || t.id.toLowerCase() === queryStr ||
-            (t.title && t.title.toLowerCase().includes(queryStr)) ||
-            (t.artist && t.artist.toLowerCase().includes(queryStr)) ||
-            (t.album && t.album.toLowerCase().includes(queryStr));
-    });
-    if (matches.length === 0) { console.warn("No tracks found matching query:", query); return; }
-    console.log(`Found ${matches.length} matching track(s):`);
-    matches.forEach(t => console.log(` - [${t.id}] ${t.title} by ${t.artist} (${t.key})`));
-    if (!confirm(`Are you sure you want to remove these ${matches.length} track(s) from your library?`)) { console.log("Removal cancelled."); return; }
-    let successCount = 0;
-    for (const track of matches) {
-        try {
-            const res = await fetch(`/api/tracks?key=${encodeURIComponent(track.key)}`, { method: 'DELETE', headers: hget() });
-            if (res.ok) { console.log(`Successfully removed: ${track.title}`); successCount++; }
-            else console.error(`Failed to remove ${track.title}:`, await res.text());
-        } catch (err) { console.error(`Error removing track ${track.title}:`, err); }
-    }
-    if (successCount > 0) {
-        const currentTrack = queue[qIdx];
-        const isPlayingRemoved = currentTrack && matches.some(t => t.id === currentTrack.id);
-        if (isPlayingRemoved) {
-            if (queue.length > 1) nextTrack();
-            else { if (audio) audio.pause(); queue = []; qIdx = -1; updateActive(); }
-        }
-        queue = queue.filter(q => !matches.some(t => t.id === q.id));
-        if (queue.length === 0) qIdx = -1;
-        else if (qIdx >= queue.length) qIdx = 0;
-        saveQueueState();
-        if (queueOpen) renderQueue();
-        updateActive();
-        await loadTracks(true);
-        if (currentPlaylist) {
-            const updated = await fetchPlaylist(currentPlaylist.id);
-            if (updated) { currentPlaylist = updated; renderPlaylistDetail(updated); }
-        }
-        console.log(`Successfully removed ${successCount} track(s) from library.`);
-    }
-};
 
-window.restoreTrack = async function (query) {
-    if (!query) { console.error("Please provide a track title, artist, album, key, or ID to match."); return; }
-    const queryStr = String(query).toLowerCase();
-    let allTracks = [];
-    try {
-        const r = await fetch('/api/tracks?include_hidden=true', { headers: hget() });
-        if (r.ok) allTracks = await r.json();
-        else { console.error("Failed to load tracks list from API."); return; }
-    } catch (err) { console.error("Error loading tracks:", err); return; }
-    const matches = allTracks.filter(t => {
-        return t.key.toLowerCase().includes(queryStr) || t.id.toLowerCase() === queryStr ||
-            (t.title && t.title.toLowerCase().includes(queryStr)) ||
-            (t.artist && t.artist.toLowerCase().includes(queryStr)) ||
-            (t.album && t.album.toLowerCase().includes(queryStr));
-    });
-    if (matches.length === 0) { console.warn("No tracks found matching query:", query); return; }
-    console.log(`Found ${matches.length} matching track(s) to restore:`);
-    matches.forEach(t => console.log(` - [${t.id}] ${t.title} by ${t.artist} (${t.key})`));
-    if (!confirm(`Are you sure you want to restore these ${matches.length} track(s) to your library?`)) { console.log("Restore cancelled."); return; }
-    let successCount = 0;
-    for (const track of matches) {
-        try {
-            const res = await fetch(`/api/tracks?key=${encodeURIComponent(track.key)}&unhide=true`, { method: 'DELETE', headers: hget() });
-            if (res.ok) { console.log(`Successfully restored: ${track.title}`); successCount++; }
-            else console.error(`Failed to restore ${track.title}:`, await res.text());
-        } catch (err) { console.error(`Error restoring track ${track.title}:`, err); }
-    }
-    if (successCount > 0) {
-        await loadTracks(true);
-        if (currentPlaylist) {
-            const updated = await fetchPlaylist(currentPlaylist.id);
-            if (updated) { currentPlaylist = updated; renderPlaylistDetail(updated); }
-        }
-        console.log(`Successfully restored ${successCount} track(s) to library.`);
-    }
-};
 
 function showUpdateUI() {
     const sidebarUpdate = document.getElementById('sidebar-update');
@@ -6121,7 +6094,15 @@ if ('serviceWorker' in navigator) {
                 });
                 if (reg.waiting && navigator.serviceWorker.controller) { console.log('[SW] Update was already waiting'); showUpdateUI(); }
             }).catch(err => console.error('[SW] Registration failed:', err));
-            navigator.serviceWorker.addEventListener('controllerchange', () => { console.log('[SW] New controller, reloading...'); window.location.reload(); });
+            let hadController = !!navigator.serviceWorker.controller;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!hadController) {
+                    hadController = true;
+                    return;
+                }
+                console.log('[SW] New controller, reloading...');
+                window.location.reload();
+            });
         }, 2000);
     }
 }
@@ -6162,13 +6143,7 @@ window.moveQueueItem = function (from, to) {
 function notifyNativePlaybackState() {
     const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
     if (plugin && typeof plugin.setPlaybackState === 'function') {
-        const currentTrack = queue[qIdx];
-        plugin.setPlaybackState({
-            shuffle,
-            repeatMode,
-            starred: currentTrack ? !!currentTrack.starred : false,
-            canvasDisabled: canvasDisabled
-        });
+        syncStarredStateNatively();
     }
 }
 

@@ -7,7 +7,7 @@ function jsonResponse(body, init = {}) {
 async function searchDeezerArtist(name) {
   const cleanName = (name || '').trim();
   if (!cleanName) return { success: true, artist: null };
-  const searchUrl = `https://api.deezer.com/search/artist?q=${encodeURIComponent(cleanName)}&limit=1`;
+  const searchUrl = `https://api.deezer.com/search/artist?q=${encodeURIComponent(cleanName)}&limit=5`;
   try {
     const res = await fetch(searchUrl, {
       headers: {
@@ -22,7 +22,9 @@ async function searchDeezerArtist(name) {
     }
     const data = await res.json();
     if (data.data && data.data.length > 0) {
-      const a = data.data[0];
+      const lower = cleanName.toLowerCase();
+      const exact = data.data.find(a => (a.name || '').toLowerCase() === lower);
+      const a = exact || data.data[0];
       return {
         success: true,
         artist: {
@@ -176,7 +178,18 @@ export async function onRequestGet(context) {
   const namesParam = url.searchParams.get('names');
 
   if (namesParam) {
-    const rawNames = namesParam.split(',').map(n => n.trim()).filter(Boolean);
+    let rawNames = [];
+    if (namesParam.startsWith('[') && namesParam.endsWith(']')) {
+      try { rawNames = JSON.parse(namesParam); } catch (_) { }
+    }
+    if (!rawNames.length) {
+      const allParams = url.searchParams.getAll('names');
+      if (allParams.length > 1) {
+        rawNames = allParams.map(n => n.trim()).filter(Boolean);
+      } else {
+        rawNames = namesParam.split(',').map(n => n.trim()).filter(Boolean);
+      }
+    }
     if (rawNames.length === 0) {
       return jsonResponse({ error: 'names required' }, { status: 400 });
     }

@@ -12,7 +12,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
-            try AVAudioSession.sharedInstance().setActive(true)
         } catch {
             print("Failed to set audio session category: \(error)")
         }
@@ -105,10 +104,69 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     private var currentDuration: Double = 0.0
     private var uiTimeTickCount = 0
 
+    private var timeControlStatusObserver: NSKeyValueObservation?
+
     override public func load() {
         setupRemoteCommands()
+        setupAudioSessionObservers()
         Task { @MainActor in
             PlaybackStateManager.shared.audioPlayerPlugin = self
+        }
+    }
+
+    private func setupAudioSessionObservers() {
+        NotificationCenter.default.addObserver(self, selector: #selector(handleAudioInterruption), name: AVAudioSession.interruptionNotification, object: AVAudioSession.sharedInstance())
+        NotificationCenter.default.addObserver(self, selector: #selector(handleRouteChange), name: AVAudioSession.routeChangeNotification, object: AVAudioSession.sharedInstance())
+    }
+
+    @objc private func handleAudioInterruption(_ notification: Notification) {
+        guard let info = notification.userInfo,
+              let typeValue = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else { return }
+
+        switch type {
+        case .began:
+            DispatchQueue.main.async { [weak self] in
+                self?.player?.pause()
+                self?.notifyListeners("pause", data: [:])
+                Task { @MainActor in
+                    PlaybackStateManager.shared.isPlaying = false
+                }
+                self?.updateNowPlayingInfo(rate: 0.0)
+            }
+        case .ended:
+            guard let optionsValue = info[AVAudioSessionInterruptionOptionKey] as? UInt else { return }
+            let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
+            if options.contains(.shouldResume) {
+                DispatchQueue.main.async { [weak self] in
+                    try? AVAudioSession.sharedInstance().setActive(true)
+                    self?.player?.play()
+                    self?.notifyListeners("play", data: [:])
+                    Task { @MainActor in
+                        PlaybackStateManager.shared.isPlaying = true
+                    }
+                    self?.updateNowPlayingInfo(rate: 1.0)
+                }
+            }
+        @unknown default:
+            break
+        }
+    }
+
+    @objc private func handleRouteChange(_ notification: Notification) {
+        guard let info = notification.userInfo,
+              let reasonValue = info[AVAudioSessionRouteChangeReasonKey] as? UInt,
+              let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else { return }
+
+        if reason == .oldDeviceUnavailable {
+            DispatchQueue.main.async { [weak self] in
+                self?.player?.pause()
+                self?.notifyListeners("pause", data: [:])
+                Task { @MainActor in
+                    PlaybackStateManager.shared.isPlaying = false
+                }
+                self?.updateNowPlayingInfo(rate: 0.0)
+            }
         }
     }
 
@@ -126,6 +184,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             self?.player?.play()
             self?.updateNowPlayingInfo(rate: 1.0)
             self?.notifyListeners("play", data: [:])
+            Task { @MainActor in
+                PlaybackStateManager.shared.isPlaying = true
+            }
             return .success
         }
         
@@ -133,19 +194,28 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             self?.player?.pause()
             self?.updateNowPlayingInfo(rate: 0.0)
             self?.notifyListeners("pause", data: [:])
+            Task { @MainActor in
+                PlaybackStateManager.shared.isPlaying = false
+            }
             return .success
         }
 
         commandCenter.togglePlayPauseCommand.addTarget { [weak self] event in
             guard let self = self, let player = self.player else { return .commandFailed }
-            if player.rate == 0 {
+            if player.timeControlStatus == .paused || player.rate == 0 {
                 player.play()
                 self.updateNowPlayingInfo(rate: 1.0)
                 self.notifyListeners("play", data: [:])
+                Task { @MainActor in
+                    PlaybackStateManager.shared.isPlaying = true
+                }
             } else {
                 player.pause()
                 self.updateNowPlayingInfo(rate: 0.0)
                 self.notifyListeners("pause", data: [:])
+                Task { @MainActor in
+                    PlaybackStateManager.shared.isPlaying = false
+                }
             }
             return .success
         }
@@ -277,9 +347,8 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                 mimeType = "audio/ogg"
             }
 
-            let isFast = PlaybackStateManager.shared.currentQuality == "fast"
             let options: [String: Any] = [
-                AVURLAssetPreferPreciseDurationAndTimingKey: !isFast,
+                AVURLAssetPreferPreciseDurationAndTimingKey: true,
                 "AVURLAssetOutOfBandMIMETypeKey": mimeType,
                 "AVURLAssetOverrideMIMETypeKey": mimeType
             ]
@@ -345,9 +414,27 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                 }
             }
 
-            self.currentItemObserver = self.player?.observe(\.currentItem, options: [.new]) { [weak self] player, change in
+            self.timeControlStatusObserver?.invalidate()
+            self.timeControlStatusObserver = self.player?.observe(\.timeControlStatus, options: [.new]) { [weak self] player, _ in
+                guard let self = self else { return }
+                let playing = player.timeControlStatus == .playing
+                Task { @MainActor in
+                    if PlaybackStateManager.shared.isPlaying != playing && player.timeControlStatus != .waitingToPlayAtSpecifiedRate {
+                        PlaybackStateManager.shared.isPlaying = playing
+                    }
+                }
+            }
+
+            self.currentItemObserver = self.player?.observe(\.currentItem, options: [.new, .old]) { [weak self] player, change in
                 guard let self = self else { return }
                 if self.isManuallyChangingItem { return }
+                if let oldItem = change.oldValue as? AVPlayerItem {
+                    let oldId = ObjectIdentifier(oldItem)
+                    self.playerItemStatusObservers.removeValue(forKey: oldId)
+                    self.metadataMap.removeValue(forKey: oldId)
+                    NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: oldItem)
+                    NotificationCenter.default.removeObserver(self, name: .AVPlayerItemFailedToPlayToEndTime, object: oldItem)
+                }
                 if let newItem = change.newValue as? AVPlayerItem, let meta = self.metadataMap[ObjectIdentifier(newItem)] {
                     self.currentTitle = meta.title
                     self.currentArtist = meta.artist
@@ -440,9 +527,8 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                 mimeType = "audio/ogg"
             }
 
-            let isFast = PlaybackStateManager.shared.currentQuality == "fast"
             let options: [String: Any] = [
-                AVURLAssetPreferPreciseDurationAndTimingKey: !isFast,
+                AVURLAssetPreferPreciseDurationAndTimingKey: true,
                 "AVURLAssetOutOfBandMIMETypeKey": mimeType,
                 "AVURLAssetOverrideMIMETypeKey": mimeType
             ]
@@ -474,8 +560,15 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                         self.updateNowPlayingInfo()
                         PlaybackStateManager.shared.duration = dur
                     }
-                } else if item.status == .failed {
-                    self.notifyListeners("error", data: ["message": item.error?.localizedDescription ?? "Playback failed"])
+                if item.status == .failed {
+                    if let queuePlayer = self.player as? AVQueuePlayer {
+                        queuePlayer.remove(item)
+                    }
+                    let id = ObjectIdentifier(item)
+                    self.playerItemStatusObservers.removeValue(forKey: id)
+                    self.metadataMap.removeValue(forKey: id)
+                    NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: item)
+                    NotificationCenter.default.removeObserver(self, name: .AVPlayerItemFailedToPlayToEndTime, object: item)
                 }
             }
             self.playerItemStatusObservers[ObjectIdentifier(playerItem)] = statusObserver
@@ -543,10 +636,8 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                 if finished {
                     self.updateNowPlayingInfo(elapsed: to)
                     self.notifyListeners("seeked", data: ["currentTime": to])
-                    call.resolve()
-                } else {
-                    call.reject("Seek cancelled or failed")
                 }
+                call.resolve(["finished": finished])
             }
         }
     }
@@ -645,6 +736,8 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             self.player?.replaceCurrentItem(with: nil)
             self.uiTimeTickCount = 0
             self.playerItemStatusObservers.removeAll()
+            self.timeControlStatusObserver?.invalidate()
+            self.timeControlStatusObserver = nil
             self.currentItemObserver?.invalidate()
             self.currentItemObserver = nil
             NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: nil)
@@ -673,6 +766,18 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc func playerItemFailedToPlay(_ notification: Notification) {
+        guard let failedItem = notification.object as? AVPlayerItem else { return }
+        guard let player = self.player, player.currentItem == nil || player.currentItem === failedItem else {
+            if let queuePlayer = self.player as? AVQueuePlayer {
+                queuePlayer.remove(failedItem)
+            }
+            let id = ObjectIdentifier(failedItem)
+            self.playerItemStatusObservers.removeValue(forKey: id)
+            self.metadataMap.removeValue(forKey: id)
+            NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: failedItem)
+            NotificationCenter.default.removeObserver(self, name: .AVPlayerItemFailedToPlayToEndTime, object: failedItem)
+            return
+        }
         notifyListeners("error", data: ["message": "Failed to play to end time"])
     }
 
@@ -681,17 +786,18 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc func setPlaybackState(_ call: CAPPluginCall) {
-        let shuffleVal = call.getBool("shuffle") ?? false
-        let repeatVal = call.getString("repeatMode") ?? "off"
-        let starredVal = call.getBool("starred") ?? false
-        let isPreviewVal = call.getBool("isPreview") ?? false
-        let canvasDisabledVal = call.getBool("canvasDisabled") ?? false
+        let shuffleVal = call.getBool("shuffle")
+        let repeatVal = call.getString("repeatMode")
+        let starredVal = call.getBool("starred")
+        let isPreviewVal = call.getBool("isPreview")
+        let canvasDisabledVal = call.getBool("canvasDisabled")
         Task { @MainActor in
-            PlaybackStateManager.shared.shuffle = shuffleVal
-            PlaybackStateManager.shared.repeatMode = repeatVal
-            PlaybackStateManager.shared.starred = starredVal
-            PlaybackStateManager.shared.isPreview = isPreviewVal
-            PlaybackStateManager.shared.canvasDisabled = canvasDisabledVal
+            let mgr = PlaybackStateManager.shared
+            if let s = shuffleVal { mgr.shuffle = s }
+            if let r = repeatVal { mgr.repeatMode = r }
+            if let st = starredVal { mgr.starred = st }
+            if let p = isPreviewVal { mgr.isPreview = p }
+            if let c = canvasDisabledVal { mgr.canvasDisabled = c }
         }
         call.resolve()
     }
@@ -707,11 +813,21 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 }
 
+private class WeakScriptMessageHandler: NSObject, WKScriptMessageHandler {
+    weak var delegate: WKScriptMessageHandler?
+    init(_ delegate: WKScriptMessageHandler) {
+        self.delegate = delegate
+    }
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        delegate?.userContentController(userContentController, didReceive: message)
+    }
+}
+
 class ViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         super.capacitorDidLoad()
         bridge?.registerPluginInstance(AudioPlayerPlugin())
-        webView?.configuration.userContentController.add(self, name: "jamNativeReady")
+        webView?.configuration.userContentController.add(WeakScriptMessageHandler(self), name: "jamNativeReady")
     }
 }
 

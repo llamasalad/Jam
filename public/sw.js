@@ -1,12 +1,22 @@
-const CACHE = 'jam-v6';
+const CACHE = 'jam-v7';
 const ASSETS = [
-  '/', '/index.html', '/style.css', '/app.js', '/manifest.json',
+  '/', '/index.html', '/style.css', '/app.js', '/navidrome.js', '/manifest.json',
+  '/favicon.ico', '/32x32.png', '/apple-touch-icon.png', '/icon-192.png', '/icon-512.png',
   '/fonts/begav-subset.woff2',
   '/fonts/SFUIText-Regular-subset.woff2'
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  e.waitUntil(caches.open(CACHE).then(async c => {
+    await Promise.all(ASSETS.map(async url => {
+      try {
+        const res = await fetch(url, { cache: 'reload' });
+        if (res.ok) await c.put(url, res);
+      } catch (_) {
+        await c.add(url);
+      }
+    }));
+  }));
 });
 
 self.addEventListener('activate', e => {
@@ -40,7 +50,7 @@ self.addEventListener('fetch', e => {
     } catch (_) { }
   }
 
-  if ((url.pathname === '/api/tracks' || url.pathname.endsWith('/rest/search3') || url.pathname === '/api/subsonic/search3') && e.request.method === 'GET' && !url.searchParams.has('refresh')) {
+  if ((url.pathname.endsWith('/rest/search3') || url.pathname === '/api/subsonic/search3') && e.request.method === 'GET' && !url.searchParams.has('refresh')) {
     e.respondWith(caches.open(CACHE).then(async cache => {
       const cacheKey = getCacheKey(requestToFetch);
       const cached = await cache.match(cacheKey);

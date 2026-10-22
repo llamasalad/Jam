@@ -42,6 +42,7 @@ function formatLyricPayload(d) {
 }
 
 async function fetchLyrics(artist, title) {
+  let hadTransient = false
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       if (attempt > 0) {
@@ -61,13 +62,19 @@ async function fetchLyrics(artist, title) {
         const d = await r.json()
         return formatLyricPayload(d)
       }
-      if (r.status !== 503 && r.status !== 429) {
+      if (r.status === 503 || r.status === 429) {
+        hadTransient = true
+      } else {
         return null
       }
     } catch (_) {
-      if (attempt === 1) return null
+      if (attempt === 1) {
+        if (hadTransient) return { transient: true }
+        return null
+      }
     }
   }
+  if (hadTransient) return { transient: true }
   return null
 }
 
@@ -112,6 +119,13 @@ export async function onRequestGet({ request, env }) {
   }
 
   let result = await fetchLyrics(artist, title)
+
+  if (result && result.transient) {
+    return jsonResponse(
+      { error: 'Transient upstream error', source: null, type: null, lyrics: null },
+      { status: 503, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+    )
+  }
 
   if (result) {
     if (env && env.LYRICS_PICKS) {
