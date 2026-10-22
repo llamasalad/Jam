@@ -51,20 +51,32 @@ self.addEventListener('fetch', e => {
   }
 
   if ((url.pathname.endsWith('/rest/search3') || url.pathname === '/api/subsonic/search3') && e.request.method === 'GET' && !url.searchParams.has('refresh')) {
-    e.respondWith(caches.open(CACHE).then(async cache => {
+    e.respondWith((async () => {
+      const cache = await caches.open(CACHE);
       const cacheKey = getCacheKey(requestToFetch);
-      const cached = await cache.match(cacheKey);
-      if (cached) {
-        fetch(requestToFetch).then(res => {
-          if (res.ok) cache.put(cacheKey, res.clone());
-        }).catch(() => { });
-        return cached;
-      }
-      return fetch(requestToFetch).then(res => {
+      const cachedPromise = cache.match(cacheKey);
+
+      const networkPromise = fetch(requestToFetch).then(res => {
         if (res.ok) cache.put(cacheKey, res.clone());
         return res;
       });
-    }));
+
+      const timeoutPromise = new Promise(resolve => setTimeout(resolve, 2500));
+
+      try {
+        const result = await Promise.race([networkPromise, timeoutPromise]);
+        if (result) {
+          return result;
+        }
+        const cached = await cachedPromise;
+        if (cached) return cached;
+        return await networkPromise;
+      } catch (err) {
+        const cached = await cachedPromise;
+        if (cached) return cached;
+        throw err;
+      }
+    })());
     return;
   }
 

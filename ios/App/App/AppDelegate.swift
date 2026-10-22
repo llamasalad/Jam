@@ -560,7 +560,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                         self.updateNowPlayingInfo()
                         PlaybackStateManager.shared.duration = dur
                     }
-                if item.status == .failed {
+                } else if item.status == .failed {
                     if let queuePlayer = self.player as? AVQueuePlayer {
                         queuePlayer.remove(item)
                     }
