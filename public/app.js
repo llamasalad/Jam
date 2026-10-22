@@ -3530,13 +3530,13 @@ function coverCacheSet(key, url) {
 
 function coverCacheHas(key) { return key in coverCache; }
 
-async function ensureCoverUrl(id, size = 200) {
-    const cacheKey = `${id}_${size}`;
+async function ensureCoverUrl(id, size) {
+    const cacheKey = size ? `${id}_${size}` : `${id}_orig`;
     if (coverCacheHas(cacheKey)) return coverCacheGet(cacheKey);
     if (coverRequests[cacheKey]) return coverRequests[cacheKey];
     const track = trackMap.get(id);
     let coverUrl = track?.coverUrl || Navidrome.getCoverUrl(id);
-    if (coverUrl.includes('getCoverArt')) {
+    if (size && coverUrl.includes('getCoverArt')) {
         coverUrl += `&size=${size}`;
     }
     coverRequests[cacheKey] = fetch(coverUrl).then(async r => {
@@ -3549,7 +3549,7 @@ async function ensureCoverUrl(id, size = 200) {
     return coverRequests[cacheKey];
 }
 
-async function loadCover(id, el, size = 200) {
+async function loadCover(id, el, size) {
     if (!el) return;
     const url = await ensureCoverUrl(id, size);
     if (url) setCover(el, url);
