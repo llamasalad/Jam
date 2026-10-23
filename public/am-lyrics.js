@@ -5427,14 +5427,14 @@ class AmLyrics extends i {
     if (!t?.length) return E;
     const e = (t) =>
       x` <span aria-hidden="true">${Array.from(t.username)[0]}</span> ${t.avatar
-          ? x`<img src="${t.avatar}" alt="" width="32" height="32" loading="lazy" decoding="async" @error="${(
-            t,
-          ) => {
-            t.currentTarget.hidden = !0;
-          }}" @load="${(t) => {
-            t.currentTarget.hidden = !1;
-          }}">`
-          : E
+        ? x`<img src="${t.avatar}" alt="" width="32" height="32" loading="lazy" decoding="async" @error="${(
+          t,
+        ) => {
+          t.currentTarget.hidden = !0;
+        }}" @load="${(t) => {
+          t.currentTarget.hidden = !1;
+        }}">`
+        : E
         } `;
     return x`<div class="contributor-stack"> ${t.slice(0, 3).map((t) => x`<a class="contributor-avatar" href="${t.url || E}" target="_blank" rel="noopener noreferrer" tabindex="0" aria-label="${`${t.username} — ${t.roles.join(", ")}`}">${e(t)}<span class="contributor-tooltip" aria-hidden="true">${t.username} · ${t.roles.join(", ")}</span></a>`)} ${t.length > 3 ? x`<details class="contributor-overflow"> <summary aria-label="${t.length - 3 + " more contributors"}"> +${t.length - 3} </summary> <div class="contributor-menu"> ${t.slice(3).map((t) => x`<a href="${t.url || E}" target="_blank" rel="noopener noreferrer" tabindex="0"><span class="contributor-avatar">${e(t)}</span><span>${t.username}<br>${t.roles.join(", ")}</span></a>`)} </div> </details>` : E} </div>`;
   }
@@ -5447,12 +5447,12 @@ class AmLyrics extends i {
       r = this.lyrics?.some((t) => "end" === t.alignment),
       s = i && r;
     return x` <div class="lyrics-container ${e ? "is-unsynced" : ""} ${e || this.noBlur ? "" : "blur-inactive-enabled"} ${s ? "has-duet-lines" : ""} ${this.shouldReduceMotion ? "reduced-motion" : ""}" role="region" aria-label="Synced lyrics"> ${!this.isLoading && this.lyrics && this.lyrics.length > 0
-        ? x` <div class="lyrics-header"> <div class="header-controls"> <button type="button" class="download-button ${this.showRomanization ? "active" : ""}" @click="${this.toggleRomanization}" title="Toggle Romanization" aria-label="Toggle romanization" aria-pressed="${this.showRomanization}"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-speech-icon lucide-speech"> <path d="M8.8 20v-4.1l1.9.2a2.3 2.3 0 0 0 2.164-2.1V8.3A5.37 5.37 0 0 0 2 8.25c0 2.8.656 3.054 1 4.55a5.77 5.77 0 0 1 .029 2.758L2 20"/> <path d="M19.8 17.8a7.5 7.5 0 0 0 .003-10.603"/> <path d="M17 15a3.5 3.5 0 0 0-.025-4.975"/> </svg> </button> <button type="button" class="download-button ${this.showTranslation ? "active" : ""}" @click="${this.toggleTranslation}" title="Toggle Translation" aria-label="Toggle translation" aria-pressed="${this.showTranslation}"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-languages-icon lucide-languages"> <path d="m5 8 6 6"/> <path d="m4 14 6-6 2-3"/> <path d="M2 5h12"/> <path d="M7 2h1"/> <path d="m22 22-5-10-5 10"/> <path d="M14 18h6"/> </svg> </button> </div> <div class="download-controls"> <select class="format-select" aria-label="Lyrics download format" @change="${(
-          t,
-        ) => {
-          this.downloadFormat = t.target.value;
-        }}" .value="${this.downloadFormat}" @click="${(t) => t.stopPropagation()}"> <option value="auto">Auto</option> <option value="lrc">LRC</option> <option value="ttml">TTML</option> <option value="plain">Plain</option> </select> <button type="button" class="download-button" @click="${this.downloadLyrics}" title="Download Lyrics" aria-label="Download lyrics"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download-icon lucide-download"> <path d="M12 15V3"/> <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/> <path d="m7 10 5 5 5-5"/> </svg> </button> </div> </div> `
-        : ""
+      ? x` <div class="lyrics-header"> <div class="header-controls"> <button type="button" class="download-button ${this.showRomanization ? "active" : ""}" @click="${this.toggleRomanization}" title="Toggle Romanization" aria-label="Toggle romanization" aria-pressed="${this.showRomanization}"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-speech-icon lucide-speech"> <path d="M8.8 20v-4.1l1.9.2a2.3 2.3 0 0 0 2.164-2.1V8.3A5.37 5.37 0 0 0 2 8.25c0 2.8.656 3.054 1 4.55a5.77 5.77 0 0 1 .029 2.758L2 20"/> <path d="M19.8 17.8a7.5 7.5 0 0 0 .003-10.603"/> <path d="M17 15a3.5 3.5 0 0 0-.025-4.975"/> </svg> </button> <button type="button" class="download-button ${this.showTranslation ? "active" : ""}" @click="${this.toggleTranslation}" title="Toggle Translation" aria-label="Toggle translation" aria-pressed="${this.showTranslation}"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-languages-icon lucide-languages"> <path d="m5 8 6 6"/> <path d="m4 14 6-6 2-3"/> <path d="M2 5h12"/> <path d="M7 2h1"/> <path d="m22 22-5-10-5 10"/> <path d="M14 18h6"/> </svg> </button> </div> <div class="download-controls"> <select class="format-select" aria-label="Lyrics download format" @change="${(
+        t,
+      ) => {
+        this.downloadFormat = t.target.value;
+      }}" .value="${this.downloadFormat}" @click="${(t) => t.stopPropagation()}"> <option value="auto">Auto</option> <option value="lrc">LRC</option> <option value="ttml">TTML</option> <option value="plain">Plain</option> </select> <button type="button" class="download-button" @click="${this.downloadLyrics}" title="Download Lyrics" aria-label="Download lyrics"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download-icon lucide-download"> <path d="M12 15V3"/> <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/> <path d="m7 10 5 5 5-5"/> </svg> </button> </div> </div> `
+      : ""
       } ${(() => {
         if (this.isLoading)
           return x` <div class="skeleton-line"></div> <div class="skeleton-line"></div> <div class="skeleton-line"></div> <div class="skeleton-line"></div> <div class="skeleton-line"></div> <div class="skeleton-line"></div> <div class="skeleton-line"></div> `;
@@ -5514,15 +5514,15 @@ class AmLyrics extends i {
                         : Array.from(t.text.replace(/\s/g, ""));
                   let d = 0;
                   return x`<span class="lyrics-word${l.length ? " char-rise" : ""}" data-virtual-word-id="bg-${r}-${o.start}" data-virtual-word-start="${o.start}" data-virtual-word-end="${o.end}"><span class="lyrics-syllable-wrap${a ? " has-transliteration" : ""}"><span class="lyrics-syllable${h ? " rtl-text" : ""} ${l.length ? "has-chars" : "no-chars"}${t.lineSynced ? " line-synced" : ""}" data-start-time="${i}" data-end-time="${s}" data-duration="${n}" data-syllable-index="0" data-word-index="${e}" data-word-length="${t.text.replace(/\s/g, "").length}" data-wipe-ratio="1">${l.length
-                      ? Array.from(t.text).map((t) => {
-                        if (/\s/.test(t)) return t;
-                        const e = d;
-                        return (
-                          (d += 1),
-                          x`<span class="char-motion"><span class="char" data-syllable-char-index="${e}" data-wipe-start="${e / l.length}" data-wipe-duration="${1 / l.length}">${t}</span></span>`
-                        );
-                      })
-                      : t.text
+                    ? Array.from(t.text).map((t) => {
+                      if (/\s/.test(t)) return t;
+                      const e = d;
+                      return (
+                        (d += 1),
+                        x`<span class="char-motion"><span class="char" data-syllable-char-index="${e}" data-wipe-start="${e / l.length}" data-wipe-duration="${1 / l.length}">${t}</span></span>`
+                      );
+                    })
+                    : t.text
                     }</span>${a}</span></span>`;
                 },
               )} </span> </p>`
@@ -5618,18 +5618,18 @@ class AmLyrics extends i {
       })()} ${this.isLoading
         ? ""
         : x` <footer class="lyrics-footer lyrics-line"> <div class="footer-content"> <div class="source-info" style="display: flex; align-items: center; gap: 8px;"> <b style="font-weight: 750;">Source</b> ${t} ${this.renderContributors()} ${(this.availableSources && this.availableSources.length > 1) ||
-            !this.hasFetchedAllProviders
-            ? x` <button type="button" class="download-button source-switch-btn" title="Switch Lyrics Source" aria-label="Switch lyrics source" @click="${this.switchSource}" ?disabled="${this.isFetchingAlternatives}"> <svg class="source-switch-svg lucide lucide-arrow-down-up-icon lucide-arrow-down-up ${this.isFetchingAlternatives ? "is-loading" : ""}" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> ${this.isFetchingAlternatives
-                ? b`<path
+          !this.hasFetchedAllProviders
+          ? x` <button type="button" class="download-button source-switch-btn" title="Switch Lyrics Source" aria-label="Switch lyrics source" @click="${this.switchSource}" ?disabled="${this.isFetchingAlternatives}"> <svg class="source-switch-svg lucide lucide-arrow-down-up-icon lucide-arrow-down-up ${this.isFetchingAlternatives ? "is-loading" : ""}" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> ${this.isFetchingAlternatives
+            ? b`<path
                                     d="M21 12a9 9 0 1 1-6.219-8.56"
                                   ></path>`
-                : b`<path d="m3 16 4 4 4-4"></path
+            : b`<path d="m3 16 4 4 4-4"></path
                                     ><path d="M7 20V4"></path
                                     ><path d="m21 8-4-4-4 4"></path
                                     ><path d="M17 4v16"></path>`
-              } </svg> <span class="source-switch-label">${this.isFetchingAlternatives ? "Switching..." : "Switch"}</span> </button> `
-            : ""
-          } </div> ${this.songwriters ? x`<span class="songwriters-info" style="margin-top: 4px; font-weight: normal; font-size: 0.9em;"> <b style="font-weight: 750;">Songwriters</b> ${this.songwriters} </span>` : ""} <span class="version-info" style="margin-top: 8px;"> <b style="font-weight: 750;">am-lyrics</b> v${"1.8.7"} • <a href="https://github.com/uimaxbai/apple-music-web-components" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 4px;">Star me on GitHub </a> </span> </div> </footer> `
+            } </svg> <span class="source-switch-label">${this.isFetchingAlternatives ? "Switching..." : "Switch"}</span> </button> `
+          : ""
+          } </div> ${this.songwriters ? x`<span class="songwriters-info" style="margin-top: 4px; font-weight: normal; font-size: 0.9em;"> <b style="font-weight: 750;">Songwriters</b> ${this.songwriters} </span>` : ""} <span class="version-info" style="margin-top: 8px;"> `
       } </div> `;
   }
 }
