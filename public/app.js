@@ -5166,6 +5166,39 @@ ${pTags}    </div>
 </tt>`;
 }
 
+function formatSyncedLyrics(lines) {
+    if (!Array.isArray(lines)) return [];
+    return lines.map(l => {
+        if (!l) return null;
+        const hasWordSync = !!(l.isWordSynced && Array.isArray(l.text) && l.text.length > 0);
+        let rawText = '';
+        let syllables = null;
+
+        if (Array.isArray(l.text)) {
+            rawText = l.text.map(s => s.text || '').join('').trim();
+            if (hasWordSync) {
+                syllables = l.text.map(s => ({
+                    text: s.text || '',
+                    time: (s.timestamp || 0) / 1000,
+                    endTime: (s.endtime || 0) / 1000
+                })).filter(s => s.text);
+            }
+        } else {
+            rawText = (l.text || '').trim();
+        }
+
+        const beginSec = (l.timestamp !== undefined ? l.timestamp : (l.time !== undefined ? l.time * 1000 : 0)) / 1000;
+        const endSec = l.endtime ? (l.endtime / 1000) : (l.endTime ? l.endTime : beginSec + 4.0);
+
+        return {
+            time: beginSec,
+            endTime: endSec,
+            text: rawText,
+            syllables: syllables && syllables.length ? syllables : null
+        };
+    }).filter(l => l && l.text);
+}
+
 function syncAmLyricsTime(sec) {
     const timeMs = Math.round((sec || 0) * 1000);
     const cardAm = document.getElementById('exp-card-am-lyrics');
@@ -5314,14 +5347,11 @@ function applyLyricsSource(type) {
 
     if (type === 'word') {
         if (Array.isArray(src.lines)) {
-            syncedLyrics = src.lines.map(l => ({
-                time: (l.timestamp || 0) / 1000,
-                text: (l.text || []).map(s => s.text || '').join('').trim()
-            })).filter(l => l.text);
+            syncedLyrics = formatSyncedLyrics(src.lines);
             plainLyrics = '';
         }
     } else if (type === 'lrc') {
-        syncedLyrics = src.syncedLyrics || [];
+        syncedLyrics = formatSyncedLyrics(src.lines || src.syncedLyrics);
         plainLyrics = src.plainLyrics || '';
     }
 
@@ -5421,10 +5451,7 @@ function setupAmLyrics() {
 
                 if (currentLyricsSources.active === 'word') {
                     if (Array.isArray(lines) && lines.length > 0) {
-                        syncedLyrics = lines.map(l => ({
-                            time: (l.timestamp || 0) / 1000,
-                            text: (l.text || []).map(s => s.text || '').join('').trim()
-                        })).filter(l => l.text);
+                        syncedLyrics = formatSyncedLyrics(lines);
 
                         if (syncedLyrics.length && expLyricsWrap) {
                             expLyricsWrap.style.display = 'flex';
@@ -5438,10 +5465,7 @@ function setupAmLyrics() {
                     lines: lines,
                     source: 'LRCLIB',
                     originalTTML: am.availableSources?.[am.currentSourceIndex]?.originalTTML || null,
-                    syncedLyrics: lines.map(l => ({
-                        time: (l.timestamp || 0) / 1000,
-                        text: (l.text || []).map(s => s.text || '').join('').trim()
-                    })).filter(l => l.text)
+                    syncedLyrics: formatSyncedLyrics(lines)
                 };
             }
 
@@ -5460,10 +5484,7 @@ function setupAmLyrics() {
                         lines: lrcCandidate.lines,
                         source: 'LRCLIB',
                         originalTTML: lrcCandidate.originalTTML || null,
-                        syncedLyrics: (lrcCandidate.lines || []).map(l => ({
-                            time: (l.timestamp || 0) / 1000,
-                            text: (l.text || []).map(s => s.text || '').join('').trim()
-                        })).filter(l => l.text)
+                        syncedLyrics: formatSyncedLyrics(lrcCandidate.lines)
                     };
                 }
             }
@@ -5784,7 +5805,7 @@ async function loadLyrics(t) {
                 source: lrcItem.source || 'LRCLIB',
                 lines: parsedLines,
                 originalTTML: ttml,
-                syncedLyrics: lrcSynced,
+                syncedLyrics: formatSyncedLyrics(parsedLines.length ? parsedLines : lrcSynced),
                 plainLyrics: lrcPlain,
                 instrumental: !!lrcItem.instrumental
             };

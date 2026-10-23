@@ -407,10 +407,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                 let ct = CMTimeGetSeconds(time)
                 if !ct.isNaN {
                     PlaybackStateManager.shared.updateActiveLyricIndexOnly(ct)
-                    self.uiTimeTickCount += 1
-                    if self.uiTimeTickCount % 5 == 0 {
-                        PlaybackStateManager.shared.currentTime = ct
-                    }
+                    PlaybackStateManager.shared.currentTime = ct
                 }
             }
 
