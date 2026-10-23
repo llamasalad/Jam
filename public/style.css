@@ -794,6 +794,8 @@ body {
   padding: 6px;
   z-index: 600;
   min-width: 180px;
+  max-height: calc(100vh - 20px);
+  overflow-y: auto;
   display: none;
   box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
   user-select: none;
@@ -1042,6 +1044,15 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.playlist-detail-artist.interactable {
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.playlist-detail-artist.interactable:hover {
+  color: var(--accent);
 }
 
 #playlist-detail-count {
@@ -2484,6 +2495,21 @@ body:has(#detail-album-cover-img) #track-list .interactive-separator {
   display: none;
 }
 
+body:has(#detail-album-cover-img) #track-list .thumb,
+body.album-detail-view #track-list .thumb,
+#track-list.album-detail-view .thumb,
+.album-track .thumb {
+  display: none;
+}
+
+body:has(#detail-album-cover-img) #track-list .track-content,
+body.album-detail-view #track-list .track-content,
+#track-list.album-detail-view .track-content,
+.album-track .track-content {
+  grid-template-columns: 1fr auto;
+  min-height: 56px;
+}
+
 body:has(#detail-artist-image) #track-list .track:not(.featured-track) .interactive-artist,
 body:has(#detail-artist-image) #track-list .track:not(.featured-track) .interactive-album,
 body:has(#detail-artist-image) #track-list .track:not(.featured-track) .interactive-separator {
@@ -2747,6 +2773,11 @@ body.menu-open .queue-remove {
   }
 
   #exp-lyrics-card {
+    display: none !important;
+  }
+
+  #ctx-go-artist,
+  #ctx-go-album {
     display: none !important;
   }
 
@@ -3138,7 +3169,6 @@ body.menu-open .queue-remove {
     max-height: 300px;
   }
 
-  .sidebar-theme-option,
   .sidebar-quality-option {
     padding: 8px 22px;
     font-size: 11px;
@@ -3149,14 +3179,67 @@ body.menu-open .queue-remove {
     transition: color 0.15s;
   }
 
-  .sidebar-theme-option:hover,
   .sidebar-quality-option:hover {
     color: var(--text);
   }
 
-  .sidebar-theme-option.active,
   .sidebar-quality-option.active {
     color: var(--accent);
+  }
+
+  .sidebar-theme-option {
+    padding: 8px 22px;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .sidebar-theme-option.active {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .sidebar-theme-option[data-theme="default"]:hover {
+    background: #c8a86b;
+    color: #0d0d0f;
+  }
+
+  .sidebar-theme-option[data-theme="ember-theme"]:hover {
+    background: #e8702a;
+    color: #0e0c0b;
+  }
+
+  .sidebar-theme-option[data-theme="glacier-theme"]:hover {
+    background: #4db8cc;
+    color: #0a0e10;
+  }
+
+  .sidebar-theme-option[data-theme="void-theme"]:hover {
+    background: #3ddc74;
+    color: #080c09;
+  }
+
+  .sidebar-theme-option[data-theme="blind-theme"]:hover {
+    background: #000000;
+    color: #ffffff;
+  }
+
+  .sidebar-theme-option[data-theme="rosecore-theme"]:hover {
+    background: #c43c5c;
+    color: #0d0a0b;
+  }
+
+  .sidebar-theme-option[data-theme="abyss-theme"]:hover {
+    background: #6366f1;
+    color: #09090f;
+  }
+
+  .sidebar-theme-option[data-theme="aurielle-theme"]:hover {
+    background: #ffffff;
+    color: #c8a86b;
   }
 
   .sidebar-item {
