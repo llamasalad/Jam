@@ -11,6 +11,7 @@
     "@capacitor/ios": "8.4.0",
     "@capacitor/keyboard": "8.0.3",
     "@capacitor/status-bar": "8.0.2",
+    "@uimaxbai/am-lyrics": "^1.8.7",
     "dotenv": "^16.4.5"
   },
   "devDependencies": {

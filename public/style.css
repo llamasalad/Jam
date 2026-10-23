@@ -2210,6 +2210,45 @@ img.smart-playlist-cover-img {
   position: relative;
 }
 
+am-lyrics {
+  display: block;
+  width: 100%;
+  height: 100%;
+  --am-lyrics-highlight-color: #ffffff;
+  --am-lyrics-inline-padding: 20px;
+  --am-lyrics-line-spacing: 22px;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #ffffff;
+}
+
+.lyrics-source-toggle-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 0 4px;
+  cursor: pointer;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity .15s, color .15s;
+  user-select: none;
+}
+
+.lyrics-source-toggle-btn:hover,
+.lyrics-source-toggle-btn:focus-visible {
+  color: var(--fg);
+  opacity: 1;
+}
+
+.lyrics-picker-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+
 #menu-backdrop {
   position: fixed;
   inset: 0;
@@ -3000,10 +3039,20 @@ body.menu-open .queue-remove {
 
   #exp-desktop-lyrics-scroll {
     flex: 1;
-    overflow-y: auto;
-    padding: 10px 0;
+    overflow: hidden;
+    padding: 0;
     scrollbar-width: none;
-    text-align: right;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #exp-desktop-lyrics-scroll am-lyrics {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
   }
 
   #queue-resizer {
@@ -3123,7 +3172,7 @@ body.menu-open .queue-remove {
   }
 
   body:has(#expanded-player.open) #queue-panel {
-    top: 25%;
+    top: 40%;
   }
 
   #main {
@@ -3702,31 +3751,30 @@ body.menu-open .queue-remove {
 
   #exp-lyrics-card-scroll {
     max-height: 0;
+    height: 0;
     overflow: hidden;
     padding: 0;
-    transition: max-height .35s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: max-height .35s cubic-bezier(0.4, 0, 0.2, 1), height .35s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   #exp-lyrics-card.open #exp-lyrics-card-scroll {
-    max-height: 500px;
-    overflow-y: auto;
-    padding: 8px 0 12px;
+    height: 62vh;
+    max-height: calc(100dvh - 160px);
+    overflow: hidden;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #exp-lyrics-card am-lyrics {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
   }
 
   #exp-lyrics-card.open #exp-lyrics-card-header {
     border-bottom: 1px solid var(--border2);
-  }
-
-  #exp-lyrics-card-scroll .lyric-line {
-    color: var(--muted) !important;
-    font-weight: 400 !important;
-    font-size: 20px;
-  }
-
-  #exp-lyrics-card-scroll .lyric-line.active {
-    color: var(--accent) !important;
-    font-weight: 700 !important;
-    font-size: 22px;
   }
 
   #queue-panel {

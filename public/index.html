@@ -537,6 +537,8 @@
           <div id="exp-desktop-lyrics-header">
             <div id="exp-desktop-lyrics-title-wrap">
               <span id="exp-desktop-lyrics-title">Lyrics</span>
+              <button id="lyrics-source-toggle-desktop" class="lyrics-source-toggle-btn" title="Switch lyrics version"
+                style="display:none;">&#x21C4;</button>
               <button id="lyrics-picker-btn">&#x22EF;</button>
               <div id="lyrics-picker-dropdown"></div>
             </div>
@@ -545,17 +547,23 @@
               <button id="lyrics-font-up-desktop" class="lyrics-tool-btn" title="Larger">A+</button>
             </div>
           </div>
-          <div id="exp-desktop-lyrics-scroll"></div>
+          <div id="exp-desktop-lyrics-scroll">
+            <am-lyrics id="exp-desktop-am-lyrics" autoscroll interpolate></am-lyrics>
+          </div>
         </div>
       </div>
       <div id="exp-lyrics-card">
         <div id="exp-lyrics-card-header">
           <span id="exp-lyrics-card-title">Lyrics</span>
           <div style="display:flex;align-items:center;gap:8px;margin-left: auto;">
+            <button id="lyrics-source-toggle-card" class="lyrics-source-toggle-btn" title="Switch lyrics version"
+              style="display:none;">&#x21C4;</button>
             <span id="exp-lyrics-card-chevron">&#x22EF;</span>
           </div>
         </div>
-        <div id="exp-lyrics-card-scroll"></div>
+        <div id="exp-lyrics-card-scroll">
+          <am-lyrics id="exp-card-am-lyrics" autoscroll interpolate></am-lyrics>
+        </div>
       </div>
     </div>
   </div>
@@ -648,6 +656,7 @@
     </div>
   </div>
   <audio id="audio" crossorigin="anonymous"></audio>
+  <script type="module" src="/am-lyrics.js"></script>
   <script type="module" src="/app.js" defer></script>
 </body>
 
