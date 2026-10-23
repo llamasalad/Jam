@@ -5617,19 +5617,7 @@ class AmLyrics extends i {
         });
       })()} ${this.isLoading
         ? ""
-        : x` <footer class="lyrics-footer lyrics-line"> <div class="footer-content"> <div class="source-info" style="display: flex; align-items: center; gap: 8px;"> <b style="font-weight: 750;">Source</b> ${t} ${this.renderContributors()} ${(this.availableSources && this.availableSources.length > 1) ||
-          !this.hasFetchedAllProviders
-          ? x` <button type="button" class="download-button source-switch-btn" title="Switch Lyrics Source" aria-label="Switch lyrics source" @click="${this.switchSource}" ?disabled="${this.isFetchingAlternatives}"> <svg class="source-switch-svg lucide lucide-arrow-down-up-icon lucide-arrow-down-up ${this.isFetchingAlternatives ? "is-loading" : ""}" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> ${this.isFetchingAlternatives
-            ? b`<path
-                                    d="M21 12a9 9 0 1 1-6.219-8.56"
-                                  ></path>`
-            : b`<path d="m3 16 4 4 4-4"></path
-                                    ><path d="M7 20V4"></path
-                                    ><path d="m21 8-4-4-4 4"></path
-                                    ><path d="M17 4v16"></path>`
-            } </svg> <span class="source-switch-label">${this.isFetchingAlternatives ? "Switching..." : "Switch"}</span> </button> `
-          : ""
-          } </div> ${this.songwriters ? x`<span class="songwriters-info" style="margin-top: 4px; font-weight: normal; font-size: 0.9em;"> <b style="font-weight: 750;">Songwriters</b> ${this.songwriters} </span>` : ""} <span class="version-info" style="margin-top: 8px;"> `
+        : x` <footer class="lyrics-footer lyrics-line"> <div class="footer-content"> ${this.songwriters ? x`<span class="songwriters-info" style="margin-top: 4px; font-weight: normal; font-size: 0.9em;"> <b style="font-weight: 750;">Songwriters</b> ${this.songwriters} </span>` : ""} </div> </footer> `
       } </div> `;
   }
 }
