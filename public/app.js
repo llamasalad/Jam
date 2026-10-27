@@ -222,6 +222,8 @@ function updatePlayerMetadata(t) {
     const plArtist = document.getElementById('player-artist');
     const mobTitle = document.querySelector('#player-meta-mobile .title');
     const mobArtist = document.querySelector('#player-meta-mobile .artist');
+    const vTitle = document.getElementById('vert-title');
+    const vArtist = document.getElementById('vert-artist');
     const fullTitle = t.title || 'Unknown';
     if (plTitle) {
         plTitle.innerHTML = '';
@@ -232,8 +234,54 @@ function updatePlayerMetadata(t) {
         setTimeout(() => adjustMarquee(plTitle), 50);
         setTimeout(() => adjustMarquee(plTitle), 400);
     }
+    if (vTitle) {
+        vTitle.innerHTML = '';
+        const vInner = document.createElement('span');
+        vInner.className = 'marquee-inner';
+        vInner.textContent = fullTitle;
+        vTitle.appendChild(vInner);
+        if (t.album) {
+            vTitle.classList.add('interactable');
+            vTitle.onclick = (e) => {
+                e.stopPropagation();
+                saveScroll();
+                if (typeof closeExpandedPlayer === 'function') closeExpandedPlayer();
+                closeCtxMenu();
+                openAlbumDetail(t.album);
+            };
+        } else {
+            vTitle.classList.remove('interactable');
+            vTitle.onclick = null;
+            vTitle.title = fullTitle;
+        }
+        setTimeout(() => adjustMarquee(vTitle), 50);
+        setTimeout(() => adjustMarquee(vTitle), 400);
+    }
     if (mobTitle) mobTitle.textContent = fullTitle;
     renderArtistAlbumSub(plArtist, t, 'player');
+    if (vArtist) {
+        vArtist.innerHTML = '';
+        const vArtInner = document.createElement('span');
+        vArtInner.className = 'marquee-inner';
+        if (t.artist) {
+            const artistSpan = document.createElement('span');
+            artistSpan.className = 'interactive-artist interactable';
+            artistSpan.textContent = t.artist;
+            artistSpan.onclick = (e) => {
+                e.stopPropagation();
+                saveScroll();
+                if (typeof closeExpandedPlayer === 'function') closeExpandedPlayer();
+                closeCtxMenu();
+                openArtistDetail(t.artist);
+            };
+            vArtInner.appendChild(artistSpan);
+        } else {
+            vArtInner.textContent = 'Unknown Artist';
+        }
+        vArtist.appendChild(vArtInner);
+        setTimeout(() => adjustMarquee(vArtist), 50);
+        setTimeout(() => adjustMarquee(vArtist), 400);
+    }
     if (plArtist) {
         setTimeout(() => adjustMarquee(plArtist), 50);
         setTimeout(() => adjustMarquee(plArtist), 400);
@@ -557,6 +605,70 @@ const expDesktopLyricsPanel = document.getElementById('exp-desktop-lyrics-panel'
 const expDesktopLyricsScroll = document.getElementById('exp-desktop-lyrics-scroll');
 const menuBackdrop = document.getElementById('menu-backdrop');
 
+// Vertical Player Elements
+const vertPlayer = document.getElementById('vertical-player');
+const vertAmbientBg = document.getElementById('vert-ambient-bg');
+const vertBtnMinimize = document.getElementById('vert-btn-minimize');
+const vertBtnFullscreen = document.getElementById('vert-btn-fullscreen');
+const vertTabs = document.querySelectorAll('.vert-tab-pill-btn');
+const vertPanels = document.querySelectorAll('.vert-panel');
+const vertPanelArtwork = document.getElementById('vert-panel-artwork');
+const vertCover = document.getElementById('vert-cover');
+const vertCanvas = document.getElementById('vert-canvas');
+const vertCanvasToggle = document.getElementById('vert-canvas-toggle');
+const vertAmLyrics = document.getElementById('vert-am-lyrics');
+const vertLyricsScroll = document.getElementById('vert-lyrics-scroll');
+const vertQueueList = document.getElementById('vert-queue-list');
+const vertClearQueueBtn = document.getElementById('vert-clear-queue-btn');
+const vertTitle = document.getElementById('vert-title');
+const vertArtist = document.getElementById('vert-artist');
+const vertStarBtn = document.getElementById('vert-star-btn');
+const vertVolumeWrap = document.getElementById('vert-volume-wrap');
+const vertVolumeBtn = document.getElementById('vert-volume-btn');
+const vertVolumeBtnIcon = document.getElementById('vert-volume-btn-icon');
+const vertVolumePopup = document.getElementById('vert-volume-popup');
+const vertVolumeSlider = document.getElementById('vert-volume-slider');
+const vertProgress = document.getElementById('vert-progress');
+const vertTimeCur = document.getElementById('vert-time-cur');
+const vertTimeTot = document.getElementById('vert-time-tot');
+const vertRepeat = document.getElementById('vert-repeat');
+const vertPrev = document.getElementById('vert-prev');
+const vertPlay = document.getElementById('vert-play');
+const vertIconPlay = document.getElementById('vert-icon-play');
+const vertIconPause = document.getElementById('vert-icon-pause');
+const vertNext = document.getElementById('vert-next');
+const vertShuffle = document.getElementById('vert-shuffle');
+const sidebarPlayerBtn = document.getElementById('sidebar-player-btn');
+
+let desktopPlayerMode = localStorage.getItem('jam_desktop_player_mode') || 'vertical';
+
+function updateDesktopPlayerVisibility() {
+    if (isMobile()) {
+        if (vertPlayer) vertPlayer.classList.add('hidden');
+        if (qIdx >= 0 && player) {
+            player.classList.remove('hidden');
+            updatePlayerHeight();
+        }
+        return;
+    }
+    const hasActiveTrack = (qIdx >= 0 && queue && queue[qIdx]) || (audio && audio.src);
+    if (!hasActiveTrack) {
+        if (vertPlayer) vertPlayer.classList.add('hidden');
+        if (player) player.classList.add('hidden');
+        return;
+    }
+    if (desktopPlayerMode === 'vertical') {
+        if (vertPlayer) vertPlayer.classList.remove('hidden');
+        if (player) player.classList.add('hidden');
+    } else {
+        if (vertPlayer) vertPlayer.classList.add('hidden');
+        if (player) {
+            player.classList.remove('hidden');
+            updatePlayerHeight();
+        }
+    }
+}
+
 let adaptiveMode = localStorage.getItem('adaptive_mode') === 'true';
 let canvasDisabled = localStorage.getItem('canvas_disabled') === 'true';
 
@@ -573,7 +685,6 @@ const SMART_PLAYLISTS = [
 ];
 
 function updateHeartUI(starredArg) {
-    if (!expHeartBtn) return;
     const trackObj = (typeof starredArg === 'object' && starredArg) ? starredArg : (queue && queue[qIdx] ? queue[qIdx] : null);
     const isInLibrary = isTrackInLibrary(trackObj);
     const isPreview = trackObj && !isInLibrary && (String(trackObj.id).startsWith('deezer:') || String(trackObj.id).startsWith('http') || !!trackObj.link || !!trackObj.streamUrl);
@@ -583,14 +694,28 @@ function updateHeartUI(starredArg) {
         try { wishlist = JSON.parse(localStorage.getItem('jam_wishlist_items') || '[]'); } catch (_) { }
         const isWishlisted = wishlist.some(x => String(x.id) === String(trackObj.id));
 
-        expHeartBtn.setAttribute('title', isWishlisted ? 'Remove from Wishlist' : 'Wishlist');
-        expHeartBtn.innerHTML = `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>`;
-        expHeartBtn.classList.toggle('starred', isWishlisted);
+        if (expHeartBtn) {
+            expHeartBtn.setAttribute('title', isWishlisted ? 'Remove from Wishlist' : 'Wishlist');
+            expHeartBtn.innerHTML = `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>`;
+            expHeartBtn.classList.toggle('starred', isWishlisted);
+        }
+        if (vertStarBtn) {
+            vertStarBtn.setAttribute('title', isWishlisted ? 'Remove from Wishlist' : 'Wishlist');
+            vertStarBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>`;
+            vertStarBtn.classList.toggle('starred', isWishlisted);
+        }
     } else {
         const starred = typeof starredArg === 'boolean' ? starredArg : !!(trackObj && trackObj.starred);
-        expHeartBtn.setAttribute('title', 'Favorite');
-        expHeartBtn.innerHTML = `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="${starred ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5.825 21l1.625-7.025L2 9.25l7.2-.625L12 2l2.8 6.625l7.2.625l-5.45 4.725L18.175 21L12 17.275z" /></svg>`;
-        expHeartBtn.classList.toggle('starred', starred);
+        if (expHeartBtn) {
+            expHeartBtn.setAttribute('title', 'Favorite');
+            expHeartBtn.innerHTML = `<svg width="1em" height="1em" viewBox="0 0 24 24" fill="${starred ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5.825 21l1.625-7.025L2 9.25l7.2-.625L12 2l2.8 6.625l7.2.625l-5.45 4.725L18.175 21L12 17.275z" /></svg>`;
+            expHeartBtn.classList.toggle('starred', starred);
+        }
+        if (vertStarBtn) {
+            vertStarBtn.setAttribute('title', 'Favorite');
+            vertStarBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="${starred ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5.825 21l1.625-7.025L2 9.25l7.2-.625L12 2l2.8 6.625l7.2.625l-5.45 4.725L18.175 21L12 17.275z" /></svg>`;
+            vertStarBtn.classList.toggle('starred', starred);
+        }
     }
 }
 
@@ -3796,6 +3921,7 @@ function play(t, explicitIdx) {
     updateStatusBar();
     updateMediaSession(t);
     if (player) { player.classList.remove('hidden'); updatePlayerHeight(); }
+    updateDesktopPlayerVisibility();
     updatePlayerMetadata(t);
     updateHeartUI(t.starred);
     const pt = document.getElementById('player-thumb');
@@ -3908,6 +4034,7 @@ function syncGaplessNextTrack() {
         updateMediaSession(t);
 
         if (player) { player.classList.remove('hidden'); updatePlayerHeight(); }
+        updateDesktopPlayerVisibility();
         updatePlayerMetadata(t);
         const pt = document.getElementById('player-thumb');
         if (pt) { pt.src = FALLBACK; loadCover(t.id, pt); }
@@ -3952,11 +4079,14 @@ function adjustExpTitleMarquee() {
 }
 
 window.addEventListener('resize', () => {
+    updateDesktopPlayerVisibility();
     if (playerExpanded) {
         adjustExpTitleMarquee();
     } else {
         adjustMarquee(document.getElementById('player-title'));
         adjustMarquee(document.getElementById('player-artist'));
+        adjustMarquee(document.getElementById('vert-title'));
+        adjustMarquee(document.getElementById('vert-artist'));
     }
 });
 
@@ -3987,6 +4117,24 @@ function updateExpandedNowPlaying(t) {
                 }
             }
         }
+        if (vertPanelArtwork) vertPanelArtwork.classList.add('has-canvas');
+        if (vertPlayer) {
+            const isArtworkTab = (localStorage.getItem('jam_vert_tab') || 'artwork') === 'artwork';
+            vertPlayer.classList.toggle('has-canvas-playing', isArtworkTab);
+        }
+        if (vertCover) vertCover.style.display = 'none';
+        if (vertCanvas) {
+            vertCanvas.style.display = 'block';
+            if (vertCanvas.src !== canvasUrl) {
+                vertCanvas.src = canvasUrl;
+                vertCanvas.load();
+                if (audio && !audio.paused) {
+                    vertCanvas.play().catch(e => console.log('[Vert Canvas] Play failed:', e));
+                }
+            } else if (audio && !audio.paused) {
+                vertCanvas.play().catch(e => console.log('[Vert Canvas] Play failed:', e));
+            }
+        }
     } else {
         if (expPlayer) expPlayer.classList.remove('has-canvas');
         if (expCanvas) {
@@ -3994,6 +4142,25 @@ function updateExpandedNowPlaying(t) {
             expCanvas.src = '';
         }
         if (expCover) expCover.style.display = 'block';
+        if (vertPanelArtwork) vertPanelArtwork.classList.remove('has-canvas');
+        if (vertPlayer) vertPlayer.classList.remove('has-canvas-playing');
+        if (vertCanvas) {
+            vertCanvas.style.display = 'none';
+            vertCanvas.src = '';
+        }
+        if (vertCover) {
+            vertCover.style.display = 'block';
+            loadCover(t.id, vertCover, 800);
+        }
+    }
+
+    if (vertCanvasToggle) {
+        if (canvasUrl) {
+            vertCanvasToggle.style.display = 'flex';
+            vertCanvasToggle.classList.toggle('active', !canvasDisabled);
+        } else {
+            vertCanvasToggle.style.display = 'none';
+        }
     }
 
     if (expAdaptiveBtn) {
@@ -4024,6 +4191,7 @@ if (audio) {
         if (d) {
             if (timeTot) timeTot.textContent = fmt(d);
             if (expTimeTot) expTimeTot.textContent = fmt(d);
+            if (vertTimeTot) vertTimeTot.textContent = fmt(d);
             if (qIdx >= 0) {
                 const dur = document.querySelector('.track-dur[data-id="' + queue[qIdx]?.id + '"]');
                 if (dur) dur.textContent = fmt(d);
@@ -4043,6 +4211,7 @@ if (audio) {
         const d = audio.duration;
         if (timeTot) timeTot.textContent = fmt(d);
         if (expTimeTot) expTimeTot.textContent = fmt(d);
+        if (vertTimeTot) vertTimeTot.textContent = fmt(d);
     });
 
     function syncPlayPause(playing) {
@@ -4050,6 +4219,8 @@ if (audio) {
         if (iconPause) iconPause.style.display = playing ? 'block' : 'none';
         if (expIconPlay) expIconPlay.style.display = playing ? 'none' : 'block';
         if (expIconPause) expIconPause.style.display = playing ? 'block' : 'none';
+        if (vertIconPlay) vertIconPlay.style.display = playing ? 'none' : 'block';
+        if (vertIconPause) vertIconPause.style.display = playing ? 'block' : 'none';
     }
 
     audio.addEventListener('loadedmetadata', () => { _currentTrackReady = true; });
@@ -4063,6 +4234,9 @@ if (audio) {
         if (expCanvas && expCanvas.src && expCanvas.style.display !== 'none') {
             expCanvas.play().catch(e => console.log('[Canvas] Play failed:', e));
         }
+        if (vertCanvas && vertCanvas.src && vertCanvas.style.display !== 'none') {
+            vertCanvas.play().catch(e => console.log('[Vert Canvas] Play failed:', e));
+        }
     });
     audio.addEventListener('playing', () => {
         _trackTransition = false;
@@ -4075,6 +4249,9 @@ if (audio) {
         if (!_trackTransition) syncPlayPause(false);
         if (expCanvas && expCanvas.style.display !== 'none') {
             expCanvas.pause();
+        }
+        if (vertCanvas && vertCanvas.style.display !== 'none') {
+            vertCanvas.pause();
         }
     });
     audio.addEventListener('ended', () => {
@@ -4206,8 +4383,10 @@ function setupSeekBar(el) {
         const v = d * userPct / 100;
         if (progress) progress.value = userPct;
         if (expProgress) expProgress.value = userPct;
+        if (vertProgress) vertProgress.value = userPct;
         if (timeCur) timeCur.textContent = fmt(v);
         if (expTimeCur) expTimeCur.textContent = fmt(v);
+        if (vertTimeCur) vertTimeCur.textContent = fmt(v);
     };
 
     el.onchange = () => {
@@ -4225,8 +4404,9 @@ function setupSeekBar(el) {
 
 setupSeekBar(progress);
 setupSeekBar(expProgress);
+setupSeekBar(vertProgress);
 
-[progress, expProgress].forEach(el => {
+[progress, expProgress, vertProgress].forEach(el => {
     if (!el) return;
     el.addEventListener('touchend', () => {
         setTimeout(() => { if (seeking) seeking = false; }, 300);
@@ -4243,8 +4423,10 @@ function setVolume(value) {
     const iconHtml = v === 0 ? volIcons.muted : v < 0.5 ? volIcons.low : volIcons.high;
     if (volumeIcon) volumeIcon.innerHTML = iconHtml;
     if (expVolumeIcon) expVolumeIcon.innerHTML = iconHtml;
+    if (vertVolumeBtnIcon) vertVolumeBtnIcon.innerHTML = iconHtml;
     if (volumeSlider) volumeSlider.value = value;
     if (expVolumeSlider) expVolumeSlider.value = value;
+    if (vertVolumeSlider) vertVolumeSlider.value = value;
     localStorage.setItem('music_vol', value);
 }
 
@@ -4300,8 +4482,104 @@ if (expVolumeSlider) {
 }
 if (expVolumeIcon) expVolumeIcon.addEventListener('click', toggleMute);
 
+let lastHapticVertVol = -1;
+
+function updateVertVolumeFromY(clientY) {
+    if (!vertVolumePopup) return;
+    const rect = vertVolumePopup.getBoundingClientRect();
+    const pad = 12;
+    const top = rect.top + pad;
+    const bottom = rect.bottom - pad;
+    const height = bottom - top;
+    if (height <= 0) return;
+    const clampedY = Math.max(top, Math.min(bottom, clientY));
+    const percent = Math.round(((bottom - clampedY) / height) * 100);
+    if (percent !== lastHapticVertVol) {
+        lastHapticVertVol = percent;
+        triggerHaptic('SELECTION_CHANGED');
+    }
+    setVolume(percent);
+}
+
+if (vertVolumeSlider) {
+    vertVolumeSlider.addEventListener('touchstart', () => {
+        lastHapticVertVol = -1;
+        triggerHaptic('SELECTION_START');
+        if (vertVolumeWrap) vertVolumeWrap.classList.add('open');
+    }, { passive: true });
+    vertVolumeSlider.addEventListener('mousedown', () => {
+        lastHapticVertVol = -1;
+        triggerHaptic('SELECTION_START');
+        if (vertVolumeWrap) vertVolumeWrap.classList.add('open');
+    });
+    vertVolumeSlider.addEventListener('input', () => {
+        const val = parseInt(vertVolumeSlider.value, 10);
+        if (val !== lastHapticVertVol) {
+            lastHapticVertVol = val;
+            triggerHaptic('SELECTION_CHANGED');
+        }
+        setVolume(val);
+    });
+    vertVolumeSlider.addEventListener('change', () => triggerHaptic('SELECTION_END'));
+}
+
+let isDraggingVertVol = false;
+if (vertVolumePopup) {
+    vertVolumePopup.addEventListener('mousedown', (e) => {
+        isDraggingVertVol = true;
+        if (vertVolumeWrap) vertVolumeWrap.classList.add('open');
+        updateVertVolumeFromY(e.clientY);
+    });
+    vertVolumePopup.addEventListener('touchstart', (e) => {
+        isDraggingVertVol = true;
+        if (vertVolumeWrap) vertVolumeWrap.classList.add('open');
+        if (e.touches && e.touches[0]) updateVertVolumeFromY(e.touches[0].clientY);
+    }, { passive: true });
+}
+
+window.addEventListener('mousemove', (e) => {
+    if (isDraggingVertVol) {
+        updateVertVolumeFromY(e.clientY);
+    }
+});
+window.addEventListener('touchmove', (e) => {
+    if (isDraggingVertVol && e.touches && e.touches[0]) {
+        updateVertVolumeFromY(e.touches[0].clientY);
+    }
+}, { passive: true });
+
+window.addEventListener('mouseup', () => {
+    if (isDraggingVertVol) {
+        isDraggingVertVol = false;
+        triggerHaptic('SELECTION_END');
+    }
+    if (vertVolumeWrap) vertVolumeWrap.classList.remove('open');
+});
+window.addEventListener('touchend', () => {
+    if (isDraggingVertVol) {
+        isDraggingVertVol = false;
+        triggerHaptic('SELECTION_END');
+    }
+    if (vertVolumeWrap) vertVolumeWrap.classList.remove('open');
+});
+
+if (vertVolumeWrap) {
+    vertVolumeWrap.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const cur = parseInt(vertVolumeSlider ? vertVolumeSlider.value : localStorage.getItem('music_vol') || '80', 10);
+        const delta = e.deltaY > 0 ? -5 : 5;
+        setVolume(Math.max(0, Math.min(100, cur + delta)));
+    }, { passive: false });
+}
+if (vertVolumeBtn) vertVolumeBtn.addEventListener('click', toggleMute);
+
 if (expHeartBtn) {
     expHeartBtn.onclick = () => {
+        window.toggleStarCurrent();
+    };
+}
+if (vertStarBtn) {
+    vertStarBtn.onclick = () => {
         window.toggleStarCurrent();
     };
 }
@@ -4492,13 +4770,24 @@ if (btnPlay) btnPlay.onclick = () => { triggerHaptic('IMPACT_MEDIUM'); audio && 
 if (btnPrev) btnPrev.onclick = () => { triggerHaptic('IMPACT_LIGHT'); if (audio && audio.currentTime > 3) audio.currentTime = 0; else prevTrack(); };
 if (btnNext) btnNext.onclick = () => { triggerHaptic('IMPACT_LIGHT'); nextTrack(); };
 
+function applyShuffle() {
+    [btnShuffle, expShuffle, vertShuffle].forEach(btn => {
+        if (!btn) return;
+        btn.classList.toggle('active', !!shuffle);
+        btn.style.color = shuffle ? 'var(--accent)' : 'var(--muted)';
+        btn.title = shuffle ? 'Shuffle: On' : 'Shuffle: Off';
+    });
+    notifyNativePlaybackState();
+}
+
+applyShuffle();
+
 if (btnShuffle) {
     btnShuffle.onclick = () => {
         triggerHaptic('IMPACT_LIGHT');
         shuffle = !shuffle;
-        btnShuffle.style.color = shuffle ? 'var(--accent)' : 'var(--muted)';
-        if (expShuffle) expShuffle.style.color = shuffle ? 'var(--accent)' : 'var(--muted)';
         localStorage.setItem('music_shuffle', shuffle);
+        applyShuffle();
         if (shuffle && queue.length > 1 && qIdx < queue.length - 1) {
             let rest = queue.slice(qIdx + 1);
             for (let i = rest.length - 1; i > 0; i--) {
@@ -4508,9 +4797,14 @@ if (btnShuffle) {
             queue = [...queue.slice(0, qIdx + 1), ...rest];
             saveQueueState();
             if (queueOpen) renderQueue();
+            renderVertQueue();
         }
     };
 }
+if (vertShuffle) vertShuffle.onclick = () => btnShuffle && btnShuffle.onclick();
+if (vertPlay) vertPlay.onclick = () => btnPlay && btnPlay.click();
+if (vertPrev) vertPrev.onclick = () => btnPrev && btnPrev.click();
+if (vertNext) vertNext.onclick = () => btnNext && btnNext.click();
 
 const btnRepeat = document.getElementById('btn-repeat');
 let repeatMode = localStorage.getItem('music_repeat') || 'off';
@@ -4522,13 +4816,13 @@ const repeatIcons = {
 };
 
 const volIcons = {
-    muted: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 8 8"><path fill="currentColor" d="M0 5V3h2l2-2v6L2 5m3-3h1l2 3H7m0-3h1L6 5H5"/></svg>`,
-    low: `<svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M18.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM5 9v6h4l5 5V4L9 9H5z"/></svg>`,
-    high: `<svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>`
+    muted: `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27l4.73 4.73H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>`,
+    low: `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M18.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM5 9v6h4l5 5V4L9 9H5z"/></svg>`,
+    high: `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>`
 };
 
 function applyRepeat() {
-    [btnRepeat, expRepeat].forEach(btn => {
+    [btnRepeat, expRepeat, vertRepeat].forEach(btn => {
         if (!btn) return;
         btn.dataset.mode = repeatMode;
         btn.innerHTML = repeatIcons[repeatMode];
@@ -4553,6 +4847,7 @@ if (btnRepeat) {
     };
 }
 if (expRepeat) expRepeat.onclick = () => btnRepeat && btnRepeat.onclick();
+if (vertRepeat) vertRepeat.onclick = () => btnRepeat && btnRepeat.onclick();
 
 function nextTrack(isAuto = false) {
     if (!queue.length) return;
@@ -4560,7 +4855,7 @@ function nextTrack(isAuto = false) {
     const isLast = qIdx >= queue.length - 1;
     if (repeatMode === 'off' && isLast) return;
     qIdx = (qIdx + 1) % queue.length;
-    play(queue[qIdx], qIdx); updateActive(); renderQueue();
+    play(queue[qIdx], qIdx); updateActive(); renderQueue(); renderVertQueue();
 }
 
 function prevTrack() {
@@ -4570,7 +4865,7 @@ function prevTrack() {
         return;
     }
     qIdx = (qIdx - 1 + queue.length) % queue.length;
-    play(queue[qIdx], qIdx); updateActive(); renderQueue();
+    play(queue[qIdx], qIdx); updateActive(); renderQueue(); renderVertQueue();
 }
 
 function updateActive() {
@@ -4580,6 +4875,7 @@ function updateActive() {
         if (row) row.classList.add('active');
     }
     if (queueOpen) renderQueue();
+    if (isVertQueueActive()) renderVertQueue(); else _vertQueueDirty = true;
 }
 
 document.addEventListener('keydown', e => {
@@ -4614,6 +4910,7 @@ function openExpandedPlayer(options = {}) {
     document.body.classList.add('player-open');
     document.documentElement.classList.add('player-open');
     if (expPlayer) expPlayer.classList.add('open');
+    if (vertPlayer) vertPlayer.classList.add('hidden');
     if (lyricsPanel) lyricsPanel.classList.remove('open');
     if (lyricsBtn) lyricsBtn.classList.remove('active');
     lyricsOpen = false;
@@ -4662,6 +4959,7 @@ function closeExpandedPlayer() {
     closeLyricsCard();
     setDesktopExpandedLyricsOpen(false);
     updateStatusBar();
+    updateDesktopPlayerVisibility();
 }
 
 if (expCollapse) expCollapse.onclick = closeExpandedPlayer;
@@ -4963,6 +5261,7 @@ function renderQueue(skipScroll = false) {
     if (window.Capacitor?.Plugins?.AudioPlayerPlugin) {
         window.Capacitor.Plugins.AudioPlayerPlugin.updateQueue({ queue: queue, queueIndex: qIdx });
     }
+    if (isVertQueueActive()) renderVertQueue(skipScroll); else _vertQueueDirty = true;
     if (!queueOpen || !queueScrollArea) return;
     queueScrollArea.innerHTML = '';
 
@@ -5080,6 +5379,250 @@ if (clearQueueBtn) {
         saveQueueState();
     };
 }
+
+let vertQueueObserver = null;
+let _vertQueueDirty = false;
+
+function isVertQueueActive() {
+    if (!vertPlayer || vertPlayer.classList.contains('hidden')) return false;
+    const tab = localStorage.getItem('jam_vert_tab') || 'artwork';
+    return tab === 'queue';
+}
+
+function renderVertQueue(skipScroll = false) {
+    if (!vertQueueList) return;
+
+    // Do not rebuild DOM or fetch images if queue tab is not currently visible
+    if (!isVertQueueActive()) {
+        _vertQueueDirty = true;
+        return;
+    }
+    _vertQueueDirty = false;
+
+    // Disconnect any previous observer instances
+    if (vertQueueObserver) {
+        vertQueueObserver.disconnect();
+    }
+    vertQueueObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const img = entry.target;
+            const id = img.dataset.trackId;
+            if (id) {
+                loadCover(id, img, 100);
+            }
+            vertQueueObserver.unobserve(img);
+        });
+    }, {
+        root: vertQueueList,
+        rootMargin: '120px 0px'
+    });
+
+    vertQueueList.innerHTML = '';
+
+    if (!queue.length) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.style.cssText = 'padding:40px 16px;text-align:center;color:rgba(255,255,255,0.5);font-size:13px';
+        emptyDiv.textContent = 'Queue is empty';
+        vertQueueList.appendChild(emptyDiv);
+        return;
+    }
+
+    queue.forEach((t, i) => {
+        const item = document.createElement('div');
+        item.className = 'vert-queue-item' + (i === qIdx ? ' active' : '');
+        item.dataset.idx = i;
+
+        const thumb = document.createElement('img');
+        thumb.className = 'vert-q-thumb';
+        thumb.src = FALLBACK;
+        thumb.alt = '';
+        thumb.dataset.trackId = t.id;
+
+        // If already cached in memory, load immediately. Otherwise observe for viewport intersection.
+        const cacheKey = `${t.id}_100`;
+        if (coverCacheHas(cacheKey)) {
+            const cachedUrl = coverCacheGet(cacheKey);
+            if (cachedUrl) thumb.src = cachedUrl;
+        } else {
+            vertQueueObserver.observe(thumb);
+        }
+
+        const info = document.createElement('div');
+        info.className = 'vert-q-info';
+
+        const title = document.createElement('div');
+        title.className = 'vert-q-title';
+        title.textContent = t.title || 'Unknown';
+
+        const sub = document.createElement('div');
+        sub.className = 'vert-q-sub';
+        renderArtistAlbumSub(sub, t, 'queue');
+
+        info.appendChild(title);
+        info.appendChild(sub);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'vert-q-remove';
+        removeBtn.title = 'Remove';
+        removeBtn.textContent = '✕';
+        removeBtn.onclick = (e) => {
+            e.stopPropagation();
+            removeFromQueue(i);
+            renderVertQueue(true);
+        };
+
+        const handle = document.createElement('span');
+        handle.className = 'queue-handle vert-queue-handle';
+        handle.textContent = '\u283F';
+        handle.title = 'Drag to reorder';
+        handle.onpointerdown = e => startVertQueueDrag(e, item);
+
+        item.appendChild(handle);
+        item.appendChild(thumb);
+        item.appendChild(info);
+        item.appendChild(removeBtn);
+
+        item.onclick = (e) => {
+            if (e.target.closest('.vert-q-remove, .queue-handle') || item.classList.contains('dragging')) return;
+            qIdx = i;
+            play(queue[qIdx], i);
+            updateActive();
+            renderQueue();
+            renderVertQueue();
+        };
+
+        vertQueueList.appendChild(item);
+    });
+
+    if (!skipScroll) {
+        setTimeout(() => {
+            const activeEl = vertQueueList.querySelector('.vert-queue-item.active');
+            if (activeEl && vertQueueList.clientHeight > 0) {
+                const top = activeEl.offsetTop - vertQueueList.clientHeight / 2 + activeEl.offsetHeight / 2;
+                vertQueueList.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+            }
+        }, 150);
+    }
+}
+
+function startVertQueueDrag(e, item) {
+    e.preventDefault();
+    document.body.classList.add('is-dragging');
+    dragItem = item;
+    dragIdx = parseInt(item.dataset.idx);
+    item.classList.add('dragging');
+    item.setPointerCapture(e.pointerId);
+
+    item.onpointermove = ev => {
+        if (!dragItem || !vertQueueList) return;
+        const items = [...vertQueueList.querySelectorAll('.vert-queue-item')];
+        const over = items.find(it => {
+            if (it === dragItem) return false;
+            const r = it.getBoundingClientRect();
+            return ev.clientY > r.top && ev.clientY < r.bottom;
+        });
+        items.forEach(it => it.classList.remove('drag-over'));
+        if (over) over.classList.add('drag-over');
+    };
+
+    item.onpointerup = ev => {
+        if (!dragItem || !vertQueueList) return;
+        document.body.classList.remove('is-dragging');
+        const items = [...vertQueueList.querySelectorAll('.vert-queue-item')];
+        const over = items.find(it => it.classList.contains('drag-over'));
+        if (over) {
+            const newIdx = parseInt(over.dataset.idx);
+            const [moved] = queue.splice(dragIdx, 1);
+            queue.splice(newIdx, 0, moved);
+            if (qIdx === dragIdx) qIdx = newIdx;
+            else if (dragIdx < qIdx && newIdx >= qIdx) qIdx--;
+            else if (dragIdx > qIdx && newIdx <= qIdx) qIdx++;
+            saveQueueState();
+        }
+        dragItem.classList.remove('dragging');
+        items.forEach(it => it.classList.remove('drag-over'));
+        dragItem.onpointermove = null;
+        dragItem.onpointerup = null;
+        try { dragItem.releasePointerCapture(ev.pointerId); } catch (_) { }
+        dragItem = null;
+        renderQueue(true);
+        renderVertQueue(true);
+    };
+}
+
+if (vertClearQueueBtn) {
+    vertClearQueueBtn.onclick = e => {
+        e.stopPropagation();
+        if (!queue.length) return;
+        const current = queue[qIdx];
+        queue = current ? [current] : [];
+        qIdx = 0;
+        renderQueue();
+        renderVertQueue();
+        saveQueueState();
+    };
+}
+
+function switchVertTab(tabName) {
+    if (!vertTabs || !vertPanels) return;
+    vertTabs.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabName);
+    });
+    vertPanels.forEach(panel => {
+        panel.classList.toggle('active', panel.id === `vert-panel-${tabName}`);
+    });
+    localStorage.setItem('jam_vert_tab', tabName);
+    if (vertPlayer) {
+        const hasCanvas = vertPanelArtwork && vertPanelArtwork.classList.contains('has-canvas');
+        vertPlayer.classList.toggle('has-canvas-playing', hasCanvas && tabName === 'artwork');
+    }
+    if (tabName === 'queue') {
+        renderVertQueue();
+    } else if (tabName === 'lyrics') {
+        if (audio) syncAmLyricsTime(audio.currentTime);
+        const vertAm = document.getElementById('vert-am-lyrics');
+        if (vertAm) {
+            if (audio) vertAm.currentTime = Math.round(audio.currentTime * 1000);
+            if (typeof vertAm.requestUpdate === 'function') vertAm.requestUpdate();
+        }
+    } else if (tabName === 'artwork') {
+        if (vertCanvas && vertCanvas.src && !canvasDisabled && audio && !audio.paused) {
+            vertCanvas.play().catch(() => { });
+        }
+    }
+}
+
+if (vertTabs) {
+    vertTabs.forEach(btn => {
+        btn.onclick = () => switchVertTab(btn.dataset.tab);
+    });
+}
+
+if (vertBtnMinimize) {
+    vertBtnMinimize.onclick = () => {
+        desktopPlayerMode = 'bottom';
+        localStorage.setItem('jam_desktop_player_mode', 'bottom');
+        updateDesktopPlayerVisibility();
+    };
+}
+
+if (sidebarPlayerBtn) {
+    sidebarPlayerBtn.onclick = () => {
+        desktopPlayerMode = 'vertical';
+        localStorage.setItem('jam_desktop_player_mode', 'vertical');
+        updateDesktopPlayerVisibility();
+    };
+}
+
+if (vertBtnFullscreen) {
+    vertBtnFullscreen.onclick = () => {
+        openExpandedPlayer();
+    };
+}
+
+const savedVertTab = localStorage.getItem('jam_vert_tab') || 'artwork';
+switchVertTab(savedVertTab);
 
 let _lastMetadataId = null;
 function updateMediaSession(t) {
@@ -5203,14 +5746,17 @@ function syncAmLyricsTime(sec) {
     const timeMs = Math.round((sec || 0) * 1000);
     const cardAm = document.getElementById('exp-card-am-lyrics');
     const desktopAm = document.getElementById('exp-desktop-am-lyrics');
+    const vertAm = document.getElementById('vert-am-lyrics');
     if (cardAm) cardAm.currentTime = timeMs;
     if (desktopAm) desktopAm.currentTime = timeMs;
+    if (vertAm) vertAm.currentTime = timeMs;
 }
 
 function loadAmLyricsForTrack(t) {
     const cardAm = document.getElementById('exp-card-am-lyrics');
     const desktopAm = document.getElementById('exp-desktop-am-lyrics');
-    const ams = [cardAm, desktopAm].filter(Boolean);
+    const vertAm = document.getElementById('vert-am-lyrics');
+    const ams = [cardAm, desktopAm, vertAm].filter(Boolean);
     if (!t) {
         ams.forEach(am => {
             am.songTitle = '';
@@ -5254,8 +5800,10 @@ function canSwitchLyrics() {
     if (currentLyricsSources.word && currentLyricsSources.lrc) return true;
     const cardAm = document.getElementById('exp-card-am-lyrics');
     const desktopAm = document.getElementById('exp-desktop-am-lyrics');
+    const vertAm = document.getElementById('vert-am-lyrics');
     if ((cardAm?.availableSources?.length || 0) > 1) return true;
     if ((desktopAm?.availableSources?.length || 0) > 1) return true;
+    if ((vertAm?.availableSources?.length || 0) > 1) return true;
     return false;
 }
 
@@ -5290,8 +5838,9 @@ function updateLyricsHeaderUI() {
 
     const toggleDesktop = document.getElementById('lyrics-source-toggle-desktop');
     const toggleCard = document.getElementById('lyrics-source-toggle-card');
+    const toggleVert = document.getElementById('lyrics-source-toggle-vert');
 
-    [toggleDesktop, toggleCard].forEach(btn => {
+    [toggleDesktop, toggleCard, toggleVert].forEach(btn => {
         if (!btn) return;
         btn.style.display = hasMultiple ? 'inline-flex' : 'none';
         if (hasMultiple) {
@@ -5313,7 +5862,8 @@ function applyLyricsSource(type) {
 
     const cardAm = document.getElementById('exp-card-am-lyrics');
     const desktopAm = document.getElementById('exp-desktop-am-lyrics');
-    const ams = [cardAm, desktopAm].filter(Boolean);
+    const vertAm = document.getElementById('vert-am-lyrics');
+    const ams = [cardAm, desktopAm, vertAm].filter(Boolean);
 
     ams.forEach(am => {
         const sources = [];
@@ -5379,7 +5929,8 @@ function switchLyricsSource(targetType) {
 
     const cardAm = document.getElementById('exp-card-am-lyrics');
     const desktopAm = document.getElementById('exp-desktop-am-lyrics');
-    const ams = [cardAm, desktopAm].filter(Boolean);
+    const vertAm = document.getElementById('vert-am-lyrics');
+    const ams = [cardAm, desktopAm, vertAm].filter(Boolean);
     ams.forEach(am => {
         if (typeof am.switchSource === 'function') am.switchSource();
     });
@@ -5394,7 +5945,8 @@ function setupAmLyrics() {
 
     const cardAm = document.getElementById('exp-card-am-lyrics');
     const desktopAm = document.getElementById('exp-desktop-am-lyrics');
-    const ams = [cardAm, desktopAm].filter(Boolean);
+    const vertAm = document.getElementById('vert-am-lyrics');
+    const ams = [cardAm, desktopAm, vertAm].filter(Boolean);
 
     const toggleDesktop = document.getElementById('lyrics-source-toggle-desktop');
     if (toggleDesktop) {
@@ -5407,6 +5959,14 @@ function setupAmLyrics() {
     const toggleCard = document.getElementById('lyrics-source-toggle-card');
     if (toggleCard) {
         toggleCard.onclick = (e) => {
+            e.stopPropagation();
+            switchLyricsSource();
+        };
+    }
+
+    const toggleVert = document.getElementById('lyrics-source-toggle-vert');
+    if (toggleVert) {
+        toggleVert.onclick = (e) => {
             e.stopPropagation();
             switchLyricsSource();
         };
@@ -6202,6 +6762,7 @@ if (audio) {
         if (!seeking && d) {
             if (timeCur) timeCur.textContent = fmt(audio.currentTime);
             if (expTimeCur) expTimeCur.textContent = fmt(audio.currentTime);
+            if (vertTimeCur) vertTimeCur.textContent = fmt(audio.currentTime);
         }
         updateSyncedLyricsState();
         syncAmLyricsTime(audio.currentTime);
@@ -6217,6 +6778,7 @@ if (audio) {
                 const pct = (audio.currentTime / d) * 100;
                 if (progress) progress.value = pct;
                 if (expProgress) expProgress.value = pct;
+                if (vertProgress) vertProgress.value = pct;
                 syncAmLyricsTime(audio.currentTime);
             }
         }
@@ -6342,6 +6904,7 @@ if (expAdaptiveBtn) {
             canvasDisabled = !canvasDisabled;
             localStorage.setItem('canvas_disabled', canvasDisabled);
             expAdaptiveBtn.classList.toggle('active', !canvasDisabled);
+            if (vertCanvasToggle) vertCanvasToggle.classList.toggle('active', !canvasDisabled);
             updateExpandedNowPlaying(currentTrack);
             updateAdaptiveBackground();
             notifyNativePlaybackState();
@@ -6350,6 +6913,23 @@ if (expAdaptiveBtn) {
             localStorage.setItem('adaptive_mode', adaptiveMode);
             expAdaptiveBtn.classList.toggle('active', adaptiveMode);
             updateAdaptiveBackground();
+        }
+    };
+}
+
+if (vertCanvasToggle) {
+    vertCanvasToggle.classList.toggle('active', !canvasDisabled);
+    vertCanvasToggle.onclick = () => {
+        const currentTrack = qIdx >= 0 ? queue[qIdx] : null;
+        const canvasUrl = currentTrack ? getCanvasForTrack(currentTrack) : null;
+        if (canvasUrl) {
+            canvasDisabled = !canvasDisabled;
+            localStorage.setItem('canvas_disabled', canvasDisabled);
+            if (expAdaptiveBtn) expAdaptiveBtn.classList.toggle('active', !canvasDisabled);
+            vertCanvasToggle.classList.toggle('active', !canvasDisabled);
+            updateExpandedNowPlaying(currentTrack);
+            updateAdaptiveBackground();
+            notifyNativePlaybackState();
         }
     };
 }
@@ -6398,15 +6978,17 @@ async function init() {
     setTokenCookie(token);
     if (queuePanel && !isMobile()) queuePanel.style.height = queueH + 'px';
     if (queuePanel) queuePanel.classList.remove('open');
-    if (btnShuffle) btnShuffle.style.color = shuffle ? 'var(--accent)' : 'var(--muted)';
-    if (expShuffle) expShuffle.style.color = shuffle ? 'var(--accent)' : 'var(--muted)';
     applyRepeat();
+    applyShuffle();
     if (volumeSlider) volumeSlider.value = SAVED_VOL;
     if (expVolumeSlider) expVolumeSlider.value = SAVED_VOL;
+    if (vertVolumeSlider) vertVolumeSlider.value = SAVED_VOL;
     const sv = SAVED_VOL / 100;
     if (audio) applyVolume(Math.pow(sv, 3));
-    if (volumeIcon) volumeIcon.innerHTML = sv === 0 ? volIcons.muted : sv < 0.5 ? volIcons.low : volIcons.high;
-    if (expVolumeIcon) expVolumeIcon.innerHTML = sv === 0 ? volIcons.muted : sv < 0.5 ? volIcons.low : volIcons.high;
+    const initVolIcon = sv === 0 ? volIcons.muted : sv < 0.5 ? volIcons.low : volIcons.high;
+    if (volumeIcon) volumeIcon.innerHTML = initVolIcon;
+    if (expVolumeIcon) expVolumeIcon.innerHTML = initVolIcon;
+    if (vertVolumeBtnIcon) vertVolumeBtnIcon.innerHTML = initVolIcon;
 
     const lastTrackData = JSON.parse(localStorage.getItem('music_last') || 'null');
 
@@ -6441,6 +7023,7 @@ async function init() {
                 queue = [t]; qIdx = 0;
             }
             if (player) { player.classList.remove('hidden'); updatePlayerHeight(); }
+            updateDesktopPlayerVisibility();
             updatePlayerMetadata(t);
             updateHeartUI(t.starred);
             const pt = document.getElementById('player-thumb');
@@ -6451,12 +7034,15 @@ async function init() {
             if (savedDur > 0) {
                 if (timeTot) timeTot.textContent = fmt(savedDur);
                 if (expTimeTot) expTimeTot.textContent = fmt(savedDur);
+                if (vertTimeTot) vertTimeTot.textContent = fmt(savedDur);
                 if (pos > 0 && pos < savedDur) {
                     const pct = (pos / savedDur) * 100;
                     if (progress) progress.value = pct;
                     if (expProgress) expProgress.value = pct;
+                    if (vertProgress) vertProgress.value = pct;
                     if (timeCur) timeCur.textContent = fmt(pos);
                     if (expTimeCur) expTimeCur.textContent = fmt(pos);
+                    if (vertTimeCur) vertTimeCur.textContent = fmt(pos);
                 }
             }
 

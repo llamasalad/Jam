@@ -378,6 +378,7 @@ body {
   background: none;
   display: flex;
   border: none;
+  align-items: center;
 }
 
 #tabs {
@@ -4046,4 +4047,858 @@ body.menu-open .queue-remove {
   .album-card span {
     font-size: 12px;
   }
+
+  #vertical-player,
+  #sidebar-player-btn {
+    display: none !important;
+  }
+}
+
+/* ==========================================================================
+   Vertical Sidebar Player (Docked Right View)
+   ========================================================================== */
+
+#vertical-player {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 340px;
+  height: 100%;
+  border-radius: 0;
+  border: none;
+  border-left: 1px solid var(--border);
+  overflow: hidden;
+  z-index: 99;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#vertical-player.hidden {
+  transform: translateX(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (min-width: 769px) {
+
+  body:has(#vertical-player:not(.hidden)) #main,
+  body:has(#vertical-player:not(.hidden)) #header {
+    margin-right: 340px;
+  }
+}
+
+#vert-ambient-bg {
+  display: none !important;
+}
+
+/* Header bar */
+#vert-header {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.vert-header-btn {
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.vert-header-btn:hover {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--border2);
+}
+
+.vert-header-btn:active {
+  transform: scale(0.95);
+}
+
+/* Pill segmented tabs: lyrics, artwork, queue */
+.vert-tabs-pill {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px;
+  display: flex;
+  gap: 2px;
+}
+
+.vert-tab-pill-btn {
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  width: 32px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.vert-tab-pill-btn:hover {
+  color: var(--text);
+}
+
+.vert-tab-pill-btn.active {
+  background: var(--surface3);
+  color: var(--accent);
+}
+
+/* Center content & panels */
+#vert-content {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.vert-panel {
+  position: absolute;
+  inset: 0;
+  display: none !important;
+  flex-direction: column;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.vert-panel.active {
+  display: flex !important;
+  animation: vertFadeIn 0.2s ease forwards;
+}
+
+@keyframes vertFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.99);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.vert-panel-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+/* 1. Artwork Panel */
+#vert-panel-artwork {
+  background: var(--surface);
+}
+
+#vert-panel-artwork.active {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+#vert-panel-artwork.has-canvas.active {
+  padding: 0 !important;
+}
+
+/* When has-canvas: canvas fills the entire player view to the bottom */
+#vertical-player:has(#vert-panel-artwork.has-canvas.active) #vert-content,
+#vertical-player.has-canvas-playing #vert-content {
+  position: static;
+  background: transparent !important;
+  overflow: visible;
+}
+
+#vertical-player:has(#vert-panel-artwork.has-canvas.active) #vert-panel-artwork.has-canvas.active,
+#vertical-player.has-canvas-playing #vert-panel-artwork.has-canvas.active {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: transparent !important;
+}
+
+#vert-panel-artwork.has-canvas #vert-artwork-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  aspect-ratio: auto;
+  margin: 0;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  background: #000;
+}
+
+#vert-panel-artwork.has-canvas #vert-canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 0;
+  display: block;
+}
+
+#vertical-player:has(#vert-panel-artwork.has-canvas.active) #vert-header,
+#vertical-player.has-canvas-playing #vert-header {
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.65) 0%, transparent 100%);
+  border-bottom: none;
+}
+
+#vertical-player:has(#vert-panel-artwork.has-canvas.active) #vert-bottom,
+#vertical-player.has-canvas-playing #vert-bottom {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.55) 65%, transparent 100%);
+  border-top: none;
+}
+
+#vert-panel-artwork.has-canvas .vert-canvas-toggle-btn {
+  bottom: 175px;
+  right: 18px;
+}
+
+/* When not canvas: 1:1 square artwork */
+#vert-panel-artwork:not(.has-canvas) #vert-artwork-container {
+  width: 100%;
+  max-width: 280px;
+  aspect-ratio: 1 / 1;
+  margin: auto;
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+#vert-panel-artwork:not(.has-canvas) #vert-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 6px;
+  display: block;
+}
+
+.vert-canvas-toggle-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 20;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  padding: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+/* Only appear when user hovers directly over the artwork area */
+#vert-artwork-container:hover .vert-canvas-toggle-btn,
+.vert-canvas-toggle-btn:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.vert-canvas-toggle-btn:hover {
+  color: var(--accent);
+}
+
+.vert-canvas-toggle-btn.active {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* 2. Lyrics Panel */
+#vert-panel-lyrics {
+  background: var(--surface);
+}
+
+#vert-lyrics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 8px 16px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+#vert-lyrics-scroll {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+}
+
+#vert-lyrics-scroll am-lyrics {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  --am-lyrics-font-size: 20px;
+  --am-lyrics-line-height: 1.5;
+  --am-lyrics-font-weight: 700;
+  --am-lyrics-line-spacing: 16px;
+  --am-lyrics-inline-padding: 16px;
+}
+
+/* 3. Queue Panel */
+#vert-panel-queue {
+  background: var(--surface);
+}
+
+#vert-queue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 8px 16px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+#vert-clear-queue-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 3px 8px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+#vert-clear-queue-btn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+#vert-queue-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 12px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--surface);
+}
+
+#vert-queue-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+#vert-queue-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#vert-queue-list::-webkit-scrollbar-thumb {
+  background: var(--surface3);
+  border-radius: 4px;
+}
+
+.vert-queue-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  position: relative;
+}
+
+.vert-queue-item:hover {
+  background: var(--surface2);
+}
+
+.vert-queue-item.active {
+  background: var(--surface3);
+}
+
+.vert-queue-handle {
+  cursor: grab;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 4px 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.vert-queue-handle:hover {
+  color: var(--text);
+}
+
+.vert-queue-handle:active {
+  cursor: grabbing;
+}
+
+.vert-queue-item.dragging {
+  opacity: 0.4;
+  background: var(--surface3);
+}
+
+.vert-queue-item.drag-over {
+  border-top: 2px solid var(--accent);
+}
+
+.vert-q-thumb {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--surface3);
+}
+
+.vert-q-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.vert-q-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vert-queue-item.active .vert-q-title {
+  color: var(--accent);
+}
+
+.vert-q-sub {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+.vert-q-remove {
+  opacity: 0;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.vert-queue-item:hover .vert-q-remove {
+  opacity: 1;
+}
+
+.vert-q-remove:hover {
+  color: var(--danger);
+}
+
+/* Bottom Controls Section */
+#vert-bottom {
+  position: relative;
+  z-index: 10;
+  padding: 12px 16px 16px 16px;
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+#vert-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+#vert-info {
+  flex: 1;
+  min-width: 0;
+}
+
+#vert-title {
+  position: relative;
+  width: 100%;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+#vert-title.interactable {
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+#vert-title.interactable:hover {
+  color: var(--accent);
+}
+
+#vert-artist {
+  position: relative;
+  width: 100%;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#vert-artist .interactable {
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+#vert-artist .interactable:hover {
+  color: var(--accent);
+}
+
+#vert-title.marquee-bouncy,
+#vert-artist.marquee-bouncy {
+  text-overflow: clip;
+}
+
+#vert-title .marquee-inner,
+#vert-artist .marquee-inner {
+  display: inline-block;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+#vert-title.marquee-bouncy .marquee-inner,
+#vert-artist.marquee-bouncy .marquee-inner {
+  animation: bouncy-marquee var(--scroll-duration, 6s) ease-in-out infinite alternate;
+}
+
+#vert-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.vert-action-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.vert-action-btn:hover {
+  color: var(--text);
+}
+
+.vert-action-btn:active {
+  transform: scale(0.95);
+}
+
+#vert-star-btn.starred {
+  color: #ffd60a;
+}
+
+/* Volume Wrap & Popup Slider */
+#vert-volume-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#vert-volume-popup {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  width: 34px;
+  height: 124px;
+  border: none;
+  border-radius: 6px;
+  padding: 12px 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+/* Invisible bridge so mouse moving from button to popup doesn't lose hover */
+#vert-volume-popup::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 12px;
+}
+
+#vert-volume-wrap:hover #vert-volume-popup,
+#vert-volume-wrap.open #vert-volume-popup,
+#vert-volume-popup.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+#vert-volume-wrap:hover .vert-action-btn,
+#vert-volume-wrap.open .vert-action-btn {
+  color: var(--text);
+}
+
+#vert-volume-btn-icon {
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.vert-action-btn:hover #vert-volume-btn-icon,
+#vert-volume-wrap:hover #vert-volume-btn-icon,
+#vert-volume-wrap.open #vert-volume-btn-icon {
+  color: var(--text);
+}
+
+#vert-volume-btn-icon svg {
+  width: 18px !important;
+  height: 18px !important;
+  display: block;
+}
+
+#vert-volume-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  width: 100px;
+  height: 24px;
+  transform: rotate(-90deg);
+  transform-origin: center center;
+  margin: 0;
+}
+
+#vert-volume-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  background: var(--surface3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+#vert-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1px;
+  height: 4px;
+  background: var(--accent);
+  box-shadow: -100vw 0 0 100vw var(--accent);
+  cursor: pointer;
+}
+
+#vert-volume-slider::-moz-range-track {
+  height: 4px;
+  background: var(--surface3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+#vert-volume-slider::-moz-range-thumb {
+  width: 1px;
+  height: 4px;
+  border: none;
+  background: var(--accent);
+  box-shadow: -100vw 0 0 100vw var(--accent);
+  cursor: pointer;
+}
+
+/* Progress Slider & Times */
+#vert-progress-section {
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+#vert-progress {
+  width: 100%;
+  height: 16px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+}
+
+#vert-progress::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface3);
+  overflow: hidden;
+  transition: height 0.15s;
+}
+
+#vert-progress:hover::-webkit-slider-runnable-track {
+  height: 6px;
+}
+
+#vert-progress::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1px;
+  height: 6px;
+  background: var(--accent);
+  box-shadow: -100vw 0 0 100vw var(--accent);
+  cursor: pointer;
+}
+
+#vert-time-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: -2px;
+}
+
+#vert-time-row .time-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* Controls Row: Repeat, Prev, Play/Pause, Next, Shuffle */
+#vert-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 4px 0 4px;
+}
+
+#vert-controls-row .ctrl-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+#vert-controls-row .ctrl-btn:hover {
+  color: var(--accent);
+}
+
+#vert-controls-row .ctrl-btn:active {
+  transform: scale(0.92);
+}
+
+#vert-controls-row .ctrl-btn.active {
+  color: var(--accent);
+}
+
+#vert-controls-row .ctrl-btn.main {
+  background: var(--accent);
+  color: var(--bg);
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  border: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+#vert-controls-row .ctrl-btn.main:hover {
+  background: var(--accent2);
+  transform: scale(1.05);
+}
+
+#vert-controls-row .ctrl-btn.main:active {
+  background: var(--accent2);
+  transform: scale(0.94);
+}
+
+#sidebar-player-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+
+#sidebar-player-btn:hover {
+  color: var(--accent);
+  background: var(--surface3);
 }
