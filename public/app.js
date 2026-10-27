@@ -148,8 +148,6 @@ function setTokenCookie(t) {
 const saveQueueState = debounce(() => {
     localStorage.setItem('music_queue', JSON.stringify(queue.map(x => x.id)));
     localStorage.setItem('music_qidx', qIdx);
-    // Every queue edit (reorder, shuffle, add, remove) lands here. Re-evaluate the
-    // natively preloaded "next" item so gapless doesn't advance to a stale track.
     if (window.Capacitor?.Plugins?.AudioPlayerPlugin && audio?.src) schedulePreloadNext();
 }, 300);
 
@@ -315,8 +313,6 @@ function setLyricsMessage(msg, curMsg) {
     }
 }
 
-// Identifies the item currently queued natively as "next" (null = none). Reset
-// whenever a new native player is built, since that discards the queued item.
 let _preloadKey = null;
 
 class CapacitorAudioPlayerShim {
@@ -501,9 +497,6 @@ class CapacitorAudioPlayerShim {
 
     addEventListener(event, callback, options) {
         if (!this.listeners[event]) this.listeners[event] = [];
-        // Like the DOM, ignore a repeat registration of the same callback. Without
-        // this, rapid track changes stack identical once-listeners (e.g. the
-        // deferred preload) that all fire on the next loadedmetadata.
         if (this.listeners[event].some(cb => cb === callback || cb._orig === callback)) return;
         if (options && options.once) {
             const wrapped = (...args) => {
@@ -605,8 +598,6 @@ const expAdaptiveBtn = document.getElementById('exp-adaptive-btn');
 const expDesktopLyricsPanel = document.getElementById('exp-desktop-lyrics-panel');
 const expDesktopLyricsScroll = document.getElementById('exp-desktop-lyrics-scroll');
 const menuBackdrop = document.getElementById('menu-backdrop');
-
-// Vertical Player Elements
 const vertPlayer = document.getElementById('vertical-player');
 const vertAmbientBg = document.getElementById('vert-ambient-bg');
 const vertBtnMinimize = document.getElementById('vert-btn-minimize');
@@ -1654,8 +1645,6 @@ function toggleThemeMenu() {
 }
 
 let currentQuality = localStorage.getItem('jam_bitrate') || 'original';
-// Only numeric bitrates (e.g. '320') are transcoded to mp3; 'original'
-// streams the source file, so it keeps the track's real suffix.
 function streamSuffixFor(t) {
     return /^\d+$/.test(currentQuality) ? 'mp3' : ((t && t.suffix) || 'flac');
 }
@@ -3871,9 +3860,6 @@ function setAudioMetadata(t) {
 
 let _trackTransition = false;
 let _transitionTimer = null;
-// Marks a deliberate track change/retry so the resulting pause/ended events are
-// ignored. The flag is normally cleared by the 'playing' event; the timer is a
-// backstop so a retry that never starts playing can't swallow every later 'ended'.
 function beginTrackTransition() {
     _trackTransition = true;
     clearTimeout(_transitionTimer);
@@ -3954,9 +3940,6 @@ function schedulePreloadNext() {
     preloadNextTrack();
 }
 
-// Index of the track that should follow the current one, honoring repeat mode.
-// The native player advances on its own at the end of an item, so the JS-side
-// nextTrack() (which handles repeat) is bypassed for gapless transitions.
 function nextGaplessIndex() {
     if (!queue.length || qIdx < 0) return -1;
     if (repeatMode === 'one') return qIdx;
@@ -3969,7 +3952,6 @@ function preloadNextTrack() {
     const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
     const nextIdx = nextGaplessIndex();
     if (nextIdx === -1) {
-        // Nothing should follow: drop any stale item queued natively.
         if (plugin && _preloadKey !== null) {
             _preloadKey = null;
             plugin.preloadNext({ clear: true });
@@ -4048,8 +4030,6 @@ function syncGaplessNextTrack() {
         updateAdaptiveBackground();
         updateActive();
         renderQueue();
-
-        // The queued native item just became the current one.
         _preloadKey = null;
         _currentTrackReady = true;
         preloadNextTrack();
@@ -4279,8 +4259,6 @@ if (audio) {
                 const volRestoreTimer = setTimeout(() => applyVolume(prevVol), 5000);
                 audio.addEventListener('loadedmetadata', () => {
                     clearTimeout(volRestoreTimer);
-                    // The retry rebuilt the native player, discarding the preloaded
-                    // next item; queue it again so gapless survives the recovery.
                     schedulePreloadNext();
                     const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
                     if (plugin && window.Capacitor.getPlatform() === 'ios') {
@@ -4327,8 +4305,6 @@ if (audio) {
                 const volRestoreTimer = setTimeout(() => applyVolume(prevVol), 5000);
                 audio.addEventListener('loadedmetadata', () => {
                     clearTimeout(volRestoreTimer);
-                    // The retry rebuilt the native player, discarding the preloaded
-                    // next item; queue it again so gapless survives the recovery.
                     schedulePreloadNext();
                     const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
                     if (plugin && window.Capacitor.getPlatform() === 'ios') {
@@ -4840,7 +4816,6 @@ if (btnRepeat) {
         repeatMode = modes[(modes.indexOf(repeatMode) + 1) % 3];
         localStorage.setItem('music_repeat', repeatMode);
         applyRepeat();
-        // What plays next natively depends on repeat mode, so refresh the preload.
         if (audio?.src) preloadNextTrack();
     };
 }
@@ -5389,15 +5364,11 @@ function isVertQueueActive() {
 
 function renderVertQueue(skipScroll = false) {
     if (!vertQueueList) return;
-
-    // Do not rebuild DOM or fetch images if queue tab is not currently visible
     if (!isVertQueueActive()) {
         _vertQueueDirty = true;
         return;
     }
     _vertQueueDirty = false;
-
-    // Disconnect any previous observer instances
     if (vertQueueObserver) {
         vertQueueObserver.disconnect();
     }
@@ -5437,7 +5408,6 @@ function renderVertQueue(skipScroll = false) {
         thumb.alt = '';
         thumb.dataset.trackId = t.id;
 
-        // If already cached in memory, load immediately. Otherwise observe for viewport intersection.
         const cacheKey = `${t.id}_100`;
         if (coverCacheHas(cacheKey)) {
             const cachedUrl = coverCacheGet(cacheKey);
@@ -6286,7 +6256,6 @@ async function loadLyrics(t) {
         const rawTitle = (t.title || '').trim();
         let lrcItem = null;
 
-        // 1. Saved pick in localStorage (device preference)
         if (savedPick) {
             const sq = new URLSearchParams({ title: rawTitle, artist: t.artist || '' });
             const sr = await fetch(`/api/lyrics/search?${sq}`, { headers: token ? { 'x-auth-token': token } : {} });
@@ -6298,7 +6267,6 @@ async function loadLyrics(t) {
             }
         }
 
-        // 2. Curated KV entry
         if (!lrcItem) {
             const cq = new URLSearchParams({ title: rawTitle, artist: t.artist || '' });
             const cr = await fetch(`/api/lyrics/curated?${cq}`, { headers: token ? { 'x-auth-token': token } : {} });
@@ -6321,7 +6289,6 @@ async function loadLyrics(t) {
             }
         }
 
-        // 3. General LRCLIB /api/lyrics
         if (!lrcItem) {
             const q = new URLSearchParams({ title: rawTitle, artist: t.artist || '', album: t.album || '' });
             const r = await fetch(`/api/lyrics?${q}`, { headers: token ? { 'x-auth-token': token } : {} });

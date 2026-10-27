@@ -4054,10 +4054,6 @@ body.menu-open .queue-remove {
   }
 }
 
-/* ==========================================================================
-   Vertical Sidebar Player (Docked Right View)
-   ========================================================================== */
-
 #vertical-player {
   position: fixed;
   top: 0;
@@ -4072,7 +4068,7 @@ body.menu-open .queue-remove {
   z-index: 99;
   display: flex;
   flex-direction: column;
-  background: var(--surface);
+  background: var(--bg);
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -4099,7 +4095,6 @@ body.menu-open .queue-remove {
   display: none !important;
 }
 
-/* Header bar */
 #vert-header {
   position: relative;
   z-index: 10;
@@ -4107,8 +4102,6 @@ body.menu-open .queue-remove {
   align-items: center;
   justify-content: space-between;
   padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
   flex-shrink: 0;
 }
 
@@ -4136,11 +4129,7 @@ body.menu-open .queue-remove {
   transform: scale(0.95);
 }
 
-/* Pill segmented tabs: lyrics, artwork, queue */
 .vert-tabs-pill {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
   padding: 2px;
   display: flex;
   gap: 2px;
@@ -4165,18 +4154,15 @@ body.menu-open .queue-remove {
 }
 
 .vert-tab-pill-btn.active {
-  background: var(--surface3);
   color: var(--accent);
 }
 
-/* Center content & panels */
 #vert-content {
   position: relative;
   z-index: 1;
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  background: var(--surface);
 }
 
 .vert-panel {
@@ -4184,7 +4170,6 @@ body.menu-open .queue-remove {
   inset: 0;
   display: none !important;
   flex-direction: column;
-  background: var(--surface);
   overflow: hidden;
 }
 
@@ -4213,11 +4198,6 @@ body.menu-open .queue-remove {
   color: var(--muted);
 }
 
-/* 1. Artwork Panel */
-#vert-panel-artwork {
-  background: var(--surface);
-}
-
 #vert-panel-artwork.active {
   display: flex !important;
   align-items: center;
@@ -4229,7 +4209,6 @@ body.menu-open .queue-remove {
   padding: 0 !important;
 }
 
-/* When has-canvas: canvas fills the entire player view to the bottom */
 #vertical-player:has(#vert-panel-artwork.has-canvas.active) #vert-content,
 #vertical-player.has-canvas-playing #vert-content {
   position: static;
@@ -4285,7 +4264,6 @@ body.menu-open .queue-remove {
   right: 18px;
 }
 
-/* When not canvas: 1:1 square artwork */
 #vert-panel-artwork:not(.has-canvas) #vert-artwork-container {
   width: 100%;
   max-width: 280px;
@@ -4326,7 +4304,6 @@ body.menu-open .queue-remove {
   transition: opacity 0.2s ease, background 0.15s, color 0.15s, border-color 0.15s;
 }
 
-/* Only appear when user hovers directly over the artwork area */
 #vert-artwork-container:hover .vert-canvas-toggle-btn,
 .vert-canvas-toggle-btn:focus-visible {
   opacity: 1;
@@ -4342,19 +4319,12 @@ body.menu-open .queue-remove {
   border-color: var(--accent);
 }
 
-/* 2. Lyrics Panel */
-#vert-panel-lyrics {
-  background: var(--surface);
-}
-
 #vert-lyrics-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px 8px 16px;
   flex-shrink: 0;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
 }
 
 #vert-lyrics-scroll {
@@ -4365,7 +4335,6 @@ body.menu-open .queue-remove {
   position: relative;
   display: flex;
   flex-direction: column;
-  background: var(--surface);
 }
 
 #vert-lyrics-scroll am-lyrics {
@@ -4381,11 +4350,6 @@ body.menu-open .queue-remove {
   --am-lyrics-inline-padding: 16px;
 }
 
-/* 3. Queue Panel */
-#vert-panel-queue {
-  background: var(--surface);
-}
-
 #vert-queue-header {
   display: flex;
   align-items: center;
@@ -4393,7 +4357,6 @@ body.menu-open .queue-remove {
   padding: 12px 16px 8px 16px;
   flex-shrink: 0;
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
 }
 
 #vert-clear-queue-btn {
@@ -4420,7 +4383,6 @@ body.menu-open .queue-remove {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: var(--surface);
 }
 
 #vert-queue-list::-webkit-scrollbar {
@@ -4549,12 +4511,10 @@ body.menu-open .queue-remove {
   color: var(--danger);
 }
 
-/* Bottom Controls Section */
 #vert-bottom {
   position: relative;
   z-index: 10;
   padding: 12px 16px 16px 16px;
-  background: var(--surface);
   flex-shrink: 0;
 }
 
@@ -4661,7 +4621,6 @@ body.menu-open .queue-remove {
   color: #ffd60a;
 }
 
-/* Volume Wrap & Popup Slider */
 #vert-volume-wrap {
   position: relative;
   display: flex;
@@ -4689,7 +4648,6 @@ body.menu-open .queue-remove {
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-/* Invisible bridge so mouse moving from button to popup doesn't lose hover */
 #vert-volume-popup::after {
   content: "";
   position: absolute;
@@ -4781,7 +4739,6 @@ body.menu-open .queue-remove {
   cursor: pointer;
 }
 
-/* Progress Slider & Times */
 #vert-progress-section {
   margin-bottom: 8px;
   display: flex;
@@ -4833,7 +4790,6 @@ body.menu-open .queue-remove {
   color: var(--muted);
 }
 
-/* Controls Row: Repeat, Prev, Play/Pause, Next, Shuffle */
 #vert-controls-row {
   display: flex;
   align-items: center;
