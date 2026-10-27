@@ -78,6 +78,7 @@ setTokenCookie(token);
 let tracks = [], trackMap = new Map(), libraryTrackIds = new Set(), filtered = [], detailViewTracks = [], queue = [], qIdx = -1, sortMode = 'title';
 function isTrackInLibrary(t) { return !!(t && t.id && libraryTrackIds.has(String(t.id))); }
 let shuffle = localStorage.getItem('music_shuffle') === 'true', seeking = false, muted = false;
+let repeatMode = localStorage.getItem('music_repeat') || 'off';
 const SAVED_VOL = parseInt(localStorage.getItem('music_vol') || '80');
 let lastVol = SAVED_VOL;
 let playlists = [], currentPlaylist = null, ctxTrack = null, pendingPlaylistTrack = null;
@@ -731,11 +732,11 @@ function syncStarredStateNatively(starredArg, forceIsPreview) {
         })() : !!(t && t.starred));
 
         window.Capacitor.Plugins.AudioPlayerPlugin.setPlaybackState({
-            shuffle,
-            repeatMode,
+            shuffle: !!shuffle,
+            repeatMode: repeatMode || 'off',
             starred: isStarredOrWishlisted,
             isPreview: !!isPreview,
-            canvasDisabled: canvasDisabled
+            canvasDisabled: !!canvasDisabled
         });
     }
 }
@@ -4780,8 +4781,6 @@ function applyShuffle() {
     notifyNativePlaybackState();
 }
 
-applyShuffle();
-
 if (btnShuffle) {
     btnShuffle.onclick = () => {
         triggerHaptic('IMPACT_LIGHT');
@@ -4807,7 +4806,6 @@ if (vertPrev) vertPrev.onclick = () => btnPrev && btnPrev.click();
 if (vertNext) vertNext.onclick = () => btnNext && btnNext.click();
 
 const btnRepeat = document.getElementById('btn-repeat');
-let repeatMode = localStorage.getItem('music_repeat') || 'off';
 
 const repeatIcons = {
     off: `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>`,
