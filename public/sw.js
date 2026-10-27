@@ -1,4 +1,4 @@
-const CACHE = 'jam-v2';
+const CACHE = 'jam-v3';
 const ASSETS = [
   '/', '/index.html', '/style.css', '/app.js', '/navidrome.js', '/manifest.json',
   '/favicon.ico', '/32x32.png', '/apple-touch-icon.png', '/icon-192.png', '/icon-512.png',
