@@ -6,20 +6,6 @@ import Observation
 
 typealias KeyPath<Root, Value> = Swift.KeyPath<Root, Value>
 
-struct LyricSyllable: Identifiable, Sendable, Equatable {
-    let id: Int
-    let text: String
-    let time: Double
-    let endTime: Double
-}
-
-struct LyricLine: Identifiable, Sendable, Equatable {
-    let id: Int
-    let time: Double
-    let endTime: Double
-    let text: String
-    let syllables: [LyricSyllable]?
-}
 
 @Observable
 @MainActor
@@ -63,7 +49,6 @@ final class PlaybackStateManager {
     var currentLyric: String = ""
     var nextLyric: String = ""
     var fullLyrics: [[String: Any]] = []
-    var lyricLines: [LyricLine] = []
     var activeLyricIndex: Int? = nil
     var isFetchingLyrics: Bool = false
     var lyricsFetchFailed: Bool = false
@@ -127,29 +112,6 @@ final class PlaybackStateManager {
 
     func updateFullLyrics(_ lyrics: [[String: Any]]) {
         self.fullLyrics = lyrics
-        self.lyricLines = lyrics.enumerated().map { index, dict in
-            let time = dict["time"] as? Double ?? 0
-            let endTime = dict["endTime"] as? Double ?? (time + 4.0)
-            let text = dict["text"] as? String ?? ""
-            var syllablesList: [LyricSyllable]? = nil
-            if let rawSyllables = dict["syllables"] as? [[String: Any]], !rawSyllables.isEmpty {
-                syllablesList = rawSyllables.enumerated().map { sIndex, sDict in
-                    LyricSyllable(
-                        id: sIndex,
-                        text: sDict["text"] as? String ?? "",
-                        time: sDict["time"] as? Double ?? 0,
-                        endTime: sDict["endTime"] as? Double ?? 0
-                    )
-                }
-            }
-            return LyricLine(
-                id: index,
-                time: time,
-                endTime: endTime,
-                text: text,
-                syllables: syllablesList
-            )
-        }
         self.updateActiveLyricIndex(for: self.currentTime)
     }
 

@@ -640,128 +640,6 @@ private struct ContainerWidthKey: PreferenceKey {
     }
 }
 
-struct FlowLayout: Layout {
-    var spacing: CGFloat = 0
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let maxWidth = proposal.width ?? .infinity
-        var totalHeight: CGFloat = 0
-        var currentRowWidth: CGFloat = 0
-        var currentRowHeight: CGFloat = 0
-
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if currentRowWidth + size.width > maxWidth, currentRowWidth > 0 {
-                totalHeight += currentRowHeight
-                currentRowWidth = size.width
-                currentRowHeight = size.height
-            } else {
-                currentRowWidth += size.width
-                currentRowHeight = max(currentRowHeight, size.height)
-            }
-        }
-        totalHeight += currentRowHeight
-        return CGSize(width: maxWidth, height: totalHeight)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let maxWidth = bounds.width
-        var x = bounds.minX
-        var y = bounds.minY
-        var currentRowHeight: CGFloat = 0
-
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if x + size.width > bounds.minX + maxWidth, x > bounds.minX {
-                x = bounds.minX
-                y += currentRowHeight
-                currentRowHeight = size.height
-            } else {
-                currentRowHeight = max(currentRowHeight, size.height)
-            }
-            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
-            x += size.width
-        }
-    }
-}
-
-struct SyllableWordView: View {
-    let syllable: LyricSyllable
-    let currentTime: Double
-    let isLineActive: Bool
-
-    private var progress: CGFloat {
-        if !isLineActive {
-            return currentTime >= syllable.endTime ? 1.0 : 0.0
-        }
-        if currentTime < syllable.time {
-            return 0.0
-        }
-        if currentTime >= syllable.endTime {
-            return 1.0
-        }
-        let duration = syllable.endTime - syllable.time
-        guard duration > 0 else { return 1.0 }
-        return CGFloat((currentTime - syllable.time) / duration)
-    }
-
-    var body: some View {
-        let p = progress
-        ZStack(alignment: .leading) {
-            Text(syllable.text)
-                .font(.system(size: 20, weight: isLineActive ? .bold : .medium))
-                .foregroundStyle(Color.white.opacity(isLineActive ? 0.35 : 0.5))
-
-            if isLineActive && p > 0 {
-                Text(syllable.text)
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(Color.white)
-                    .mask(alignment: .leading) {
-                        GeometryReader { geo in
-                            Rectangle()
-                                .frame(width: geo.size.width * p)
-                                .animation(.linear(duration: 0.05), value: p)
-                        }
-                    }
-            }
-        }
-        .fixedSize()
-    }
-}
-
-struct LyricLineRowView: View {
-    let line: LyricLine
-    let isActive: Bool
-    let currentTime: Double
-    let onSeek: () -> Void
-
-    var body: some View {
-        Group {
-            if let syllables = line.syllables, !syllables.isEmpty {
-                FlowLayout(spacing: 0) {
-                    ForEach(syllables) { syllable in
-                        SyllableWordView(
-                            syllable: syllable,
-                            currentTime: currentTime,
-                            isLineActive: isActive
-                        )
-                    }
-                }
-            } else {
-                Text(line.text.isEmpty ? "•" : line.text)
-                    .font(.system(size: 20, weight: isActive ? .bold : .medium))
-                    .foregroundStyle(isActive ? .white : .white.opacity(0.5))
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            onSeek()
-        }
-    }
-}
-
 class VisibleLinesTracker {
     var lines: Set<Int> = []
 }
@@ -806,41 +684,45 @@ struct FullLyricsView: View {
                 ScrollViewReader { proxy in
                     ScrollView(showsIndicators: false) {
                         LazyVStack(alignment: .leading, spacing: 24) {
-                            if state.lyricLines.isEmpty {
+                            if state.fullLyrics.isEmpty {
                                 Text(state.isPreview ? "Lyrics disabled for preview songs" : (state.isFetchingLyrics ? "Loading lyrics..." : "No lyrics available"))
                                     .font(.title2)
                                     .fontWeight(.medium)
                                     .foregroundStyle(.white.opacity(0.6))
                             } else {
-                                ForEach(state.lyricLines) { line in
-                                    let isActive = state.activeLyricIndex == line.id
+                                ForEach(Array(state.fullLyrics.enumerated()), id: \.offset) { index, lyricDict in
+                                    if let time = lyricDict["time"] as? Double,
+                                       let text = lyricDict["text"] as? String {
 
-                                    LyricLineRowView(
-                                        line: line,
-                                        isActive: isActive,
-                                        currentTime: state.currentTime,
-                                        onSeek: {
-                                            state.performSeek(to: line.time)
-                                        }
-                                    )
-                                    .id(line.id)
-                                    .animation(.easeOut(duration: 0.2), value: isActive)
-                                    .onAppear {
-                                        visibleTracker.lines.insert(line.id)
-                                    }
-                                    .onDisappear {
-                                        visibleTracker.lines.remove(line.id)
-                                    }
-                                    .onChange(of: isActive) { _, new in
-                                        if new {
-                                            let isPreviousVisible = line.id > 0 && visibleTracker.lines.contains(line.id - 1)
-                                            let isCurrentVisible = visibleTracker.lines.contains(line.id)
-                                            if line.id == 0 || isPreviousVisible || isCurrentVisible {
-                                                withAnimation(.easeInOut(duration: 0.3)) {
-                                                    proxy.scrollTo(line.id, anchor: .center)
+                                        let isActive = state.activeLyricIndex == index
+
+                                        Text(text.isEmpty ? "•" : text)
+                                            .font(.system(size: 20, weight: isActive ? .bold : .medium))
+                                            .foregroundStyle(isActive ? .white : .white.opacity(0.5))
+                                            .multilineTextAlignment(.leading)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .id(index)
+                                            .animation(.easeOut(duration: 0.2), value: isActive)
+                                            .onTapGesture {
+                                                state.performSeek(to: time)
+                                            }
+                                            .onAppear {
+                                                visibleTracker.lines.insert(index)
+                                            }
+                                            .onDisappear {
+                                                visibleTracker.lines.remove(index)
+                                            }
+                                            .onChange(of: isActive) { _, new in
+                                                if new {
+                                                    let isPreviousVisible = index > 0 && visibleTracker.lines.contains(index - 1)
+                                                    let isCurrentVisible = visibleTracker.lines.contains(index)
+                                                    if index == 0 || isPreviousVisible || isCurrentVisible {
+                                                        withAnimation(.easeInOut(duration: 0.3)) {
+                                                            proxy.scrollTo(index, anchor: .center)
+                                                        }
+                                                    }
                                                 }
                                             }
-                                        }
                                     }
                                 }
                             }
@@ -849,7 +731,7 @@ struct FullLyricsView: View {
                         .padding(.bottom, 120)
                         .padding(.top, 40)
                     }
-                    .onChange(of: state.lyricLines.count) { _, newCount in
+                    .onChange(of: state.fullLyrics.count) { _, newCount in
                         if newCount > 0 {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                 if let activeIndex = state.activeLyricIndex {

@@ -434,12 +434,17 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 
             let uiInterval = CMTime(seconds: 0.05, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
             self.uiTimeObserverToken = self.player?.addPeriodicTimeObserver(forInterval: uiInterval, queue: .main) { [weak self] time in
-                guard self != nil else { return }
+                guard let self = self else { return }
                 let ct = CMTimeGetSeconds(time)
                 if !ct.isNaN {
                     Task { @MainActor in
                         PlaybackStateManager.shared.updateActiveLyricIndexOnly(ct)
-                        PlaybackStateManager.shared.currentTime = ct
+                    }
+                    self.uiTimeTickCount += 1
+                    if self.uiTimeTickCount % 5 == 0 {
+                        Task { @MainActor in
+                            PlaybackStateManager.shared.currentTime = ct
+                        }
                     }
                 }
             }

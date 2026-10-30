@@ -5685,19 +5685,9 @@ function formatSyncedLyrics(lines) {
     if (!Array.isArray(lines)) return [];
     return lines.map(l => {
         if (!l) return null;
-        const hasWordSync = !!(l.isWordSynced && Array.isArray(l.text) && l.text.length > 0);
         let rawText = '';
-        let syllables = null;
-
         if (Array.isArray(l.text)) {
             rawText = l.text.map(s => s.text || '').join('').trim();
-            if (hasWordSync) {
-                syllables = l.text.map(s => ({
-                    text: s.text || '',
-                    time: (s.timestamp || 0) / 1000,
-                    endTime: (s.endtime || 0) / 1000
-                })).filter(s => s.text);
-            }
         } else {
             rawText = (l.text || '').trim();
         }
@@ -5708,8 +5698,7 @@ function formatSyncedLyrics(lines) {
         return {
             time: beginSec,
             endTime: endSec,
-            text: rawText,
-            syllables: syllables && syllables.length ? syllables : null
+            text: rawText
         };
     }).filter(l => l && l.text);
 }
@@ -5725,6 +5714,7 @@ function syncAmLyricsTime(sec) {
 }
 
 function loadAmLyricsForTrack(t) {
+    if (window.Capacitor && window.Capacitor.getPlatform() === 'ios') return;
     const cardAm = document.getElementById('exp-card-am-lyrics');
     const desktopAm = document.getElementById('exp-desktop-am-lyrics');
     const vertAm = document.getElementById('vert-am-lyrics');
@@ -5769,6 +5759,7 @@ let currentLyricsSources = {
 let amsErrored = false;
 
 function canSwitchLyrics() {
+    if (window.Capacitor && window.Capacitor.getPlatform() === 'ios') return false;
     if (currentLyricsSources.word && currentLyricsSources.lrc) return true;
     const cardAm = document.getElementById('exp-card-am-lyrics');
     const desktopAm = document.getElementById('exp-desktop-am-lyrics');
@@ -5971,6 +5962,7 @@ function setupAmLyrics() {
         });
 
         am.addEventListener('lyrics-loaded', e => {
+            if (window.Capacitor && window.Capacitor.getPlatform() === 'ios') return;
             const lines = e.detail?.lyrics;
             const source = e.detail?.source || '';
 
@@ -6025,6 +6017,7 @@ function setupAmLyrics() {
         });
 
         am.addEventListener('lyrics-error', () => {
+            if (window.Capacitor && window.Capacitor.getPlatform() === 'ios') return;
             amsErrored = true;
             currentLyricsSources.word = null;
             if (currentLyricsSources.lrc) {
@@ -6241,11 +6234,12 @@ async function loadLyrics(t) {
     const requestSeq = ++lyricsRequestSeq;
     lyricsTrackId = t.id;
     syncedLyrics = []; plainLyrics = '';
+    const isIOSApp = window.Capacitor && window.Capacitor.getPlatform() === 'ios';
     const savedPick = getSavedLyricsPick(t.id);
     currentLyricsSources = {
         word: null,
         lrc: null,
-        active: savedPick ? 'lrc' : 'word'
+        active: isIOSApp ? 'lrc' : (savedPick ? 'lrc' : 'word')
     };
     amsErrored = false;
     lastExpLyricIdx = -1;
@@ -6253,7 +6247,9 @@ async function loadLyrics(t) {
 
     setLyricsMessage("Loading lyrics\u2026", "\u2026");
     if (expLyricsWrap) { expLyricsWrap.style.display = 'flex'; expLyricsWrap.style.flex = ''; }
-    loadAmLyricsForTrack(t);
+    if (!isIOSApp) {
+        loadAmLyricsForTrack(t);
+    }
     updateLyricsHeaderUI();
 
     try {
@@ -6339,19 +6335,32 @@ async function loadLyrics(t) {
                 instrumental: !!lrcItem.instrumental
             };
 
-            if (currentLyricsSources.active === 'lrc' || (!currentLyricsSources.word && amsErrored)) {
+            if (lrcItem.instrumental) {
+                currentLyricsSources.active = 'lrc';
+                syncedLyrics = [];
+                plainLyrics = '';
+                invalidateLyricScrollCache();
+                getLyricScrollEls().forEach(scroll => { if (scroll && !scroll.querySelector('am-lyrics')) scroll.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;padding:24px 14px;text-align:center;color:var(--muted);font-size:12px">Instrumental</div>'; });
+                if (expLyricCur) expLyricCur.innerHTML = '<span style="font-size:11px;font-weight:400;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Instrumental</span>';
+                if (expLyricNext) expLyricNext.textContent = '';
+                updateLyricsHeaderUI();
+                const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
+                if (plugin && typeof plugin.updateLyrics === 'function') {
+                    plugin.updateLyrics({ current: 'Instrumental', next: '', all: [] });
+                }
+            } else if (isIOSApp || currentLyricsSources.active === 'lrc' || (!currentLyricsSources.word && amsErrored)) {
                 applyLyricsSource('lrc');
             } else {
                 updateLyricsHeaderUI();
             }
-        } else if (!currentLyricsSources.word && amsErrored) {
+        } else if (isIOSApp || (!currentLyricsSources.word && amsErrored)) {
             if (expLyricsWrap) { expLyricsWrap.style.display = 'none'; expLyricsWrap.style.flex = '0'; }
             setLyricsMessage("No lyrics found", "");
             updateLyricsHeaderUI();
         }
     } catch (_) {
         if (requestSeq !== lyricsRequestSeq || lyricsTrackId !== t.id) return;
-        if (!currentLyricsSources.word && amsErrored) {
+        if (isIOSApp || (!currentLyricsSources.word && amsErrored)) {
             lyricsFailed.add(t.id);
             if (expLyricsWrap) { expLyricsWrap.style.display = 'none'; expLyricsWrap.style.flex = '0'; }
             setLyricsMessage("No lyrics found", "");
