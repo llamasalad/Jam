@@ -46,6 +46,7 @@ struct MainSwiftUIView: View {
                             PlaybackStateManager.shared.navigateBack()
                         }) {
                             Image(systemName: "chevron.left")
+                            .frame(width: 44, height: 44)
                         }
                     }
                 }
@@ -55,6 +56,7 @@ struct MainSwiftUIView: View {
                         PlaybackStateManager.shared.triggerSort()
                     }) {
                         Image(systemName: "rectangle.stack")
+                            .frame(width: 44, height: 44)
                     }
                 }
 
@@ -65,6 +67,7 @@ struct MainSwiftUIView: View {
                     }) {
                         Image(systemName: "paintpalette")
                             .symbolEffect(.bounce, value: themeChangePulse)
+                            .frame(width: 44, height: 44)
                     }
                 }
 
@@ -87,6 +90,7 @@ struct MainSwiftUIView: View {
                     } label: {
                         Image(systemName: "gear")
                             .symbolEffect(.bounce, value: qualityChangePulse)
+                            .frame(width: 44, height: 44)
                     }
                 }
 
@@ -129,6 +133,7 @@ struct MainSwiftUIView: View {
                             }
                         }) {
                             Image(systemName: selectedTab == "library" ? "house.fill" : "house")
+                                .frame(width: 44, height: 44)
                         }
                         .foregroundStyle(selectedTab == "library" ? .primary : .secondary)
 
@@ -139,6 +144,7 @@ struct MainSwiftUIView: View {
                             }
                         }) {
                             Image(systemName: "list.triangle")
+                                .frame(width: 44, height: 44)
                         }
                         .foregroundStyle(selectedTab == "playlists" ? .primary : .secondary)
 
@@ -165,6 +171,11 @@ struct MainSwiftUIView: View {
         .ignoresSafeArea(.keyboard)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: state.hasSong)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: isSearchActive)
+        .onChange(of: state.isInDetailView) { _, isInDetail in
+            if isInDetail {
+                selectedTab = "library"
+            }
+        }
         .sheet(isPresented: $showExpandedPlayer) {
             ExpandedPlayerView()
                 .presentationDragIndicator(.visible)
@@ -262,7 +273,7 @@ struct ExpandedPlayerView: View {
     var body: some View {
         ZStack {
             if !state.canvasUrl.isEmpty && !state.canvasDisabled {
-                LoopedVideoPlayerView(urlString: state.canvasUrl)
+                LoopedVideoPlayerView(urlString: state.canvasUrl, isPlaying: state.isPlaying)
                     .ignoresSafeArea()
                     .overlay(
                         LinearGradient(
@@ -424,14 +435,10 @@ private struct LyricSnippetView: View {
                         .font(.system(size: 18, weight: .bold))
                         .foregroundStyle(.primary)
                         .symbolEffect(.rotate, options: .repeating)
-                } else if displayedFetchFailed {
-                    Text("")
-                        .font(.system(size: 18, weight: .bold))
-                } else if displayedCurrentLyric.isEmpty {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(.primary)
-                        .symbolEffect(.bounce, options: .repeating)
+                } else if displayedFetchFailed || displayedCurrentLyric.isEmpty {
+                    Text(displayedFetchFailed ? "No lyrics available" : "")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(.secondary)
                 } else {
                     Text(displayedCurrentLyric)
                         .font(.system(size: 18, weight: .bold))
@@ -491,8 +498,16 @@ struct PlaybackProgressView: View {
     var body: some View {
         VStack(spacing: 6) {
             Slider(
-                value: $localTime,
-                in: 0...max(state.duration, 1),
+                value: Binding(
+                    get: {
+                        let upper = max(state.duration, 1.0)
+                        return min(max(localTime, 0.0), upper)
+                    },
+                    set: { newValue in
+                        localTime = newValue
+                    }
+                ),
+                in: 0...max(state.duration, 1.0),
                 onEditingChanged: { editing in
                     isDragging = editing
                     if !editing {
@@ -503,7 +518,8 @@ struct PlaybackProgressView: View {
             .tint(.primary)
             .onChange(of: state.currentTime, initial: true) { _, newTime in
                 if !isDragging {
-                    localTime = newTime
+                    let upper = max(state.duration, 1.0)
+                    localTime = min(max(newTime, 0.0), upper)
                 }
             }
 

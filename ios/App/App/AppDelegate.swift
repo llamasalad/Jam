@@ -181,9 +181,11 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         commandCenter.changePlaybackPositionCommand.removeTarget(nil)
         
         commandCenter.playCommand.addTarget { [weak self] event in
-            self?.player?.play()
-            self?.updateNowPlayingInfo(rate: 1.0)
-            self?.notifyListeners("play", data: [:])
+            guard let self = self, let player = self.player, player.currentItem != nil else { return .commandFailed }
+            try? AVAudioSession.sharedInstance().setActive(true)
+            player.play()
+            self.updateNowPlayingInfo(rate: 1.0)
+            self.notifyListeners("play", data: [:])
             Task { @MainActor in
                 PlaybackStateManager.shared.isPlaying = true
             }
@@ -201,8 +203,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         }
 
         commandCenter.togglePlayPauseCommand.addTarget { [weak self] event in
-            guard let self = self, let player = self.player else { return .commandFailed }
+            guard let self = self, let player = self.player, player.currentItem != nil else { return .commandFailed }
             if player.timeControlStatus == .paused || player.rate == 0 {
+                try? AVAudioSession.sharedInstance().setActive(true)
                 player.play()
                 self.updateNowPlayingInfo(rate: 1.0)
                 self.notifyListeners("play", data: [:])
@@ -226,7 +229,23 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         }
         
         commandCenter.previousTrackCommand.addTarget { [weak self] event in
-            self?.notifyListeners("previousTrack", data: [:])
+            guard let self = self, let player = self.player else { return .commandFailed }
+            let currentSeconds = player.currentTime().seconds
+            if !currentSeconds.isNaN && currentSeconds > 3.0 {
+                let zero = CMTime.zero
+                player.seek(to: zero, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
+                    guard let self = self else { return }
+                    if finished {
+                        self.updateNowPlayingInfo(elapsed: 0.0)
+                        self.notifyListeners("seeked", data: ["currentTime": 0.0])
+                        Task { @MainActor in
+                            PlaybackStateManager.shared.currentTime = 0.0
+                        }
+                    }
+                }
+                return .success
+            }
+            self.notifyListeners("previousTrack", data: [:])
             return .success
         }
         
@@ -236,9 +255,15 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                 return .commandFailed
             }
             let time = CMTime(seconds: positionEvent.positionTime, preferredTimescale: 1000)
-            player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
-                self?.updateNowPlayingInfo(elapsed: positionEvent.positionTime)
-                self?.notifyListeners("seeked", data: ["currentTime": positionEvent.positionTime])
+            player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
+                guard let self = self else { return }
+                if finished {
+                    self.updateNowPlayingInfo(elapsed: positionEvent.positionTime)
+                    self.notifyListeners("seeked", data: ["currentTime": positionEvent.positionTime])
+                    Task { @MainActor in
+                        PlaybackStateManager.shared.currentTime = positionEvent.positionTime
+                    }
+                }
             }
             return .success
         }
@@ -362,8 +387,8 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 
             self.player = AVQueuePlayer(playerItem: playerItem)
             self.player?.automaticallyWaitsToMinimizeStalling = true
-            try? AVAudioSession.sharedInstance().setActive(true)
             if autoPlay {
+                try? AVAudioSession.sharedInstance().setActive(true)
                 self.player?.play()
                 self.updateNowPlayingInfo(rate: 1.0)
                 self.notifyListeners("play", data: [:])
@@ -593,8 +618,12 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                 call.reject("Plugin instance is nil")
                 return
             }
+            guard let player = self.player, player.currentItem != nil else {
+                call.resolve()
+                return
+            }
             try? AVAudioSession.sharedInstance().setActive(true)
-            self.player?.play()
+            player.play()
             self.updateNowPlayingInfo(rate: 1.0)
             self.notifyListeners("play", data: [:])
             PlaybackStateManager.shared.isPlaying = true
@@ -622,6 +651,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
         DispatchQueue.main.async { [weak self] in
+            Task { @MainActor in
+                PlaybackStateManager.shared.currentTime = to
+            }
             guard let self = self, let player = self.player else {
                 self?.notifyListeners("seeked", data: ["currentTime": to])
                 call.resolve()
@@ -641,6 +673,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 
     public func seekNatively(to time: Double) {
         DispatchQueue.main.async { [weak self] in
+            Task { @MainActor in
+                PlaybackStateManager.shared.currentTime = time
+            }
             guard let self = self, let player = self.player else {
                 self?.notifyListeners("seeked", data: ["currentTime": time])
                 return
@@ -651,6 +686,33 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                 if finished {
                     self.updateNowPlayingInfo(elapsed: time)
                     self.notifyListeners("seeked", data: ["currentTime": time])
+                }
+            }
+        }
+    }
+
+    public func togglePlayPauseNatively() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, let player = self.player, player.currentItem != nil else {
+                Task { @MainActor in
+                    PlaybackStateManager.shared.evaluateJS("if(typeof audio!=='undefined'&&audio){audio.paused?audio.play():audio.pause()}")
+                }
+                return
+            }
+            if player.timeControlStatus == .paused || player.rate == 0 {
+                try? AVAudioSession.sharedInstance().setActive(true)
+                player.play()
+                self.updateNowPlayingInfo(rate: 1.0)
+                self.notifyListeners("play", data: [:])
+                Task { @MainActor in
+                    PlaybackStateManager.shared.isPlaying = true
+                }
+            } else {
+                player.pause()
+                self.updateNowPlayingInfo(rate: 0.0)
+                self.notifyListeners("pause", data: [:])
+                Task { @MainActor in
+                    PlaybackStateManager.shared.isPlaying = false
                 }
             }
         }
@@ -686,6 +748,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func updateLyrics(_ call: CAPPluginCall) {
         let current = call.getString("current") ?? ""
         let next = call.getString("next") ?? ""
+        let all = call.getArray("all", [String: Any].self) ?? []
         
         Task { @MainActor in
             let mgr = PlaybackStateManager.shared
@@ -694,16 +757,14 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             if current == "Loading lyrics..." {
                 mgr.isFetchingLyrics = true
                 mgr.lyricsFetchFailed = false
-            } else if current == "No lyrics found" {
+            } else if current == "No lyrics found" || (current.isEmpty && all.isEmpty) {
                 mgr.isFetchingLyrics = false
                 mgr.lyricsFetchFailed = true
             } else {
                 mgr.isFetchingLyrics = false
                 mgr.lyricsFetchFailed = false
             }
-            if let all = call.getArray("all", [String: Any].self) {
-                mgr.updateFullLyrics(all)
-            }
+            mgr.updateFullLyrics(all)
         }
         call.resolve()
     }
@@ -744,7 +805,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         if Thread.isMainThread {
             block()
         } else {
-            DispatchQueue.main.sync(execute: block)
+            DispatchQueue.main.async(execute: block)
         }
     }
 

@@ -373,7 +373,7 @@ class CapacitorAudioPlayerShim {
             });
             plugin.addListener('previousTrack', () => {
                 if (typeof prevTrack === 'function') {
-                    prevTrack();
+                    prevTrack(true);
                 }
             });
             plugin.addListener('trackAdvancedNatively', () => {
@@ -4744,7 +4744,7 @@ window.toggleStarCurrent = async function () {
 };
 
 if (btnPlay) btnPlay.onclick = () => { triggerHaptic('IMPACT_MEDIUM'); audio && (audio.paused ? audio.play() : audio.pause()); };
-if (btnPrev) btnPrev.onclick = () => { triggerHaptic('IMPACT_LIGHT'); if (audio && audio.currentTime > 3) audio.currentTime = 0; else prevTrack(); };
+if (btnPrev) btnPrev.onclick = () => { triggerHaptic('IMPACT_LIGHT'); prevTrack(); };
 if (btnNext) btnNext.onclick = () => { triggerHaptic('IMPACT_LIGHT'); nextTrack(); };
 
 function applyShuffle() {
@@ -4831,8 +4831,12 @@ function nextTrack(isAuto = false) {
     play(queue[qIdx], qIdx); updateActive(); renderQueue(); renderVertQueue();
 }
 
-function prevTrack() {
+function prevTrack(force = false) {
     if (!queue.length) return;
+    if (!force && audio && audio.currentTime > 3) {
+        audio.currentTime = 0;
+        return;
+    }
     if (repeatMode === 'off' && qIdx === 0) {
         if (audio) audio.currentTime = 0;
         return;
@@ -4859,7 +4863,7 @@ document.addEventListener('keydown', e => {
 });
 
 if (expPlay) expPlay.onclick = () => { triggerHaptic('IMPACT_MEDIUM'); audio && (audio.paused ? audio.play() : audio.pause()); };
-if (expPrev) expPrev.onclick = () => { triggerHaptic('IMPACT_LIGHT'); if (audio && audio.currentTime > 3) audio.currentTime = 0; else prevTrack(); };
+if (expPrev) expPrev.onclick = () => { triggerHaptic('IMPACT_LIGHT'); prevTrack(); };
 if (expNext) expNext.onclick = () => { triggerHaptic('IMPACT_LIGHT'); nextTrack(); };
 if (expShuffle) expShuffle.onclick = () => btnShuffle && btnShuffle.onclick();
 
@@ -7243,7 +7247,7 @@ Object.defineProperty(window, 'audio', {
 window.playQueueIndex = function (idx) {
     if (idx < 0 || idx >= queue.length) return;
     qIdx = idx;
-    play(queue[qIdx]);
+    play(queue[qIdx], qIdx);
     updateActive();
     renderQueue();
 };

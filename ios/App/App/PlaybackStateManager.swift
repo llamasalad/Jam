@@ -277,7 +277,11 @@ final class PlaybackStateManager {
     }
 
     func togglePlayPause() {
-        evaluateJS("if(typeof audio!=='undefined'&&audio){audio.paused?audio.play():audio.pause()}")
+        if let plugin = audioPlayerPlugin as? AudioPlayerPlugin {
+            plugin.togglePlayPauseNatively()
+        } else {
+            evaluateJS("if(typeof audio!=='undefined'&&audio){audio.paused?audio.play():audio.pause()}")
+        }
     }
 
     func triggerNext() {
@@ -285,12 +289,12 @@ final class PlaybackStateManager {
     }
 
     func triggerPrev() {
-        evaluateJS("""
-            (function(){
-                if(typeof audio!=='undefined'&&audio&&audio.currentTime>3){audio.currentTime=0}
-                else if(typeof prevTrack==='function'){prevTrack()}
-            })()
-        """)
+        if currentTime > 3.0 {
+            currentTime = 0
+            performSeek(to: 0)
+        } else {
+            evaluateJS("if(typeof prevTrack==='function')prevTrack(true)")
+        }
     }
 
     func performSeek(to time: Double) {

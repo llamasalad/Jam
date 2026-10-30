@@ -4,6 +4,7 @@ import UIKit
 
 struct LoopedVideoPlayerView: UIViewRepresentable {
     let urlString: String
+    var isPlaying: Bool = true
 
     func makeUIView(context: Context) -> UIView {
         let view = PlayerContainerView()
@@ -54,7 +55,11 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
                 let playerItem = AVPlayerItem(asset: composition)
                 player.replaceCurrentItem(with: playerItem)
                 setupLoopObserver(for: playerItem, player: player, coordinator: coordinator)
-                player.play()
+                if PlaybackStateManager.shared.isPlaying {
+                    player.play()
+                } else {
+                    player.pause()
+                }
             }
         }
 
@@ -105,11 +110,24 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
                     let playerItem = AVPlayerItem(asset: composition)
                     player.replaceCurrentItem(with: playerItem)
                     setupLoopObserver(for: playerItem, player: player, coordinator: coordinator)
-                    player.play()
+                    if isPlaying {
+                        player.play()
+                    } else {
+                        player.pause()
+                    }
                 }
             }
         }
         context.coordinator.playerLayer?.frame = uiView.bounds
+        if isPlaying {
+            if context.coordinator.player?.timeControlStatus != .playing && context.coordinator.player?.currentItem != nil {
+                context.coordinator.player?.play()
+            }
+        } else {
+            if context.coordinator.player?.timeControlStatus == .playing {
+                context.coordinator.player?.pause()
+            }
+        }
     }
 
     func makeCoordinator() -> Coordinator {
@@ -152,7 +170,13 @@ struct LoopedVideoPlayerView: UIViewRepresentable {
             object: nil,
             queue: .main
         ) { [weak player] _ in
-            player?.play()
+            Task { @MainActor in
+                if PlaybackStateManager.shared.isPlaying {
+                    player?.play()
+                } else {
+                    player?.pause()
+                }
+            }
         }
         coordinator.foregroundObserverToken = fgToken
     }
