@@ -336,7 +336,7 @@ final class PlaybackStateManager {
         evaluateJS("if(typeof window.removeFromQueue==='function')window.removeFromQueue(\(index))")
     }
 
-    private func evaluateJS(_ js: String) {
+    func evaluateJS(_ js: String) {
         webViewController?.webView?.evaluateJavaScript(js, completionHandler: nil)
     }
 }

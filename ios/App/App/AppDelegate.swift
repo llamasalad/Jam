@@ -340,19 +340,21 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             self.currentAlbum = album
             self.currentDuration = duration
 
-            let mgr = PlaybackStateManager.shared
-            mgr.title = title
-            mgr.artist = artist
-            mgr.album = album
-            mgr.duration = duration
-            mgr.updateCurrentTime(0)
-            mgr.isPlaying = false
-            mgr.coverUrl = coverUrl
-            mgr.canvasUrl = canvasUrl
-            mgr.starred = starred
-            mgr.isPreview = isPreview
-            mgr.isFetchingLyrics = false
-            mgr.lyricsFetchFailed = false
+            Task { @MainActor in
+                let mgr = PlaybackStateManager.shared
+                mgr.title = title
+                mgr.artist = artist
+                mgr.album = album
+                mgr.duration = duration
+                mgr.updateCurrentTime(0)
+                mgr.isPlaying = false
+                mgr.coverUrl = coverUrl
+                mgr.canvasUrl = canvasUrl
+                mgr.starred = starred
+                mgr.isPreview = isPreview
+                mgr.isFetchingLyrics = false
+                mgr.lyricsFetchFailed = false
+            }
 
             self.uiTimeTickCount = 0
 
@@ -392,7 +394,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                 self.player?.play()
                 self.updateNowPlayingInfo(rate: 1.0)
                 self.notifyListeners("play", data: [:])
-                PlaybackStateManager.shared.isPlaying = true
+                Task { @MainActor in
+                    PlaybackStateManager.shared.isPlaying = true
+                }
             } else {
                 self.updateNowPlayingInfo(elapsed: 0.0, rate: 0.0)
             }
@@ -409,7 +413,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                         self.currentDuration = dur
                         self.updateNowPlayingInfo()
                         self.notifyListeners("ready", data: ["duration": dur])
-                        PlaybackStateManager.shared.duration = dur
+                        Task { @MainActor in
+                            PlaybackStateManager.shared.duration = dur
+                        }
                     }
                 } else if item.status == .failed {
                     self.notifyListeners("error", data: ["message": item.error?.localizedDescription ?? "Playback failed"])
@@ -428,17 +434,19 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 
             let uiInterval = CMTime(seconds: 0.05, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
             self.uiTimeObserverToken = self.player?.addPeriodicTimeObserver(forInterval: uiInterval, queue: .main) { [weak self] time in
-                guard let self = self else { return }
+                guard self != nil else { return }
                 let ct = CMTimeGetSeconds(time)
                 if !ct.isNaN {
-                    PlaybackStateManager.shared.updateActiveLyricIndexOnly(ct)
-                    PlaybackStateManager.shared.currentTime = ct
+                    Task { @MainActor in
+                        PlaybackStateManager.shared.updateActiveLyricIndexOnly(ct)
+                        PlaybackStateManager.shared.currentTime = ct
+                    }
                 }
             }
 
             self.timeControlStatusObserver?.invalidate()
             self.timeControlStatusObserver = self.player?.observe(\.timeControlStatus, options: [.new]) { [weak self] player, _ in
-                guard let self = self else { return }
+                guard self != nil else { return }
                 let playing = player.timeControlStatus == .playing
                 Task { @MainActor in
                     if PlaybackStateManager.shared.isPlaying != playing && player.timeControlStatus != .waitingToPlayAtSpecifiedRate {
@@ -463,16 +471,18 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                     self.currentAlbum = meta.album
                     self.currentDuration = meta.duration
                     
-                    let mgr = PlaybackStateManager.shared
-                    mgr.title = meta.title
-                    mgr.artist = meta.artist
-                    mgr.album = meta.album
-                    mgr.duration = meta.duration
-                    mgr.coverUrl = meta.coverUrl
-                    mgr.canvasUrl = meta.canvasUrl
-                    mgr.updateCurrentTime(0)
-                    mgr.isPlaying = true
-                    mgr.starred = meta.starred
+                    Task { @MainActor in
+                        let mgr = PlaybackStateManager.shared
+                        mgr.title = meta.title
+                        mgr.artist = meta.artist
+                        mgr.album = meta.album
+                        mgr.duration = meta.duration
+                        mgr.coverUrl = meta.coverUrl
+                        mgr.canvasUrl = meta.canvasUrl
+                        mgr.updateCurrentTime(0)
+                        mgr.isPlaying = true
+                        mgr.starred = meta.starred
+                    }
                     
                     self.artworkGeneration += 1
                     self.updateNowPlayingInfo(elapsed: 0.0, rate: 1.0)
@@ -483,7 +493,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                     if !dur.isNaN {
                         self.currentDuration = dur
                         self.updateNowPlayingInfo()
-                        PlaybackStateManager.shared.duration = dur
+                        Task { @MainActor in
+                            PlaybackStateManager.shared.duration = dur
+                        }
                     }
                 }
             }
@@ -580,12 +592,12 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                     if !dur.isNaN {
                         self.currentDuration = dur
                         self.updateNowPlayingInfo()
-                        PlaybackStateManager.shared.duration = dur
+                        Task { @MainActor in
+                            PlaybackStateManager.shared.duration = dur
+                        }
                     }
                 } else if item.status == .failed {
-                    if let queuePlayer = self.player as? AVQueuePlayer {
-                        queuePlayer.remove(item)
-                    }
+                    self.player?.remove(item)
                     let id = ObjectIdentifier(item)
                     self.playerItemStatusObservers.removeValue(forKey: id)
                     self.metadataMap.removeValue(forKey: id)
@@ -626,7 +638,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             player.play()
             self.updateNowPlayingInfo(rate: 1.0)
             self.notifyListeners("play", data: [:])
-            PlaybackStateManager.shared.isPlaying = true
+            Task { @MainActor in
+                PlaybackStateManager.shared.isPlaying = true
+            }
             call.resolve()
         }
     }
@@ -640,7 +654,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             self.player?.pause()
             self.updateNowPlayingInfo(rate: 0.0)
             self.notifyListeners("pause", data: [:])
-            PlaybackStateManager.shared.isPlaying = false
+            Task { @MainActor in
+                PlaybackStateManager.shared.isPlaying = false
+            }
             call.resolve()
         }
     }
@@ -826,9 +842,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func playerItemFailedToPlay(_ notification: Notification) {
         guard let failedItem = notification.object as? AVPlayerItem else { return }
         guard let player = self.player, player.currentItem == nil || player.currentItem === failedItem else {
-            if let queuePlayer = self.player as? AVQueuePlayer {
-                queuePlayer.remove(failedItem)
-            }
+            self.player?.remove(failedItem)
             let id = ObjectIdentifier(failedItem)
             self.playerItemStatusObservers.removeValue(forKey: id)
             self.metadataMap.removeValue(forKey: id)
