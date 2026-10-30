@@ -56,7 +56,6 @@ struct MainSwiftUIView: View {
                         PlaybackStateManager.shared.triggerSort()
                     }) {
                         Image(systemName: "rectangle.stack")
-                            .frame(width: 44, height: 44)
                     }
                 }
 
@@ -67,7 +66,6 @@ struct MainSwiftUIView: View {
                     }) {
                         Image(systemName: "paintpalette")
                             .symbolEffect(.bounce, value: themeChangePulse)
-                            .frame(width: 44, height: 44)
                     }
                 }
 
@@ -90,7 +88,6 @@ struct MainSwiftUIView: View {
                     } label: {
                         Image(systemName: "gear")
                             .symbolEffect(.bounce, value: qualityChangePulse)
-                            .frame(width: 44, height: 44)
                     }
                 }
 
@@ -435,10 +432,15 @@ private struct LyricSnippetView: View {
                         .font(.system(size: 18, weight: .bold))
                         .foregroundStyle(.primary)
                         .symbolEffect(.rotate, options: .repeating)
-                } else if displayedFetchFailed || displayedCurrentLyric.isEmpty {
-                    Text(displayedFetchFailed ? "No lyrics available" : "")
+                } else if displayedFetchFailed {
+                    Text("No lyrics available")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundStyle(.secondary)
+                } else if displayedCurrentLyric.isEmpty || displayedCurrentLyric == "•" || displayedCurrentLyric == "·" || displayedCurrentLyric == "\u{00b7}" {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(.primary)
+                        .symbolEffect(.bounce, options: .repeating)
                 } else {
                     Text(displayedCurrentLyric)
                         .font(.system(size: 18, weight: .bold))
@@ -447,7 +449,8 @@ private struct LyricSnippetView: View {
                         .lineLimit(nil)
                 }
 
-                Text(displayedNextLyric.isEmpty ? " " : displayedNextLyric)
+                let isNextBreak = displayedNextLyric.isEmpty || displayedNextLyric == "•" || displayedNextLyric == "·" || displayedNextLyric == "\u{00b7}"
+                Text(isNextBreak ? " " : displayedNextLyric)
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
