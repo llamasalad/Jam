@@ -3228,6 +3228,10 @@ function renderPlaylistDetail(pl) {
         container.innerHTML = '<div style="padding:32px 16px;text-align:center;color:var(--muted);font-size:14px">No songs yet</div>';
         return;
     }
+    if (pl.tracks.length && pl.tracks[0] === undefined) {
+        container.innerHTML = '<div style="padding:32px 16px;text-align:center;color:var(--muted);font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;"><div class="spinner"></div>Loading songs...</div>';
+        return;
+    }
     const isTouchScreen = coarseQuery.matches;
     const isSmart = pl.id.startsWith('smart:');
     pl.tracks.forEach(pt => {
