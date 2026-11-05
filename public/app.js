@@ -665,10 +665,10 @@ let adaptiveMode = localStorage.getItem('adaptive_mode') === 'true';
 let canvasDisabled = localStorage.getItem('canvas_disabled') === 'true';
 
 const SMART_PLAYLISTS = [
-    { id: 'smart:random', name: 'Daily Mix', image: '', tracks: [] },
-    { id: 'smart:genre:upbeat', name: 'Upbeat', image: '', tracks: [] },
-    { id: 'smart:genre:chill', name: 'Chill', image: '', tracks: [] },
-    { id: 'smart:genre:flow', name: 'Flow', image: '', tracks: [] },
+    { id: 'smart:random', name: 'Daily Mix 01', image: '', tracks: [] },
+    { id: 'smart:genre:upbeat', name: 'Daily Mix 02', image: '', tracks: [] },
+    { id: 'smart:genre:chill', name: 'Daily Mix 03', image: '', tracks: [] },
+    { id: 'smart:genre:flow', name: 'Daily Mix 04', image: '', tracks: [] },
     { id: 'smart:charts', name: 'Hits', image: '', tracks: [] },
     { id: 'smart:favorites', name: 'Favorites', image: '', tracks: [] },
     { id: 'smart:wishlist', name: 'Wishlist', image: '', tracks: [] },

@@ -2068,6 +2068,13 @@ body.player-open #main {
   background: transparent;
 }
 
+#smart-mixes-container .suggested-card[data-mix-id="random"],
+#smart-mixes-container .suggested-card[data-mix-id="upbeat"],
+#smart-mixes-container .suggested-card[data-mix-id="chill"],
+#smart-mixes-container .suggested-card[data-mix-id="flow"] .suggested-title {
+  font-family: begav;
+}
+
 .smart-playlist-cover-overlay[data-mix-id="random"] {
   background-color: rgb(139, 92, 246);
   mix-blend-mode: multiply;
