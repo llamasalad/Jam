@@ -514,7 +514,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func preloadNext(_ call: CAPPluginCall) {
         // `clear: true` drops any queued "next" item (e.g. repeat mode changed so
-        // nothing should follow the current track).
+        // nothing should follow the current trac).
         if call.getBool("clear") == true {
             DispatchQueue.main.async { [weak self] in
                 guard let self = self, let queuePlayer = self.player else {
