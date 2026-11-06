@@ -1100,7 +1100,7 @@ body {
 }
 
 #track-list .section-title {
-  padding: 0 16px;
+  padding: 0 10px;
 }
 
 #playlist-tracks {
@@ -3546,6 +3546,10 @@ body.menu-open .queue-remove {
 
   #suggested-section {
     margin: 10px;
+  }
+
+  #track-list .section-title {
+    padding: 0 10px;
   }
 
   #suggested-container,
