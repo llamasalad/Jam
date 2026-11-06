@@ -1100,7 +1100,7 @@ body {
 }
 
 #track-list .section-title {
-  padding: 0 10px;
+  padding: 0 16px;
 }
 
 #playlist-tracks {
@@ -1969,7 +1969,6 @@ body.player-open #main {
   display: flex;
   font-size: 20px;
   font-weight: 500;
-  letter-spacing: 0.06em;
   margin-bottom: 10px;
   color: var(--accent);
   align-items: center;
@@ -1990,7 +1989,8 @@ body.player-open #main {
 }
 
 .suggested-subsection {
-  margin-top: 16px;
+  margin-top: 30px;
+  margin-bottom: 30px;
 }
 
 .section-title-link {
