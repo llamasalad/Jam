@@ -890,9 +890,11 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func updateDetailView(_ call: CAPPluginCall) {
         let isActive = call.getBool("isActive") ?? false
         let title = call.getString("title") ?? ""
+        let type = call.getString("type") ?? ""
         Task { @MainActor in
-            PlaybackStateManager.shared.isInDetailView = isActive
+            PlaybackStateManager.shared.detailViewType = type
             PlaybackStateManager.shared.detailViewTitle = title
+            PlaybackStateManager.shared.isInDetailView = isActive
         }
         call.resolve()
     }

@@ -46,6 +46,7 @@ final class PlaybackStateManager {
     var currentQuality: String = "original"
     var isInDetailView: Bool = false
     var detailViewTitle: String = ""
+    var detailViewType: String = ""
     var currentLyric: String = ""
     var nextLyric: String = ""
     var fullLyrics: [[String: Any]] = []

@@ -1801,7 +1801,7 @@ function openDetail(type, name, isGoingBack = false) {
     detailViewTracks = [...filtered];
     renderList();
     restoreScroll();
-    notifyNativeDetailView(true, name);
+    notifyNativeDetailView(true, name, type);
 }
 
 function openArtistDetail(artist) { openDetail('artist', artist); }
@@ -3308,7 +3308,7 @@ async function openPlaylistDetail(pl) {
 
     renderPlaylistDetail(pl.id === 'smart:charts' ? { ...pl, isLoading: true } : pl);
     restoreScroll();
-    notifyNativeDetailView(true, pl.name);
+    notifyNativeDetailView(true, pl.name, 'playlist');
 
     try {
         let fullPl;
@@ -7720,10 +7720,10 @@ window.toggleRepeat = function () {
     notifyNativePlaybackState();
 };
 
-function notifyNativeDetailView(isActive, title) {
+function notifyNativeDetailView(isActive, title, type = '') {
     const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
     if (plugin && typeof plugin.updateDetailView === 'function') {
-        plugin.updateDetailView({ isActive: !!isActive, title: title || '' });
+        plugin.updateDetailView({ isActive: !!isActive, title: title || '', type: type || '' });
     }
 }
 

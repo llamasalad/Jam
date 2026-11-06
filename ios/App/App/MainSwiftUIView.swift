@@ -169,7 +169,7 @@ struct MainSwiftUIView: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: state.hasSong)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: isSearchActive)
         .onChange(of: state.isInDetailView) { _, isInDetail in
-            if isInDetail {
+            if isInDetail && state.detailViewType != "playlist" {
                 selectedTab = "library"
             }
         }
@@ -302,7 +302,6 @@ struct ExpandedPlayerView: View {
                             .frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)
-                    .glassEffect(.regular.interactive(), in: .circle)
 
                     if !state.canvasUrl.isEmpty {
                         Button(action: { state.toggleCanvas() }) {
@@ -311,7 +310,6 @@ struct ExpandedPlayerView: View {
                                 .frame(width: 44, height: 44)
                         }
                         .buttonStyle(.plain)
-                        .glassEffect(.regular.interactive(), in: .circle)
                     }
 
                     Button(action: { state.toggleStar() }) {
@@ -321,7 +319,6 @@ struct ExpandedPlayerView: View {
                             .frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)
-                    .glassEffect(.regular.interactive(), in: .circle)
                 }
                 .padding()
                 .sheet(isPresented: $showQueue) {
@@ -409,7 +406,9 @@ private struct TrackInfoView: View {
 }
 
 private struct LyricStateKey: Equatable {
+    let activeLyricIndex: Int?
     let currentLyric: String
+    let nextLyric: String
     let isFetching: Bool
     let fetchFailed: Bool
 }
@@ -474,7 +473,7 @@ private struct LyricSnippetView: View {
             displayedIsFetching = state.isFetchingLyrics
             displayedFetchFailed = state.lyricsFetchFailed
         }
-        .onChange(of: LyricStateKey(currentLyric: state.currentLyric, isFetching: state.isFetchingLyrics, fetchFailed: state.lyricsFetchFailed)) { _, _ in
+        .onChange(of: LyricStateKey(activeLyricIndex: state.activeLyricIndex, currentLyric: state.currentLyric, nextLyric: state.nextLyric, isFetching: state.isFetchingLyrics, fetchFailed: state.lyricsFetchFailed)) { _, _ in
             withAnimation(.easeOut(duration: 0.08)) {
                 lyricOpacity = 0
                 lyricOffset = 6
@@ -519,6 +518,7 @@ struct PlaybackProgressView: View {
                 }
             )
             .tint(.primary)
+            .sliderThumbVisibility(.hidden)
             .onChange(of: state.currentTime, initial: true) { _, newTime in
                 if !isDragging {
                     let upper = max(state.duration, 1.0)
@@ -689,7 +689,7 @@ struct FullLyricsView: View {
                         LazyVStack(alignment: .leading, spacing: 24) {
                             if state.fullLyrics.isEmpty {
                                 Text(state.isPreview ? "Lyrics disabled for preview songs" : (state.isFetchingLyrics ? "Loading lyrics..." : "No lyrics available"))
-                                    .font(.title2)
+                                    .font(.title)
                                     .fontWeight(.medium)
                                     .foregroundStyle(.white.opacity(0.6))
                             } else {
@@ -700,8 +700,8 @@ struct FullLyricsView: View {
                                         let isActive = state.activeLyricIndex == index
 
                                         Text(text.isEmpty ? "•" : text)
-                                            .font(.system(size: 20, weight: isActive ? .bold : .medium))
-                                            .foregroundStyle(isActive ? .white : .white.opacity(0.5))
+                                            .font(.system(size: 40, weight: isActive ? .bold : .medium))
+                                            .foregroundStyle(isActive ? .white : .white.opacity(0.2))
                                             .multilineTextAlignment(.leading)
                                             .frame(maxWidth: .infinity, alignment: .leading)
                                             .id(index)
@@ -881,7 +881,6 @@ struct PlaybackControlsView: View {
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
-            .glassEffect(state.shuffle ? .regular.interactive() : .clear.interactive(), in: .circle)
                 
             Button(action: { state.triggerPrev() }) {
                 Image(systemName: "backward.fill")
@@ -890,7 +889,6 @@ struct PlaybackControlsView: View {
                     .frame(width: 54, height: 54)
             }
             .buttonStyle(.plain)
-            .glassEffect(.regular.interactive(), in: .circle)
 
             Button(action: { state.togglePlayPause() }) {
                 Image(systemName: state.isPlaying ? "pause.fill" : "play.fill")
@@ -899,7 +897,6 @@ struct PlaybackControlsView: View {
                     .frame(width: 72, height: 72)
             }
             .buttonStyle(.plain)
-            .glassEffect(.regular.interactive(), in: .circle)
 
             Button(action: { state.triggerNext() }) {
                 Image(systemName: "forward.fill")
@@ -917,7 +914,6 @@ struct PlaybackControlsView: View {
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
-            .glassEffect(state.repeatMode != "off" ? .regular.interactive() : .clear.interactive(), in: .circle)
         }
     }
 }
