@@ -1193,6 +1193,8 @@ function renderLibraryCards() {
     const recentlyPlayedNextBtn = document.getElementById('recently-played-next-btn');
     const recentlyPlayedTitle = document.getElementById('recently-played-title');
     const openRecentlyPlayedBtn = document.getElementById('open-recently-played-btn');
+    const upNextSubsection = document.getElementById('up-next-subsection');
+    const upNextContainer = document.getElementById('up-next-container');
 
     function setupTrackCarousel(container, prevBtn, nextBtn) {
         if (!container) return () => { };
@@ -1310,6 +1312,45 @@ function renderLibraryCards() {
     }
     window._refreshRecentlyPlayedSection = renderRecentlyPlayedSection;
 
+    function renderUpNextSection() {
+        if (!upNextContainer) return;
+        const upcoming = (qIdx >= 0 && queue.length > qIdx + 1)
+            ? queue.slice(qIdx + 1, qIdx + 1 + 12)
+            : [];
+        if (!upcoming.length) {
+            if (upNextSubsection) upNextSubsection.style.display = 'none';
+            upNextContainer.innerHTML = '';
+            return;
+        }
+        if (upNextSubsection) upNextSubsection.style.display = '';
+        upNextContainer.innerHTML = '';
+        const frag = document.createDocumentFragment();
+        const baseQueueIdx = qIdx + 1;
+        for (let i = 0; i < upcoming.length; i += 3) {
+            const group = document.createElement('div');
+            group.className = 'suggested-track-group';
+            const slice = upcoming.slice(i, i + 3);
+            slice.forEach((t, offset) => {
+                const targetIdx = baseQueueIdx + i + offset;
+                group.appendChild(makeRow(t, true, false, {
+                    inSuggested: true,
+                    onPlay: () => {
+                        triggerHaptic('IMPACT_LIGHT');
+                        qIdx = targetIdx;
+                        play(queue[qIdx], targetIdx);
+                        updateActive();
+                        renderQueue();
+                        renderVertQueue();
+                    }
+                }));
+            });
+            frag.appendChild(group);
+        }
+        upNextContainer.appendChild(frag);
+        upNextContainer.scrollLeft = 0;
+    }
+    window._refreshUpNextSection = renderUpNextSection;
+
     const handleOpenRecentlyAdded = (e) => {
         if (e) e.stopPropagation();
         const pl = playlists.find(p => p.id === 'smart:newest') || SMART_PLAYLISTS.find(p => p.id === 'smart:newest') || { id: 'smart:newest', name: 'Recently Added', image: '', tracks: [] };
@@ -1333,6 +1374,7 @@ function renderLibraryCards() {
 
     renderRecentlyAddedSection();
     renderRecentlyPlayedSection();
+    renderUpNextSection();
 
     if (suggestedContainer) {
         renderSuggestedCards();
@@ -2657,7 +2699,9 @@ function makeRow(t, showMenu = false, inPlaylist = false, options = {}) {
     const isTouchScreen = coarseQuery.matches;
 
     const playHandler = () => {
-        if (inSuggested) {
+        if (typeof options.onPlay === 'function') {
+            options.onPlay();
+        } else if (inSuggested) {
             playTrack(t, options.playList || tracks);
         } else if (inPlaylist && currentPlaylist) {
             const list = currentPlaylist.tracks.map(pt => trackMap.get(pt.trackId) || { id: pt.trackId, title: pt.title, artist: pt.artist, album: pt.album, suffix: pt.suffix || 'flac' }).filter(Boolean);
@@ -5620,6 +5664,7 @@ if (queuePanel) {
 }
 
 function renderQueue(skipScroll = false) {
+    if (typeof window._refreshUpNextSection === 'function') window._refreshUpNextSection();
     if (window.Capacitor?.Plugins?.AudioPlayerPlugin) {
         window.Capacitor.Plugins.AudioPlayerPlugin.updateQueue({ queue: queue, queueIndex: qIdx });
     }

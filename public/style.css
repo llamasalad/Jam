@@ -2959,6 +2959,10 @@ body.menu-open .queue-remove {
     display: flex;
   }
 
+  #up-next-subsection {
+    display: none !important;
+  }
+
   #menu-backdrop {
     background: transparent !important;
     backdrop-filter: none !important;
