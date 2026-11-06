@@ -674,6 +674,12 @@ struct FullLyricsView: View {
 
             VStack {
                 HStack {
+                    Button(action: { state.togglePlayPause() }) {
+                        Image(systemName: state.isPlaying ? "pause.fill" : "play.fill")
+                            .font(.system(size: 20))
+                            .frame(width: 44, height: 44)
+                    }
+                    .buttonStyle(.plain)
                     Spacer()
                     Button(action: { dismiss() }) {
                         Image(systemName: "xmark")
@@ -686,7 +692,7 @@ struct FullLyricsView: View {
 
                 ScrollViewReader { proxy in
                     ScrollView(showsIndicators: false) {
-                        LazyVStack(alignment: .leading, spacing: 24) {
+                        LazyVStack(alignment: .leading, spacing: 30) {
                             if state.fullLyrics.isEmpty {
                                 Text(state.isPreview ? "Lyrics disabled for preview songs" : (state.isFetchingLyrics ? "Loading lyrics..." : "No lyrics available"))
                                     .font(.title)
@@ -700,7 +706,7 @@ struct FullLyricsView: View {
                                         let isActive = state.activeLyricIndex == index
 
                                         Text(text.isEmpty ? "•" : text)
-                                            .font(.system(size: 40, weight: isActive ? .bold : .medium))
+                                            .font(.system(size: 30, weight: .bold))
                                             .foregroundStyle(isActive ? .white : .white.opacity(0.2))
                                             .multilineTextAlignment(.leading)
                                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -905,7 +911,6 @@ struct PlaybackControlsView: View {
                     .frame(width: 54, height: 54)
             }
             .buttonStyle(.plain)
-            .glassEffect(.regular.interactive(), in: .circle)
 
             Button(action: { state.cycleRepeat() }) {
                 Image(systemName: state.repeatMode == "one" ? "repeat.1" : "repeat")
