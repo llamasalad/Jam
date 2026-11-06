@@ -1970,12 +1970,10 @@ body.player-open #main {
   font-size: 20px;
   font-weight: 500;
   letter-spacing: 0.06em;
-  margin-top: 16px;
-  color: var(--muted);
-  text-transform: uppercase;
-  justify-content: center;
-  justify-self: center;
+  margin-bottom: 10px;
+  color: var(--accent);
   align-items: center;
+  font-family: begav;
 }
 
 #suggested-container,
@@ -1983,6 +1981,152 @@ body.player-open #main {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
+}
+
+#suggested-carousel-wrap,
+.suggested-carousel-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.suggested-subsection {
+  margin-top: 16px;
+}
+
+.section-title-link {
+  cursor: pointer;
+  width: fit-content;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.section-title-arrow-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: inherit;
+  padding-left: 5px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.all-songs-arrow-btn svg {
+  transition: transform 0.25s ease;
+}
+
+#all-songs-title.expanded .all-songs-arrow-btn svg {
+  transform: rotate(180deg);
+}
+
+#track-list.all-songs-collapsed .track,
+#track-list.all-songs-collapsed .group-header {
+  display: none;
+}
+
+#suggested-section #suggested-container,
+#suggested-section .suggested-tracks-carousel {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+#suggested-section #suggested-container::-webkit-scrollbar,
+#suggested-section .suggested-tracks-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.suggested-track-group {
+  flex: 0 0 calc(100% - 80px);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.suggested-track-group:only-child {
+  flex: 0 0 100%;
+}
+
+#suggested-section #suggested-container .track,
+#suggested-section .suggested-tracks-carousel .track {
+  content-visibility: visible;
+  contain-intrinsic-size: auto;
+  touch-action: pan-x pan-y !important;
+}
+
+#suggested-section #suggested-container .track-content,
+#suggested-section .suggested-tracks-carousel .track-content {
+  padding: 8px 4px;
+}
+
+#suggested-section #suggested-container .track-dur,
+#suggested-section .suggested-tracks-carousel .track-dur {
+  display: none;
+}
+
+.suggested-nav-btn {
+  display: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  background: var(--bg);
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  padding: 0;
+}
+
+.suggested-nav-btn.prev {
+  left: 6px;
+}
+
+.suggested-nav-btn.next {
+  right: 6px;
+}
+
+.suggested-nav-btn.hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .suggested-nav-btn {
+    display: flex;
+  }
+
+  #suggested-carousel-wrap:hover .suggested-nav-btn:not(.hidden),
+  .suggested-carousel-wrap:hover .suggested-nav-btn:not(.hidden) {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .suggested-nav-btn:hover {
+    color: var(--accent);
+    transform: translateY(-50%) scale(1.06);
+  }
+
+  .suggested-nav-btn:active {
+    transform: translateY(-50%) scale(0.94);
+  }
 }
 
 #smart-mixes-container {
@@ -1996,6 +2140,7 @@ body.player-open #main {
 .suggested-card {
   flex: 1 1 160px;
   height: 160px;
+  width: 160px;
   background-size: cover;
   background-position: center;
   background-color: var(--surface2);
@@ -3431,10 +3576,6 @@ body.menu-open .queue-remove {
   #suggested-container::-webkit-scrollbar-thumb:hover,
   #smart-mixes-container::-webkit-scrollbar-thumb:hover {
     background: var(--muted);
-  }
-
-  .suggested-card {
-    flex: 1 1 25%;
   }
 
   #exp-collapse {

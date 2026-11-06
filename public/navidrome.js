@@ -38,7 +38,6 @@ export async function getTracks(forceRefresh = false) {
       starred: !!song.starred,
       genre: song.genre || '',
       coverUrl: getCoverUrl(song.coverArt),
-      streamUrl: getStreamUrl(song.id),
     };
   });
   return allTracksCache;
@@ -197,7 +196,6 @@ export async function getFavorites() {
     starred: true,
     genre: song.genre || '',
     coverUrl: getCoverUrl(song.coverArt),
-    streamUrl: getStreamUrl(song.id),
   }));
 }
 
@@ -236,7 +234,6 @@ async function getAlbumTracks(albumId) {
     starred: !!song.starred,
     genre: song.genre || '',
     coverUrl: getCoverUrl(song.coverArt),
-    streamUrl: getStreamUrl(song.id),
   }));
 }
 
@@ -272,6 +269,5 @@ export async function getRandomDiscovery() {
     starred: !!song.starred,
     genre: song.genre || '',
     coverUrl: getCoverUrl(song.coverArt),
-    streamUrl: getStreamUrl(song.id),
   }));
 }

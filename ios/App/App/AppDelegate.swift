@@ -87,6 +87,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let coverUrl: String
         let canvasUrl: String
         let starred: Bool
+        let isPreview: Bool
     }
 
     private var player: AVQueuePlayer?
@@ -385,7 +386,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             playerItem.preferredForwardBufferDuration = 15
             playerItem.canUseNetworkResourcesForLiveStreamingWhilePaused = true
 
-            self.metadataMap[ObjectIdentifier(playerItem)] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred)
+            self.metadataMap[ObjectIdentifier(playerItem)] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred, isPreview: isPreview)
 
             self.player = AVQueuePlayer(playerItem: playerItem)
             self.player?.automaticallyWaitsToMinimizeStalling = true
@@ -471,36 +472,36 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                     NotificationCenter.default.removeObserver(self, name: .AVPlayerItemFailedToPlayToEndTime, object: oldItem)
                 }
                 if let newItem = change.newValue as? AVPlayerItem, let meta = self.metadataMap[ObjectIdentifier(newItem)] {
+                    let rawDur = CMTimeGetSeconds(newItem.duration)
+                    let effectiveDur = (!rawDur.isNaN && rawDur > 0) ? rawDur : meta.duration
+
                     self.currentTitle = meta.title
                     self.currentArtist = meta.artist
                     self.currentAlbum = meta.album
-                    self.currentDuration = meta.duration
+                    self.currentDuration = effectiveDur
                     
                     Task { @MainActor in
                         let mgr = PlaybackStateManager.shared
                         mgr.title = meta.title
                         mgr.artist = meta.artist
                         mgr.album = meta.album
-                        mgr.duration = meta.duration
+                        mgr.duration = effectiveDur
                         mgr.coverUrl = meta.coverUrl
                         mgr.canvasUrl = meta.canvasUrl
                         mgr.updateCurrentTime(0)
                         mgr.isPlaying = true
                         mgr.starred = meta.starred
+                        mgr.isPreview = meta.isPreview
+                        mgr.isFetchingLyrics = false
+                        mgr.lyricsFetchFailed = false
                     }
                     
                     self.artworkGeneration += 1
                     self.updateNowPlayingInfo(elapsed: 0.0, rate: 1.0)
                     if !meta.coverUrl.isEmpty { self.fetchArtwork(urlString: meta.coverUrl) }
-                    self.notifyListeners("trackAdvancedNatively", data: [:])
-
-                    let dur = CMTimeGetSeconds(newItem.duration)
-                    if !dur.isNaN {
-                        self.currentDuration = dur
-                        self.updateNowPlayingInfo()
-                        Task { @MainActor in
-                            PlaybackStateManager.shared.duration = dur
-                        }
+                    self.notifyListeners("trackAdvancedNatively", data: ["duration": effectiveDur])
+                    if effectiveDur > 0 {
+                        self.notifyListeners("ready", data: ["duration": effectiveDur])
                     }
                 }
             }
@@ -547,6 +548,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let canvasUrl = call.getString("canvasUrl") ?? ""
         let suffix = call.getString("suffix") ?? "flac"
         let starred = call.getBool("starred") ?? false
+        let isPreview = call.getBool("isPreview") ?? (urlString.contains("dzcdn.net") || urlString.contains("deezer:"))
 
         DispatchQueue.main.async { [weak self] in
             guard let self = self, let queuePlayer = self.player else {
@@ -578,7 +580,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             playerItem.preferredForwardBufferDuration = 0
             playerItem.canUseNetworkResourcesForLiveStreamingWhilePaused = true
 
-            self.metadataMap[ObjectIdentifier(playerItem)] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred)
+            self.metadataMap[ObjectIdentifier(playerItem)] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred, isPreview: isPreview)
 
             if queuePlayer.items().count > 1 {
                 for item in queuePlayer.items().dropFirst() {
@@ -594,9 +596,10 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                 guard let self = self else { return }
                 if item.status == .readyToPlay, self.player?.currentItem == item {
                     let dur = CMTimeGetSeconds(item.duration)
-                    if !dur.isNaN {
+                    if !dur.isNaN && dur > 0 {
                         self.currentDuration = dur
                         self.updateNowPlayingInfo()
+                        self.notifyListeners("ready", data: ["duration": dur])
                         Task { @MainActor in
                             PlaybackStateManager.shared.duration = dur
                         }
@@ -831,11 +834,16 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc func playerItemDidReachEnd(_ notification: Notification) {
-        guard let endedItem = notification.object as? AVPlayerItem else { return }
-        // currentItem is nil when the final queued item finishes, so treat that as
-        // "ended" too; otherwise the UI is left stuck in a playing state.
-        guard let player = self.player,
-              player.currentItem == nil || player.currentItem === endedItem else {
+        guard let endedItem = notification.object as? AVPlayerItem,
+              let player = self.player else { return }
+        let items = player.items()
+        // If another item is queued after the one that just ended, or if AVQueuePlayer
+        // has already advanced currentItem to the next item, let currentItemObserver
+        // handle the native gapless transition instead of firing "ended".
+        if items.count > 1 && items.first === endedItem {
+            return
+        }
+        if let current = player.currentItem, current !== endedItem {
             return
         }
         notifyListeners("ended", data: [:])
