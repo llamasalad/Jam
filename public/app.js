@@ -4641,11 +4641,7 @@ if (audio) {
                 const prevVol = gainNode ? gainNode.gain.value : audio.volume;
                 applyVolume(0);
                 const baseUrl = queue[qIdx]?.streamUrl || Navidrome.getStreamUrl(queue[qIdx].id);
-                const isTranscodedRetry = baseUrl.includes('maxBitRate=');
-                let retryUrl = baseUrl.includes('?') ? `${baseUrl}&_r=${Date.now()}` : `${baseUrl}?_r=${Date.now()}`;
-                if (isTranscodedRetry && savedPos > 0) {
-                    retryUrl += `&timeOffset=${Math.floor(savedPos)}`;
-                }
+                const retryUrl = baseUrl.includes('?') ? `${baseUrl}&_r=${Date.now()}` : `${baseUrl}?_r=${Date.now()}`;
                 beginTrackTransition();
                 audio.src = retryUrl;
                 audio.load();
@@ -4655,10 +4651,7 @@ if (audio) {
                     clearTimeout(volRestoreTimer);
                     schedulePreloadNext();
                     const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
-                    if (isTranscodedRetry) {
-                        setTimeout(() => applyVolume(prevVol), 80);
-                        audio.play().catch(e => console.error("Playback retry failed:", e));
-                    } else if (plugin && window.Capacitor.getPlatform() === 'ios') {
+                    if (plugin && window.Capacitor.getPlatform() === 'ios') {
                         plugin.seek({ to: savedPos }).then(() => {
                             setTimeout(() => applyVolume(prevVol), 80);
                             audio.play().catch(e => console.error("Playback retry failed:", e));
@@ -4694,11 +4687,7 @@ if (audio) {
                 const prevVol = gainNode ? gainNode.gain.value : audio.volume;
                 applyVolume(0);
                 const baseUrl = queue[qIdx]?.streamUrl || Navidrome.getStreamUrl(queue[qIdx].id);
-                const isTranscodedRetry = baseUrl.includes('maxBitRate=');
-                let retryUrl = baseUrl.includes('?') ? `${baseUrl}&_r=${Date.now()}` : `${baseUrl}?_r=${Date.now()}`;
-                if (isTranscodedRetry && savedPos > 0) {
-                    retryUrl += `&timeOffset=${Math.floor(savedPos)}`;
-                }
+                const retryUrl = baseUrl.includes('?') ? `${baseUrl}&_r=${Date.now()}` : `${baseUrl}?_r=${Date.now()}`;
                 beginTrackTransition();
                 audio.src = retryUrl;
                 audio.load();
@@ -4708,10 +4697,7 @@ if (audio) {
                     clearTimeout(volRestoreTimer);
                     schedulePreloadNext();
                     const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
-                    if (isTranscodedRetry) {
-                        setTimeout(() => applyVolume(prevVol), 80);
-                        audio.play().catch(e => console.error("Playback retry failed:", e));
-                    } else if (plugin && window.Capacitor.getPlatform() === 'ios') {
+                    if (plugin && window.Capacitor.getPlatform() === 'ios') {
                         plugin.seek({ to: savedPos }).then(() => {
                             setTimeout(() => applyVolume(prevVol), 80);
                             audio.play().catch(e => console.error("Playback retry failed:", e));

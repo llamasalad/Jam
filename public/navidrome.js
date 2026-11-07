@@ -157,6 +157,8 @@ export function getStreamUrl(id) {
   // Only numeric bitrates transcode. 'original' streams the source file.
   if (/^\d+$/.test(bitrate)) {
     path += `&maxBitRate=${bitrate}&format=mp3`;
+  } else {
+    path += `&raw=true`;
   }
   return new URL(path, window.location.origin).href;
 }

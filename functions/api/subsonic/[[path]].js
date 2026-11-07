@@ -38,9 +38,10 @@ export async function onRequest(context) {
   targetUrl.searchParams.set('f', 'json');
 
   const headers = new Headers(request.headers);
+  headers.delete('host');
   headers.set('Bypass-Tunnel-Reminder', 'true');
-  if (pathname === '/stream' && targetUrl.searchParams.has('maxBitRate')) {
-    headers.delete('range');
+  if (pathname === '/stream') {
+    headers.set('Accept-Encoding', 'identity');
   }
 
   const upstreamResponse = await fetch(targetUrl.toString(), {
