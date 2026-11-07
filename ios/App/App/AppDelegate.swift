@@ -324,11 +324,26 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let suffix = call.getString("suffix") ?? "flac"
         let starred = call.getBool("starred") ?? false
         let autoPlay = call.getBool("autoPlay") ?? false
+        let isRestore = call.getBool("isRestore") ?? false
         let isPreview = call.getBool("isPreview") ?? (urlString.contains("dzcdn.net") || urlString.contains("deezer:"))
 
         DispatchQueue.main.async { [weak self] in
             guard let self = self else {
                 call.reject("Plugin instance is nil")
+                return
+            }
+
+            if isRestore, let existingPlayer = self.player, existingPlayer.currentItem != nil,
+               (existingPlayer.rate > 0 || existingPlayer.timeControlStatus == .playing) {
+                let ct = CMTimeGetSeconds(existingPlayer.currentTime())
+                if self.currentDuration > 0 {
+                    self.notifyListeners("ready", data: ["duration": self.currentDuration])
+                }
+                if !ct.isNaN && ct >= 0 {
+                    self.notifyListeners("timeupdate", data: ["currentTime": ct])
+                }
+                self.notifyListeners("play", data: [:])
+                call.resolve()
                 return
             }
 
@@ -382,8 +397,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             ]
             let asset = AVURLAsset(url: url, options: options)
             let playerItem = AVPlayerItem(asset: asset)
-            // Current item: buffer enough ahead to ride out brief network dips.
-            playerItem.preferredForwardBufferDuration = 15
+            // Use 0 (automatic) so AVFoundation streams continuously instead of
+            // throttling at 15s and re-opening Range requests that can restart transcoded streams.
+            playerItem.preferredForwardBufferDuration = 0
             playerItem.canUseNetworkResourcesForLiveStreamingWhilePaused = true
 
             self.metadataMap[ObjectIdentifier(playerItem)] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred, isPreview: isPreview)
@@ -409,8 +425,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             let statusObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, change in
                 guard let self = self else { return }
                 if item.status == .readyToPlay, self.player?.currentItem == item {
-                    let dur = CMTimeGetSeconds(item.duration)
-                    if !dur.isNaN {
+                    let rawDur = CMTimeGetSeconds(item.duration)
+                    let dur = (!rawDur.isNaN && rawDur > 0) ? rawDur : self.currentDuration
+                    if dur > 0 {
                         self.currentDuration = dur
                         self.updateNowPlayingInfo()
                         self.notifyListeners("ready", data: ["duration": dur])

@@ -810,14 +810,13 @@ body {
 
 .ctx-item {
   padding: 10px 12px;
-  font-size: 13px;
+  font-size: 15px;
   cursor: pointer;
   border-radius: 6px;
   display: flex;
   align-items: center;
   gap: 10px;
   color: var(--text);
-  line-height: 1;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -842,9 +841,8 @@ body {
 
 .ctx-label {
   padding: 6px 12px 2px;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  color: var(--muted);
+  font-size: 12px;
+  color: var(--accent);
   text-transform: uppercase;
   user-select: none;
   -webkit-user-select: none;

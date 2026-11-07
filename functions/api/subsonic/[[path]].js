@@ -39,6 +39,9 @@ export async function onRequest(context) {
 
   const headers = new Headers(request.headers);
   headers.set('Bypass-Tunnel-Reminder', 'true');
+  if (pathname === '/stream' && targetUrl.searchParams.has('maxBitRate')) {
+    headers.delete('range');
+  }
 
   const upstreamResponse = await fetch(targetUrl.toString(), {
     method: request.method,
@@ -46,9 +49,14 @@ export async function onRequest(context) {
     body: request.method !== 'GET' && request.method !== 'HEAD' ? request.body : null
   });
 
+  const responseHeaders = new Headers(upstreamResponse.headers);
+  if (pathname === '/stream' && targetUrl.searchParams.has('maxBitRate')) {
+    responseHeaders.set('Accept-Ranges', 'none');
+  }
+
   return new Response(upstreamResponse.body, {
     status: upstreamResponse.status,
     statusText: upstreamResponse.statusText,
-    headers: upstreamResponse.headers
+    headers: responseHeaders
   });
 }

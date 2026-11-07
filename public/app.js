@@ -431,6 +431,8 @@ class CapacitorAudioPlayerShim {
 
     get src() { return this._src; }
     set src(val) {
+        const isRestore = !!this._isRestoreInit;
+        this._isRestoreInit = false;
         _preloadKey = null;
         this._error = null;
         this._src = val;
@@ -450,7 +452,8 @@ class CapacitorAudioPlayerShim {
                 suffix: this._metadata?.suffix || 'flac',
                 starred: !!this._metadata?.starred,
                 isPreview: !!this._metadata?.isPreview,
-                autoPlay: false
+                autoPlay: false,
+                isRestore
             });
         }
     }
@@ -3034,9 +3037,9 @@ function openCtxMenu(e, t) {
 
     const ctxRemoveFromPlaylist = document.getElementById('ctx-remove-from-playlist');
     const ctxRemoveSep = document.getElementById('ctx-remove-sep');
-    if (ctxRemoveFromPlaylist && ctxRemoveSep) {
+    if (ctxRemoveFromPlaylist) {
         if (currentPlaylist && !currentPlaylist.id.startsWith('smart:')) {
-            ctxRemoveSep.style.display = 'block';
+            if (ctxRemoveSep) ctxRemoveSep.style.display = 'block';
             ctxRemoveFromPlaylist.style.display = 'flex';
             ctxRemoveFromPlaylist.onclick = async () => {
                 closeCtxMenu();
@@ -3046,7 +3049,7 @@ function openCtxMenu(e, t) {
                 if (updated) { currentPlaylist = updated; renderPlaylistDetail(updated); }
             };
         } else {
-            ctxRemoveSep.style.display = 'none';
+            if (ctxRemoveSep) ctxRemoveSep.style.display = 'none';
             ctxRemoveFromPlaylist.style.display = 'none';
         }
     }
@@ -3056,6 +3059,7 @@ function openCtxMenu(e, t) {
         if (playlists.length) {
             playlists.forEach(pl => {
                 if (pl.id.startsWith('smart:')) return;
+                if (currentPlaylist && String(pl.id) === String(currentPlaylist.id)) return;
                 const item = document.createElement('div');
                 item.className = 'ctx-item';
                 item.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 12H3"/><path d="M16 6H3"/><path d="M16 18H3"/><path d="M18 9v6"/><path d="M15 12h6"/></svg>${pl.name}`;
@@ -3292,6 +3296,15 @@ async function openPlaylistDetail(pl) {
     }
 
     const isSmart = pl.id.startsWith('smart:');
+    const hideShuffleAndQueue = pl.id === 'smart:charts' || pl.id === 'smart:wishlist' || pl.id === 'smart:recent';
+    const plPlayBtnEl = document.getElementById('playlist-play-btn');
+    if (plPlayBtnEl) {
+        plPlayBtnEl.style.display = hideShuffleAndQueue ? 'none' : '';
+    }
+    const plAddQueueBtnEl = document.getElementById('playlist-add-queue-btn');
+    if (plAddQueueBtnEl) {
+        plAddQueueBtnEl.style.display = hideShuffleAndQueue ? 'none' : '';
+    }
     const plEditBtn = document.getElementById('playlist-edit-btn');
     if (plEditBtn) {
         plEditBtn.style.display = isSmart ? 'none' : '';
@@ -4213,6 +4226,7 @@ let _lastKnownTime = 0;
 let _retryCount = 0;
 let _currentTrackReady = false;
 let _activelyPlayingTrackId = null;
+let _cleanupInitRestorePos = null;
 
 function recordRecentlyPlayed(track) {
     if (!track || !track.id) return;
@@ -4228,6 +4242,10 @@ function recordRecentlyPlayed(track) {
 
 function play(t, explicitIdx) {
     if (!t) return;
+    if (typeof _cleanupInitRestorePos === 'function') {
+        _cleanupInitRestorePos();
+        _cleanupInitRestorePos = null;
+    }
     const prevPlayingId = _activelyPlayingTrackId;
     _activelyPlayingTrackId = t.id;
     if (prevPlayingId && String(prevPlayingId) !== String(t.id)) {
@@ -4249,6 +4267,8 @@ function play(t, explicitIdx) {
     _retryCount = 0;
     _currentTrackReady = false;
     seeking = false;
+    lastSavedSec = 0;
+    localStorage.setItem('music_pos', '0');
     if (audio) {
         if (audioCtx?.state === 'suspended') audioCtx.resume();
         beginTrackTransition();
@@ -4379,6 +4399,8 @@ function syncGaplessNextTrack() {
         _lastKnownTime = 0;
         _retryCount = 0;
         seeking = false;
+        lastSavedSec = 0;
+        localStorage.setItem('music_pos', '0');
         updateStatusBar();
         updateMediaSession(t);
 
@@ -4619,7 +4641,11 @@ if (audio) {
                 const prevVol = gainNode ? gainNode.gain.value : audio.volume;
                 applyVolume(0);
                 const baseUrl = queue[qIdx]?.streamUrl || Navidrome.getStreamUrl(queue[qIdx].id);
-                const retryUrl = baseUrl.includes('?') ? `${baseUrl}&_r=${Date.now()}` : `${baseUrl}?_r=${Date.now()}`;
+                const isTranscodedRetry = baseUrl.includes('maxBitRate=');
+                let retryUrl = baseUrl.includes('?') ? `${baseUrl}&_r=${Date.now()}` : `${baseUrl}?_r=${Date.now()}`;
+                if (isTranscodedRetry && savedPos > 0) {
+                    retryUrl += `&timeOffset=${Math.floor(savedPos)}`;
+                }
                 beginTrackTransition();
                 audio.src = retryUrl;
                 audio.load();
@@ -4629,7 +4655,10 @@ if (audio) {
                     clearTimeout(volRestoreTimer);
                     schedulePreloadNext();
                     const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
-                    if (plugin && window.Capacitor.getPlatform() === 'ios') {
+                    if (isTranscodedRetry) {
+                        setTimeout(() => applyVolume(prevVol), 80);
+                        audio.play().catch(e => console.error("Playback retry failed:", e));
+                    } else if (plugin && window.Capacitor.getPlatform() === 'ios') {
                         plugin.seek({ to: savedPos }).then(() => {
                             setTimeout(() => applyVolume(prevVol), 80);
                             audio.play().catch(e => console.error("Playback retry failed:", e));
@@ -4665,7 +4694,11 @@ if (audio) {
                 const prevVol = gainNode ? gainNode.gain.value : audio.volume;
                 applyVolume(0);
                 const baseUrl = queue[qIdx]?.streamUrl || Navidrome.getStreamUrl(queue[qIdx].id);
-                const retryUrl = baseUrl.includes('?') ? `${baseUrl}&_r=${Date.now()}` : `${baseUrl}?_r=${Date.now()}`;
+                const isTranscodedRetry = baseUrl.includes('maxBitRate=');
+                let retryUrl = baseUrl.includes('?') ? `${baseUrl}&_r=${Date.now()}` : `${baseUrl}?_r=${Date.now()}`;
+                if (isTranscodedRetry && savedPos > 0) {
+                    retryUrl += `&timeOffset=${Math.floor(savedPos)}`;
+                }
                 beginTrackTransition();
                 audio.src = retryUrl;
                 audio.load();
@@ -4675,7 +4708,10 @@ if (audio) {
                     clearTimeout(volRestoreTimer);
                     schedulePreloadNext();
                     const plugin = window.Capacitor?.Plugins?.AudioPlayerPlugin;
-                    if (plugin && window.Capacitor.getPlatform() === 'ios') {
+                    if (isTranscodedRetry) {
+                        setTimeout(() => applyVolume(prevVol), 80);
+                        audio.play().catch(e => console.error("Playback retry failed:", e));
+                    } else if (plugin && window.Capacitor.getPlatform() === 'ios') {
                         plugin.seek({ to: savedPos }).then(() => {
                             setTimeout(() => applyVolume(prevVol), 80);
                             audio.play().catch(e => console.error("Playback retry failed:", e));
@@ -7402,87 +7438,97 @@ async function init() {
 
     await Promise.all([loadTracks(), loadPlaylists(), loadCanvasMap()]);
 
-    if (lastTrackData?.id) {
+    const userStartedPlaybackDuringInit = !!_activelyPlayingTrackId || (audio && !audio.paused);
+
+    if (!userStartedPlaybackDuringInit && lastTrackData?.id) {
         ensureCoverUrl(lastTrackData.id);
         if (audio) {
             const alreadySet = audio.src?.includes(lastTrackData.id);
             if (!alreadySet) {
                 audio.preload = 'auto';
                 setAudioMetadata(lastTrackData);
+                audio._isRestoreInit = true;
                 audio.src = lastTrackData.streamUrl || Navidrome.getStreamUrl(lastTrackData.id);
                 audio.load();
             }
         }
     }
 
-    try {
-        const last = JSON.parse(localStorage.getItem('music_last') || 'null');
-        const pos = parseFloat(localStorage.getItem('music_pos') || '0');
-        const savedQueueIds = JSON.parse(localStorage.getItem('music_queue') || '[]');
-        const savedQIdx = parseInt(localStorage.getItem('music_qidx') || '0');
+    if (!userStartedPlaybackDuringInit) {
+        try {
+            const last = JSON.parse(localStorage.getItem('music_last') || 'null');
+            const pos = parseFloat(localStorage.getItem('music_pos') || '0');
+            const savedQueueIds = JSON.parse(localStorage.getItem('music_queue') || '[]');
+            const savedQIdx = parseInt(localStorage.getItem('music_qidx') || '0');
 
-        if (last && last.id) {
-            const t = trackMap.get(last.id) || last;
-            if (savedQueueIds.length) {
-                queue = savedQueueIds.map(id => trackMap.get(id)).filter(Boolean);
-                qIdx = Math.min(savedQIdx, queue.length - 1);
-                if (!queue.length) { queue = [t]; qIdx = 0; }
-            } else {
-                queue = [t]; qIdx = 0;
-            }
-            if (player) { player.classList.remove('hidden'); updatePlayerHeight(); }
-            updateDesktopPlayerVisibility();
-            updatePlayerMetadata(t);
-            updateHeartUI(t.starred);
-            const pt = document.getElementById('player-thumb');
-            if (pt) { pt.src = FALLBACK; loadCover(t.id, pt); }
-            document.title = (t.title || '?') + ' \u00B7 ' + (t.artist || '?');
+            if (last && last.id) {
+                const t = trackMap.get(last.id) || last;
+                if (savedQueueIds.length) {
+                    queue = savedQueueIds.map(id => trackMap.get(id)).filter(Boolean);
+                    qIdx = Math.min(savedQIdx, queue.length - 1);
+                    if (!queue.length) { queue = [t]; qIdx = 0; }
+                } else {
+                    queue = [t]; qIdx = 0;
+                }
+                if (player) { player.classList.remove('hidden'); updatePlayerHeight(); }
+                updateDesktopPlayerVisibility();
+                updatePlayerMetadata(t);
+                updateHeartUI(t.starred);
+                const pt = document.getElementById('player-thumb');
+                if (pt) { pt.src = FALLBACK; loadCover(t.id, pt); }
+                document.title = (t.title || '?') + ' \u00B7 ' + (t.artist || '?');
 
-            const savedDur = t.duration || 0;
-            if (savedDur > 0) {
-                if (timeTot) timeTot.textContent = fmt(savedDur);
-                if (expTimeTot) expTimeTot.textContent = fmt(savedDur);
-                if (vertTimeTot) vertTimeTot.textContent = fmt(savedDur);
-                if (pos > 0 && pos < savedDur) {
-                    const pct = (pos / savedDur) * 100;
-                    if (progress) progress.value = pct;
-                    if (expProgress) expProgress.value = pct;
-                    if (vertProgress) vertProgress.value = pct;
-                    if (timeCur) timeCur.textContent = fmt(pos);
-                    if (expTimeCur) expTimeCur.textContent = fmt(pos);
-                    if (vertTimeCur) vertTimeCur.textContent = fmt(pos);
+                const savedDur = t.duration || 0;
+                if (savedDur > 0) {
+                    if (timeTot) timeTot.textContent = fmt(savedDur);
+                    if (expTimeTot) expTimeTot.textContent = fmt(savedDur);
+                    if (vertTimeTot) vertTimeTot.textContent = fmt(savedDur);
+                    if (pos > 0 && pos < savedDur) {
+                        const pct = (pos / savedDur) * 100;
+                        if (progress) progress.value = pct;
+                        if (expProgress) expProgress.value = pct;
+                        if (vertProgress) vertProgress.value = pct;
+                        if (timeCur) timeCur.textContent = fmt(pos);
+                        if (expTimeCur) expTimeCur.textContent = fmt(pos);
+                        if (vertTimeCur) vertTimeCur.textContent = fmt(pos);
+                    }
+                }
+
+                updateExpandedNowPlaying(t);
+                loadLyrics(t);
+
+                if (audio) {
+                    const alreadyBuffering = audio.src && audio.src.includes(t.id);
+                    if (!alreadyBuffering) {
+                        audio.preload = 'auto';
+                        setAudioMetadata(t);
+                        audio._isRestoreInit = true;
+                        audio.src = t.streamUrl || Navidrome.getStreamUrl(t.id);
+                        audio.load();
+                    }
+                    updateMediaSession(t);
+                    let restored = false;
+                    const restorePos = () => {
+                        if (restored) return;
+                        if (!audio.src.includes(t.id)) { cleanupRestore(); return; }
+                        const d = (audio.duration && isFinite(audio.duration)) ? audio.duration : (t.duration || 0);
+                        if (pos > 0 && d && pos < d - 5) { try { audio.currentTime = pos; } catch (e) { } }
+                        restored = true;
+                        cleanupRestore();
+                    };
+                    const cleanupRestore = () => {
+                        audio.removeEventListener('playing', restorePos);
+                        if (_cleanupInitRestorePos === cleanupRestore) _cleanupInitRestorePos = null;
+                    };
+                    _cleanupInitRestorePos = cleanupRestore;
+                    audio.addEventListener('playing', restorePos);
+                    schedulePreloadNext();
+                } else {
+                    updateMediaSession(t);
                 }
             }
-
-            updateExpandedNowPlaying(t);
-            loadLyrics(t);
-
-            if (audio) {
-                const alreadyBuffering = audio.src && audio.src.includes(t.id);
-                if (!alreadyBuffering) {
-                    audio.preload = 'auto';
-                    setAudioMetadata(t);
-                    audio.src = t.streamUrl || Navidrome.getStreamUrl(t.id);
-                    audio.load();
-                }
-                updateMediaSession(t);
-                let restored = false;
-                const restorePos = () => {
-                    if (restored) return;
-                    if (!audio.src.includes(t.id)) { cleanupRestore(); return; }
-                    const d = (audio.duration && isFinite(audio.duration)) ? audio.duration : (t.duration || 0);
-                    if (pos > 0 && d && pos < d - 5) { try { audio.currentTime = pos; } catch (e) { } }
-                    restored = true;
-                    cleanupRestore();
-                };
-                const cleanupRestore = () => { audio.removeEventListener('playing', restorePos); };
-                audio.addEventListener('playing', restorePos);
-                schedulePreloadNext();
-            } else {
-                updateMediaSession(t);
-            }
-        }
-    } catch (_) { }
+        } catch (_) { }
+    }
 
     renderQueue(true);
     notifyNativePlaybackState();
