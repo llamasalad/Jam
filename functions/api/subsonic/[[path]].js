@@ -51,8 +51,8 @@ export async function onRequest(context) {
   });
 
   const responseHeaders = new Headers(upstreamResponse.headers);
-  if (pathname === '/stream' && targetUrl.searchParams.has('maxBitRate')) {
-    responseHeaders.set('Accept-Ranges', 'none');
+  if (pathname === '/stream') {
+    responseHeaders.set('Accept-Ranges', 'bytes');
   }
 
   if (pathname === '/stream' && upstreamResponse.status === 200 && upstreamResponse.body) {

@@ -4309,7 +4309,7 @@ function play(t, explicitIdx) {
 let nextAudio = null;
 
 function schedulePreloadNext() {
-    if (currentQuality === 'original' && !_currentTrackReady && audio) {
+    if (!_currentTrackReady && audio) {
         audio.addEventListener('loadedmetadata', preloadNextTrack, { once: true });
         return;
     }

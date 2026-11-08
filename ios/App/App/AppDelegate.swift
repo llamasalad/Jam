@@ -97,6 +97,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     private var currentItemObserver: NSKeyValueObservation?
     private var metadataMap: [ObjectIdentifier: TrackMetadata] = [:]
     private var failedItemIds: Set<ObjectIdentifier> = []
+    private var preloadDownloadTask: URLSessionDownloadTask?
+    private var preloadGeneration: Int = 0
+    private var preloadTempFileURLs: [ObjectIdentifier: URL] = [:]
     private var isManuallyChangingItem = false
     private var artworkGeneration: Int = 0
 
@@ -109,10 +112,21 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     private var timeControlStatusObserver: NSKeyValueObservation?
 
     override public func load() {
+        cleanupOrphanedPreloadFiles()
         setupRemoteCommands()
         setupAudioSessionObservers()
         Task { @MainActor in
             PlaybackStateManager.shared.audioPlayerPlugin = self
+        }
+    }
+
+    private func cleanupOrphanedPreloadFiles() {
+        let fm = FileManager.default
+        let tempDir = fm.temporaryDirectory
+        if let files = try? fm.contentsOfDirectory(at: tempDir, includingPropertiesForKeys: nil) {
+            for file in files where file.lastPathComponent.hasPrefix("jam_preload_") {
+                try? fm.removeItem(at: file)
+            }
         }
     }
 
@@ -518,13 +532,18 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         // nothing should follow the current trac).
         if call.getBool("clear") == true {
             DispatchQueue.main.async { [weak self] in
-                guard let self = self, let queuePlayer = self.player else {
+                guard let self = self else {
                     call.resolve()
                     return
                 }
-                for item in queuePlayer.items().dropFirst() {
-                    self.cleanupPlayerItem(item)
-                    queuePlayer.remove(item)
+                self.preloadGeneration += 1
+                self.preloadDownloadTask?.cancel()
+                self.preloadDownloadTask = nil
+                if let queuePlayer = self.player {
+                    for item in queuePlayer.items().dropFirst() {
+                        self.cleanupPlayerItem(item)
+                        queuePlayer.remove(item)
+                    }
                 }
                 call.resolve()
             }
@@ -546,6 +565,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let suffix = call.getString("suffix") ?? "flac"
         let starred = call.getBool("starred") ?? false
         let isPreview = call.getBool("isPreview") ?? (urlString.contains("dzcdn.net") || urlString.contains("deezer:"))
+        let meta = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred, isPreview: isPreview)
 
         DispatchQueue.main.async { [weak self] in
             guard let self = self, let queuePlayer = self.player else {
@@ -553,9 +573,10 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                 return
             }
 
-            let (playerItem, asset) = self.createPlayerItem(url: url, suffix: suffix)
-
-            self.metadataMap[ObjectIdentifier(playerItem)] = TrackMetadata(title: title, artist: artist, album: album, duration: duration, coverUrl: coverUrl, canvasUrl: canvasUrl, starred: starred, isPreview: isPreview)
+            self.preloadGeneration += 1
+            let expectedGeneration = self.preloadGeneration
+            self.preloadDownloadTask?.cancel()
+            self.preloadDownloadTask = nil
 
             if queuePlayer.items().count > 1 {
                 for item in queuePlayer.items().dropFirst() {
@@ -564,44 +585,155 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                 }
             }
 
-            let statusObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, change in
-                guard let self = self else { return }
-                if item.status == .readyToPlay, self.player?.currentItem == item {
-                    let dur = CMTimeGetSeconds(item.duration)
-                    if !dur.isNaN && dur > 0 {
-                        self.currentDuration = dur
-                        self.updateNowPlayingInfo()
-                        self.notifyListeners("ready", data: ["duration": dur])
-                        Task { @MainActor in
-                            PlaybackStateManager.shared.duration = dur
+            let urlStr = url.absoluteString
+            let isTranscodedStream = urlStr.contains("maxBitRate=") || urlStr.contains("format=mp3")
+            if url.isFileURL || !isTranscodedStream {
+                self.enqueuePreloadedItem(url: url, suffix: suffix, isLocalTempFile: false, queuePlayer: queuePlayer, metadata: meta)
+                call.resolve()
+                return
+            }
+
+            let currentElapsed = CMTimeGetSeconds(queuePlayer.currentTime())
+            let startDelay: TimeInterval = (currentElapsed.isNaN || currentElapsed < 2.0) ? 2.0 : 0.0
+
+            let startDownload = { [weak self] in
+                guard let self = self,
+                      self.preloadGeneration == expectedGeneration,
+                      let currentQueuePlayer = self.player,
+                      currentQueuePlayer.currentItem != nil else {
+                    return
+                }
+
+                var request = URLRequest(url: url)
+                request.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
+
+                let task = URLSession.shared.downloadTask(with: request) { [weak self] tempLocation, response, error in
+                    guard error == nil,
+                          let tempLocation = tempLocation,
+                          let httpResponse = response as? HTTPURLResponse,
+                          (200..<300).contains(httpResponse.statusCode) else {
+                        return
+                    }
+
+                    let fm = FileManager.default
+                    if let attrs = try? fm.attributesOfItem(atPath: tempLocation.path),
+                       let fileSize = attrs[.size] as? UInt64,
+                       fileSize == 0 {
+                        return
+                    }
+
+                    let mime = (httpResponse.mimeType ?? "").lowercased()
+                    let fileExtension: String
+                    if isTranscodedStream || mime == "audio/mpeg" || mime == "audio/mp3" {
+                        fileExtension = "mp3"
+                    } else if mime == "audio/flac" || mime == "audio/x-flac" {
+                        fileExtension = "flac"
+                    } else if mime == "audio/mp4" || mime == "audio/x-m4a" || mime == "audio/aac" {
+                        fileExtension = "m4a"
+                    } else if mime == "audio/wav" || mime == "audio/x-wav" {
+                        fileExtension = "wav"
+                    } else if mime == "audio/ogg" || mime == "application/ogg" {
+                        fileExtension = "ogg"
+                    } else {
+                        let cleanSuffix = suffix.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+                        fileExtension = cleanSuffix.isEmpty ? "mp3" : cleanSuffix
+                    }
+
+                    let destURL = fm.temporaryDirectory.appendingPathComponent("jam_preload_\(UUID().uuidString).\(fileExtension)")
+                    do {
+                        if fm.fileExists(atPath: destURL.path) {
+                            try fm.removeItem(at: destURL)
+                        }
+                        try fm.moveItem(at: tempLocation, to: destURL)
+                    } catch {
+                        return
+                    }
+
+                    let validationAsset = AVURLAsset(url: destURL, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true])
+                    validationAsset.loadValuesAsynchronously(forKeys: ["playable", "duration"]) { [weak self] in
+                        let isPlayable = (validationAsset.statusOfValue(forKey: "playable", error: nil) == .loaded) && validationAsset.isPlayable
+                        let loadedDur = CMTimeGetSeconds(validationAsset.duration)
+                        let validDuration = !loadedDur.isNaN && loadedDur > 0 && (meta.isPreview || meta.duration <= 10 || loadedDur >= meta.duration * 0.90)
+
+                        DispatchQueue.main.async {
+                            guard let self = self,
+                                  isPlayable,
+                                  validDuration,
+                                  self.preloadGeneration == expectedGeneration,
+                                  let activeQueuePlayer = self.player,
+                                  activeQueuePlayer.currentItem != nil else {
+                                try? FileManager.default.removeItem(at: destURL)
+                                return
+                            }
+                            self.preloadDownloadTask = nil
+                            self.enqueuePreloadedItem(url: destURL, suffix: fileExtension, isLocalTempFile: true, queuePlayer: activeQueuePlayer, metadata: meta)
                         }
                     }
-                } else if item.status == .failed {
-                    if self.player?.currentItem == item {
-                        self.handleActiveItemFailure(item, message: item.error?.localizedDescription ?? "Playback failed")
-                    } else {
-                        self.player?.remove(item)
-                        self.cleanupPlayerItem(item)
-                    }
                 }
-            }
-            self.playerItemStatusObservers[ObjectIdentifier(playerItem)] = statusObserver
-
-            NotificationCenter.default.addObserver(self, selector: #selector(self.playerItemDidReachEnd), name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
-            NotificationCenter.default.addObserver(self, selector: #selector(self.playerItemFailedToPlay), name: .AVPlayerItemFailedToPlayToEndTime, object: playerItem)
-
-            asset.loadValuesAsynchronously(forKeys: ["playable", "duration"]) {
-                DispatchQueue.main.async {
-                    var error: NSError?
-                    if asset.statusOfValue(forKey: "playable", error: &error) == .loaded {
-                        // preloading warm
-                    }
-                }
+                self.preloadDownloadTask = task
+                task.resume()
             }
 
-            queuePlayer.insert(playerItem, after: nil)
+            if startDelay > 0 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + startDelay, execute: startDownload)
+            } else {
+                startDownload()
+            }
             call.resolve()
         }
+    }
+
+    private func enqueuePreloadedItem(url: URL, suffix: String, isLocalTempFile: Bool, queuePlayer: AVQueuePlayer, metadata: TrackMetadata) {
+        if queuePlayer.items().count > 1 {
+            for item in queuePlayer.items().dropFirst() {
+                self.cleanupPlayerItem(item)
+                queuePlayer.remove(item)
+            }
+        }
+
+        let (playerItem, asset) = self.createPlayerItem(url: url, suffix: suffix)
+        let itemId = ObjectIdentifier(playerItem)
+        if isLocalTempFile {
+            self.preloadTempFileURLs[itemId] = url
+        }
+        self.metadataMap[itemId] = metadata
+
+        let statusObserver = playerItem.observe(\.status, options: [.new]) { [weak self] item, change in
+            guard let self = self else { return }
+            if item.status == .readyToPlay, self.player?.currentItem == item {
+                let dur = CMTimeGetSeconds(item.duration)
+                if !dur.isNaN && dur > 0 {
+                    self.currentDuration = dur
+                    self.updateNowPlayingInfo()
+                    self.notifyListeners("ready", data: ["duration": dur])
+                    Task { @MainActor in
+                        PlaybackStateManager.shared.duration = dur
+                    }
+                }
+            } else if item.status == .failed {
+                if self.player?.currentItem == item {
+                    self.handleActiveItemFailure(item, message: item.error?.localizedDescription ?? "Playback failed")
+                } else {
+                    self.player?.remove(item)
+                    self.cleanupPlayerItem(item)
+                }
+            }
+        }
+        self.playerItemStatusObservers[itemId] = statusObserver
+
+        NotificationCenter.default.addObserver(self, selector: #selector(self.playerItemDidReachEnd), name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.playerItemFailedToPlay), name: .AVPlayerItemFailedToPlayToEndTime, object: playerItem)
+
+        asset.loadValuesAsynchronously(forKeys: ["playable", "duration"]) {
+            DispatchQueue.main.async {
+                var error: NSError?
+                if asset.statusOfValue(forKey: "playable", error: &error) == .loaded {
+                    // preloading warm
+                }
+            }
+        }
+
+        queuePlayer.insert(playerItem, after: nil)
     }
 
     @objc func play(_ call: CAPPluginCall) {
@@ -791,15 +923,17 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             mimeType = "audio/ogg"
         }
 
-        let options: [String: Any] = [
-            AVURLAssetPreferPreciseDurationAndTimingKey: true,
-            "AVURLAssetOutOfBandMIMETypeKey": mimeType,
-            "AVURLAssetOverrideMIMETypeKey": mimeType
+        var options: [String: Any] = [
+            AVURLAssetPreferPreciseDurationAndTimingKey: true
         ]
+        if !url.isFileURL {
+            options["AVURLAssetOutOfBandMIMETypeKey"] = mimeType
+            options["AVURLAssetOverrideMIMETypeKey"] = mimeType
+        }
 
         let asset = AVURLAsset(url: url, options: options)
         let playerItem = AVPlayerItem(asset: asset)
-        playerItem.preferredForwardBufferDuration = 0
+        playerItem.preferredForwardBufferDuration = 600
         playerItem.canUseNetworkResourcesForLiveStreamingWhilePaused = true
 
         return (playerItem, asset)
@@ -810,6 +944,9 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         self.playerItemStatusObservers.removeValue(forKey: id)
         self.metadataMap.removeValue(forKey: id)
         self.failedItemIds.remove(id)
+        if let fileURL = self.preloadTempFileURLs.removeValue(forKey: id) {
+            try? FileManager.default.removeItem(at: fileURL)
+        }
         NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: item)
         NotificationCenter.default.removeObserver(self, name: .AVPlayerItemFailedToPlayToEndTime, object: item)
     }
@@ -835,6 +972,13 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     private func removeObservers() {
         let block = { [weak self] in
             guard let self = self else { return }
+            self.preloadGeneration += 1
+            self.preloadDownloadTask?.cancel()
+            self.preloadDownloadTask = nil
+            for fileURL in self.preloadTempFileURLs.values {
+                try? FileManager.default.removeItem(at: fileURL)
+            }
+            self.preloadTempFileURLs.removeAll()
             if let token = self.timeObserverToken {
                 self.player?.removeTimeObserver(token)
                 self.timeObserverToken = nil
