@@ -55,6 +55,60 @@ export async function onRequest(context) {
     responseHeaders.set('Accept-Ranges', 'none');
   }
 
+  if (pathname === '/stream' && upstreamResponse.status === 200 && upstreamResponse.body) {
+    const rangeHeader = request.headers.get('range');
+    const match = rangeHeader && /^bytes=(\d+)-(\d*)$/i.exec(rangeHeader.trim());
+    if (match) {
+      const rangeStart = parseInt(match[1], 10);
+      const rangeEnd = match[2] ? parseInt(match[2], 10) : null;
+      if (rangeStart > 0) {
+        let bytesSkipped = 0;
+        let bytesSent = 0;
+        const maxBytesToSend = (rangeEnd !== null && rangeEnd >= rangeStart)
+          ? (rangeEnd - rangeStart + 1)
+          : Infinity;
+
+        const { readable, writable } = new TransformStream({
+          transform(chunk, controller) {
+            if (bytesSent >= maxBytesToSend) {
+              return;
+            }
+            let offset = 0;
+            if (bytesSkipped < rangeStart) {
+              const remainingToSkip = rangeStart - bytesSkipped;
+              if (chunk.byteLength <= remainingToSkip) {
+                bytesSkipped += chunk.byteLength;
+                return;
+              }
+              offset = remainingToSkip;
+              bytesSkipped = rangeStart;
+            }
+            let available = chunk.byteLength - offset;
+            const remainingToSend = maxBytesToSend - bytesSent;
+            if (available > remainingToSend) {
+              available = remainingToSend;
+            }
+            if (available > 0) {
+              controller.enqueue(chunk.subarray(offset, offset + available));
+              bytesSent += available;
+            }
+            if (bytesSent >= maxBytesToSend) {
+              controller.terminate();
+            }
+          }
+        });
+
+        upstreamResponse.body.pipeTo(writable).catch(() => { });
+        responseHeaders.delete('content-length');
+        return new Response(readable, {
+          status: 200,
+          statusText: upstreamResponse.statusText,
+          headers: responseHeaders
+        });
+      }
+    }
+  }
+
   return new Response(upstreamResponse.body, {
     status: upstreamResponse.status,
     statusText: upstreamResponse.statusText,

@@ -60,456 +60,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 }
 
-private final class StreamResourceLoader: NSObject, AVAssetResourceLoaderDelegate, URLSessionDataDelegate {
-    let originalURL: URL
-    let contentTypeUTI: String
-    let isTranscoded: Bool
-    let loaderQueue: DispatchQueue
-
-    private var session: URLSession?
-    private var mainTask: URLSessionDataTask?
-    private var mainTaskRequestedOffset: Int = 0
-    private var bytesToSkipOnMainTask: Int = 0
-    private var mainRetryCount: Int = 0
-
-    private struct AuxTaskInfo {
-        let request: AVAssetResourceLoadingRequest
-        var expectedOffset: Int64
-    }
-    private var auxTasks: [Int: AuxTaskInfo] = [:]
-    private var pendingRequests: [AVAssetResourceLoadingRequest] = []
-
-    private var buffer = Data()
-    private var responseContentLength: Int64 = 0
-    private var serverSupportsByteRanges: Bool = false
-    private var hasReceivedInitialResponse: Bool = false
-    private var isDownloadComplete: Bool = false
-    private var isCancelled: Bool = false
-
-    init(originalURL: URL, contentTypeUTI: String) {
-        self.originalURL = originalURL
-        self.contentTypeUTI = contentTypeUTI
-        let urlStr = originalURL.absoluteString
-        self.isTranscoded = urlStr.contains("maxBitRate=") || urlStr.contains("format=mp3")
-        self.loaderQueue = DispatchQueue(label: "com.jam.streamloader.\(UUID().uuidString)")
-        super.init()
-
-        let opQueue = OperationQueue()
-        opQueue.maxConcurrentOperationCount = 1
-        opQueue.underlyingQueue = self.loaderQueue
-
-        let config = URLSessionConfiguration.ephemeral
-        config.requestCachePolicy = .reloadIgnoringLocalCacheData
-        config.urlCache = nil
-        config.timeoutIntervalForRequest = 30
-        config.timeoutIntervalForResource = 600
-        self.session = URLSession(configuration: config, delegate: self, delegateQueue: opQueue)
-    }
-
-    static func makeCustomURL(from url: URL, fileExtension: String) -> URL? {
-        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              let scheme = components.scheme?.lowercased() else {
-            return nil
-        }
-        if scheme == "https" {
-            components.scheme = "jamstreams"
-        } else if scheme == "http" {
-            components.scheme = "jamstream"
-        } else {
-            return nil
-        }
-        if !fileExtension.isEmpty && !components.path.lowercased().hasSuffix(".\(fileExtension.lowercased())") {
-            components.path += ".\(fileExtension.lowercased())"
-        }
-        return components.url
-    }
-
-    func cancel() {
-        loaderQueue.async { [weak self] in
-            guard let self = self, !self.isCancelled else { return }
-            self.isCancelled = true
-            self.mainTask?.cancel()
-            self.mainTask = nil
-            self.auxTasks.removeAll()
-            for req in self.pendingRequests where !req.isFinished && !req.isCancelled {
-                req.finishLoading(with: NSError(domain: NSURLErrorDomain, code: NSURLErrorCancelled, userInfo: nil))
-            }
-            self.pendingRequests.removeAll()
-            self.session?.invalidateAndCancel()
-            self.session = nil
-            self.buffer.removeAll(keepingCapacity: false)
-        }
-    }
-
-    // MARK: - AVAssetResourceLoaderDelegate
-
-    func resourceLoader(_ resourceLoader: AVAssetResourceLoader, shouldWaitForLoadingOfRequestedResource loadingRequest: AVAssetResourceLoadingRequest) -> Bool {
-        guard !isCancelled else { return false }
-        pendingRequests.append(loadingRequest)
-        startMainDownloadIfNeeded()
-        processPendingRequests()
-        return true
-    }
-
-    func resourceLoader(_ resourceLoader: AVAssetResourceLoader, didCancel loadingRequest: AVAssetResourceLoadingRequest) {
-        pendingRequests.removeAll { $0 === loadingRequest }
-        if let entry = auxTasks.first(where: { $0.value.request === loadingRequest }) {
-            let taskId = entry.key
-            auxTasks.removeValue(forKey: taskId)
-            session?.getAllTasks { tasks in
-                tasks.first(where: { $0.taskIdentifier == taskId })?.cancel()
-            }
-        }
-    }
-
-    // MARK: - Network Download Management
-
-    private func startMainDownloadIfNeeded() {
-        guard mainTask == nil && !isDownloadComplete && !isCancelled else { return }
-        startMainDownload(fromOffset: buffer.count)
-    }
-
-    private func startMainDownload(fromOffset offset: Int) {
-        guard !isCancelled, let session = session else { return }
-        var request = URLRequest(url: originalURL)
-        request.cachePolicy = .reloadIgnoringLocalCacheData
-        request.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
-        mainTaskRequestedOffset = offset
-        bytesToSkipOnMainTask = 0
-
-        if offset > 0 {
-            if !isTranscoded {
-                request.setValue("bytes=\(offset)-", forHTTPHeaderField: "Range")
-            }
-        } else if !isTranscoded {
-            request.setValue("bytes=0-", forHTTPHeaderField: "Range")
-        }
-
-        let task = session.dataTask(with: request)
-        mainTask = task
-        task.resume()
-    }
-
-    private func startAuxRangeTask(for loadingRequest: AVAssetResourceLoadingRequest, startOffset: Int64, endOffset: Int64) {
-        guard !isCancelled, let session = session else { return }
-        if auxTasks.values.contains(where: { $0.request === loadingRequest }) {
-            return
-        }
-        var request = URLRequest(url: originalURL)
-        request.cachePolicy = .reloadIgnoringLocalCacheData
-        request.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
-        if endOffset < Int64.max && endOffset > startOffset {
-            request.setValue("bytes=\(startOffset)-\(endOffset - 1)", forHTTPHeaderField: "Range")
-        } else {
-            request.setValue("bytes=\(startOffset)-", forHTTPHeaderField: "Range")
-        }
-        let task = session.dataTask(with: request)
-        auxTasks[task.taskIdentifier] = AuxTaskInfo(request: loadingRequest, expectedOffset: startOffset)
-        task.resume()
-    }
-
-    private static func parseContentRange(_ response: HTTPURLResponse) -> (start: Int64?, total: Int64?) {
-        guard let header = response.value(forHTTPHeaderField: "Content-Range") else {
-            return (nil, nil)
-        }
-        let trimmed = header.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard trimmed.lowercased().hasPrefix("bytes") else { return (nil, nil) }
-        let rangeAndTotal = trimmed.dropFirst(5).trimmingCharacters(in: .whitespaces)
-        let slashParts = rangeAndTotal.split(separator: "/", maxSplits: 1)
-        var startVal: Int64? = nil
-        var totalVal: Int64? = nil
-        if let rangePart = slashParts.first {
-            let dashParts = rangePart.split(separator: "-", maxSplits: 1)
-            if let first = dashParts.first, let parsedStart = Int64(first.trimmingCharacters(in: .whitespaces)) {
-                startVal = parsedStart
-            }
-        }
-        if slashParts.count > 1 {
-            let totalStr = slashParts[1].trimmingCharacters(in: .whitespaces)
-            if totalStr != "*", let parsedTotal = Int64(totalStr), parsedTotal > 0 {
-                totalVal = parsedTotal
-            }
-        }
-        return (startVal, totalVal)
-    }
-
-    private func fillContentInfoIfNeeded(for loadingRequest: AVAssetResourceLoadingRequest) {
-        guard let infoRequest = loadingRequest.contentInformationRequest, infoRequest.contentType == nil else {
-            return
-        }
-        infoRequest.contentType = contentTypeUTI
-        if responseContentLength > 0 {
-            infoRequest.contentLength = responseContentLength
-            infoRequest.isByteRangeAccessSupported = true
-        } else if isDownloadComplete {
-            infoRequest.contentLength = Int64(buffer.count)
-            infoRequest.isByteRangeAccessSupported = true
-        } else {
-            infoRequest.isByteRangeAccessSupported = false
-        }
-    }
-
-    private func finishPendingRequest(_ loadingRequest: AVAssetResourceLoadingRequest, error: Error? = nil) {
-        pendingRequests.removeAll { $0 === loadingRequest }
-        guard !loadingRequest.isFinished && !loadingRequest.isCancelled else { return }
-        if let error = error {
-            loadingRequest.finishLoading(with: error)
-        } else {
-            loadingRequest.finishLoading()
-        }
-    }
-
-    private func processPendingRequests() {
-        guard hasReceivedInitialResponse, !isCancelled else { return }
-        pendingRequests.removeAll { $0.isCancelled || $0.isFinished }
-
-        var completedRequests: [AVAssetResourceLoadingRequest] = []
-
-        for loadingRequest in pendingRequests {
-            fillContentInfoIfNeeded(for: loadingRequest)
-
-            guard let dataRequest = loadingRequest.dataRequest else {
-                completedRequests.append(loadingRequest)
-                continue
-            }
-
-            let requestedEndOffset: Int64
-            if dataRequest.requestsAllDataToEndOfResource {
-                if isDownloadComplete {
-                    requestedEndOffset = Int64(buffer.count)
-                } else if responseContentLength > 0 {
-                    requestedEndOffset = responseContentLength
-                } else {
-                    requestedEndOffset = Int64.max
-                }
-            } else {
-                requestedEndOffset = dataRequest.requestedOffset + Int64(dataRequest.requestedLength)
-            }
-
-            let currentOffset = dataRequest.currentOffset
-
-            // Check if an auxiliary range task is currently handling this request
-            if let auxEntry = auxTasks.first(where: { $0.value.request === loadingRequest }) {
-                if Int64(buffer.count) >= requestedEndOffset && currentOffset < requestedEndOffset {
-                    let taskId = auxEntry.key
-                    auxTasks.removeValue(forKey: taskId)
-                    session?.getAllTasks { tasks in
-                        tasks.first(where: { $0.taskIdentifier == taskId })?.cancel()
-                    }
-                } else {
-                    continue
-                }
-            }
-
-            if currentOffset < Int64(buffer.count) {
-                let availableEnd = min(Int64(buffer.count), requestedEndOffset)
-                if availableEnd > currentOffset {
-                    let sliceRange = Int(currentOffset)..<Int(availableEnd)
-                    dataRequest.respond(with: buffer.subdata(in: sliceRange))
-                }
-            }
-
-            let updatedOffset = dataRequest.currentOffset
-            if updatedOffset >= requestedEndOffset || (isDownloadComplete && updatedOffset >= Int64(buffer.count)) {
-                completedRequests.append(loadingRequest)
-            } else if !isDownloadComplete && serverSupportsByteRanges && !isTranscoded && updatedOffset > Int64(buffer.count) + 262_144 {
-                startAuxRangeTask(for: loadingRequest, startOffset: updatedOffset, endOffset: requestedEndOffset)
-            }
-        }
-
-        for req in completedRequests {
-            finishPendingRequest(req)
-        }
-    }
-
-    // MARK: - URLSessionDataDelegate
-
-    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
-        guard !isCancelled, let httpResponse = response as? HTTPURLResponse else {
-            completionHandler(.cancel)
-            return
-        }
-
-        if let auxInfo = auxTasks[dataTask.taskIdentifier] {
-            let parsed = Self.parseContentRange(httpResponse)
-            if httpResponse.statusCode == 206, parsed.start == auxInfo.expectedOffset {
-                if let total = parsed.total, responseContentLength <= 0 {
-                    responseContentLength = total
-                }
-                fillContentInfoIfNeeded(for: auxInfo.request)
-                completionHandler(.allow)
-            } else {
-                // Server returned 200 OK (byte 0) or mismatched range instead of 206 at expectedOffset.
-                // Cancel immediately so byte 0 is never fed into a non-zero timeline offset.
-                auxTasks.removeValue(forKey: dataTask.taskIdentifier)
-                serverSupportsByteRanges = false
-                completionHandler(.cancel)
-                processPendingRequests()
-            }
-            return
-        }
-
-        guard dataTask.taskIdentifier == mainTask?.taskIdentifier else {
-            completionHandler(.cancel)
-            return
-        }
-
-        if httpResponse.statusCode >= 400 {
-            completionHandler(.cancel)
-            let err = NSError(domain: NSURLErrorDomain, code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP \(httpResponse.statusCode)"])
-            for req in pendingRequests {
-                finishPendingRequest(req, error: err)
-            }
-            return
-        }
-
-        let parsedRange = Self.parseContentRange(httpResponse)
-
-        if mainTaskRequestedOffset == 0 {
-            hasReceivedInitialResponse = true
-            bytesToSkipOnMainTask = 0
-            if let total = parsedRange.total, total > 0 {
-                responseContentLength = total
-            } else if httpResponse.expectedContentLength > 0 {
-                responseContentLength = httpResponse.expectedContentLength
-            }
-            let acceptRanges = httpResponse.value(forHTTPHeaderField: "Accept-Ranges")?.lowercased() ?? ""
-            if !isTranscoded && (httpResponse.statusCode == 206 || (acceptRanges == "bytes" && responseContentLength > 0)) {
-                serverSupportsByteRanges = true
-            } else {
-                serverSupportsByteRanges = false
-            }
-        } else {
-            // Reconnected at mainTaskRequestedOffset > 0.
-            // Only append directly if the server returned 206 starting at mainTaskRequestedOffset.
-            // If the server returned 200 OK from byte 0, skip the first mainTaskRequestedOffset bytes!
-            if httpResponse.statusCode == 206, parsedRange.start == Int64(mainTaskRequestedOffset) {
-                bytesToSkipOnMainTask = 0
-            } else {
-                bytesToSkipOnMainTask = mainTaskRequestedOffset
-            }
-        }
-
-        processPendingRequests()
-        completionHandler(.allow)
-    }
-
-    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
-        guard !isCancelled, !data.isEmpty else { return }
-
-        if var auxInfo = auxTasks[dataTask.taskIdentifier] {
-            let req = auxInfo.request
-            guard !req.isCancelled, !req.isFinished, let dataRequest = req.dataRequest else {
-                auxTasks.removeValue(forKey: dataTask.taskIdentifier)
-                dataTask.cancel()
-                return
-            }
-            let requestedEndOffset: Int64
-            if dataRequest.requestsAllDataToEndOfResource {
-                requestedEndOffset = responseContentLength > 0 ? responseContentLength : Int64.max
-            } else {
-                requestedEndOffset = dataRequest.requestedOffset + Int64(dataRequest.requestedLength)
-            }
-            let currentOffset = dataRequest.currentOffset
-            guard currentOffset == auxInfo.expectedOffset else {
-                auxTasks.removeValue(forKey: dataTask.taskIdentifier)
-                dataTask.cancel()
-                processPendingRequests()
-                return
-            }
-            let remainingNeeded = requestedEndOffset - currentOffset
-            if remainingNeeded <= 0 {
-                auxTasks.removeValue(forKey: dataTask.taskIdentifier)
-                dataTask.cancel()
-                finishPendingRequest(req)
-                return
-            }
-            let bytesToRespond = min(Int(remainingNeeded), data.count)
-            let chunk = bytesToRespond == data.count ? data : Data(data.prefix(bytesToRespond))
-            dataRequest.respond(with: chunk)
-            auxInfo.expectedOffset += Int64(bytesToRespond)
-            if auxInfo.expectedOffset >= requestedEndOffset {
-                auxTasks.removeValue(forKey: dataTask.taskIdentifier)
-                dataTask.cancel()
-                finishPendingRequest(req)
-            } else {
-                auxTasks[dataTask.taskIdentifier] = auxInfo
-            }
-            return
-        }
-
-        guard dataTask.taskIdentifier == mainTask?.taskIdentifier else { return }
-
-        if bytesToSkipOnMainTask > 0 {
-            if data.count <= bytesToSkipOnMainTask {
-                bytesToSkipOnMainTask -= data.count
-                return
-            } else {
-                let remainingData = Data(data.dropFirst(bytesToSkipOnMainTask))
-                bytesToSkipOnMainTask = 0
-                buffer.append(remainingData)
-                mainRetryCount = 0
-            }
-        } else {
-            buffer.append(data)
-            mainRetryCount = 0
-        }
-
-        processPendingRequests()
-    }
-
-    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-        guard !isCancelled else { return }
-
-        if let auxInfo = auxTasks.removeValue(forKey: task.taskIdentifier) {
-            let req = auxInfo.request
-            if !req.isCancelled && !req.isFinished, let dataRequest = req.dataRequest {
-                let requestedEndOffset: Int64
-                if dataRequest.requestsAllDataToEndOfResource {
-                    requestedEndOffset = responseContentLength > 0 ? responseContentLength : Int64.max
-                } else {
-                    requestedEndOffset = dataRequest.requestedOffset + Int64(dataRequest.requestedLength)
-                }
-                if dataRequest.currentOffset >= requestedEndOffset || (error == nil && responseContentLength > 0 && dataRequest.currentOffset >= responseContentLength) {
-                    finishPendingRequest(req)
-                    return
-                }
-            }
-            processPendingRequests()
-            return
-        }
-
-        guard task.taskIdentifier == mainTask?.taskIdentifier else { return }
-        mainTask = nil
-
-        let nsError = error as NSError?
-        if nsError?.code == NSURLErrorCancelled {
-            return
-        }
-
-        let isPrematureEOF = (error == nil && responseContentLength > 0 && Int64(buffer.count) < responseContentLength)
-        if (error != nil || isPrematureEOF) && mainRetryCount < 3 {
-            mainRetryCount += 1
-            let resumeOffset = buffer.count
-            loaderQueue.asyncAfter(deadline: .now() + 0.4) { [weak self] in
-                guard let self = self, !self.isCancelled else { return }
-                self.startMainDownload(fromOffset: resumeOffset)
-            }
-            return
-        }
-
-        if let error = error, buffer.isEmpty {
-            for req in pendingRequests {
-                finishPendingRequest(req, error: error)
-            }
-            return
-        }
-
-        isDownloadComplete = true
-        processPendingRequests()
-    }
-}
-
 @objc(AudioPlayerPlugin)
 public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "AudioPlayerPlugin"
@@ -546,7 +96,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
     private var playerItemStatusObservers: [ObjectIdentifier: NSKeyValueObservation] = [:]
     private var currentItemObserver: NSKeyValueObservation?
     private var metadataMap: [ObjectIdentifier: TrackMetadata] = [:]
-    private var resourceLoaders: [ObjectIdentifier: StreamResourceLoader] = [:]
+    private var failedItemIds: Set<ObjectIdentifier> = []
     private var isManuallyChangingItem = false
     private var artworkGeneration: Int = 0
 
@@ -865,7 +415,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                         }
                     }
                 } else if item.status == .failed {
-                    self.notifyListeners("error", data: ["message": item.error?.localizedDescription ?? "Playback failed"])
+                    self.handleActiveItemFailure(item, message: item.error?.localizedDescription ?? "Playback failed")
                 }
             }
             self.playerItemStatusObservers[ObjectIdentifier(playerItem)] = statusObserver
@@ -910,8 +460,16 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             self.currentItemObserver = self.player?.observe(\.currentItem, options: [.new, .old]) { [weak self] player, change in
                 guard let self = self else { return }
                 if self.isManuallyChangingItem { return }
+                var oldItemFailed = false
                 if let oldItem = change.oldValue as? AVPlayerItem {
+                    let oldId = ObjectIdentifier(oldItem)
+                    if oldItem.status == .failed || oldItem.error != nil || self.failedItemIds.contains(oldId) {
+                        oldItemFailed = true
+                    }
                     self.cleanupPlayerItem(oldItem)
+                }
+                if oldItemFailed {
+                    return
                 }
                 if let newItem = change.newValue as? AVPlayerItem, let meta = self.metadataMap[ObjectIdentifier(newItem)] {
                     let rawDur = CMTimeGetSeconds(newItem.duration)
@@ -1019,8 +577,12 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
                         }
                     }
                 } else if item.status == .failed {
-                    self.player?.remove(item)
-                    self.cleanupPlayerItem(item)
+                    if self.player?.currentItem == item {
+                        self.handleActiveItemFailure(item, message: item.error?.localizedDescription ?? "Playback failed")
+                    } else {
+                        self.player?.remove(item)
+                        self.cleanupPlayerItem(item)
+                    }
                 }
             }
             self.playerItemStatusObservers[ObjectIdentifier(playerItem)] = statusObserver
@@ -1219,25 +781,14 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let lowerSuffix = isTranscodedMP3 ? "mp3" : suffix.lowercased()
 
         var mimeType = "audio/flac"
-        var contentTypeUTI = "org.xiph.flac"
-        var fileExtension = "flac"
-
         if lowerSuffix == "mp3" {
             mimeType = "audio/mpeg"
-            contentTypeUTI = "public.mp3"
-            fileExtension = "mp3"
         } else if lowerSuffix == "m4a" || lowerSuffix == "mp4" || lowerSuffix == "aac" {
             mimeType = "audio/mp4"
-            contentTypeUTI = "public.mpeg-4-audio"
-            fileExtension = "m4a"
         } else if lowerSuffix == "wav" {
             mimeType = "audio/wav"
-            contentTypeUTI = "com.microsoft.waveform-audio"
-            fileExtension = "wav"
         } else if lowerSuffix == "ogg" || lowerSuffix == "oga" {
             mimeType = "audio/ogg"
-            contentTypeUTI = "org.xiph.ogg-audio"
-            fileExtension = "ogg"
         }
 
         let options: [String: Any] = [
@@ -1246,25 +797,10 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             "AVURLAssetOverrideMIMETypeKey": mimeType
         ]
 
-        let asset: AVURLAsset
-        var loader: StreamResourceLoader? = nil
-        if let customURL = StreamResourceLoader.makeCustomURL(from: url, fileExtension: fileExtension) {
-            let streamLoader = StreamResourceLoader(originalURL: url, contentTypeUTI: contentTypeUTI)
-            let customAsset = AVURLAsset(url: customURL, options: options)
-            customAsset.resourceLoader.setDelegate(streamLoader, queue: streamLoader.loaderQueue)
-            asset = customAsset
-            loader = streamLoader
-        } else {
-            asset = AVURLAsset(url: url, options: options)
-        }
-
+        let asset = AVURLAsset(url: url, options: options)
         let playerItem = AVPlayerItem(asset: asset)
         playerItem.preferredForwardBufferDuration = 0
         playerItem.canUseNetworkResourcesForLiveStreamingWhilePaused = true
-
-        if let loader = loader {
-            self.resourceLoaders[ObjectIdentifier(playerItem)] = loader
-        }
 
         return (playerItem, asset)
     }
@@ -1273,11 +809,27 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
         let id = ObjectIdentifier(item)
         self.playerItemStatusObservers.removeValue(forKey: id)
         self.metadataMap.removeValue(forKey: id)
-        if let loader = self.resourceLoaders.removeValue(forKey: id) {
-            loader.cancel()
-        }
+        self.failedItemIds.remove(id)
         NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: item)
         NotificationCenter.default.removeObserver(self, name: .AVPlayerItemFailedToPlayToEndTime, object: item)
+    }
+
+    private func handleActiveItemFailure(_ failedItem: AVPlayerItem, message: String) {
+        let failedId = ObjectIdentifier(failedItem)
+        self.failedItemIds.insert(failedId)
+        if let queuePlayer = self.player {
+            self.isManuallyChangingItem = true
+            defer { self.isManuallyChangingItem = false }
+            queuePlayer.pause()
+            for queuedItem in queuePlayer.items() where queuedItem !== failedItem {
+                self.cleanupPlayerItem(queuedItem)
+                queuePlayer.remove(queuedItem)
+            }
+        }
+        Task { @MainActor in
+            PlaybackStateManager.shared.isPlaying = false
+        }
+        self.notifyListeners("error", data: ["message": message])
     }
 
     private func removeObservers() {
@@ -1295,10 +847,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             self.player?.replaceCurrentItem(with: nil)
             self.uiTimeTickCount = 0
             self.playerItemStatusObservers.removeAll()
-            for loader in self.resourceLoaders.values {
-                loader.cancel()
-            }
-            self.resourceLoaders.removeAll()
+            self.failedItemIds.removeAll()
             self.timeControlStatusObserver?.invalidate()
             self.timeControlStatusObserver = nil
             self.currentItemObserver?.invalidate()
@@ -1340,7 +889,7 @@ public class AudioPlayerPlugin: CAPPlugin, CAPBridgedPlugin {
             self.cleanupPlayerItem(failedItem)
             return
         }
-        notifyListeners("error", data: ["message": "Failed to play to end time"])
+        self.handleActiveItemFailure(failedItem, message: failedItem.error?.localizedDescription ?? "Failed to play to end time")
     }
 
     deinit {
