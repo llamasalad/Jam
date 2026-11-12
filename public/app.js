@@ -1825,6 +1825,7 @@ function closeDetailView(force = false) {
         if (!force) return;
     }
     currentDetailView = null;
+    clearDetailAdaptiveBackground();
     document.body.classList.remove('detail-view');
     document.body.classList.remove('album-detail-view');
     const libraryCards = document.getElementById('library-cards');
@@ -2162,6 +2163,8 @@ function renderList() {
         numFeatured = filtered.filter(t => t.artist && t.artist.toLowerCase() !== currentDetailView.name.toLowerCase()).length;
     }
 
+    clearDetailAdaptiveBackground();
+
     if (currentDetailView) {
         const headerContainer = document.createElement('div');
         headerContainer.id = 'playlist-detail';
@@ -2209,9 +2212,15 @@ function renderList() {
                 setTimeout(() => {
                     const imgEl = headerContainer.querySelector('#detail-album-cover-img');
                     if (imgEl) {
-                        imgEl.onload = () => { imgEl.style.opacity = '1'; };
+                        imgEl.onload = () => {
+                            imgEl.style.opacity = '1';
+                            applyDetailAdaptiveBackground(imgEl);
+                        };
                         loadCover(albumTrack.id, imgEl);
-                        if (imgEl.complete) imgEl.style.opacity = '1';
+                        if (imgEl.complete && imgEl.naturalWidth !== 0) {
+                            imgEl.style.opacity = '1';
+                            applyDetailAdaptiveBackground(imgEl);
+                        }
                     }
                 }, 0);
             }
@@ -2273,7 +2282,10 @@ function renderList() {
 
             setTimeout(() => {
                 const imgEl = headerContainer.querySelector('#detail-artist-image');
-                if (imgEl) loadArtistImage(currentDetailView.name, imgEl);
+                if (imgEl) {
+                    loadArtistImage(currentDetailView.name, imgEl);
+                    applyDetailAdaptiveBackground(imgEl);
+                }
             }, 0);
 
             setTimeout(() => {
@@ -2370,7 +2382,7 @@ function renderList() {
                     };
                 }
 
-                trackList.appendChild(albumsSection);
+                headerContainer.appendChild(albumsSection);
                 requestAnimationFrame(updateAlbumsNav);
             }
         }
@@ -3271,6 +3283,7 @@ async function openPlaylistDetail(pl) {
     saveScroll();
     currentPlaylist = pl;
     currentDetailView = { type: 'playlist', name: pl.name };
+    clearDetailAdaptiveBackground();
     document.body.classList.add('detail-view');
     document.body.classList.remove('album-detail-view');
 
@@ -3558,6 +3571,7 @@ function closePlaylistDetail() {
     if (playlistsListView) playlistsListView.style.display = '';
     currentPlaylist = null;
     currentDetailView = null;
+    clearDetailAdaptiveBackground();
     document.body.classList.remove('detail-view');
     document.body.classList.remove('album-detail-view');
     const headerTitle = document.getElementById('header-title');
@@ -4177,9 +4191,16 @@ async function loadArtistImage(name, imgEl) {
     imgEl.style.transition = 'opacity 0.3s ease-in-out';
 
     const applyImage = (url) => {
+        imgEl.crossOrigin = 'anonymous';
         imgEl.onload = () => { imgEl.style.opacity = '1'; };
+        imgEl.onerror = () => {
+            if (imgEl.crossOrigin) {
+                imgEl.removeAttribute('crossorigin');
+                imgEl.src = url;
+            }
+        };
         imgEl.src = url;
-        if (imgEl.complete) imgEl.style.opacity = '1';
+        if (imgEl.complete && imgEl.naturalWidth !== 0) imgEl.style.opacity = '1';
     };
 
     const cached = artistImageCache[name];
@@ -7333,6 +7354,37 @@ function getDominantColor(img) {
         _dominantColorCache.set(key, result);
     }
     return result;
+}
+
+function clearDetailAdaptiveBackground() {
+    document.querySelectorAll('#playlist-detail.adaptive-detail').forEach(el => {
+        el.classList.remove('adaptive-detail');
+        el.style.removeProperty('--detail-adaptive-color');
+        el.style.background = '';
+    });
+}
+
+function applyDetailAdaptiveBackground(imgEl) {
+    if (!currentDetailView || (currentDetailView.type !== 'artist' && currentDetailView.type !== 'album')) {
+        clearDetailAdaptiveBackground();
+        return;
+    }
+    if (!imgEl) return;
+    const apply = () => {
+        if (!currentDetailView || (currentDetailView.type !== 'artist' && currentDetailView.type !== 'album')) return;
+        if (!imgEl.isConnected) return;
+        try {
+            const color = getDominantColor(imgEl);
+            const detailEl = imgEl.closest('#playlist-detail');
+            if (detailEl) {
+                detailEl.style.setProperty('--detail-adaptive-color', color);
+                detailEl.style.background = `linear-gradient(${color} 0%, var(--bg) 100%)`;
+                detailEl.classList.add('adaptive-detail');
+            }
+        } catch (e) { }
+    };
+    if (imgEl.complete && imgEl.naturalWidth !== 0) apply();
+    else imgEl.addEventListener('load', apply, { once: true });
 }
 
 async function updateAdaptiveBackground() {
