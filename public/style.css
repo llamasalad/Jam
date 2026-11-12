@@ -790,7 +790,7 @@ body {
 #ctx-menu {
   position: fixed;
   background: var(--surface2);
-  border: 1px solid var(--border2);
+  border: none;
   border-radius: 6px;
   padding: 6px;
   z-index: 600;
@@ -1007,6 +1007,10 @@ body {
   padding: 16px 16px 0 16px;
 }
 
+#playlist-detail-header:has(#detail-artist-image) {
+  padding: 0;
+}
+
 #playlist-detail-cover {
   width: 280px;
   height: 280px;
@@ -1021,12 +1025,22 @@ body {
   flex-shrink: 0;
 }
 
+.playlist-detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .playlist-detail-info {
   display: flex;
   flex-direction: column;
   min-width: 0;
   flex: 1;
-  align-items: center;
+  align-items: flex-start;
+  margin-top: 10px;
+  margin-left: 10px;
+  margin-bottom: 10px;
 }
 
 #playlist-detail-name {
@@ -1034,11 +1048,30 @@ body {
   font-size: 30px;
   font-weight: 600;
   text-wrap: auto;
-  text-align: center;
+  text-align: left;
+  font-family: begav;
+}
+
+.playlist-detail-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.playlist-detail-sep {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+body:has(#detail-album-cover-img) #playlist-detail-count {
+  font-size: 20px;
 }
 
 .playlist-detail-artist {
-  font-size: 14px;
+  font-size: 20px;
+  font-weight: 600;
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
@@ -1059,6 +1092,12 @@ body {
   font-size: 12px;
   color: var(--muted);
   margin-top: 2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.playlist-detail-sub #playlist-detail-count {
+  margin-top: 0;
 }
 
 .playlist-detail-buttons {
@@ -1066,7 +1105,9 @@ body {
   gap: 8px;
   padding: 10px 16px;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .playlist-detail-buttons #playlist-play-btn,
@@ -1075,6 +1116,9 @@ body {
 .playlist-detail-buttons #playlist-search-btn,
 .playlist-detail-buttons #playlist-shuffle-btn {
   margin: 0;
+  color: var(--accent);
+  border: none;
+  background: none;
 }
 
 #detail-album-cover-img,
@@ -1095,6 +1139,24 @@ body {
 .artist-albums-section {
   padding: 0px 0px 10px 10px;
   border-bottom: 1px solid var(--border);
+}
+
+.artist-albums-section #suggested-container {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 10px;
+}
+
+.artist-albums-section #suggested-container::-webkit-scrollbar {
+  display: none;
 }
 
 #track-list .section-title {
@@ -1614,6 +1676,7 @@ body.player-open #main {
 
 #exp-lyric-next {
   font-size: 15px;
+  font-weight: 300;
   color: var(--muted);
   transition: opacity 80ms ease-out, transform 80ms ease-out;
 }

@@ -2181,14 +2181,7 @@ function renderList() {
             buttonsHtml = `
                 <div class="playlist-detail-buttons">
                     <button id="playlist-play-btn">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="16 3 21 3 21 8"></polyline>
-                            <line x1="4" y1="20" x2="21" y2="3"></line>
-                            <polyline points="21 16 21 21 16 21"></polyline>
-                            <line x1="15" y1="15" x2="21" y2="21"></line>
-                            <line x1="4" y1="4" x2="9" y2="9"></line>
-                        </svg>
-                        shuffle
+                        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" width="30" height="30" viewBox="0 0 16 16" style="opacity: 1; transform: rotate(0deg);"><path fill="currentColor" d="M2 1v14l12-7z"></path></svg>
                     </button>
                 </div>
             `;
@@ -2199,12 +2192,17 @@ function renderList() {
                         ${coverHtml}
                     </div>
                 </div>
+                <div class="playlist-detail-row">
                     <div class="playlist-detail-info">
                         <h2 id="playlist-detail-name">${escHtml(title)}</h2>
-                        <div class="playlist-detail-artist${albumTrack?.artist ? ' interactable' : ''}">${escHtml(artistName)}</div>
-                        <div id="playlist-detail-count">${countText}</div>
+                        <div class="playlist-detail-sub">
+                            <div class="playlist-detail-artist${albumTrack?.artist ? ' interactable' : ''}">${escHtml(artistName)}</div>
+                            <span class="playlist-detail-sep">&middot;</span>
+                            <div id="playlist-detail-count">${countText}</div>
+                        </div>
                     </div>
-                ${buttonsHtml}
+                    ${buttonsHtml}
+                </div>
             `;
 
             if (albumTrack) {
@@ -2253,14 +2251,7 @@ function renderList() {
             buttonsHtml = `
                 <div class="playlist-detail-buttons">
                     <button id="playlist-shuffle-btn">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="16 3 21 3 21 8"></polyline>
-                            <line x1="4" y1="20" x2="21" y2="3"></line>
-                            <polyline points="21 16 21 21 16 21"></polyline>
-                            <line x1="15" y1="15" x2="21" y2="21"></line>
-                            <line x1="4" y1="4" x2="9" y2="9"></line>
-                        </svg>
-                        shuffle
+                        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" width="30" height="30" viewBox="0 0 16 16" style="opacity: 1; transform: rotate(0deg);"><path fill="currentColor" d="M2 1v14l12-7z"></path></svg>
                     </button>
                 </div>
             `;
@@ -2271,11 +2262,13 @@ function renderList() {
                         ${coverHtml}
                     </div>
                 </div>
+                <div class="playlist-detail-row">
                     <div class="playlist-detail-info">
                         <h2 id="playlist-detail-name">${escHtml(title)}</h2>
                         <div id="playlist-detail-count">${countText}</div>
                     </div>
-                ${buttonsHtml}
+                    ${buttonsHtml}
+                </div>
             `;
 
             setTimeout(() => {
@@ -2316,9 +2309,23 @@ function renderList() {
                 const albumsSection = document.createElement('div');
                 albumsSection.className = 'artist-albums-section';
                 albumsSection.innerHTML = `
-                    <div id="suggested-container"></div>
+                    <div class="suggested-carousel-wrap">
+                        <button class="suggested-nav-btn prev hidden" type="button" aria-label="Previous albums">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                        </button>
+                        <div id="suggested-container"></div>
+                        <button class="suggested-nav-btn next hidden" type="button" aria-label="Next albums">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </button>
+                    </div>
                 `;
                 const cardsContainer = albumsSection.querySelector('#suggested-container');
+                const prevBtn = albumsSection.querySelector('.suggested-nav-btn.prev');
+                const nextBtn = albumsSection.querySelector('.suggested-nav-btn.next');
 
                 Array.from(artistAlbums.entries())
                     .sort((a, b) => a[0].localeCompare(b[0]))
@@ -2338,7 +2345,33 @@ function renderList() {
                         cardsContainer.appendChild(card);
                     });
 
+                const updateAlbumsNav = () => {
+                    const sl = Math.round(cardsContainer.scrollLeft);
+                    const maxScroll = Math.max(0, cardsContainer.scrollWidth - cardsContainer.clientWidth);
+                    if (prevBtn) prevBtn.classList.toggle('hidden', sl <= 4);
+                    if (nextBtn) nextBtn.classList.toggle('hidden', maxScroll <= 4 || sl >= maxScroll - 4);
+                };
+                cardsContainer.addEventListener('scroll', updateAlbumsNav, { passive: true });
+                window.addEventListener('resize', updateAlbumsNav);
+                if (prevBtn) {
+                    prevBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        const cardEl = cardsContainer.querySelector('.album-card');
+                        const step = cardEl ? (cardEl.offsetWidth + 16) * 2 : cardsContainer.clientWidth;
+                        cardsContainer.scrollBy({ left: -step, behavior: 'smooth' });
+                    };
+                }
+                if (nextBtn) {
+                    nextBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        const cardEl = cardsContainer.querySelector('.album-card');
+                        const step = cardEl ? (cardEl.offsetWidth + 16) * 2 : cardsContainer.clientWidth;
+                        cardsContainer.scrollBy({ left: step, behavior: 'smooth' });
+                    };
+                }
+
                 trackList.appendChild(albumsSection);
+                requestAnimationFrame(updateAlbumsNav);
             }
         }
     }
@@ -3251,12 +3284,8 @@ async function openPlaylistDetail(pl) {
     if (playlistDetail) playlistDetail.classList.add('active');
     const plName = playlistDetail ? playlistDetail.querySelector('#playlist-detail-name') : null;
     if (plName) {
-        if (isSmartMix) {
-            plName.style.display = 'none';
-        } else {
-            plName.style.display = '';
-            plName.textContent = pl.name;
-        }
+        plName.style.display = '';
+        plName.textContent = pl.name;
     }
 
     const plCover = playlistDetail ? playlistDetail.querySelector('#playlist-detail-cover') : null;
@@ -3274,9 +3303,6 @@ async function openPlaylistDetail(pl) {
             plCover.innerHTML = `
                 <img class="smart-playlist-cover-img" style="width:100%;height:100%;object-fit:cover;border-radius:8px;z-index:0;position:absolute;inset:0;" />
                 <div class="smart-playlist-cover-overlay" data-mix-id="${mixId}" style="position:absolute;inset:0;z-index:1;"></div>
-                <div class="smart-playlist-cover-info" style="padding:5px;z-index:2;position:absolute;bottom:0;text-align:left;left:0;">
-                    <div class="smart-playlist-cover-title" style="font-size:20px;font-weight:500;color:#fff;">${escHtml(pl.name)}</div>
-                </div>
             `;
             const imgEl = plCover.querySelector('.smart-playlist-cover-img');
             const artistName = getSmartPlaylistFirstTrackArtist(pl);
@@ -3296,6 +3322,11 @@ async function openPlaylistDetail(pl) {
     }
 
     const isSmart = pl.id.startsWith('smart:');
+    const showCount = !isSmart || pl.id === 'smart:favorites' || pl.id === 'smart:wishlist';
+    const plCountEl = playlistDetail ? playlistDetail.querySelector('#playlist-detail-count') : null;
+    if (plCountEl) {
+        plCountEl.style.display = showCount ? '' : 'none';
+    }
     const hideShuffleAndQueue = pl.id === 'smart:charts' || pl.id === 'smart:wishlist' || pl.id === 'smart:recent';
     const plPlayBtnEl = document.getElementById('playlist-play-btn');
     if (plPlayBtnEl) {
@@ -3494,9 +3525,6 @@ async function openPlaylistDetail(pl) {
                     plCover.innerHTML = `
                         <img class="smart-playlist-cover-img" style="width:100%;height:100%;object-fit:cover;border-radius:8px;z-index:0;position:absolute;inset:0;" />
                         <div class="smart-playlist-cover-overlay" data-mix-id="${mixId}" style="position:absolute;inset:0;z-index:1;"></div>
-                        <div class="smart-playlist-cover-info" style="padding:5px;z-index:2;position:absolute;bottom:0;text-align:left;left:0;">
-                            <div class="smart-playlist-cover-title" style="font-size:20px;font-weight:500;color:#fff;">${escHtml(fullPl.name)}</div>
-                        </div>
                     `;
                     const imgEl = plCover.querySelector('.smart-playlist-cover-img');
                     loadArtistImage(artistName, imgEl);
@@ -3556,6 +3584,11 @@ function closePlaylistDetail() {
 
 function renderPlaylistDetail(pl) {
     const plCount = playlistDetail ? playlistDetail.querySelector('#playlist-detail-count') : null;
+    const isSmart = pl.id.startsWith('smart:');
+    const showCount = !isSmart || pl.id === 'smart:favorites' || pl.id === 'smart:wishlist';
+    if (plCount) {
+        plCount.style.display = showCount ? '' : 'none';
+    }
     const container = playlistDetail ? playlistDetail.querySelector('#playlist-tracks') : null;
     if (!container) return;
     container.innerHTML = '';
@@ -3574,7 +3607,7 @@ function renderPlaylistDetail(pl) {
         return;
     }
 
-    if (plCount) plCount.textContent = pl.tracks.length + ' song' + (pl.tracks.length !== 1 ? 's' : '');
+    if (plCount) plCount.textContent = showCount ? (pl.tracks.length + ' song' + (pl.tracks.length !== 1 ? 's' : '')) : '';
     if (!pl.tracks.length) {
         container.innerHTML = '<div style="padding:32px 16px;text-align:center;color:var(--muted);font-size:14px">No songs yet</div>';
         return;
@@ -3584,7 +3617,6 @@ function renderPlaylistDetail(pl) {
         return;
     }
     const isTouchScreen = coarseQuery.matches;
-    const isSmart = pl.id.startsWith('smart:');
     pl.tracks.forEach(pt => {
         const t = trackMap.get(pt.trackId) || { id: pt.trackId, title: pt.title, artist: pt.artist, album: pt.album, suffix: pt.suffix || 'flac' };
         const row = makeRow(t, false, true);
