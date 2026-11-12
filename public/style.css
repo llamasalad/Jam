@@ -4067,6 +4067,12 @@ body.menu-open .queue-remove {
     padding-top: calc(12px + env(titlebar-area-y, env(safe-area-inset-top, 0px)));
   }
 
+  #playlist-detail-cover:has(#detail-artist-image) {
+    width: 100%;
+    height: 350px;
+    border-radius: 0%;
+  }
+
   #header-top-row {
     display: flex !important;
     flex-direction: row !important;
