@@ -7378,7 +7378,7 @@ function applyDetailAdaptiveBackground(imgEl) {
             const detailEl = imgEl.closest('#playlist-detail');
             if (detailEl) {
                 detailEl.style.setProperty('--detail-adaptive-color', color);
-                detailEl.style.background = `linear-gradient(${color} 0%, var(--bg) 100%)`;
+                detailEl.style.background = `linear-gradient(${color} 50%, var(--bg) 100%)`;
                 detailEl.classList.add('adaptive-detail');
             }
         } catch (e) { }
