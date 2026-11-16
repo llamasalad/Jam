@@ -240,7 +240,7 @@ async function getAlbumTracks(albumId) {
 }
 
 export async function getRecentlyAdded() {
-  const res = await fetchWithAuth('/getAlbumList2?type=newest&size=10');
+  const res = await fetchWithAuth('/getAlbumList2?type=newest&size=50');
   const data = await res.json();
   const albums = data['subsonic-response']?.albumList2?.album || [];
   const albumArray = Array.isArray(albums) ? albums : [albums];
